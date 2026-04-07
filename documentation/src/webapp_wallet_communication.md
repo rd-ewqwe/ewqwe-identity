@@ -260,7 +260,7 @@ The webapp uses two profiles that affect how requests are formatted:
 
 | Aspect | HAIP Profile (mDL, PID) | Annex A Profile (Proof of Age) |
 |--------|------------------------|-------------------------------|
-| **Client ID Format** | `x509_san_dns:hq.ewqwe.com` | `redirect_uri:https://host/callback` |
+| **Client ID Format** | `x509_san_dns:<DNS>` (e.g. `x509_san_dns:ewqwe.local` for the demo) | `redirect_uri:https://host/callback` |
 | **Request Delivery** | `request_uri` → wallet fetches signed JAR | All parameters inline in URL (no `request_uri`) |
 | **Request Format** | Signed JAR (JWT with x5c) | Plain URL parameters (redirect_uri forbids signing) |
 | **Response Mode** | `direct_post.jwt` | `direct_post` |
@@ -300,7 +300,7 @@ const request: OpenID4VPRequest = {
 
 ```typescript
 const request: OpenID4VPRequest = {
-  client_id: "x509_san_dns:hq.ewqwe.com",
+  client_id: "x509_san_dns:ewqwe.local",  // derived from server certificate SAN
   client_id_scheme: "x509_san_dns",
   response_type: "vp_token",
   response_mode: "direct_post.jwt",

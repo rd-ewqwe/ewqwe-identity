@@ -235,15 +235,20 @@ Test certificates for TLS connections and attestation signing are located in:
 - **EC (P-256)**: `credential_verifier/src/tests/certificates/ec/`
 - **RSA (4096-bit)**: `credential_verifier/src/tests/certificates/rsa/`
 
-| File                    | Purpose                              |
-| ----------------------- | ------------------------------------ |
-| `ewqwe.chain.pem`       | Full CA certificate chain            |
-| `ewqwe.root.key.pem`    | Root CA private key                  |
-| `ewqwe.server.cert.pem` | Server TLS certificate               |
-| `ewqwe.server.key.pem`  | Server private key (for TLS/signing) |
-| `ewqwe.user1.cert.pem`  | Client certificate for mTLS testing  |
-| `ewqwe.user1.key.pem`   | Client private key                   |
-| `ewqwe.user1.p12`       | PKCS#12 bundle for browser testing   |
+All certificates have SANs: `DNS:ewqwe.local, DNS:localhost, IP:127.0.0.1`. For HAIP, the `client_id` derived from the EC server certificate is `x509_san_dns:ewqwe.local`.
+
+`ewqwe.local` is used as the primary DNS SAN so that the EUDI Wallet's `response_uri` host-match check passes when running against the Android Studio emulator. The emulator must resolve `ewqwe.local` → host machine — see [Android emulator setup](#android-emulator-setup) below.
+
+| File                         | Purpose                                         |
+| ---------------------------- | ----------------------------------------------- |
+| `ewqwe.chain.pem`            | Full CA certificate chain                       |
+| `ewqwe.root.key.pem`         | Root CA private key                             |
+| `ewqwe.server.cert.pem`      | Server TLS certificate                          |
+| `ewqwe.server.key.pem`       | Server private key (for TLS/signing)            |
+| `ewqwe.server.fullchain.pem` | Leaf + CA chain (EC only, for JAR `x5c` header) |
+| `ewqwe.user1.cert.pem`       | Client certificate for mTLS testing             |
+| `ewqwe.user1.key.pem`        | Client private key                              |
+| `ewqwe.user1.p12`            | PKCS#12 bundle for browser testing              |
 
 **⚠️ These are TEST CERTIFICATES ONLY** - never use in production.
 

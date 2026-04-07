@@ -75,7 +75,7 @@ The EUDI Wallet only accepts these client identifier schemes:
 
 | Scheme | Format | Trust Verification |
 |--------|--------|-------------------|
-| `x509_san_dns` | `x509_san_dns:your-domain.com` | Verifier's certificate must have a `dNSName` SAN matching the client ID |
+| `x509_san_dns` | `x509_san_dns:<DNS>` | Verifier's certificate must have a `dNSName` SAN matching the client ID (e.g. `x509_san_dns:ewqwe.local` for the demo certs) |
 | `x509_hash` | `x509_hash:sha-256:base64url_encoded_hash` | Verifier's certificate must match the hash |
 
 The **`redirect_uri`** scheme from Annex A is **not supported** by the EUDI Wallet.

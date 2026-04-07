@@ -280,10 +280,24 @@ export class RelyingPartyApp {
     if (!requestJson) return;
 
     try {
+      // For HAIP the wallet enforces that response_uri host == DNS SAN of the
+      // JAR-signing cert (x509_san_dns scheme).  The cert's primary SAN is
+      // "ewqwe.local", so we must use that hostname regardless of the IP/host
+      // the browser used to reach this page.
+      // For Annex A (redirect_uri scheme) there is no such constraint, so we
+      // can use the document origin directly.
+      const profile = getProfileForType(this.selectedCredentialType);
+      let publicUrl: string;
+      if (profile?.id === "haip") {
+        const u = new URL(globalThis.location.href);
+        u.hostname = "ewqwe.local";
+        publicUrl = u.origin;
+      } else {
+        publicUrl = globalThis.location.origin;
+      }
+
       const request = buildInitTransactionRequest(
-        // The Vite dev server will proxy back to the types server URL,
-        // see vite.config.ts.
-        document.URL,
+        publicUrl,
         this.selectedCredentialType,
         Array.from(this.selectedClaims),
       );

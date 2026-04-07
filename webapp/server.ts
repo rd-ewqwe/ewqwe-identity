@@ -45,34 +45,35 @@ const CORS_HEADERS: Record<string, string> = {
 // ============================================================================
 
 // Cache the PEM so we can recreate the client without hitting the filesystem.
-let caCertPem: string | undefined;
-try {
-  caCertPem = await Deno.readTextFile(CA_CERT_PATH);
-  console.log(`[Server] Loaded CA cert from ${CA_CERT_PATH}`);
-} catch (e) {
-  console.warn(
-    `[Server] Could not load CA cert from ${CA_CERT_PATH}: ${e}. ` +
-      `TLS connections to credential_verifier may fail.`,
-  );
-}
-
 /**
- * Create a fresh HttpClient.
+ * Create a fresh HttpClient, re-reading the CA cert from disk each time.
+ *
+ * Re-reading on every call means a cert rotation (e.g. `generate_certs_p256.sh`
+ * while the server is running) is automatically recovered on the next
+ * connection-error retry — no server restart required.
  *
  * poolIdleTimeout (ms) — drop idle connections after 30 s so Deno never
  * tries to reuse a connection that the upstream server (actix-web / OpenSSL)
- * has already closed during inactivity.  When undefined the default is no
- * timeout, which causes TLS "InternalError" alerts after long idle periods.
+ * has already closed during inactivity.
  */
-function makeHttpClient(): Deno.HttpClient | undefined {
-  if (!caCertPem) return undefined;
-  return Deno.createHttpClient({
-    caCerts: [caCertPem],
-    poolIdleTimeout: 30_000,
-  });
+async function makeHttpClient(): Promise<Deno.HttpClient | undefined> {
+  try {
+    const caCertPem = await Deno.readTextFile(CA_CERT_PATH);
+    return Deno.createHttpClient({
+      caCerts: [caCertPem],
+      poolIdleTimeout: 30_000,
+    });
+  } catch (e) {
+    console.warn(
+      `[Server] Could not load CA cert from ${CA_CERT_PATH}: ${e}. ` +
+        `TLS connections to credential_verifier may fail.`,
+    );
+    return undefined;
+  }
 }
 
-let httpClient = makeHttpClient();
+let httpClient = await makeHttpClient();
+console.log(`[Server] Loaded CA cert from ${CA_CERT_PATH}`);
 
 // ============================================================================
 // Proxy Helper
@@ -130,7 +131,7 @@ async function proxyToVerifier(
         `recreating HTTP client and retrying once…`,
     );
     httpClient?.close();
-    httpClient = makeHttpClient();
+    httpClient = await makeHttpClient();
     if (httpClient) fetchOptions.client = httpClient;
     upstream = await fetch(url, fetchOptions);
   }
@@ -196,7 +197,7 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 
   try {
-    // ── All other API requests — straight proxy ─────────────────────
+    // ── All API requests — straight proxy ─────────────────────
     if (path.startsWith("/api/")) {
       return await proxyToVerifier(path, req);
     }
