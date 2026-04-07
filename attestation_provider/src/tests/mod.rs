@@ -6,6 +6,8 @@ pub use context::TestsContext;
 mod logging;
 pub use logging::log_test;
 
+mod sample_server_test;
+
 mod test_client;
 pub use test_client::TestClient;
 
