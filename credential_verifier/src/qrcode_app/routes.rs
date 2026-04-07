@@ -16,8 +16,8 @@ use crate::{
         db::{DynQrcodeAppStore, QrcodeAppStore},
         error::QrcodeAppError,
         models::{
-            AdminJournalQuery, BootstrapRequest, CreateUserRequest, LoginRequest, NewUserRecord,
-            QrcodeAppRole, UpdateUserRequest, UserChanges, UserResponse,
+            AdminJournalQuery, BootstrapRequest, CreateUserRequest, I18nQuery, LoginRequest,
+            NewUserRecord, QrcodeAppRole, UpdateUserRequest, UserChanges, UserResponse,
         },
         qr_user_map::QrUserMap,
     },
@@ -44,13 +44,6 @@ fn bad_request(msg: &str) -> HttpResponse {
 fn internal_error(msg: &str) -> HttpResponse {
     tracing::error!("qrcode_app internal error: {msg}");
     HttpResponse::InternalServerError().json(json!({"error": "internal server error"}))
-}
-
-fn not_implemented() -> HttpResponse {
-    HttpResponse::NotImplemented().json(json!({
-        "error": "not implemented",
-        "message": "This endpoint is not yet available."
-    }))
 }
 
 /// Map a `QrcodeAppError` to an `HttpResponse`.
@@ -462,7 +455,8 @@ pub async fn admin_journal(
     let journal = match journal {
         Some(j) => j,
         None => {
-            return HttpResponse::ServiceUnavailable().json(json!({"error": "journal not enabled"}));
+            return HttpResponse::ServiceUnavailable()
+                .json(json!({"error": "journal not enabled"}));
         }
     };
     let limit = query.limit.unwrap_or(50).min(200);
@@ -476,9 +470,32 @@ pub async fn admin_journal(
     }
 }
 
+// ─── Static UI ───────────────────────────────────────────────────────────────
+
+static UI_INDEX: &[u8] = include_bytes!("static/index.html");
+static I18N_EN: &[u8] = include_bytes!("static/i18n/en.json");
+static I18N_DE: &[u8] = include_bytes!("static/i18n/de.json");
+static I18N_FR: &[u8] = include_bytes!("static/i18n/fr.json");
+
+/// Serve the embedded SPA.
+/// Handles `GET /qrcode_app/` and `GET /qrcode_app/ui`.
+pub async fn ui_index() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/html; charset=utf-8")
+        .body(UI_INDEX)
+}
+
 // ─── Internationalisation ─────────────────────────────────────────────────────
 
 /// `GET /qrcode_app/api/i18n?lang=<code>`
-pub async fn get_i18n() -> HttpResponse {
-    not_implemented()
+pub async fn get_i18n(query: web::Query<I18nQuery>) -> HttpResponse {
+    let (bytes, lang) = match query.lang.as_deref().unwrap_or("en") {
+        "de" => (I18N_DE, "de"),
+        "fr" => (I18N_FR, "fr"),
+        _ => (I18N_EN, "en"),
+    };
+    HttpResponse::Ok()
+        .content_type("application/json; charset=utf-8")
+        .insert_header(("Content-Language", lang))
+        .body(bytes)
 }

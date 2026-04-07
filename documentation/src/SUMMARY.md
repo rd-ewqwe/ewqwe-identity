@@ -4,6 +4,7 @@
 
 - [Digital Credential User Journey](./user-journey.md)
 - [The ewQwe Credential Verifier](./credential_verifier_server.md)
+- [QR Code APP](./qrcode_app.md)
 - [The Demo Architecture](./demo_architecture.md)
 - [Age Verification App on Android](./av_wallet_android_studio.md)
 - [EUDI Wallet on Android](./eudi_wallet_android_studio.md)

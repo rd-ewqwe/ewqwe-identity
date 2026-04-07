@@ -183,3 +183,10 @@ pub struct AdminJournalQuery {
     /// Pagination offset.
     pub offset: Option<u32>,
 }
+
+/// Query parameters for `GET /qrcode_app/api/i18n`.
+#[derive(Debug, Deserialize, Default)]
+pub struct I18nQuery {
+    /// BCP-47 language code (e.g. `en`, `de`, `fr`). Defaults to `en`.
+    pub lang: Option<String>,
+}

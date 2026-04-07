@@ -42,12 +42,18 @@ pub use config::QrcodeAppConfig;
 
 use actix_web::web;
 
-/// Register all QR Code APP API routes on the given [`web::ServiceConfig`].
+/// Register all QR Code APP routes on the given [`web::ServiceConfig`].
 ///
 /// Called from `server::start` when `qrcode_app_config.enabled = true`.
 /// The `/qrcode_app` scope prefix is applied by the caller.
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg
+        // ── Static SPA ─────────────────────────────────────────────────────
+        // Handle all four URL variants a browser might generate.
+        .route("", web::get().to(routes::ui_index))
+        .route("/", web::get().to(routes::ui_index))
+        .route("/ui", web::get().to(routes::ui_index))
+        .route("/ui/", web::get().to(routes::ui_index))
         // ── Setup (no auth) ────────────────────────────────────────────────
         .route("/api/setup/bootstrap", web::post().to(routes::bootstrap))
         // ── Authentication ─────────────────────────────────────────────────

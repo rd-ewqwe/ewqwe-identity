@@ -237,10 +237,14 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
                     .route(web::get().to(journal_endpoints::download_journal)),
             );
 
-        let app = app.service(openid4vp_scope).service(default_scope);
+        // Register openid4vp_scope first (most specific prefix /ewqwe_api).
+        // qrcode_app_scope must come before default_scope: default_scope uses an
+        // empty prefix ("") which actix-web matches for *every* path; if it is
+        // registered first, requests to /qrcode_app/* are absorbed by default_scope
+        // and never reach the qrcode_app scope.
+        let app = app.service(openid4vp_scope);
 
-        // Conditionally attach the QR Code APP scope when enabled.
-        if let Some(ref session_key) = qrcode_app_session_key {
+        let app = if let Some(ref session_key) = qrcode_app_session_key {
             let qrcode_app_scope = web::scope("/qrcode_app")
                 .wrap(IdentityMiddleware::default())
                 .wrap(SessionMiddleware::new(
@@ -251,7 +255,9 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             app.service(qrcode_app_scope)
         } else {
             app
-        }
+        };
+
+        app.service(default_scope)
     })
     .keep_alive(actix_web::http::KeepAlive::Timeout(
         std::time::Duration::from_secs(120),

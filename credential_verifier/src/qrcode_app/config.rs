@@ -48,10 +48,10 @@ pub enum QrcodeAppDbBackend {
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct QrcodeAppConfig {
-    /// Whether the QR Code APP is enabled. Defaults to `false` (opt-in).
+    /// Whether the QR Code APP is enabled. Defaults to `true` (opt-in).
     ///
     /// When `false`, all `/qrcode_app/*` routes are disabled and return 404.
-    #[serde(default)]
+    #[serde(default = "default_true")]
     pub enabled: bool,
 
     /// Display name shown in the UI header.  Defaults to `"QR Code APP"`.
@@ -74,8 +74,12 @@ pub struct QrcodeAppConfig {
     /// Database backend for user accounts and OIDC provider configuration.
     ///
     /// Defaults to `sqlite_memory` when not specified.
-    #[serde(flatten, default)]
+    #[serde(default)]
     pub db: QrcodeAppDbBackend,
+}
+
+fn default_true() -> bool {
+    true
 }
 
 impl QrcodeAppConfig {
