@@ -349,49 +349,54 @@ impl JournalStore for SqliteJournalStore {
         };
 
         rows.into_iter()
-            .map(|(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)| {
-                Self::parse_row(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)
-            })
+            .map(
+                |(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)| {
+                    Self::parse_row(
+                        id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca,
+                    )
+                },
+            )
             .collect()
     }
 
     async fn list_qrcode_app_entries(
         &self,
         qrcode_app_user_id: Option<&str>,
+        date_from: Option<DateTime<Utc>>,
+        date_to: Option<DateTime<Utc>>,
         limit: u32,
         offset: u32,
     ) -> JournalResult<Vec<JournalEntry>> {
         let limit = i64::from(limit);
         let offset = i64::from(offset);
-        let rows: Vec<RowTuple> = match qrcode_app_user_id {
-            Some(uid) => sqlx::query_as(&format!(
-                "SELECT {SELECT_COLS} FROM journal_entries \
-                 WHERE qrcode_app_user_id = ?1 \
-                 ORDER BY created_at DESC LIMIT ?2 OFFSET ?3"
-            ))
-            .bind(uid)
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| JournalError::Storage(format!("SQLite list_qrcode_app_entries: {e}")))?,
-
-            None => sqlx::query_as(&format!(
-                "SELECT {SELECT_COLS} FROM journal_entries \
-                 WHERE qrcode_app_user_id IS NOT NULL \
-                 ORDER BY created_at DESC LIMIT ?1 OFFSET ?2"
-            ))
-            .bind(limit)
-            .bind(offset)
-            .fetch_all(&self.pool)
-            .await
-            .map_err(|e| JournalError::Storage(format!("SQLite list_qrcode_app_entries: {e}")))?,
-        };
+        // Convert optional dates to RFC 3339 strings for TEXT comparison with stored values.
+        let date_from_str = date_from.map(|dt| dt.to_rfc3339());
+        let date_to_str = date_to.map(|dt| dt.to_rfc3339());
+        let rows: Vec<RowTuple> = sqlx::query_as(&format!(
+            "SELECT {SELECT_COLS} FROM journal_entries \
+             WHERE qrcode_app_user_id IS NOT NULL \
+               AND (?1 IS NULL OR qrcode_app_user_id = ?1) \
+               AND (?2 IS NULL OR created_at >= ?2) \
+               AND (?3 IS NULL OR created_at <= ?3) \
+             ORDER BY created_at DESC LIMIT ?4 OFFSET ?5"
+        ))
+        .bind(qrcode_app_user_id)
+        .bind(date_from_str.as_deref())
+        .bind(date_to_str.as_deref())
+        .bind(limit)
+        .bind(offset)
+        .fetch_all(&self.pool)
+        .await
+        .map_err(|e| JournalError::Storage(format!("SQLite list_qrcode_app_entries: {e}")))?;
 
         rows.into_iter()
-            .map(|(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)| {
-                Self::parse_row(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)
-            })
+            .map(
+                |(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)| {
+                    Self::parse_row(
+                        id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca,
+                    )
+                },
+            )
             .collect()
     }
 

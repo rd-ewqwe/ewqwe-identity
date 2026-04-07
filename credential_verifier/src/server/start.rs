@@ -1,8 +1,9 @@
 use crate::{
     AttResult, AttResultHelper,
     journal::{DynJournalStore, JournalStore},
+    parameters::ServerParams,
     server::{
-        EnsureAuth, ServerParams, journal_endpoints, openid4vp_endpoints,
+        EnsureAuth, journal_endpoints, openid4vp_endpoints,
         verify_endpoint::{self, verify_credential_endpoint, version_endpoint},
     },
     tls::SslAuth,
@@ -38,11 +39,13 @@ impl VerifierJournalProvider for JournalProviderForVerifier {
     async fn list_verifier_entries(
         &self,
         user_id: Option<&str>,
+        date_from: Option<chrono::DateTime<chrono::Utc>>,
+        date_to: Option<chrono::DateTime<chrono::Utc>>,
         limit: u32,
         offset: u32,
     ) -> Result<Vec<serde_json::Value>, String> {
         self.0
-            .list_qrcode_app_entries(user_id, limit, offset)
+            .list_qrcode_app_entries(user_id, date_from, date_to, limit, offset)
             .await
             .map(|entries| {
                 entries

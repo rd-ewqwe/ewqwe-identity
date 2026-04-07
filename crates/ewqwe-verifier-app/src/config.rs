@@ -79,3 +79,39 @@ pub struct VerifierAppConfig {
 fn default_true() -> bool {
     true
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_toml_parsing() {
+        let toml_str = r#"
+            enabled = true
+            app_name = "My Verifier App"
+            logo_url = "https://example.com/logo.png"
+            session_secret_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+
+            [db]
+            backend = "sqlite_file"
+            path = "/var/lib/ewqwe/verifier_app.db"
+        "#;
+
+        let config: VerifierAppConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        assert!(config.enabled);
+        assert_eq!(config.app_name.as_deref(), Some("My Verifier App"));
+        assert_eq!(config.logo_url.as_deref(), Some("https://example.com/logo.png"));
+        assert_eq!(
+            config.session_secret_key.as_deref(),
+            Some("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
+        );
+
+        match config.db {
+            VerifierAppDbBackend::SqliteFile { path } => {
+                assert_eq!(path, "/var/lib/ewqwe/verifier_app.db");
+            }
+            _ => panic!("Expected SqliteFile backend"),
+        }
+    }
+}

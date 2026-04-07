@@ -16,7 +16,6 @@
 //! | POST   | `/ewqwe_api/openid4vp/request/{id}`            | Wallet fetches authorization request     |
 //! | GET    | `/ewqwe_api/openid4vp/.well-known/jwks.json`   | Public JWK Set for JAR verification      |
 
-use crate::server::ServerParams;
 use actix_web::{HttpRequest, HttpResponse, web};
 use ewqwe_openid4vp::{
     InitTransactionRequest, OpenID4VPError, OpenID4VPResponse, OpenID4VPService,
@@ -25,6 +24,8 @@ use ewqwe_openid4vp::{
 use serde::Deserialize;
 use std::sync::Arc;
 use tracing::{error, info, warn};
+
+use crate::parameters::ServerParams;
 
 /// Initialize a new OpenID4VP transaction.
 ///

@@ -47,6 +47,8 @@ pub trait VerifierJournalProvider: Send + Sync {
     async fn list_verifier_entries(
         &self,
         user_id: Option<&str>,
+        date_from: Option<chrono::DateTime<chrono::Utc>>,
+        date_to: Option<chrono::DateTime<chrono::Utc>>,
         limit: u32,
         offset: u32,
     ) -> Result<Vec<serde_json::Value>, String>;

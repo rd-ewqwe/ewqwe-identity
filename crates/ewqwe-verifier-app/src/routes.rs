@@ -4,20 +4,19 @@ use std::sync::Arc;
 
 use actix_identity::Identity;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use ewqwe_openid4vp::{InitTransactionRequest, OpenID4VPService, ProfileId};
 use serde_json::json;
 use uuid::Uuid;
 
 use crate::{
-    VerifierJournalProvider,
-    auth,
+    VerifierJournalProvider, auth,
     config::VerifierAppConfig,
     db::{DynVerifierAppStore, VerifierAppStore},
     error::VerifierAppError,
     models::{
         AdminJournalQuery, BootstrapRequest, CreateUserRequest, I18nQuery, LoginRequest,
-        NewUserRecord, VerifierAppRole, UpdateUserRequest, UserChanges, UserResponse,
+        NewUserRecord, UpdateUserRequest, UserChanges, UserResponse, VerifierAppRole,
     },
     qr_user_map::QrUserMap,
 };
@@ -461,8 +460,19 @@ pub async fn admin_journal(
     };
     let limit = query.limit.unwrap_or(50).min(200);
     let offset = query.offset.unwrap_or(0);
+    // Parse optional ISO 8601 date strings into DateTime<Utc> for the store query.
+    let date_from: Option<DateTime<Utc>> = query
+        .date_from
+        .as_deref()
+        .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+        .map(|dt| dt.with_timezone(&Utc));
+    let date_to: Option<DateTime<Utc>> = query
+        .date_to
+        .as_deref()
+        .and_then(|s| DateTime::parse_from_rfc3339(s).ok())
+        .map(|dt| dt.with_timezone(&Utc));
     match journal
-        .list_verifier_entries(query.user_id.as_deref(), limit, offset)
+        .list_verifier_entries(query.user_id.as_deref(), date_from, date_to, limit, offset)
         .await
     {
         Ok(entries) => HttpResponse::Ok().json(entries),
@@ -573,10 +583,10 @@ pub async fn update_settings(
             return internal_error(&e.to_string());
         }
     }
-    if let Some(ref url) = body.logo_url {
-        if let Err(e) = store.set_setting("logo_url", url).await {
-            return internal_error(&e.to_string());
-        }
+    if let Some(ref url) = body.logo_url
+        && let Err(e) = store.set_setting("logo_url", url).await
+    {
+        return internal_error(&e.to_string());
     }
     HttpResponse::Ok().json(json!({"status": "settings updated"}))
 }

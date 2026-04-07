@@ -1,4 +1,4 @@
-use crate::{AttResult, auth_error, server::ServerParams};
+use crate::{AttResult, auth_error, parameters::ServerParams};
 use actix_web::dev::ServerHandle;
 use std::thread::JoinHandle;
 

@@ -514,7 +514,7 @@ transaction_ttl_secs = 300
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
-            qrcode_app_config: crate::verifier_app::QrcodeAppConfig::default(),
+            verifier_app_config: crate::verifier_app::VerifierAppConfig::default(),
             tracing_config: TracingConfig::default(),
         };
 
@@ -546,7 +546,7 @@ transaction_ttl_secs = 300
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
-            qrcode_app_config: crate::verifier_app::QrcodeAppConfig::default(),
+            verifier_app_config: crate::verifier_app::VerifierAppConfig::default(),
         };
 
         assert_eq!(

@@ -227,10 +227,13 @@ pub trait JournalStore: Send + Sync {
     /// List all journal entries attributed to a specific QR Code APP user.
     ///
     /// When `qrcode_app_user_id` is `None`, returns all entries that have any
-    /// QR Code APP user attribution, newest first.
+    /// QR Code APP user attribution, newest first.  Optional `date_from` and
+    /// `date_to` bound the result to a half-open time range.
     async fn list_qrcode_app_entries(
         &self,
         qrcode_app_user_id: Option<&str>,
+        date_from: Option<DateTime<Utc>>,
+        date_to: Option<DateTime<Utc>>,
         limit: u32,
         offset: u32,
     ) -> JournalResult<Vec<JournalEntry>>;
@@ -301,12 +304,20 @@ impl JournalStore for DynJournalStore {
     async fn list_qrcode_app_entries(
         &self,
         qrcode_app_user_id: Option<&str>,
+        date_from: Option<DateTime<Utc>>,
+        date_to: Option<DateTime<Utc>>,
         limit: u32,
         offset: u32,
     ) -> JournalResult<Vec<JournalEntry>> {
         match self {
-            Self::Sqlite(s) => s.list_qrcode_app_entries(qrcode_app_user_id, limit, offset).await,
-            Self::Postgres(s) => s.list_qrcode_app_entries(qrcode_app_user_id, limit, offset).await,
+            Self::Sqlite(s) => {
+                s.list_qrcode_app_entries(qrcode_app_user_id, date_from, date_to, limit, offset)
+                    .await
+            }
+            Self::Postgres(s) => {
+                s.list_qrcode_app_entries(qrcode_app_user_id, date_from, date_to, limit, offset)
+                    .await
+            }
         }
     }
 

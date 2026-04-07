@@ -5,12 +5,9 @@ mod ensure_auth_middleware;
 pub(crate) mod journal_endpoints;
 pub(crate) mod openid4vp_endpoints;
 pub(crate) mod verify_endpoint;
-pub use ensure_auth_middleware::EnsureAuth;
-
-mod params;
-pub use params::ServerParams;
-
 use crate::AttError;
+
+pub use ensure_auth_middleware::EnsureAuth;
 use serde::{Deserialize, Serialize};
 
 impl actix_web::ResponseError for AttError {

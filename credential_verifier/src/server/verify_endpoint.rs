@@ -10,9 +10,10 @@ use crate::{
     AttError,
     attestation::{Attestation, AttestationSigner, JwtSigner, SigningAlgorithm},
     journal::{DynJournalStore, append_verification},
-    verifier_app::qr_user_map::QrUserMap,
-    server::{ServerParams, Version},
+    parameters::ServerParams,
+    server::Version,
     tls::AuthenticatedUser,
+    verifier_app::qr_user_map::QrUserMap,
 };
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use base64::Engine as _;

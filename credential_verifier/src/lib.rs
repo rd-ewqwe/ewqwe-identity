@@ -8,13 +8,13 @@ pub mod journal;
 pub use ewqwe_verifier_app as verifier_app;
 
 mod server;
-pub use server::{ServerParams, start_server};
+pub use server::start_server;
 
 mod error;
 pub use error::{AttError, AttResult, AttResultHelper};
 
 mod parameters;
-pub use parameters::{IdpParams, JwtParams, ProxyParams, TlsParams};
+pub use parameters::{IdpParams, JwtParams, ProxyParams, ServerParams, TlsParams};
 
 pub mod tls;
 

@@ -178,6 +178,10 @@ pub struct GenerateQrRequest {
 pub struct AdminJournalQuery {
     /// Filter to entries attributed to this QR app user ID.
     pub user_id: Option<String>,
+    /// Filter to entries on or after this ISO 8601 datetime (e.g. `2024-01-15T00:00:00Z`).
+    pub date_from: Option<String>,
+    /// Filter to entries on or before this ISO 8601 datetime (e.g. `2024-01-15T23:59:59Z`).
+    pub date_to: Option<String>,
     /// Maximum number of entries to return (capped at 200).
     pub limit: Option<u32>,
     /// Pagination offset.
