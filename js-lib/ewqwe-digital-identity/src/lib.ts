@@ -81,6 +81,8 @@ export {
 export type { Attestation as AttestationClaims } from "./attestation.js";
 export {
   parseAttestation,
+  decodeAttestation,
+  getAttestationExpiryStatus,
   importVerifierPublicKey,
   verifyAttestation,
   base64urlDecode,

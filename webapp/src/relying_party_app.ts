@@ -12,6 +12,7 @@ import {
   getDefaultClaims,
   getProfileForType,
   parseAttestation,
+  decodeAttestation,
 } from "@ewqwe/digital-identity";
 import { requestCredentials, sendToBackend } from "./credentials.ts";
 
@@ -502,21 +503,55 @@ export class RelyingPartyApp {
     resultSection.scrollIntoView({ behavior: "smooth" });
 
     if (result.success) {
-      resultIcon.setAttribute("class", "w-6 h-6 mr-3 text-green-400");
-      resultIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
-      resultTitle.textContent = "Verification Successful";
-      resultTitle.setAttribute("class", "result-success");
+      let warningHtml = "";
+      let statusClass = "result-success";
+      let statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+      let statusText = "Verification Successful";
 
-      // Render credential claims from the attestation JWT payload;
-      // signature is verified against the key published in the server JWKS.
-      const attestationClaims = await parseAttestation(
-        result.attestation,
-        "/ewqwe_api/openid4vp/.well-known/jwks.json",
-      );
-      this.logger.log(
-        "Parsed and verified attestation claims",
-        attestationClaims,
-      );
+      let attestationClaims: Record<string, unknown>;
+      let expiryStatus: "valid" | "expired" | "not_yet_valid" = "valid";
+
+      try {
+        attestationClaims = await parseAttestation(
+          result.attestation,
+          "/ewqwe_api/openid4vp/.well-known/jwks.json",
+        );
+        this.logger.log(
+          "Parsed and verified attestation claims",
+          attestationClaims,
+        );
+      } catch (error) {
+        if (
+          error instanceof Error &&
+          error.message.includes("Attestation JWT is expired")
+        ) {
+          expiryStatus = "expired";
+          statusClass = "result-warning";
+          statusText = "Verification Successful (Expired)";
+          statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+          this.logger.log(
+            "Attestation is expired, decoding claims for display",
+          );
+          attestationClaims = decodeAttestation(result.attestation);
+        } else if (
+          error instanceof Error &&
+          error.message.includes("Attestation JWT is not yet valid")
+        ) {
+          expiryStatus = "not_yet_valid";
+          statusClass = "result-warning";
+          statusText = "Verification Successful (Not Yet Valid)";
+          statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+          this.logger.log(
+            "Attestation is not yet valid, decoding claims for display",
+          );
+          attestationClaims = decodeAttestation(result.attestation);
+        } else {
+          this.logger.error("Failed to parse attestation", error);
+          this.displayError("Invalid attestation token");
+          return;
+        }
+      }
+
       const reservedKeys = new Set([
         "iss",
         "sub",
@@ -540,13 +575,66 @@ export class RelyingPartyApp {
               .join("")
           : "";
 
+      if (expiryStatus === "expired") {
+        warningHtml = `
+          <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-4">
+            <div class="flex items-start">
+              <svg class="w-5 h-5 text-yellow-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p class="text-yellow-200 font-medium">The attestation has expired and should be re-verified.</p>
+                <p class="text-yellow-300 text-sm mt-1">Stored credential claims are shown for debugging purposes.</p>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (expiryStatus === "not_yet_valid") {
+        warningHtml = `
+          <div class="bg-yellow-500/20 border border-yellow-500/50 rounded-lg p-4 mb-4">
+            <div class="flex items-start">
+              <svg class="w-5 h-5 text-yellow-400 mr-2 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <p class="text-yellow-200 font-medium">The attestation is not yet valid and should be re-verified later.</p>
+                <p class="text-yellow-300 text-sm mt-1">Stored credential claims are shown for debugging purposes.</p>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      resultIcon.setAttribute(
+        "class",
+        `w-6 h-6 mr-3 ${
+          expiryStatus === "valid" ? "text-green-400" : "text-yellow-400"
+        }`,
+      );
+      resultIcon.innerHTML = statusIcon;
+      resultTitle.textContent = statusText;
+      resultTitle.setAttribute("class", statusClass);
+
       resultContent.innerHTML = `
-        <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-4">
+        ${warningHtml}
+        <div class="bg-${
+          expiryStatus === "valid" ? "green" : "yellow"
+        }-500/20 border border-${
+          expiryStatus === "valid" ? "green" : "yellow"
+        }-500/50 rounded-lg p-4 mb-4">
           <div class="flex items-center">
-            <svg class="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <svg class="w-5 h-5 ${
+              expiryStatus === "valid" ? "text-green-400" : "text-yellow-400"
+            } mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              ${
+                expiryStatus === "valid"
+                  ? "<path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'/>"
+                  : "<path stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z'/>"
+              }
             </svg>
-            <span class="text-green-400 font-medium">${result.message}</span>
+            <span class="${
+              expiryStatus === "valid" ? "text-green-400" : "text-yellow-400"
+            } font-medium">${result.message}</span>
           </div>
         </div>
         <h4 class="text-sm font-medium text-gray-400 mb-3">Verified Claims</h4>

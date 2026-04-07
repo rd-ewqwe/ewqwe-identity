@@ -255,6 +255,27 @@ function readTlvBounds(bytes: Uint8Array, offset: number): [number, number] {
  *                  e.g. `"/ewqwe_api/openid4vp/.well-known/jwks.json"`.
  * @throws If the JWKS cannot be fetched, no matching key is found, or verification fails.
  */
+export function decodeAttestation(jwt: string): Attestation {
+  const parts = jwt.split(".");
+  if (parts.length !== 3) {
+    throw new Error("Invalid JWT: expected 3 dot-separated parts");
+  }
+  return decodePayload(parts[1]);
+}
+
+export function getAttestationExpiryStatus(
+  attestation: Attestation,
+): "valid" | "expired" | "not_yet_valid" {
+  const nowSeconds = Math.floor(Date.now() / 1000);
+  if (attestation.exp !== undefined && attestation.exp < nowSeconds) {
+    return "expired";
+  }
+  if (attestation.nbf !== undefined && attestation.nbf > nowSeconds) {
+    return "not_yet_valid";
+  }
+  return "valid";
+}
+
 export async function parseAttestation(
   jwt: string,
   jwksUrl: string,
@@ -341,15 +362,19 @@ export async function verifyAttestation(
 
   const claims = decodePayload(payloadB64);
 
-  const nowSeconds = Math.floor(Date.now() / 1000);
-  if (claims.exp !== undefined && claims.exp < nowSeconds) {
+  const status = getAttestationExpiryStatus(claims);
+  if (status === "expired") {
     throw new Error(
-      `Attestation JWT is expired (exp=${claims.exp}, now=${nowSeconds})`,
+      `Attestation JWT is expired (exp=${claims.exp}, now=${Math.floor(
+        Date.now() / 1000,
+      )})`,
     );
   }
-  if (claims.nbf !== undefined && claims.nbf > nowSeconds) {
+  if (status === "not_yet_valid") {
     throw new Error(
-      `Attestation JWT is not yet valid (nbf=${claims.nbf}, now=${nowSeconds})`,
+      `Attestation JWT is not yet valid (nbf=${claims.nbf}, now=${Math.floor(
+        Date.now() / 1000,
+      )})`,
     );
   }
 
