@@ -947,6 +947,11 @@ pub struct InitTransactionResponse {
 
     /// Selected protocol profile.
     pub profile: ProfileId,
+
+    /// QR code as a `data:image/svg+xml;base64,...` data URL, ready to assign
+    /// to an `<img src>`. Only populated for cross-device flows.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub qr_code_data_url: Option<String>,
 }
 
 /// Response from `GET /api/openid4vp/status/:id`.

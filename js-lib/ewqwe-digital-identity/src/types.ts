@@ -381,6 +381,12 @@ export interface InitTransactionResponse {
 
   /** Selected protocol profile. */
   profile: ProfileId;
+
+  /**
+   * QR code as a `data:image/svg+xml;base64,...` data URL.
+   * Only present for cross-device flows — assign directly to `<img src>`.
+   */
+  qr_code_data_url?: string;
 }
 
 // ============================================================================
@@ -495,6 +501,8 @@ export interface InitTransactionResponse {
   deep_link_uri: string;
   expires_in: number;
   profile: ProfileId;
+  /** QR code data URL (`data:image/svg+xml;base64,...`), cross-device only. */
+  qr_code_data_url?: string;
 }
 
 // ============================================================================

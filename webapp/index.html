@@ -426,15 +426,33 @@
             or compatible mobile wallet app
           </p>
 
-          <!-- Spinner shown initially; replaced with <img> once loaded -->
+          <!-- QR code container: spinner shown initially; img shown once data URL arrives -->
           <div
             id="qr-code-container"
             class="bg-white p-4 rounded-xl inline-block mb-6"
           >
-            <div class="w-64 h-64 flex items-center justify-center">
+            <!-- spinner: visible while waiting for the server response -->
+            <div
+              id="qr-spinner"
+              class="w-64 h-64 flex items-center justify-center"
+            >
               <div
                 class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"
               ></div>
+            </div>
+            <!-- populated from InitTransactionResponse.qr_code_data_url -->
+            <img
+              id="qr-code-img"
+              alt="QR Code for wallet"
+              class="w-64 h-64 hidden"
+            />
+            <!-- shown if qr_code_data_url is absent (should not happen) -->
+            <div
+              id="qr-code-error"
+              class="w-64 h-64 hidden flex flex-col items-center justify-center text-gray-700 text-xs p-2"
+            >
+              <p class="font-medium mb-2">QR Code unavailable</p>
+              <p id="qr-code-error-hint" class="break-all text-center"></p>
             </div>
           </div>
 

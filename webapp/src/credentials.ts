@@ -181,7 +181,7 @@ async function requestViaOpenID4VPCrossDevice(
   logger.log("OpenID4VP cross-device flow - initializing transaction");
 
   if (request.credential_type) {
-    logger.log(`Init Transaction Request: ${JSON.stringify(request, null, 2)}`);
+    logger.log(`Init Transaction Request`, request);
   }
 
   // Step 1: Initialize the transaction on the backend
@@ -199,18 +199,14 @@ async function requestViaOpenID4VPCrossDevice(
 
   const initData: InitTransactionResponse = await initResponse.json();
 
-  logger.log("Transaction initialized", {
-    transactionId: initData.transaction_id,
-    expiresIn: initData.expires_in,
-    profile: initData.profile,
-    clientIdScheme: initData.client_id_scheme,
-  });
+  logger.log("Transaction initialized", initData);
 
   // Step 2: Show QR code modal with profile info
   const qrModal = showQRCodeModal(
     initData.authorization_request_uri,
     logger,
     initData.profile,
+    initData.qr_code_data_url,
   );
 
   try {
@@ -275,6 +271,7 @@ function showQRCodeModal(
   authorizationRequestUri: string,
   logger: DebugLogger,
   profile?: string,
+  qrCodeDataUrl?: string,
 ): QRCodeModal {
   logger.log("Showing QR code modal", {
     uri: authorizationRequestUri.slice(0, 50) + "...",
@@ -311,29 +308,29 @@ function showQRCodeModal(
   const walletNameEl = document.getElementById("qr-wallet-name");
   if (walletNameEl) walletNameEl.textContent = walletName;
 
-  // Reset QR container to spinner, then load image
-  const qrContainer = document.getElementById("qr-code-container");
-  if (qrContainer) {
-    qrContainer.innerHTML = `
-      <div class="w-64 h-64 flex items-center justify-center">
-        <div class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
-      </div>`;
+  // ── Populate QR code from server-side data URL ────────────────────────────
+  const spinner = document.getElementById("qr-spinner");
+  const qrImg = document.getElementById(
+    "qr-code-img",
+  ) as HTMLImageElement | null;
+  const qrError = document.getElementById("qr-code-error");
 
-    const qrImg = document.createElement("img");
-    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(authorizationRequestUri)}`;
-    qrImg.alt = "QR Code for wallet";
-    qrImg.className = "w-64 h-64";
-    qrImg.onload = () => {
-      qrContainer.innerHTML = "";
-      qrContainer.appendChild(qrImg);
-    };
-    qrImg.onerror = () => {
-      qrContainer.innerHTML = `
-        <div class="w-64 h-64 flex flex-col items-center justify-center text-black text-xs p-2 overflow-hidden">
-          <p class="font-medium mb-2">QR Code unavailable</p>
-          <p class="break-all">${authorizationRequestUri.slice(0, 100)}...</p>
-        </div>`;
-    };
+  // Reset to spinner state first
+  spinner?.classList.remove("hidden");
+  qrImg?.classList.add("hidden");
+  qrError?.classList.add("hidden");
+
+  if (qrCodeDataUrl && qrImg) {
+    qrImg.src = qrCodeDataUrl;
+    spinner?.classList.add("hidden");
+    qrImg.classList.remove("hidden");
+  } else {
+    // Fallback: no data URL from server (should not happen in normal operation)
+    const hint = document.getElementById("qr-code-error-hint");
+    if (hint) hint.textContent = authorizationRequestUri.slice(0, 80);
+    spinner?.classList.add("hidden");
+    qrError?.classList.remove("hidden");
+    logger.error("No QR code data URL received from server");
   }
 
   if (!qrCodeModal.listenersAttached) {
@@ -478,7 +475,7 @@ async function requestViaOpenID4VPSameDevice(
   logger.log("Initializing OpenID4VP transaction for same-device flow...");
 
   if (request.credential_type) {
-    logger.log(`Init Transaction Request: ${JSON.stringify(request, null, 2)}`);
+    logger.log(`Init Transaction Request:`, request);
   }
 
   const initResponse = await fetch("/api/openid4vp/init", {
@@ -501,10 +498,7 @@ async function requestViaOpenID4VPSameDevice(
     );
   }
 
-  logger.log("Transaction initialized", {
-    transaction_id,
-    authorization_request_uri,
-  });
+  logger.log("Transaction initialized", initData);
 
   // Create a cancel promise that will be resolved when user clicks cancel
   let cancelResolve: () => void;

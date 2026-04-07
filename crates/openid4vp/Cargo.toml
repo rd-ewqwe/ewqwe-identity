@@ -13,6 +13,7 @@ path = "src/lib.rs"
 
 [dependencies]
 base64 = "0.22"
+qrcode = { workspace = true }
 chrono = { workspace = true }
 openssl = { workspace = true, features = ["vendored"] }
 serde = { workspace = true }

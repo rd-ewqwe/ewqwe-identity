@@ -228,6 +228,23 @@ impl OpenID4VPService {
             "Transaction created"
         );
 
+        // Generate QR code SVG as a data URL so the frontend can display it
+        // directly in an <img src> without any external API dependency.
+        let qr_code_data_url = qrcode::QrCode::new(authorization_request_uri.as_bytes())
+            .ok()
+            .map(|code| {
+                use base64::Engine as _;
+                use qrcode::render::svg;
+                let svg_str = code
+                    .render::<svg::Color<'_>>()
+                    .min_dimensions(256, 256)
+                    .build();
+                format!(
+                    "data:image/svg+xml;base64,{}",
+                    base64::engine::general_purpose::STANDARD.encode(svg_str.as_bytes())
+                )
+            });
+
         Ok(InitTransactionResponse {
             transaction_id,
             client_id,
@@ -236,6 +253,7 @@ impl OpenID4VPService {
             authorization_request_uri,
             expires_in: self.ttl_ms / 1000,
             profile,
+            qr_code_data_url,
         })
     }
 
