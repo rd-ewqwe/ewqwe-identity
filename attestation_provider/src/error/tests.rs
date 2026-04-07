@@ -1,4 +1,4 @@
-use crate::{AuthError, AuthResultHelper, auth_bail, auth_ensure, auth_error};
+use crate::{AttError, AttResultHelper, auth_bail, auth_ensure, auth_error};
 
 #[test]
 fn test_auth_error_interpolation() {
@@ -9,7 +9,7 @@ fn test_auth_error_interpolation() {
 
 #[test]
 fn test_result_helper_context() {
-    let result: Result<(), AuthError> = Err(AuthError::Generic("original error".to_owned()));
+    let result: Result<(), AttError> = Err(AttError::Generic("original error".to_owned()));
     let err = result.context("additional context").unwrap_err();
     assert_eq!(
         "authentication error: additional context: error: original error",
@@ -17,7 +17,7 @@ fn test_result_helper_context() {
     );
 
     let var = "test";
-    let result: Result<(), AuthError> = Err(AuthError::Generic("original error".to_owned()));
+    let result: Result<(), AttError> = Err(AttError::Generic("original error".to_owned()));
     let err = result.context(&format!("context with {var}")).unwrap_err();
     assert_eq!(
         "authentication error: context with test: error: original error",
@@ -27,7 +27,7 @@ fn test_result_helper_context() {
 
 #[test]
 fn test_result_helper_with_context() {
-    let result: Result<(), AuthError> = Err(AuthError::Generic("original error".to_owned()));
+    let result: Result<(), AttError> = Err(AttError::Generic("original error".to_owned()));
     let err = result
         .with_context(|| "dynamic context".to_string())
         .unwrap_err();
@@ -67,7 +67,7 @@ fn test_option_helper_some_value() {
 
 #[test]
 fn test_result_helper_ok_value() {
-    let result: Result<i32, AuthError> = Ok(42);
+    let result: Result<i32, AttError> = Ok(42);
     let value = result.context("should not be used").unwrap();
     assert_eq!(42, value);
 }
@@ -78,7 +78,7 @@ fn test_auth_ensure_true_condition() {
     assert!(result.is_ok());
 }
 
-fn ensure_true() -> Result<(), AuthError> {
+fn ensure_true() -> Result<(), AttError> {
     auth_ensure!(true, "this should not trigger");
     Ok(())
 }
@@ -93,7 +93,7 @@ fn test_auth_bail_immediately_returns() {
     );
 }
 
-fn bail_early() -> Result<String, AuthError> {
+fn bail_early() -> Result<String, AttError> {
     auth_bail!("bailed early");
     #[expect(unreachable_code)]
     Ok("should not reach".to_string())

@@ -1,5 +1,5 @@
-use crate::error::AuthError;
-use crate::error::AuthResult;
+use crate::error::AttError;
+use crate::error::AttResult;
 use crate::parameters::TlsParams;
 use actix_web::dev::Extensions;
 use tracing::debug;
@@ -77,38 +77,38 @@ pub const TLS13_CIPHER_SUITES: &[&str] = &[
 ///
 /// Errors indicate invalid TLS configuration, missing or malformed key or
 /// certificate files, or OpenSSL configuration failures.
-pub fn create_openssl_acceptor(tls_config: &TlsParams) -> AuthResult<SslAcceptorBuilder> {
+pub fn create_openssl_acceptor(tls_config: &TlsParams) -> AttResult<SslAcceptorBuilder> {
     // Configure cipher suites
     let mut builder = configure_cipher_suites(tls_config.tls_cipher_suites.as_ref())?;
 
     let server_private_key_pem = std::fs::read_to_string(&tls_config.server_private_key)
-        .map_err(|e| AuthError::Config(format!("Failed to read server private key file: {e}")))?;
+        .map_err(|e| AttError::Config(format!("Failed to read server private key file: {e}")))?;
     let server_private_key = PKey::private_key_from_pem(server_private_key_pem.as_bytes())
         .map_err(|e| {
-            AuthError::Config(format!("Failed to load server private key from PEM: {e}"))
+            AttError::Config(format!("Failed to load server private key from PEM: {e}"))
         })?;
     builder.set_private_key(&server_private_key).map_err(|e| {
-        AuthError::Config(format!(
+        AttError::Config(format!(
             "Failed to set server private key in SslAcceptorBuilder: {e}"
         ))
     })?;
 
     let server_cert_pem = std::fs::read_to_string(&tls_config.server_certificate)
-        .map_err(|e| AuthError::Config(format!("Failed to read server certificate file: {e}")))?;
+        .map_err(|e| AttError::Config(format!("Failed to read server certificate file: {e}")))?;
     let server_cert = X509::from_pem(server_cert_pem.as_bytes()).map_err(|e| {
-        AuthError::Config(format!("Failed to load server certificate from PEM: {e}"))
+        AttError::Config(format!("Failed to load server certificate from PEM: {e}"))
     })?;
 
     let server_ca_chain_pem = std::fs::read_to_string(&tls_config.server_ca_chain)
-        .map_err(|e| AuthError::Config(format!("Failed to read server CA chain file: {e}")))?;
+        .map_err(|e| AttError::Config(format!("Failed to read server CA chain file: {e}")))?;
     let server_ca_chain = X509::stack_from_pem(server_ca_chain_pem.as_bytes()).map_err(|e| {
-        AuthError::Config(format!(
+        AttError::Config(format!(
             "Failed to load server certificate chain from PEM: {e}"
         ))
     })?;
 
     builder.set_certificate(&server_cert).map_err(|e| {
-        AuthError::Config(format!(
+        AttError::Config(format!(
             "Failed to set server certificate in SslAcceptorBuilder: {e}"
         ))
     })?;
@@ -116,7 +116,7 @@ pub fn create_openssl_acceptor(tls_config: &TlsParams) -> AuthResult<SslAcceptor
     // Add CA certificates from the PKCS#12 chain
     for cert in &server_ca_chain {
         builder.add_extra_chain_cert(cert.clone()).map_err(|e| {
-            AuthError::Config(format!(
+            AttError::Config(format!(
                 "Failed to add certificate to server CA chain in SslAcceptorBuilder: {e}"
             ))
         })?;
@@ -125,12 +125,12 @@ pub fn create_openssl_acceptor(tls_config: &TlsParams) -> AuthResult<SslAcceptor
     // Configure client certificate verification if CA certs are provided
     let client_ca_cert_chain = if let Some(ca_cert_chain) = &tls_config.client_ca_cert_chain {
         let ca_cert_chain = std::fs::read(ca_cert_chain).map_err(|e| {
-            AuthError::Config(format!(
+            AttError::Config(format!(
                 "Failed to read client CA certificate chain file: {e}"
             ))
         })?;
         X509::stack_from_pem(ca_cert_chain.as_slice()).map_err(|e| {
-            AuthError::Config(format!(
+            AttError::Config(format!(
                 "Failed to load client CA certificate chain from PEM: {e}"
             ))
         })?
@@ -158,14 +158,14 @@ pub fn create_openssl_acceptor(tls_config: &TlsParams) -> AuthResult<SslAcceptor
 /// The function returns an `SslAcceptorBuilder` with cipher and protocol
 /// settings applied, or a configuration error if OpenSSL rejects the
 /// requested parameters.
-fn configure_cipher_suites(cipher_suites: Option<&String>) -> AuthResult<SslAcceptorBuilder> {
+fn configure_cipher_suites(cipher_suites: Option<&String>) -> AttResult<SslAcceptorBuilder> {
     let builder = if let Some(suites) = cipher_suites {
         trace!("configure_cipher_suites: Setting custom cipher string: {suites}");
 
         // See the doc at: https://wiki.mozilla.org/Security/Server_Side_TLS
         // This forces the use of certificates on the P-256 curve (no RSA)
         let mut builder = SslAcceptor::mozilla_modern_v5(SslMethod::tls()).map_err(|e| {
-            AuthError::Config(format!(
+            AttError::Config(format!(
                 "Failed to create SslAcceptorBuilder with mozilla_modern_v5: {e}",
             ))
         })?;
@@ -183,14 +183,14 @@ fn configure_cipher_suites(cipher_suites: Option<&String>) -> AuthResult<SslAcce
             builder
                 .set_min_proto_version(Some(SslVersion::TLS1_2))
                 .map_err(|e| {
-                    AuthError::Config(format!(
+                    AttError::Config(format!(
                         "Failed to set minimum protocol version to TLS 1.2: {e}"
                     ))
                 })?;
             builder
                 .set_cipher_list(&tls12_ciphers.join(":"))
                 .map_err(|e| {
-                    AuthError::Config(format!("Failed to set TLS 1.2 cipher list: {e}"))
+                    AttError::Config(format!("Failed to set TLS 1.2 cipher list: {e}"))
                 })?;
         }
 
@@ -199,7 +199,7 @@ fn configure_cipher_suites(cipher_suites: Option<&String>) -> AuthResult<SslAcce
                 builder
                     .set_min_proto_version(Some(SslVersion::TLS1_3))
                     .map_err(|e| {
-                        AuthError::Config(format!(
+                        AttError::Config(format!(
                             "Failed to set minimum protocol version to TLS 1.3: {e}"
                         ))
                     })?;
@@ -207,13 +207,13 @@ fn configure_cipher_suites(cipher_suites: Option<&String>) -> AuthResult<SslAcce
             builder
                 .set_ciphersuites(&tls13_ciphers.join(":"))
                 .map_err(|e| {
-                    AuthError::Config(format!("Failed to set TLS 1.3 cipher suites: {e}"))
+                    AttError::Config(format!("Failed to set TLS 1.3 cipher suites: {e}"))
                 })?;
         }
         builder
     } else {
         let mut builder = SslAcceptor::mozilla_intermediate_v5(SslMethod::tls()).map_err(|e| {
-            AuthError::Config(format!(
+            AttError::Config(format!(
                 "Failed to create SslAcceptorBuilder with mozilla_intermediate_v5: {e}"
             ))
         })?;
@@ -221,14 +221,14 @@ fn configure_cipher_suites(cipher_suites: Option<&String>) -> AuthResult<SslAcce
         builder
             .set_min_proto_version(Some(SslVersion::TLS1_2))
             .map_err(|e| {
-                AuthError::Config(format!(
+                AttError::Config(format!(
                     "Failed to set minimum protocol version to TLS 1.2: {e}"
                 ))
             })?;
         builder
             .set_max_proto_version(Some(SslVersion::TLS1_3))
             .map_err(|e| {
-                AuthError::Config(format!(
+                AttError::Config(format!(
                     "Failed to set maximum protocol version to TLS 1.3: {e}"
                 ))
             })?;
@@ -250,11 +250,11 @@ fn configure_cipher_suites(cipher_suites: Option<&String>) -> AuthResult<SslAcce
 pub(crate) fn configure_client_cert_verification(
     builder: &mut SslAcceptorBuilder,
     ca_cert_pem: &[X509],
-) -> AuthResult<()> {
+) -> AttResult<()> {
     // Load the CA certificates for client verification
 
     let mut store_builder = X509StoreBuilder::new().map_err(|e| {
-        AuthError::Config(format!(
+        AttError::Config(format!(
             "Failed to create X509StoreBuilder for client certificate verification: {e}"
         ))
     })?;
@@ -262,7 +262,7 @@ pub(crate) fn configure_client_cert_verification(
     // Add all CA certificates to the store
     for ca_cert in ca_cert_pem {
         store_builder.add_cert(ca_cert.to_owned()).map_err(|e| {
-            AuthError::Config(format!(
+            AttError::Config(format!(
                 "Failed to add CA certificate to X509StoreBuilder: {e}"
             ))
         })?;
@@ -271,7 +271,7 @@ pub(crate) fn configure_client_cert_verification(
     let ca_store = store_builder.build();
 
     builder.set_verify_cert_store(ca_store).map_err(|e| {
-        AuthError::Config(format!(
+        AttError::Config(format!(
             "Failed to set verify cert store in SslAcceptorBuilder: {e}"
         ))
     })?;

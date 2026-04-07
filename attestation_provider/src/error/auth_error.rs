@@ -2,7 +2,7 @@ use thiserror::Error;
 
 // Each error type must have a corresponding HTTP status code (see `kmip_endpoint.rs`)
 #[derive(Error, Debug)]
-pub enum AuthError {
+pub enum AttError {
     // Generic error with a message
     #[error("error: {0}")]
     Generic(String),

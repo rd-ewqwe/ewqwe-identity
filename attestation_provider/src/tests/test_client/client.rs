@@ -34,11 +34,12 @@
 
 use std::sync::Arc;
 
-use crate::{AuthError, AuthResult, tests::test_client::TestCookieStore};
+use crate::{AttError, AttResult, AttResultHelper, tests::test_client::TestCookieStore};
 use cookie_store::{Cookie, CookieDomain};
 use reqwest::{Certificate, Client, Response};
 use serde::{Serialize, de::DeserializeOwned};
-use tracing::{debug, error, info};
+use serde_json::Value;
+use tracing::{debug, error, info, trace};
 use url::Url;
 
 const EC_CERTIFICATES_PATH: &str =
@@ -63,7 +64,7 @@ impl TestClient {
     ///
     /// # Returns
     /// A configured `TestClient` ready to make requests
-    pub fn new(base_url: &str) -> AuthResult<Self> {
+    pub fn new(base_url: &str) -> AttResult<Self> {
         let cookie_store = Arc::new(TestCookieStore::new());
         let client = Self::build_client(cookie_store.clone())?;
 
@@ -75,13 +76,13 @@ impl TestClient {
     }
 
     /// Build the reqwest client based on authentication configuration
-    fn build_client(cookie_store: Arc<TestCookieStore>) -> AuthResult<Client> {
+    fn build_client(cookie_store: Arc<TestCookieStore>) -> AttResult<Client> {
         // Load the CA certificate for TLS verification
         let ca_cert_path = format!("{}/ewqwe.chain.pem", EC_CERTIFICATES_PATH);
         let ca_cert_pem = std::fs::read(&ca_cert_path)
-            .map_err(|e| AuthError::Config(format!("Failed to read CA certificate: {}", e)))?;
+            .map_err(|e| AttError::Config(format!("Failed to read CA certificate: {}", e)))?;
         let ca_cert = Certificate::from_pem(&ca_cert_pem)
-            .map_err(|e| AuthError::Config(format!("Failed to parse CA certificate: {}", e)))?;
+            .map_err(|e| AttError::Config(format!("Failed to parse CA certificate: {}", e)))?;
         info!("Loaded CA certificate from {}", ca_cert_path);
 
         let builder = Client::builder()
@@ -92,7 +93,7 @@ impl TestClient {
 
         let client = builder
             .build()
-            .map_err(|e| AuthError::Config(format!("Failed to build HTTP client: {}", e)))?;
+            .map_err(|e| AttError::Config(format!("Failed to build HTTP client: {}", e)))?;
 
         Ok(client)
     }
@@ -104,13 +105,13 @@ impl TestClient {
     ///
     /// # Returns
     /// The deserialized response body
-    pub async fn get<T: DeserializeOwned>(&self, path: &str) -> AuthResult<T> {
+    pub async fn get<T: DeserializeOwned>(&self, path: &str) -> AttResult<T> {
         let url = format!("{}{}", self.base_url, path);
         let request = self.client.get(&url);
 
         let response = request.send().await.map_err(|e| {
             error!("GET request failed: {}", e);
-            AuthError::Config(format!("GET request failed: {}", e))
+            AttError::Config(format!("GET request failed: {}", e))
         })?;
 
         Self::handle_response(response).await
@@ -123,14 +124,14 @@ impl TestClient {
     ///
     /// # Returns
     /// The raw response
-    pub async fn get_raw(&self, path: &str) -> AuthResult<Response> {
+    pub async fn get_raw(&self, path: &str) -> AttResult<Response> {
         let url = format!("{}{}", self.base_url, path);
         let request = self.client.get(&url);
 
         request
             .send()
             .await
-            .map_err(|e| AuthError::Config(format!("GET request failed: {}", e)))
+            .map_err(|e| AttError::Config(format!("GET request failed: {}", e)))
     }
 
     /// Perform an HTTPS POST request with a JSON body and deserialize the JSON response
@@ -145,14 +146,14 @@ impl TestClient {
         &self,
         path: &str,
         body: &B,
-    ) -> AuthResult<T> {
+    ) -> AttResult<T> {
         let url = format!("{}{}", self.base_url, path);
         let request = self.client.post(&url).json(body);
 
         let response = request
             .send()
             .await
-            .map_err(|e| AuthError::Config(format!("POST request failed: {}", e)))?;
+            .map_err(|e| AttError::Config(format!("POST request failed: {}", e)))?;
 
         Self::handle_response(response).await
     }
@@ -165,18 +166,18 @@ impl TestClient {
     ///
     /// # Returns
     /// The raw response
-    pub async fn post_raw<B: Serialize>(&self, path: &str, body: &B) -> AuthResult<Response> {
+    pub async fn post_raw<B: Serialize>(&self, path: &str, body: &B) -> AttResult<Response> {
         let url = format!("{}{}", self.base_url, path);
         let request = self.client.post(&url).json(body);
 
         request
             .send()
             .await
-            .map_err(|e| AuthError::Config(format!("POST request failed: {}", e)))
+            .map_err(|e| AttError::Config(format!("POST request failed: {}", e)))
     }
 
     /// Handle the HTTP response, checking for errors and deserializing JSON
-    async fn handle_response<T: DeserializeOwned>(response: Response) -> AuthResult<T> {
+    async fn handle_response<T: DeserializeOwned>(response: Response) -> AttResult<T> {
         let status = response.status();
 
         if !status.is_success() {
@@ -184,16 +185,21 @@ impl TestClient {
                 .text()
                 .await
                 .unwrap_or_else(|_| "Unknown error".to_string());
-            return Err(AuthError::Config(format!(
+            return Err(AttError::Config(format!(
                 "Request failed with status {}: {}",
                 status, error_text
             )));
         }
 
+        trace!(
+            "Handling response with status: {}, body: {:?}",
+            status, response
+        );
+
         response
             .json()
             .await
-            .map_err(|e| AuthError::Config(format!("Failed to deserialize response: {}", e)))
+            .map_err(|e| AttError::Config(format!("Failed to deserialize response: {}", e)))
     }
 
     /// Get the base URL
@@ -201,19 +207,31 @@ impl TestClient {
         &self.base_url
     }
 
-    pub fn get_cookie(&self, url: &str) -> AuthResult<Option<Cookie<'_>>> {
+    pub async fn authenticate(&self) -> AttResult<()> {
+        self.get::<Value>("/authenticate")
+            .await
+            .context("authentication failed")?;
+
+        let _cookie = self.get_cookie(&self.base_url)?.ok_or_else(|| {
+            AttError::Session("authentication failed: expected session cookie".to_owned())
+        })?;
+
+        Ok(())
+    }
+
+    pub fn get_cookie(&self, url: &str) -> AttResult<Option<Cookie<'_>>> {
         let cookie_store = self
             .cookie_store
             .lock()
-            .map_err(|e| AuthError::Config(format!("Failed to lock cookie store: {}", e)))?;
+            .map_err(|e| AttError::Config(format!("Failed to lock cookie store: {}", e)))?;
         let host_string = Url::parse(url)
-            .map_err(|e| AuthError::Config(format!("Failed to parse URL {}: {}", url, e)))?
+            .map_err(|e| AttError::Config(format!("Failed to parse URL {}: {}", url, e)))?
             .host_str()
-            .ok_or_else(|| AuthError::Config(format!("URL {} has no host", url)))?
+            .ok_or_else(|| AttError::Config(format!("URL {} has no host", url)))?
             .to_string();
         debug!("Looking for cookies for host: {}", host_string);
         for cookie in cookie_store.iter_any() {
-            debug!(
+            trace!(
                 "Checking cookie: {:?} - domain: {:?}",
                 cookie, cookie.domain
             );

@@ -5,7 +5,7 @@ mod server;
 pub use server::{AttServerParams, start_att_server};
 
 mod error;
-pub use error::{AuthError, AuthResult, AuthResultHelper};
+pub use error::{AttError, AttResult, AttResultHelper};
 
 mod parameters;
 pub use parameters::{IdpParams, JwtParams, ProxyParams, TlsParams};

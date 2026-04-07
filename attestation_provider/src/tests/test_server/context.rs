@@ -1,4 +1,4 @@
-use crate::{AuthResult, auth_error, server::AttServerParams};
+use crate::{AttResult, auth_error, server::AttServerParams};
 use actix_web::dev::ServerHandle;
 use std::thread::JoinHandle;
 
@@ -6,18 +6,18 @@ use std::thread::JoinHandle;
 pub struct TestsContext {
     pub server_params: AttServerParams,
     pub server_handle: ServerHandle,
-    pub thread_handle: JoinHandle<AuthResult<()>>,
+    pub thread_handle: JoinHandle<AttResult<()>>,
 }
 
 impl TestsContext {
-    pub async fn stop_server(self) -> AuthResult<()> {
+    pub async fn stop_server(self) -> AttResult<()> {
         self.server_handle.stop(false).await;
         self.thread_handle
             .join()
             .map_err(|_e| auth_error!("failed joining the stop thread"))?
     }
 
-    pub fn get_client_url(&self) -> String {
+    pub fn base_url(&self) -> String {
         let host = if self.server_params.host_name == "localhost" {
             // failure to switch to IP will fail server CA verification on the client
             "127.0.0.1"

@@ -1,6 +1,5 @@
 use crate::{
-    AttServerParams, AuthError, AuthResult, TlsParams, server::start_att_server,
-    tests::TestsContext,
+    AttError, AttResult, AttServerParams, TlsParams, server::start_att_server, tests::TestsContext,
 };
 use actix_web::dev::ServerHandle;
 use std::{
@@ -12,7 +11,7 @@ use tracing::error;
 
 /// Starts the test server in a separate thread and returns a `TestsContext` containing
 /// the server handle and thread handle.
-pub async fn start_test_server(server_params: AttServerParams) -> AuthResult<TestsContext> {
+pub async fn start_test_server(server_params: AttServerParams) -> AttResult<TestsContext> {
     let (tx, rx) = mpsc::channel::<ServerHandle>();
 
     let params = Arc::new(server_params.clone());
@@ -23,21 +22,21 @@ pub async fn start_test_server(server_params: AttServerParams) -> AuthResult<Tes
             .build()
             .map_err(|e| {
                 error!("Error building tokio runtime: {e:?}");
-                AuthError::Test(e.to_string())
+                AttError::Test(e.to_string())
             })?;
 
         runtime
             .block_on(start_att_server(params, Some(tx)))
             .map_err(|e| {
                 error!("Error starting the attestation provider server: {e:?}");
-                AuthError::Test(e.to_string())
+                AttError::Test(e.to_string())
             })
     });
 
     let server_handle = rx
         .recv_timeout(std::time::Duration::from_secs(10))
         .map_err(|e| {
-            AuthError::Unexpected(format!(
+            AttError::Unexpected(format!(
                 "Error getting the attestation provider server handle: {e}"
             ))
         })?;
@@ -51,10 +50,10 @@ pub async fn start_test_server(server_params: AttServerParams) -> AuthResult<Tes
 
 /// Starts a default test server with predefined parameters.
 /// Returns a `TestsContext` containing the server handle and thread handle.
-pub async fn start_default_test_server() -> AuthResult<TestsContext> {
+pub async fn start_default_test_server() -> AttResult<TestsContext> {
     let cargo_manifest_dir = PathBuf::from(
         std::env::var("CARGO_MANIFEST_DIR")
-            .map_err(|_e| AuthError::Test("Failed to find cargo manifest dir".to_owned()))?,
+            .map_err(|_e| AttError::Test("Failed to find cargo manifest dir".to_owned()))?,
     );
     let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
 

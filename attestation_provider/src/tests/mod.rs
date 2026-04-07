@@ -1,4 +1,5 @@
 mod mock_authenticate;
+pub use mock_authenticate::mock_authenticate_endpoint;
 
 mod test_client;
 

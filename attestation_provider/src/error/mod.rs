@@ -3,8 +3,8 @@ mod helpers;
 #[cfg(test)]
 mod tests;
 
-pub use auth_error::AuthError;
-pub use helpers::{AuthResult, AuthResultHelper};
+pub use auth_error::AttError;
+pub use helpers::{AttResult, AttResultHelper};
 
 /// Return early with an error if a condition is not satisfied.
 ///
@@ -32,13 +32,13 @@ macro_rules! auth_ensure {
 #[macro_export]
 macro_rules! auth_error {
     ($msg:literal) => {
-        $crate::AuthError::Generic(::core::format_args!($msg).to_string())
+        $crate::AttError::Generic(::core::format_args!($msg).to_string())
     };
     ($err:expr $(,)?) => ({
-        $crate::AuthError::Generic($err.to_string())
+        $crate::AttError::Generic($err.to_string())
     });
     ($fmt:expr, $($arg:tt)*) => {
-        $crate::AuthError::Generic(::core::format_args!($fmt, $($arg)*).to_string())
+        $crate::AttError::Generic(::core::format_args!($fmt, $($arg)*).to_string())
     };
 }
 

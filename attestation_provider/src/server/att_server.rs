@@ -1,5 +1,5 @@
 use crate::{
-    AuthResult, AuthResultHelper,
+    AttResult, AttResultHelper,
     server::{AttServerParams, endpoints::version_endpoint},
 };
 use actix_cors::Cors;
@@ -7,7 +7,7 @@ use actix_identity::IdentityMiddleware;
 use actix_session::{
     SessionMiddleware,
     config::PersistentSession,
-    storage::{CookieSessionStore /* RedisSessionStore */},
+    storage::{RedisSessionStore /* RedisSessionStore */},
 };
 use actix_web::{
     App, HttpServer,
@@ -19,7 +19,7 @@ use std::{
     io,
     sync::{Arc, mpsc},
 };
-use tracing::{debug, info};
+use tracing::info;
 
 #[cfg(feature = "openssl")]
 use crate::tls::openssl_config::{create_openssl_acceptor, extract_openssl_peer_certificate};
@@ -28,10 +28,9 @@ use crate::tls::openssl_config::{create_openssl_acceptor, extract_openssl_peer_c
 pub async fn start_att_server(
     server_params: Arc<AttServerParams>,
     server_handle_tx: Option<mpsc::Sender<ServerHandle>>,
-) -> AuthResult<()> {
+) -> AttResult<()> {
     // Log the server configuration
     info!("Server configuration: {server_params:#?}");
-    debug!("MPSC handle: {} ?", server_handle_tx.is_some());
     // Instantiate and prepare the  server
     let server = prepare_server(server_params.clone()).await?;
     info!(
@@ -50,21 +49,20 @@ pub async fn start_att_server(
     // Run the server and return the result
     server
         .await
-        .map_err(|e: io::Error| crate::AuthError::Unexpected(format!("{e}")))
+        .map_err(|e: io::Error| crate::AttError::Unexpected(format!("{e}")))
 }
 
 /// Prepares the attestation server with the given parameters and returns the server instance.
-async fn prepare_server(params: Arc<AttServerParams>) -> AuthResult<actix_web::dev::Server> {
+async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::dev::Server> {
     // Determine the address to bind the server to.
     let address = format!("{}:{}", &params.host_name, params.host_port);
 
     // Generate key for actix session cookie encryption and elements for UI exposure
     let secret_key: Key = Key::generate();
 
-    // let storage = CookieSessionStore::default();
-    // let storage = RedisSessionStore::new("redis://127.0.0.1:6379")
-    //     .await
-    //     .expect("failed to create Redis session store");
+    let storage = RedisSessionStore::new("redis://127.0.0.1:6379")
+        .await
+        .expect("failed to create Redis session store");
 
     // Clone attestation server params for HttpServer closure
     let server_params = params.clone();
@@ -84,7 +82,7 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AuthResult<actix_web::d
             // .app_data(Data::new(privileged_users.clone()))
             .wrap(IdentityMiddleware::default())
             .wrap(
-                SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
+                SessionMiddleware::builder(storage.clone(), secret_key.clone())
                     .session_lifecycle(
                         PersistentSession::default().session_ttl(Duration::hours(24)),
                     )
@@ -92,6 +90,12 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AuthResult<actix_web::d
             )
             .wrap(Cors::permissive())
             .route("/version", web::get().to(version_endpoint));
+
+        #[cfg(test)]
+        let default_scope = default_scope.route(
+            "/authenticate",
+            web::get().to(crate::tests::mock_authenticate_endpoint),
+        );
 
         app.service(default_scope)
     })
@@ -105,7 +109,7 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AuthResult<actix_web::d
         .on_connect(extract_openssl_peer_certificate)
         .bind_openssl(address, create_openssl_acceptor(&params.tls_params)?)
         .map_err(|e| {
-            crate::AuthError::Config(format!("Failed binding the OpenSSL TLS connector: {e}"))
+            crate::AttError::Config(format!("Failed binding the OpenSSL TLS connector: {e}"))
         })?;
 
     #[cfg(feature = "rustls")]
@@ -113,7 +117,7 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AuthResult<actix_web::d
         .on_connect(extract_rustls_peer_certificate)
         .bind_rustls_0_23(address, rustls_server_config(&params.tls_params)?)
         .map_err(|e| {
-            crate::AuthError::Config(format!("Failed binding the Rustls TLS connector: {e}"))
+            crate::AttError::Config(format!("Failed binding the Rustls TLS connector: {e}"))
         })?;
 
     let server = server.run();

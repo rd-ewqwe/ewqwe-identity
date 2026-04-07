@@ -6,10 +6,10 @@ pub(crate) mod endpoints;
 mod params;
 pub use params::AttServerParams;
 
-use crate::AuthError;
+use crate::AttError;
 use serde::{Deserialize, Serialize};
 
-impl actix_web::ResponseError for AuthError {
+impl actix_web::ResponseError for AttError {
     fn error_response(&self) -> actix_web::HttpResponse {
         match self {
             Self::BadRequest(_) => actix_web::HttpResponse::BadRequest().json(format!("{self}")),
