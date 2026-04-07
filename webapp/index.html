@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Digital Credentials Demo - Relying Party</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body class="bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 min-h-screen text-white">
+    <div id="app" class="container mx-auto px-4 py-8 max-w-4xl">
+      <!-- Header -->
+      <header class="text-center mb-12">
+        <div class="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl mb-4">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <h1 class="text-4xl font-bold mb-2">Digital Credentials Demo</h1>
+        <p class="text-lg text-gray-300">Request verified identity documents using the W3C Digital Credentials API</p>
+        <p class="text-sm text-gray-500 mt-2">Relying Party Demo Application</p>
+      </header>
+
+      <!-- Main Content -->
+      <main class="space-y-8">
+        <!-- Credential Request Card -->
+        <section class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+          <h2 class="text-2xl font-semibold mb-6 flex items-center">
+            <svg class="w-6 h-6 mr-3 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 9a2 2 0 10-4 0v5a2 2 0 01-2 2h6m-6-4h4m8 0a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            Request Credentials
+          </h2>
+
+          <!-- Credential Type Selection -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-300 mb-3">Credential Type</label>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button class="credential-type-btn active" data-type="mdl">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2" />
+                    </svg>
+                  </div>
+                  <div class="text-left">
+                    <div class="font-medium">Mobile Driver's License</div>
+                    <div class="text-sm text-gray-400">ISO 18013-5 mDL</div>
+                  </div>
+                </div>
+              </button>
+              <button class="credential-type-btn" data-type="national-id">
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                  </div>
+                  <div class="text-left">
+                    <div class="font-medium">National ID</div>
+                    <div class="text-sm text-gray-400">Government-issued ID</div>
+                  </div>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          <!-- Claims Selection -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-300 mb-3">Requested Claims</label>
+            <div id="claims-selection" class="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <!-- Claims will be rendered here -->
+            </div>
+          </div>
+
+          <!-- Protocol Selection -->
+          <div class="mb-8">
+            <label class="block text-sm font-medium text-gray-300 mb-3">Protocol</label>
+            <select id="protocol-select" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              <option value="openid4vp">OpenID4VP 1.0</option>
+              <option value="preview">Preview (Legacy)</option>
+            </select>
+          </div>
+
+          <!-- Request Button -->
+          <button id="request-credentials-btn" class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center">
+            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+            Request Credentials
+          </button>
+
+          <!-- Show Request JSON Toggle -->
+          <button id="show-request-btn" class="mt-4 w-full text-gray-400 hover:text-white text-sm py-2 flex items-center justify-center transition-colors">
+            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Show Request JSON
+          </button>
+        </section>
+
+        <!-- Request Preview -->
+        <section id="request-preview" class="hidden bg-slate-800/50 rounded-2xl p-6 border border-slate-700">
+          <h3 class="text-lg font-semibold mb-4 flex items-center">
+            <svg class="w-5 h-5 mr-2 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+            </svg>
+            Request Preview (OpenID4VP)
+          </h3>
+          <pre id="request-json" class="bg-slate-900 text-green-400 p-4 rounded-lg text-sm overflow-auto max-h-96 font-mono"></pre>
+        </section>
+
+        <!-- Verification Result -->
+        <section id="verification-result" class="hidden">
+          <div class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20">
+            <h3 class="text-2xl font-semibold mb-6 flex items-center">
+              <svg id="result-icon" class="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span id="result-title">Verification Result</span>
+            </h3>
+            
+            <div id="result-content" class="space-y-4">
+              <!-- Result will be rendered here -->
+            </div>
+
+            <!-- Debug Toggle -->
+            <button id="toggle-debug-result" class="mt-6 text-gray-400 hover:text-white text-sm flex items-center transition-colors">
+              <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+              Show Debug Information
+            </button>
+
+            <div id="debug-result" class="hidden mt-4">
+              <div class="bg-slate-900 rounded-lg p-4">
+                <h4 class="text-sm font-medium text-gray-400 mb-2">Raw Response</h4>
+                <pre id="raw-response" class="text-green-400 text-xs overflow-auto max-h-64 font-mono"></pre>
+              </div>
+              <div class="bg-slate-900 rounded-lg p-4 mt-4">
+                <h4 class="text-sm font-medium text-gray-400 mb-2">Verification Details</h4>
+                <pre id="verification-details" class="text-blue-400 text-xs overflow-auto max-h-64 font-mono"></pre>
+              </div>
+            </div>
+
+            <!-- New Request Button -->
+            <button id="new-request-btn" class="mt-6 w-full bg-white/10 hover:bg-white/20 text-white font-medium py-3 px-6 rounded-xl transition-colors">
+              Make Another Request
+            </button>
+          </div>
+        </section>
+
+        <!-- API Status -->
+        <section class="bg-slate-800/30 rounded-xl p-6 border border-slate-700">
+          <h3 class="text-lg font-semibold mb-4">API Support Status</h3>
+          <div id="api-status" class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <!-- Status will be rendered here -->
+          </div>
+        </section>
+      </main>
+
+      <!-- Footer -->
+      <footer class="mt-12 text-center text-gray-500 text-sm">
+        <p>This is a demo application for testing W3C Digital Credentials API.</p>
+        <p class="mt-2">Based on <a href="https://demo.digitalcredentials.dev" target="_blank" class="text-indigo-400 hover:text-indigo-300">demo.digitalcredentials.dev</a></p>
+        <p class="mt-2">No data is collected or stored on any server.</p>
+      </footer>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

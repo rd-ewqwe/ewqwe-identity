@@ -1,0 +1,5 @@
+[v3_req]
+crlDistributionPoints=URI:https://acme.com/crl.pem
+keyUsage=digitalSignature,keyAgreement
+extendedKeyUsage = serverAuth,clientAuth
+subjectAltName=IP:127.0.0.1

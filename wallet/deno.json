@@ -1,0 +1,18 @@
+{
+  "tasks": {
+    "dev": "deno run -A npm:vite",
+    "build": "deno run -A npm:vite build",
+    "preview": "deno run -A npm:vite preview"
+  },
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "react"
+  },
+  "imports": {
+    "vite": "npm:vite@^5.4.0",
+    "tailwindcss": "npm:tailwindcss@^3.4.0",
+    "autoprefixer": "npm:autoprefixer@^10.4.0",
+    "postcss": "npm:postcss@^8.4.0"
+  }
+}
