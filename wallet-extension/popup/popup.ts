@@ -15,14 +15,88 @@ const runtime =
 let credentials: StoredCredential[] = [];
 let activeTab: CredentialType | "all" = "all";
 let selectedCredential: StoredCredential | null = null;
+let avProtocolRequest: string | null = null;
 
 /**
  * Initialize popup
  */
 async function init() {
+  // Check for av:// protocol invocation
+  checkAVProtocolRequest();
+
   await loadCredentials();
   setupEventListeners();
   render();
+
+  // If opened via av:// protocol, show request handling UI
+  if (avProtocolRequest) {
+    handleAVProtocolRequest(avProtocolRequest);
+  }
+}
+
+/**
+ * Check if popup was opened via av:// protocol handler
+ */
+function checkAVProtocolRequest() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const avParam = urlParams.get("av");
+  if (avParam) {
+    // The av param contains the full av:// URI
+    avProtocolRequest = decodeURIComponent(avParam);
+    console.log("[Wallet] Opened via av:// protocol:", avProtocolRequest);
+  }
+}
+
+/**
+ * Handle av:// protocol request
+ * URI format: web+av://request?type=proof-of-age&claims=age_over_18,age_over_21
+ */
+function handleAVProtocolRequest(avUri: string) {
+  try {
+    // Parse the av:// URI
+    const url = new URL(avUri.replace("web+av://", "https://av.local/"));
+    const requestType = url.pathname.replace("/", "") || url.hostname;
+    const type = url.searchParams.get("type") as CredentialType | null;
+    const claimsParam = url.searchParams.get("claims");
+    const claims = claimsParam ? claimsParam.split(",") : [];
+    const returnUrl = url.searchParams.get("return");
+
+    console.log("[Wallet] AV Protocol Request:", {
+      requestType,
+      type,
+      claims,
+      returnUrl,
+    });
+
+    // Filter to matching credentials
+    if (type) {
+      setActiveTab(type);
+    }
+
+    // Show a notification about the request
+    const header = document.querySelector(".header h1");
+    if (header) {
+      header.innerHTML = `<span class="text-purple-400">🔐</span> Credential Request`;
+    }
+
+    // Add request info banner
+    const container = document.querySelector(".container");
+    if (container) {
+      const banner = document.createElement("div");
+      banner.className =
+        "bg-purple-900/50 border border-purple-500/30 rounded-lg p-3 mb-4 text-sm";
+      banner.innerHTML = `
+        <div class="text-purple-200 font-medium mb-1">Age Verification Request</div>
+        <div class="text-slate-300">
+          ${type ? `Type: <span class="text-purple-300">${type}</span>` : ""}
+          ${claims.length ? `<br>Claims: <span class="text-purple-300">${claims.join(", ")}</span>` : ""}
+        </div>
+      `;
+      container.insertBefore(banner, container.firstChild?.nextSibling || null);
+    }
+  } catch (error) {
+    console.error("[Wallet] Failed to parse av:// URI:", error);
+  }
 }
 
 /**

@@ -98,9 +98,11 @@
           <div class="mb-8">
             <label class="block text-sm font-medium text-gray-300 mb-3">Protocol</label>
             <select id="protocol-select" class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+              <option value="w3c-dc">W3C Digital Credentials API</option>
               <option value="openid4vp">OpenID4VP 1.0</option>
               <option value="preview">Preview (Legacy)</option>
             </select>
+            <p id="protocol-description" class="mt-2 text-xs text-gray-400">Uses navigator.credentials.get() with the wallet extension</p>
           </div>
 
           <!-- Request Button -->

@@ -15,7 +15,7 @@ import { CREDENTIAL_TYPES } from "./config.ts";
 export function buildPresentationRequest(
   credentialType: string,
   selectedClaims: string[],
-  protocol: string
+  protocol: string,
 ): OpenID4VPRequest {
   const config = CREDENTIAL_TYPES[credentialType];
   if (!config) {
@@ -79,47 +79,136 @@ export function buildPresentationRequest(
 
 /**
  * Request credentials using the Digital Credentials API
+ * Falls back to wallet extension communication if native API unavailable
  */
 export async function requestCredentials(
   request: OpenID4VPRequest,
-  logger: DebugLogger
+  logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
-  // Check for API support
-  if (typeof globalThis.DigitalCredential === "undefined") {
-    logger.log("Digital Credentials API not supported, using simulation mode");
-    return simulateCredentialResponse(request, logger);
+  // Check for native API support
+  if (typeof globalThis.DigitalCredential !== "undefined") {
+    try {
+      logger.log(
+        "Requesting credentials via native Digital Credentials API",
+        request,
+      );
+
+      const credential = await navigator.credentials.get({
+        digital: {
+          requests: [
+            {
+              protocol: "openid4vp",
+              data: request,
+            },
+          ],
+        },
+      });
+
+      if (!credential) {
+        logger.log("User cancelled the credential request");
+        return null;
+      }
+
+      const digitalCredential = credential as unknown as {
+        protocol: string;
+        data: OpenID4VPResponse;
+      };
+      logger.success("Credential received via native API", digitalCredential);
+
+      return digitalCredential.data;
+    } catch (error) {
+      logger.error("Native Digital Credentials API failed", error);
+      // Fall through to extension method
+    }
   }
+
+  // Try wallet extension via postMessage
+  logger.log("Attempting to request credentials via wallet extension");
 
   try {
-    logger.log("Requesting credentials via Digital Credentials API", request);
-
-    const credential = await navigator.credentials.get({
-      digital: {
-        requests: [
-          {
-            protocol: "openid4vp",
-            data: request,
-          },
-        ],
-      },
-    });
-
-    if (!credential) {
-      logger.log("User cancelled the credential request");
-      return null;
+    const extensionResponse = await requestCredentialsViaExtension(
+      request,
+      logger,
+    );
+    if (extensionResponse) {
+      return extensionResponse;
     }
-
-    const digitalCredential = credential as unknown as { protocol: string; data: OpenID4VPResponse };
-    logger.success("Credential received", digitalCredential);
-
-    return digitalCredential.data;
   } catch (error) {
-    logger.error("Failed to request credentials", error);
-    
-    // Fall back to simulation for demo purposes
-    logger.log("Falling back to simulation mode");
-    return simulateCredentialResponse(request, logger);
+    logger.error("Wallet extension request failed", error);
   }
+
+  // Fall back to simulation for demo purposes
+  logger.log("Falling back to simulation mode");
+  return simulateCredentialResponse(request, logger);
+}
+
+/**
+ * Request credentials via the EU AV Wallet browser extension
+ * Uses postMessage to communicate with the extension's content script
+ */
+async function requestCredentialsViaExtension(
+  request: OpenID4VPRequest,
+  logger: DebugLogger,
+): Promise<OpenID4VPResponse | null> {
+  return new Promise((resolve, reject) => {
+    const requestId = crypto.randomUUID();
+    const timeout = 120000; // 2 minutes for user to select credential
+
+    logger.log("Sending request to wallet extension", { requestId, request });
+
+    // Listen for response from extension
+    const handleResponse = (event: MessageEvent) => {
+      if (event.source !== window) return;
+
+      if (
+        event.data?.type === "EU_AV_WALLET_RESPONSE" &&
+        event.data?.requestId === requestId
+      ) {
+        window.removeEventListener("message", handleResponse);
+        clearTimeout(timeoutId);
+
+        const payload = event.data.payload;
+
+        if (payload.error) {
+          logger.error("Wallet extension returned error", payload.error);
+          reject(new Error(payload.error));
+        } else if (payload.cancelled) {
+          logger.log("User cancelled credential selection");
+          resolve(null);
+        } else if (payload.response) {
+          logger.success(
+            "Received credential from wallet extension",
+            payload.response,
+          );
+          resolve(payload.response);
+        } else {
+          logger.log("No matching credentials found in wallet");
+          resolve(null);
+        }
+      }
+    };
+
+    window.addEventListener("message", handleResponse);
+
+    const timeoutId = setTimeout(() => {
+      window.removeEventListener("message", handleResponse);
+      logger.log("Wallet extension request timed out");
+      resolve(null);
+    }, timeout);
+
+    // Send request to extension content script
+    window.postMessage(
+      {
+        type: "EU_AV_WALLET_REQUEST",
+        requestId,
+        payload: {
+          protocol: "openid4vp",
+          data: request,
+        },
+      },
+      "*",
+    );
+  });
 }
 
 /**
@@ -128,14 +217,14 @@ export async function requestCredentials(
  */
 function simulateCredentialResponse(
   request: OpenID4VPRequest,
-  logger: DebugLogger
+  logger: DebugLogger,
 ): OpenID4VPResponse {
   logger.log("Simulating credential response");
 
   // Extract requested claims from the presentation definition
   const requestedClaims: Record<string, unknown> = {};
   const inputDescriptor = request.presentation_definition.input_descriptors[0];
-  
+
   if (inputDescriptor?.constraints?.fields) {
     inputDescriptor.constraints.fields.forEach((field) => {
       const claimId = field.id || field.path[0].match(/\['([^']+)'\]$/)?.[1];
@@ -148,7 +237,9 @@ function simulateCredentialResponse(
 
   // Create a simulated VP token (in real implementation, this would be a signed JWT or CBOR)
   const vpToken = {
-    docType: inputDescriptor?.format?.mso_mdoc ? "org.iso.18013.5.1.mDL" : "VerifiableCredential",
+    docType: inputDescriptor?.format?.mso_mdoc
+      ? "org.iso.18013.5.1.mDL"
+      : "VerifiableCredential",
     issuerSigned: {
       nameSpaces: {
         "org.iso.18013.5.1": requestedClaims,
@@ -193,7 +284,8 @@ function getDemoValue(claimId: string): unknown {
     age_over_21: true,
     age_over_18: true,
     age_over_65: false,
-    document_number: "DL-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+    document_number:
+      "DL-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
     issue_date: "2023-01-01",
     expiry_date: "2028-01-01",
     issuing_authority: "Department of Motor Vehicles",
@@ -214,7 +306,7 @@ function getDemoValue(claimId: string): unknown {
 export async function verifyCredential(
   response: OpenID4VPResponse,
   originalRequest: OpenID4VPRequest,
-  logger: DebugLogger
+  logger: DebugLogger,
 ): Promise<VerificationResult> {
   logger.log("Verifying credential", { response, originalRequest });
 
@@ -227,14 +319,25 @@ export async function verifyCredential(
 
   // For demo purposes, we'll simulate the verification
   try {
-    // Decode the VP token
-    const vpTokenJson = atob(response.vp_token);
-    const vpToken = JSON.parse(vpTokenJson);
-    
+    // Parse the VP token (may be JSON string or base64 encoded)
+    let vpToken: Record<string, unknown>;
+    try {
+      // First try parsing as JSON directly
+      vpToken = JSON.parse(response.vp_token);
+    } catch {
+      // Fall back to base64 decoding
+      const vpTokenJson = atob(response.vp_token);
+      vpToken = JSON.parse(vpTokenJson);
+    }
+
     logger.log("Decoded VP token", vpToken);
 
-    // Extract claims
-    const claims = vpToken.issuerSigned?.nameSpaces?.["org.iso.18013.5.1"] || {};
+    // Extract claims - handle both mDoc format and direct claims
+    const claims =
+      vpToken.claims ||
+      vpToken.issuerSigned?.nameSpaces?.["org.iso.18013.5.1"] ||
+      vpToken.issuerSigned?.nameSpaces?.["eu.europa.ec.av.1"] ||
+      {};
 
     // Simulate backend verification
     const verificationDetails = {
@@ -247,7 +350,10 @@ export async function verifyCredential(
     // Simulate a small delay for "verification"
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    logger.success("Credential verified successfully", { claims, verificationDetails });
+    logger.success("Credential verified successfully", {
+      claims,
+      verificationDetails,
+    });
 
     return {
       success: true,
@@ -257,7 +363,7 @@ export async function verifyCredential(
     };
   } catch (error) {
     logger.error("Verification failed", error);
-    
+
     return {
       success: false,
       message: "Failed to verify credential",
@@ -272,7 +378,7 @@ export async function verifyCredential(
  */
 export async function sendToBackend(
   response: OpenID4VPResponse,
-  logger: DebugLogger
+  logger: DebugLogger,
 ): Promise<VerificationResult> {
   const backendUrl = "/api/verify";
 
@@ -291,20 +397,23 @@ export async function sendToBackend(
     });
 
     if (!fetchResponse.ok) {
-      throw new Error(`Backend returned ${fetchResponse.status}: ${fetchResponse.statusText}`);
+      throw new Error(
+        `Backend returned ${fetchResponse.status}: ${fetchResponse.statusText}`,
+      );
     }
 
     const result = await fetchResponse.json();
     logger.success("Backend verification complete", result);
-    
+
     return result as VerificationResult;
   } catch (error) {
     logger.error("Backend verification failed, using local simulation", error);
-    
+
     // Fall back to local simulation if backend is not available
     return {
       success: false,
-      message: "Backend server not available. The Rust backend will be implemented later.",
+      message:
+        "Backend server not available. The Rust backend will be implemented later.",
       errors: ["Backend not available - verification simulated locally"],
     };
   }

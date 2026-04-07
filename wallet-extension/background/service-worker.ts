@@ -53,6 +53,13 @@ async function handleMessage(
     case "GET_CREDENTIAL":
       return store.get(message.id);
 
+    case "RESET_CREDENTIALS":
+      await store.reset();
+      return {
+        credentials: store.getAll(),
+        counts: store.getCountByType(),
+      };
+
     case "PRESENT_CREDENTIAL":
       return handlePresentationRequest(message.request);
 
@@ -107,11 +114,68 @@ async function handleDigitalCredentialRequest(request: {
     deviceRequest?: string;
     encryptionInfo?: string;
     dcql_query?: DCQLQuery;
+    presentation_definition?: {
+      input_descriptors: Array<{
+        id: string;
+        name?: string;
+        format?: Record<string, unknown>;
+        constraints?: {
+          fields?: Array<{
+            path: string[];
+            id?: string;
+          }>;
+        };
+      }>;
+    };
     nonce?: string;
+    client_id?: string;
   };
 }): Promise<{ matchingCredentials: StoredCredential[] }> {
   const store = await getCredentialStore();
 
+  console.log("[Wallet] Handling DC API request:", request);
+
+  // Handle OpenID4VP protocol
+  if (
+    request.protocol === "openid4vp" &&
+    request.data.presentation_definition
+  ) {
+    const presentationDef = request.data.presentation_definition;
+    const matchingCredentials: StoredCredential[] = [];
+
+    for (const descriptor of presentationDef.input_descriptors) {
+      // Map descriptor ID to credential type
+      const credentialType = mapDescriptorToType(descriptor.id);
+
+      if (credentialType) {
+        // Get all credentials of this type
+        const credentials = store.getByType(credentialType);
+
+        // Filter by requested claims if specified
+        const requestedClaims = descriptor.constraints?.fields
+          ?.map((f) => f.id || f.path[0]?.match(/\['([^']+)'\]$/)?.[1])
+          .filter(Boolean) as string[];
+
+        if (requestedClaims?.length) {
+          // Check that credential has the requested claims
+          const matching = credentials.filter((cred) =>
+            requestedClaims.some((claim) => claim in cred.claims),
+          );
+          matchingCredentials.push(...matching);
+        } else {
+          matchingCredentials.push(...credentials);
+        }
+      }
+    }
+
+    console.log(
+      "[Wallet] Found matching credentials for OpenID4VP:",
+      matchingCredentials.length,
+    );
+    return { matchingCredentials };
+  }
+
+  // Handle org-iso-mdoc protocol
   if (request.protocol === "org-iso-mdoc") {
     // Parse deviceRequest to extract docType and requested claims
     // For demo, we'll match based on available credentials
@@ -130,7 +194,24 @@ async function handleDigitalCredentialRequest(request: {
     });
   }
 
-  return { matchingCredentials: [] };
+  // Default: return all credentials
+  console.log("[Wallet] Unknown protocol, returning all credentials");
+  return { matchingCredentials: store.getAll() };
+}
+
+/**
+ * Map presentation definition descriptor ID to credential type
+ */
+function mapDescriptorToType(descriptorId: string): string | null {
+  const typeMap: Record<string, string> = {
+    mdl_credential: "mdl",
+    "national-id_credential": "national-id",
+    national_id_credential: "national-id",
+    "proof-of-age_credential": "proof-of-age",
+    proof_of_age_credential: "proof-of-age",
+  };
+
+  return typeMap[descriptorId] || null;
 }
 
 /**

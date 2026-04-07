@@ -11,6 +11,13 @@
     "https://*/*",
     "http://localhost:*/*"
   ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+av",
+      "name": "EU Age Verification Wallet",
+      "uriTemplate": "popup/popup.html?av=%s"
+    }
+  ],
   "action": {
     "default_popup": "popup/popup.html",
     "default_icon": {

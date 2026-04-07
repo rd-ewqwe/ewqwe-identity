@@ -19,7 +19,7 @@ export class RelyingPartyApp {
   private logger: DebugLogger;
   private selectedCredentialType: string = "mdl";
   private selectedClaims: Set<string> = new Set();
-  private selectedProtocol: string = "openid4vp";
+  private selectedProtocol: string = "w3c-dc";
   private currentRequest: OpenID4VPRequest | null = null;
   private currentResponse: OpenID4VPResponse | null = null;
 
@@ -57,8 +57,12 @@ export class RelyingPartyApp {
       .getElementById("protocol-select")
       ?.addEventListener("change", (e) => {
         this.selectedProtocol = (e.target as HTMLSelectElement).value;
+        this.updateProtocolDescription();
         this.updateRequestPreview();
       });
+
+    // Initialize protocol description
+    this.updateProtocolDescription();
 
     // Request credentials button
     document
@@ -89,6 +93,20 @@ export class RelyingPartyApp {
       ?.addEventListener("click", () => {
         this.resetUI();
       });
+  }
+
+  private updateProtocolDescription(): void {
+    const descEl = document.getElementById("protocol-description");
+    if (!descEl) return;
+
+    const descriptions: Record<string, string> = {
+      "w3c-dc": "Uses navigator.credentials.get() with the wallet extension",
+      openid4vp:
+        "OpenID for Verifiable Presentations 1.0 - cross-device flow with QR code (coming soon)",
+      preview: "Legacy preview protocol for testing",
+    };
+
+    descEl.textContent = descriptions[this.selectedProtocol] || "";
   }
 
   private selectCredentialType(type: string): void {
@@ -318,10 +336,10 @@ export class RelyingPartyApp {
     resultSection.scrollIntoView({ behavior: "smooth" });
 
     if (result.success) {
-      resultIcon.className = "w-6 h-6 mr-3 text-green-400";
+      resultIcon.setAttribute("class", "w-6 h-6 mr-3 text-green-400");
       resultIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
       resultTitle.textContent = "Verification Successful";
-      resultTitle.className = "result-success";
+      resultTitle.setAttribute("class", "result-success");
 
       // Render claims
       const claimsHtml = result.claims
@@ -352,10 +370,10 @@ export class RelyingPartyApp {
         </div>
       `;
     } else {
-      resultIcon.className = "w-6 h-6 mr-3 text-red-400";
+      resultIcon.setAttribute("class", "w-6 h-6 mr-3 text-red-400");
       resultIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
       resultTitle.textContent = "Verification Failed";
-      resultTitle.className = "result-error";
+      resultTitle.setAttribute("class", "result-error");
 
       const errorsHtml = result.errors
         ? result.errors
