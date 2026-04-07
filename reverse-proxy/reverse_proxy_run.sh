@@ -6,9 +6,10 @@ set -euo pipefail
 
 mkdir -p /etc/letsencrypt/
 
-docker run -d --platform linux/amd64 \
+docker run --platform linux/amd64 \
+  --name ewqwe-reverse-proxy \
   -p 4080:80 -p 4043:443 \
-  -e DESTINATION=192.168.1.100:8443 \
+  -e DESTINATION=192.168.1.10:9443 \
   -e CERTBOT_EMAIL=rd@ewqwe.eu \
   -v letsencrypt:/etc/letsencrypt \
   ewqwe-reverse-proxy
