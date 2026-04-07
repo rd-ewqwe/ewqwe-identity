@@ -67,7 +67,7 @@ pub struct VerifierAppConfig {
     /// When absent, a random key is generated at startup — all active
     /// sessions are invalidated whenever the server restarts.
     #[serde(default)]
-    pub session_secret_key: Option<String>,
+    pub session_secret: Option<String>,
 
     /// Database backend for user accounts and OIDC provider configuration.
     ///
@@ -79,7 +79,6 @@ pub struct VerifierAppConfig {
 fn default_true() -> bool {
     true
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -101,9 +100,12 @@ mod tests {
         let config: VerifierAppConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
         assert!(config.enabled);
         assert_eq!(config.app_name.as_deref(), Some("My Verifier App"));
-        assert_eq!(config.logo_url.as_deref(), Some("https://example.com/logo.png"));
         assert_eq!(
-            config.session_secret_key.as_deref(),
+            config.logo_url.as_deref(),
+            Some("https://example.com/logo.png")
+        );
+        assert_eq!(
+            config.session_secret.as_deref(),
             Some("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
         );
 

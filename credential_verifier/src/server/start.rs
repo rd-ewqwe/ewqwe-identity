@@ -1,5 +1,5 @@
 use crate::{
-    AttResult, AttResultHelper,
+    AttError, AttResult, AttResultHelper,
     journal::{DynJournalStore, JournalStore},
     parameters::ServerParams,
     server::{
@@ -17,6 +17,7 @@ use actix_web::{
     dev::ServerHandle,
     web::{self, Data, JsonConfig, PayloadConfig},
 };
+use argon2::Argon2;
 use ewqwe_openid4vp::OpenID4VPService;
 use ewqwe_verifier_app::{
     VerifierJournalProvider, db::DynVerifierAppStore, qr_user_map::QrUserMap,
@@ -143,22 +144,27 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
 
     // Build session cookie key for the Verifier App (only when enabled).
     let verifier_app_session_key: Option<CookieKey> = if params.verifier_app_config.enabled {
-        let key = if let Some(hex_key) = &params.verifier_app_config.session_secret_key {
-            let bytes = hex::decode(hex_key).map_err(|e| {
-                crate::AttError::Config(format!(
-                    "verifier_app.session_secret_key must be valid hex: {e}"
-                ))
-            })?;
-            if bytes.len() < 32 {
+        let key = if let Some(session_secret) = &params.verifier_app_config.session_secret {
+            if session_secret.len() < 8 {
                 return Err(crate::AttError::Config(
-                    "verifier_app.session_secret_key must decode to at least 32 bytes (64 hex chars)"
-                        .to_string(),
+                    "verifier_app.session_secret must be at least 8 characters".to_string(),
                 ));
             }
-            CookieKey::derive_from(&bytes)
+            // derive 64 bytes using argon 2
+            let mut derived_key = [0u8; 64];
+            // set salt to cargo package version
+            let salt = concat!("ewQwe Credential Verifier::", env!("CARGO_PKG_VERSION")).as_bytes();
+            Argon2::default()
+                .hash_password_into(session_secret.as_bytes(), salt, &mut derived_key)
+                .map_err(|e| {
+                    AttError::Config(format!(
+                        "failed to derive session secret into a session key: {e}"
+                    ))
+                })?;
+            CookieKey::derive_from(&derived_key)
         } else {
             tracing::warn!(
-                "verifier_app.session_secret_key not set — sessions will be invalidated on \
+                "verifier_app.session_secret not set — sessions will be invalidated on \
                  server restart; configure a stable secret for production"
             );
             CookieKey::generate()
