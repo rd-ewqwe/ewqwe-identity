@@ -235,9 +235,9 @@ Test certificates for TLS connections and attestation signing are located in:
 - **EC (P-256)**: `credential_verifier/src/tests/certificates/ec/`
 - **RSA (4096-bit)**: `credential_verifier/src/tests/certificates/rsa/`
 
-All certificates have SANs: `DNS:ewqwe.local, DNS:localhost, IP:127.0.0.1`. For HAIP, the `client_id` derived from the EC server certificate is `x509_san_dns:ewqwe.local`.
+All certificates have SANs: `DNS:demo.ewqwe.local, DNS:localhost, IP:127.0.0.1`. For HAIP, the `client_id` derived from the EC server certificate is `x509_san_dns:demo.ewqwe.local`.
 
-`ewqwe.local` is used as the primary DNS SAN so that the EUDI Wallet's `response_uri` host-match check passes when running against the Android Studio emulator. The emulator must resolve `ewqwe.local` → host machine — see [Android emulator setup](#android-emulator-setup) below.
+`demo.ewqwe.local` is used as the primary DNS SAN so that the EUDI Wallet's `response_uri` host-match check passes when running against the Android Studio emulator. The emulator must resolve `demo.ewqwe.local` → host machine — see [Android emulator setup](#android-emulator-setup) below.
 
 | File                         | Purpose                                         |
 | ---------------------------- | ----------------------------------------------- |

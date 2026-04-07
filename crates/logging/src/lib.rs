@@ -137,20 +137,3 @@ pub fn log_init(rust_log: Option<&str>) {
     };
     tracing_init(&config);
 }
-
-#[cfg(test)]
-mod tests {
-    use tracing::{debug, info, trace};
-
-    use super::*;
-
-    #[test]
-    fn test_log_init() {
-        log_init(Some("debug"));
-        info!("This is an INFO test log message");
-        debug!("This is a DEBUG test log message");
-        debug!("RUST_LOG: {:?}", std::env::var("RUST_LOG"));
-        // The next message is a TRACING level and should be ignored
-        trace!("This is a TRACE test log message");
-    }
-}

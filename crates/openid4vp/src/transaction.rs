@@ -29,12 +29,12 @@ impl TransactionStore {
 
     /// Start periodic cleanup of expired transactions.
     ///
-    /// Spawns a background Tokio task that runs every `interval_ms`.
-    pub fn start_cleanup(&self, interval_ms: u64) {
+    /// Spawns a background Tokio task that runs every `interval_sec` seconds.
+    pub fn start_cleanup(&self, interval_secs: u64) {
         let store = self.inner.clone();
         let handle = tokio::spawn(async move {
             let mut interval =
-                tokio::time::interval(tokio::time::Duration::from_millis(interval_ms));
+                tokio::time::interval(tokio::time::Duration::from_secs(interval_secs));
             loop {
                 interval.tick().await;
                 let now = chrono::Utc::now().timestamp_millis();

@@ -51,11 +51,36 @@ Then run the verifier with
 ```bash
 cd credential_verifier
 
-RUST_LOG=info \
-X509_CERT_PATH=src/tests/certificates/ec/ewqwe.server.fullchain.pem \
-X509_KEY_PATH=src/tests/certificates/ec/ewqwe.server.key.pem \
-cargo run --features openssl
+cat > credential-server.toml <<'EOF'
+host_name = "0.0.0.0"
+host_port = 9443
+default_username = "demo-user"
+
+[tls_params]
+server_private_key = "src/tests/certificates/ec/ewqwe.server.key.pem"
+server_certificate = "src/tests/certificates/ec/ewqwe.server.cert.pem"
+server_ca_chain = "src/tests/certificates/ec/ewqwe.chain.pem"
+
+[openid4vp_config]
+transaction_ttl_secs = 300
+
+[openid4vp_config.haip_config]
+x509_cert_path = "src/tests/certificates/ec/ewqwe.server.fullchain.pem"
+x509_key_path = "src/tests/certificates/ec/ewqwe.server.key.pem"
+EOF
+
+RUST_LOG=info cargo run --features openssl
 ```
+
+The verifier searches its configuration file in this order:
+
+1. `./credential-server.toml`
+2. Platform config directory:
+    - macOS: `~/Library/Application Support/ewQwe/Credential Server/config.toml`
+    - Linux: `$XDG_CONFIG_HOME/ewQwe/Credential Server/config.toml` or `~/.config/ewQwe/Credential Server/config.toml`
+    - Windows: `%APPDATA%\\ewQwe\\Credential Server\\config.toml`
+
+Relative paths inside the TOML file are resolved relative to the directory that contains the config file.
 
 ### Editing and serving the documentation
 

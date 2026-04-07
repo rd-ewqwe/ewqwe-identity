@@ -971,7 +971,7 @@ mod tests {
             "Should have server cert + CA cert"
         );
         // Test certs use IP SAN (127.0.0.1), not DNS
-        assert_eq!(jar_key.san_dns_name, "ewqwe.local");
+        assert_eq!(jar_key.san_dns_name, "demo.ewqwe.local");
         assert_eq!(jar_key.signing_key_jwk["kty"], "EC");
         assert_eq!(jar_key.signing_key_jwk["crv"], "P-256");
         assert_eq!(jar_key.signing_key_jwk["alg"], "ES256");
@@ -1059,6 +1059,6 @@ mod tests {
 
         // extract_san should return the DNS name first
         let any_san = extract_san_from_cert(&chain[0]);
-        assert_eq!(any_san, Some("ewqwe.local".to_string()));
+        assert_eq!(any_san, Some("demo.ewqwe.local".to_string()));
     }
 }

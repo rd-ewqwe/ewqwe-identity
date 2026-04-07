@@ -33,8 +33,9 @@ use crate::{
 };
 
 use crate::config::determine_profile;
+use serde::{Deserialize, Serialize};
 
-const DEFAULT_TRANSACTION_TTL_MS: i64 = 5 * 60 * 1000; // 5 minutes
+const DEFAULT_TRANSACTION_TTL_SEC: i64 = 5 * 60; // 5 minutes
 const JAR_KEY_ID: &str = "ewqwe-jar-key-1";
 const JWE_KEY_ID: &str = "ewqwe-enc-key-1";
 
@@ -42,7 +43,7 @@ const JWE_KEY_ID: &str = "ewqwe-enc-key-1";
 // Configuration
 // ============================================================================
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct HaipConfig {
     /// Path to X.509 certificate chain PEM (for JAR signing).
     pub x509_cert_path: String,
@@ -52,12 +53,12 @@ pub struct HaipConfig {
 }
 
 /// Configuration required to initialize the OpenID4VP service.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OpenID4VPServiceConfig {
-    /// Time-to-live for transactions in milliseconds.
+    /// Time-to-live for transactions in seconds.
     /// Used for cleanup and expiration logic.
     /// Defaults to 5 minutes if not set.
-    pub transaction_ttl_ms: Option<i64>,
+    pub transaction_ttl_secs: Option<i64>,
 
     /// HAIP profile requires a certificate for JAR signing.
     pub haip_config: Option<HaipConfig>,
@@ -87,8 +88,8 @@ pub struct OpenID4VPService {
     /// In-memory store for active transactions. In production, consider a persistent store.
     transactions: TransactionStore,
 
-    /// Time-to-live for transactions in milliseconds. Used for cleanup and expiration logic.
-    ttl_ms: i64,
+    /// Time-to-live for transactions in seconds. Used for cleanup and expiration logic.
+    ttl_secs: i64,
 }
 
 impl OpenID4VPService {
@@ -121,16 +122,16 @@ impl OpenID4VPService {
             (None, None)
         };
 
-        let ttl_ms = config
-            .transaction_ttl_ms
-            .unwrap_or(DEFAULT_TRANSACTION_TTL_MS);
+        let ttl_secs = config
+            .transaction_ttl_secs
+            .unwrap_or(DEFAULT_TRANSACTION_TTL_SEC);
 
         let transactions = TransactionStore::new();
-        transactions.start_cleanup(ttl_ms as u64);
+        transactions.start_cleanup(ttl_secs as u64);
 
         tracing::info!(
             san = %jar_key.as_ref().map(|k| &k.san_dns_name).unwrap_or(&"N/A".to_string()),
-            ttl_secs = ttl_ms / 1000,
+            ttl_secs = ttl_secs,
             "OpenID4VP service initialized"
         );
 
@@ -138,7 +139,7 @@ impl OpenID4VPService {
             jar_key,
             jwe_key,
             transactions,
-            ttl_ms,
+            ttl_secs,
         })
     }
 
@@ -172,7 +173,7 @@ impl OpenID4VPService {
             .nonce
             .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
         let now = chrono::Utc::now().timestamp_millis();
-        let expires_at = now + self.ttl_ms;
+        let expires_at = now + (self.ttl_secs * 1000);
 
         let public_url = request.public_url.trim_end_matches('/');
         let response_uri = format!("{public_url}/api/openid4vp/direct_post");
@@ -291,7 +292,7 @@ impl OpenID4VPService {
             client_id_scheme,
             request_uri,
             authorization_request_uri,
-            expires_in: self.ttl_ms / 1000,
+            expires_in: self.ttl_secs,
             profile,
             qr_code_data_url,
         })
@@ -657,7 +658,7 @@ mod tests {
         let cert_dir = format!("{base}/../../credential_verifier/src/tests/certificates/ec");
 
         OpenID4VPServiceConfig {
-            transaction_ttl_ms: Some(60_000), // 1 minute for tests
+            transaction_ttl_secs: Some(60), // 1 minute for tests
             haip_config: Some(HaipConfig {
                 // Use the pre-built fullchain PEM (leaf + CA) for x5c
                 x509_cert_path: format!("{cert_dir}/ewqwe.server.fullchain.pem"),

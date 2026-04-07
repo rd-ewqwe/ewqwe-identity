@@ -66,12 +66,12 @@ Run the provided setup script from the project root. The script requires a roota
 2. Creates a custom AVD named `EUDI_Dev_Device` (Pixel 6 Pro profile)
 3. Enables hardware keyboard passthrough for typing on the emulator
 4. Starts the emulator with `-writable-system` (required for host mapping)
-5. **Maps `ewqwe.local` inside the emulator to your machine's LAN IP address** — this allows the wallet to reach your local dev servers
+5. **Maps `demo.ewqwe.local` inside the emulator to your machine's LAN IP address** — this allows the wallet to reach your local dev servers
 
-> To map `ewqwe.local` manually (if you already have a running emulator):
+> To map `demo.ewqwe.local` manually (if you already have a running emulator):
 >
 > ```bash
-> adb root && adb shell "echo '10.0.2.2  ewqwe.local' >> /etc/hosts"
+> adb root && adb shell "echo '10.0.2.2  demo.ewqwe.local' >> /etc/hosts"
 > ```
 
 ### Step 3: Build and Run the App
@@ -93,7 +93,7 @@ Once the app is running on the emulator:
 ### Step 5: Open the Relying Party Demo Webapp
 
 1. Open **Chrome** on the Android emulator
-2. Navigate to `https://ewqwe.local:5174`
+2. Navigate to `https://demo.ewqwe.local:5174`
 3. Proceed past the certificate warning (expected — the demo uses a self-signed certificate)
 4. The Demo Webapp should load
 
@@ -161,7 +161,7 @@ The EUDI Wallet only accepts these client identifier schemes:
 
 | Scheme | Format | Trust Verification |
 | ------- | ------- | ------------------ |
-| `x509_san_dns` | `x509_san_dns:<DNS>` | Verifier's certificate must have a `dNSName` SAN matching the client ID (e.g. `x509_san_dns:ewqwe.local` for the demo certs) |
+| `x509_san_dns` | `x509_san_dns:<DNS>` | Verifier's certificate must have a `dNSName` SAN matching the client ID (e.g. `x509_san_dns:demo.ewqwe.local` for the demo certs) |
 | `x509_hash` | `x509_hash:sha-256:base64url_encoded_hash` | Verifier's certificate must match the hash |
 
 The **`redirect_uri`** scheme from Annex A is **not supported** by the EUDI Wallet.

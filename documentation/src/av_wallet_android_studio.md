@@ -45,7 +45,7 @@ This section describes how to run the **ewQwe fork** of the AV App together with
 - ewQwe Demo Webapp running (see [Demo Webapp](./demo_webapp.md))
 - ewQwe Credential Verifier running on port 9443
 
-> **Tip**: Use the same `EUDI_Dev_Device` emulator as the HAIP wallet. Both wallet apps can be installed simultaneously on the same emulator, and `ewqwe.local` will already be mapped to the host machine if you previously ran `./start_ewqwe_eudi_emulator.sh` from the HAIP repo. See the [EUDI Wallet ewQwe Demo Setup](./eudi_wallet_android_studio.md#ewqwe-demo-setup) for emulator setup instructions.
+> **Tip**: Use the same `EUDI_Dev_Device` emulator as the HAIP wallet. Both wallet apps can be installed simultaneously on the same emulator, and `demo.ewqwe.local` will already be mapped to the host machine if you previously ran `./start_ewqwe_eudi_emulator.sh` from the HAIP repo. See the [EUDI Wallet ewQwe Demo Setup](./eudi_wallet_android_studio.md#ewqwe-demo-setup) for emulator setup instructions.
 
 ### Step 1: Clone the Repository
 
@@ -57,7 +57,7 @@ cd av-app-android-wallet-ui
 ### Step 2: Build and Run the App
 
 1. Open the project in Android Studio
-2. Select the `app` module and the `EUDI_Dev_Device` emulator (or any emulator with `ewqwe.local` mapped)
+2. Select the `app` module and the `EUDI_Dev_Device` emulator (or any emulator with `demo.ewqwe.local` mapped)
 3. Select the `devDebug` build variant (**Build → Select Build Variant**)
 4. Click **Run** (▶️) to deploy and start the AV App
 
@@ -71,7 +71,7 @@ Once the app is running:
 ### Step 4: Open the Relying Party Demo Webapp
 
 1. Open **Chrome** on the Android emulator
-2. Navigate to `https://ewqwe.local:5174`
+2. Navigate to `https://demo.ewqwe.local:5174`
 3. Proceed past the certificate warning (expected — the demo uses a self-signed certificate)
 4. The Demo Webapp should load
 

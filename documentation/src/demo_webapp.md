@@ -264,9 +264,25 @@ The webapp requires three processes running concurrently:
 ```bash
 # Terminal 1 — ewQwe Credential Verifier (port 9443, HTTPS)
 cd credential_verifier
+cat > credential-server.toml <<'EOF'
+host_name = "0.0.0.0"
+host_port = 9443
+default_username = "demo-user"
+
+[tls_params]
+server_private_key = "src/tests/certificates/ec/ewqwe.server.key.pem"
+server_certificate = "src/tests/certificates/ec/ewqwe.server.cert.pem"
+server_ca_chain = "src/tests/certificates/ec/ewqwe.chain.pem"
+
+[openid4vp_config]
+transaction_ttl_secs = 300
+
+[openid4vp_config.haip_config]
+x509_cert_path = "src/tests/certificates/ec/ewqwe.server.fullchain.pem"
+x509_key_path = "src/tests/certificates/ec/ewqwe.server.key.pem"
+EOF
+
 RUST_LOG=info \
-X509_CERT_PATH=src/tests/certificates/ec/ewqwe.server.fullchain.pem \
-X509_KEY_PATH=src/tests/certificates/ec/ewqwe.server.key.pem \
 cargo run --features openssl
 
 # Terminal 2 — Webapp API server (port 5175)
@@ -295,7 +311,7 @@ deno task vite
 When testing the webapp with mobile wallets on the Android Studio Emulator, you can view Chrome's console logs using Chrome DevTools Remote Debugging:
 
 1. **Enable USB Debugging on Emulator**: The Android Studio Emulator has USB debugging enabled by default
-2. **Open Chrome on the Emulator**: Launch Chrome and navigate to `https://ewqwe.local:5174`
+2. **Open Chrome on the Emulator**: Launch Chrome and navigate to `https://demo.ewqwe.local:5174`
 3. **Access Remote Debugging**:
    - On your development machine, open Chrome
    - Navigate to `chrome://inspect/#devices`
