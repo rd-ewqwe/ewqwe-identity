@@ -46,6 +46,10 @@ async fn main() -> std::io::Result<()> {
         tls_cipher_suites: None,
     };
 
+    let ttl_ms = std::env::var("OPENID4VP_TTL_MS")
+        .ok()
+        .and_then(|v| v.parse().ok());
+
     // OpenID4VP configuration (optional, enabled via env vars)
     // X509_CERT_PATH: path to PEM certificate chain for JAR signing
     // IMPORTANT: Must contain the FULL chain (leaf + CA) so the x5c header
@@ -58,20 +62,18 @@ async fn main() -> std::io::Result<()> {
     ) {
         (Some(cert_path), Some(key_path)) => {
             tracing::info!("OpenID4VP: cert={}, key={}", cert_path, key_path,);
-            Some(OpenID4VPServiceConfig {
-                transaction_ttl_ms: std::env::var("OPENID4VP_TTL_MS")
-                    .ok()
-                    .and_then(|v| v.parse().ok()),
+            OpenID4VPServiceConfig {
+                transaction_ttl_ms: ttl_ms,
                 haip_config: Some(HaipConfig {
                     x509_cert_path: cert_path,
                     x509_key_path: key_path,
                 }),
-            })
+            }
         }
-        _ => {
-            tracing::info!("OpenID4VP not configured (set X509_CERT_PATH and X509_KEY_PATH)");
-            None
-        }
+        _ => OpenID4VPServiceConfig {
+            transaction_ttl_ms: ttl_ms,
+            haip_config: None,
+        },
     };
 
     let server_params = Arc::new(AttServerParams {

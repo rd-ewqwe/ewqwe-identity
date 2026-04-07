@@ -271,8 +271,9 @@ fn openid4vp_error_response(e: OpenID4VPError) -> HttpResponse {
         }
         OpenID4VPError::Config(msg) => {
             error!(error = %msg, "Config error");
-            HttpResponse::InternalServerError()
-                .json(serde_json::json!({"error": "Server configuration error"}))
+            HttpResponse::InternalServerError().json(
+                serde_json::json!({"error": format!("credential verifier configuration: {msg}")}),
+            )
         }
         OpenID4VPError::Internal(msg) => {
             error!(error = %msg, "Internal error");

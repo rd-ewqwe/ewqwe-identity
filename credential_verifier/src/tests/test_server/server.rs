@@ -2,6 +2,7 @@ use crate::{
     AttError, AttResult, AttServerParams, TlsParams, server::start_att_server, tests::TestsContext,
 };
 use actix_web::dev::ServerHandle;
+use ewqwe_openid4vp::{HaipConfig, OpenID4VPServiceConfig};
 use std::{
     path::PathBuf,
     sync::{Arc, atomic::AtomicU16, mpsc},
@@ -94,7 +95,17 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
             tls_cipher_suites: None,
         },
         default_username: Some("default_user".to_string()),
-        openid4vp_config: None,
+        openid4vp_config: OpenID4VPServiceConfig {
+            transaction_ttl_ms: Some(60_000), // 1 minute for tests
+            haip_config: Some(HaipConfig {
+                // Use the pre-built fullchain PEM (leaf + CA) for x5c
+                x509_cert_path: format!(
+                    "{}/ewqwe.server.fullchain.pem",
+                    certificates_dir.display()
+                ),
+                x509_key_path: format!("{}/ewqwe.server.key.pem", certificates_dir.display()),
+            }),
+        },
     };
 
     start_test_server(server_params).await

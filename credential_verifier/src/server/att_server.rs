@@ -54,22 +54,11 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
     let address = format!("{}:{}", &params.host_name, params.host_port);
 
     // Initialize OpenID4VP service if configured
-    let openid4vp_service: Option<Arc<OpenID4VPService>> =
-        if let Some(ref openid4vp_config) = params.openid4vp_config {
-            match OpenID4VPService::create(openid4vp_config.clone()) {
-                Ok(svc) => {
-                    info!("OpenID4VP service initialized");
-                    Some(Arc::new(svc))
-                }
-                Err(e) => {
-                    tracing::warn!("OpenID4VP service not available: {e}");
-                    None
-                }
-            }
-        } else {
-            info!("OpenID4VP not configured — endpoints disabled");
-            None
-        };
+    let openid4vp_service: Arc<OpenID4VPService> = Arc::new(
+        OpenID4VPService::create(params.openid4vp_config.clone()).map_err(|e| {
+            crate::AttError::Config(format!("Failed to initialize OpenID4VP service: {e}"))
+        })?,
+    );
 
     // Clone attestation server params for HttpServer closure
     let server_params = params.clone();
@@ -85,14 +74,10 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
             .app_data(JsonConfig::default().limit(1_000_000)); // Set the maximum size of the JSON request payload.
 
         // Optionally share the OpenID4VP service
-        let app = if let Some(ref svc) = openid4vp_service {
-            app.app_data(Data::new(svc.clone()))
-        } else {
-            app
-        };
+        let app = app.app_data(Data::new(openid4vp_service.clone()));
 
         // The default scope serves from the root / the KMIP, permissions, and TEE endpoints
-        let mut default_scope = web::scope("")
+        let default_scope = web::scope("")
             .wrap(
                 Cors::default()
                     .allow_any_origin()
@@ -101,36 +86,31 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
                     .max_age(3600),
             )
             .route("/version", web::get().to(version_endpoint))
-            .route("/api/verify", web::post().to(verify_credential_endpoint));
-
-        // Register OpenID4VP endpoints if the service is available
-        if openid4vp_service.is_some() {
-            default_scope = default_scope
-                .route(
-                    "/api/openid4vp/init",
-                    web::post().to(openid4vp_endpoints::init_transaction),
-                )
-                .route(
-                    "/api/openid4vp/status/{id}",
-                    web::get().to(openid4vp_endpoints::get_transaction_status),
-                )
-                .route(
-                    "/api/openid4vp/direct_post",
-                    web::post().to(openid4vp_endpoints::handle_direct_post),
-                )
-                .route(
-                    "/api/openid4vp/request/{id}",
-                    web::get().to(openid4vp_endpoints::get_authorization_request),
-                )
-                .route(
-                    "/api/openid4vp/request/{id}",
-                    web::post().to(openid4vp_endpoints::get_authorization_request),
-                )
-                .route(
-                    "/api/openid4vp/.well-known/jwks.json",
-                    web::get().to(openid4vp_endpoints::get_jwks),
-                );
-        }
+            .route("/api/verify", web::post().to(verify_credential_endpoint))
+            .route(
+                "/api/openid4vp/init",
+                web::post().to(openid4vp_endpoints::init_transaction),
+            )
+            .route(
+                "/api/openid4vp/status/{id}",
+                web::get().to(openid4vp_endpoints::get_transaction_status),
+            )
+            .route(
+                "/api/openid4vp/direct_post",
+                web::post().to(openid4vp_endpoints::handle_direct_post),
+            )
+            .route(
+                "/api/openid4vp/request/{id}",
+                web::get().to(openid4vp_endpoints::get_authorization_request),
+            )
+            .route(
+                "/api/openid4vp/request/{id}",
+                web::post().to(openid4vp_endpoints::get_authorization_request),
+            )
+            .route(
+                "/api/openid4vp/.well-known/jwks.json",
+                web::get().to(openid4vp_endpoints::get_jwks),
+            );
 
         app.service(default_scope)
     })

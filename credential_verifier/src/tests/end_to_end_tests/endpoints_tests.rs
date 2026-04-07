@@ -1,13 +1,13 @@
 use crate::{
     AttResult,
     server::Version,
-    tests::{log_test, start_default_test_server, test_client::TestClient},
+    tests::{start_default_test_server, test_client::TestClient},
 };
 use tracing::info;
 
 #[actix_web::test]
 async fn test_version_endpoint() -> AttResult<()> {
-    log_test(Some("info,actix_server=warn,attestation_provider=debug"));
+    // log_init(Some("info,actix_server=warn,attestation_provider=debug"));
     info!("Starting test server...");
     let ctx = start_default_test_server().await?;
 

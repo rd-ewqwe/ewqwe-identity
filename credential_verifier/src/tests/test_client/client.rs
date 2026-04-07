@@ -207,13 +207,11 @@ impl TestClient {
 
 #[cfg(test)]
 mod tests {
-    use ewqwe_logging::log_init;
-
     use super::*;
 
     #[test]
     fn test_client_creation() {
-        log_init(Some("info"));
+        // log_init(Some("info"));
         let client = TestClient::new("https://localhost:8443");
         assert!(client.is_ok());
         let client = client.unwrap();
