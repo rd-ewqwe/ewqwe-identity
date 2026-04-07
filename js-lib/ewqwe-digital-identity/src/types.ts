@@ -50,9 +50,16 @@ export interface DCQLCredentialQuery {
   /**
    * Credential format identifier.
    *
-   * `"dc+sd-jwt"` is the current IANA-registered identifier for SD-JWT VC
-   * (application/dc+sd-jwt). The older `"vc+sd-jwt"` SHOULD also be accepted
-   * during the transitional period per draft-ietf-oauth-sd-jwt-vc-08 §3.2.1.
+   * `"mso_mdoc"` is for ISO/IEC 18013-5 Mobile Documents (mDL/mDoc).
+   *
+   * `"sd-jwt"` formats are for IETF SD-JWT Verifiable Credentials.  The current
+   * IANA-registered identifier for SD-JWT VC is `"dc+sd-jwt"` (application/dc+sd-jwt),
+   * which is the canonical name to use going forward. The older `"vc+sd-jwt"`
+   * SHOULD also be accepted during the transitional period per draft-ietf-oauth-sd-jwt-vc-08 §3.2.1.
+   *
+   * `"jwt_vc_json"` is for W3C Verifiable Credentials signed as JWT without JSON-LD.
+   *
+   * `"ldp_vc"` is for W3C Verifiable Credentials with Linked Data Proofs.
    */
   format: "mso_mdoc" | "dc+sd-jwt" | "vc+sd-jwt" | "jwt_vc_json" | "ldp_vc";
   /** Format-specific metadata. */
@@ -142,7 +149,6 @@ export type CredentialType = "mdl" | "national-id" | "proof-of-age";
 export interface ClaimDefinition {
   id: string;
   name: string;
-  path: string;
   description?: string;
 }
 

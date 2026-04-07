@@ -250,7 +250,7 @@ export function buildInitTransactionRequest(
     nonce: generateNonce(),
     credential_type: credentialType,
     client_metadata: {
-      client_name: "Digital Credentials Demo",
+      client_name: "ewQwe Digital Credentials Demo",
       // COSE algorithm integer IDs (RFC 8152 / IANA COSE Algorithms):
       // ES256=-7, ES384=-35, ES512=-36 — per OpenID4VP §B.2.2
       vp_formats: {

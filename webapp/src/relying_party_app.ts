@@ -608,9 +608,6 @@ export class RelyingPartyApp {
     return String(value);
   }
 
-  /**
-   * Reset the UI to the initial state for a new request
-   */
   private resetUI(): void {
     sessionStorage.removeItem("verificationResult");
     document.getElementById("verification-result")?.classList.add("hidden");
