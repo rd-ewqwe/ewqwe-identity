@@ -7,15 +7,8 @@ use crate::{
     },
 };
 use actix_cors::Cors;
-use actix_identity::IdentityMiddleware;
-use actix_session::{
-    SessionMiddleware,
-    config::PersistentSession,
-    storage::{RedisSessionStore /* RedisSessionStore */},
-};
 use actix_web::{
     App, HttpServer,
-    cookie::{Key, time::Duration},
     dev::ServerHandle,
     web::{self, Data, JsonConfig, PayloadConfig},
 };
@@ -60,13 +53,6 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
     // Determine the address to bind the server to.
     let address = format!("{}:{}", &params.host_name, params.host_port);
 
-    // Generate key for actix session cookie encryption and elements for UI exposure
-    let secret_key: Key = Key::generate();
-
-    let storage = RedisSessionStore::new("redis://127.0.0.1:6379")
-        .await
-        .expect("failed to create Redis session store");
-
     // Initialize OpenID4VP service if configured
     let openid4vp_service: Option<Arc<OpenID4VPService>> =
         if let Some(ref openid4vp_config) = params.openid4vp_config {
@@ -107,23 +93,9 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
 
         // The default scope serves from the root / the KMIP, permissions, and TEE endpoints
         let mut default_scope = web::scope("")
-            // .app_data(Data::new(privileged_users.clone()))
-            .wrap(IdentityMiddleware::default())
-            .wrap(
-                SessionMiddleware::builder(storage.clone(), secret_key.clone())
-                    .session_lifecycle(
-                        PersistentSession::default().session_ttl(Duration::hours(24)),
-                    )
-                    .build(),
-            )
             .wrap(
                 Cors::default()
-                    .allowed_origin("http://localhost:5173")
-                    .allowed_origin("http://localhost:5174")
-                    .allowed_origin("http://localhost:5175")
-                    .allowed_origin("http://127.0.0.1:5173")
-                    .allowed_origin("http://127.0.0.1:5174")
-                    .allowed_origin("http://127.0.0.1:5175")
+                    .allow_any_origin()
                     .allowed_methods(vec!["GET", "POST", "OPTIONS"])
                     .allowed_headers(vec!["Content-Type", "Authorization"])
                     .max_age(3600),

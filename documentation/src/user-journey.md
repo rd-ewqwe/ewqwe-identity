@@ -40,7 +40,7 @@ The European Digital Identity ecosystem defines **two separate profiles** for cr
 | **Trust Model** | RP identified by redirect URI | RP identified by certificate |
 | **Root CA Required** | No (any HTTPS certificate) | Yes (must be in wallet trust store) |
 | **URL Scheme** | `av://`, `avsp://`, `openid4vp://` | `eudi-openid4vp://`, `openid4vp://` |
-| **Credentials** | `eu.europa.ec.av.1` (age only) | `org.iso.18013.5.1.mDL`, PID, various |
+| **Credential Formats** | `mso_mdoc` (`eu.europa.ec.av.1`) | `mso_mdoc` (mDL, PID) / `dc+sd-jwt` (PID) |
 
 ### Key Differences from HAIP
 
@@ -51,7 +51,7 @@ The Annex A profile was designed to be simpler than HAIP because:
 | **No JAR signing** | Reduces implementation complexity | Required for RP authentication |
 | **No trust list** | Trust lists for age verification don't exist yet | Relies on pre-established CA trust |
 | **Simple client_id** | `redirect_uri:` prefix + callback URL | Certificate-based identity |
-| **Plain response** | Direct POST of VP Token | JWT-wrapped response |
+| **Plain response** | Direct POST of VP Token | JWE-encrypted response (ECDH-ES + A256GCM) |
 | **Lower LoA** | Appropriate for age verification | Required for identity documents |
 
 > **Source**: [Annex A.9 - Comparison with HAIP](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#a9-comparison-with-haip)
@@ -66,135 +66,200 @@ All credential verification flows involve these main components:
 
 ## Flow 1: Age Verification App (Annex A Profile)
 
-This flow implements the [EU Age Verification Profile (Annex A)](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/), which uses the `redirect_uri` client ID scheme for simplicity.
+This flow implements the [EU Age Verification Profile (Annex A)](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/), which uses the `redirect_uri` Client ID Scheme. The Credential Format is `mso_mdoc` with document type `eu.europa.ec.av.1`.
 
-### Annex A Same-Device Flow
+> **Same-device vs Cross-device**: The protocol steps are identical regardless of how the Authorization Request reaches the Wallet. In the **cross-device flow**, the RP displays a QR code that the User scans with their Wallet. In the **same-device flow**, the RP opens the `av://` deep link directly. Both flows use `direct_post` for the Authorization Response.
+
+### Annex A OpenID4VP Flow
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Browser as RP Webapp UI<br/>(Browser)
+    participant RP as RP Webapp
     participant AVI as Age Verification<br/>App (Wallet)
-    participant Backend as RP Webapp<br/>Backend
-    participant Verifier as ewQwe<br/>Credential Verifier
+    participant CV as ewQwe<br/>Credential Verifier
 
-    User->>Browser: 1. Click "Verify Age"
-    
-    Note over Browser,Backend: Initialize Transaction
-    Browser->>Backend: 2. POST /api/openid4vp/init_transaction<br/>{credential_type, claims, profile:"annexa"}
-    Backend->>Backend: 3. Generate nonce, state, transaction_id
-    Backend->>Backend: 4. Build DCQL query for age_over_18
-    Backend->>Backend: 5. Create client_id=redirect_uri:...
-    Backend-->>Browser: 6. Return {authorization_request_uri}
-    
-    Note over Browser,AVI: Annex A Authorization Request (redirect_uri scheme, no JAR)
-    Browser->>AVI: 7. Redirect to av://?<br/>client_id=redirect_uri:https://.../direct_post<br/>&response_uri=https://.../direct_post<br/>&response_mode=direct_post<br/>&nonce=xyz&state=abc<br/>&dcql_query={...}<br/>&client_metadata={...}
-    
-    AVI->>AVI: 8. Parse inline request (no signature verification)
-    AVI->>AVI: 9. Match credentials to DCQL query
-    AVI->>User: 10. Show consent screen
-    User->>AVI: 11. Approve presentation
-    
-    Note over AVI,Backend: Direct Post Response (plain VP Token)
-    AVI->>Backend: 12. POST /api/openid4vp/direct_post<br/>vp_token={"credential_id":[base64_mdoc]}<br/>state=abc
-    
-    Note over Backend,Verifier: Credential Verification via mTLS
-    Backend->>Backend: 13. Extract vp_token from form body
-    Backend->>Verifier: 14. POST /api/verify (HTTPS + mTLS)<br/>{vp_token, presentation_submission, nonce}
-    Verifier->>Verifier: 15. Decode mDoc CBOR presentation
-    Verifier->>Verifier: 16. Verify COSE signature
-    Verifier->>Verifier: 17. Validate issuer certificate
-    Verifier->>Verifier: 18. Extract claims (age_over_18, ...)
-    Verifier->>Verifier: 19. Create signed attestation JWT (ES256)
-    Verifier-->>Backend: 20. 200 OK {success, claims, attestation_jwt}
-    
-    Backend->>Backend: 21. Store result in session
-    Backend-->>Browser: 22. Redirect 302 → /verification/result?state=abc
-    Browser->>Backend: 23. GET /verification/result?state=abc
-    Backend-->>Browser: 24. Return HTML with claims
-    Browser->>User: 25. Display verification result with claims
+    User->>RP: Click "Verify Age"
+
+    Note over RP,CV: Transaction Initialization
+    RP->>CV: POST /api/openid4vp/init<br/>{profile: "annex-a", dcql_query}
+    CV->>CV: Generate transaction_id, nonce, state<br/>Build DCQL Credential Query<br/>(format: mso_mdoc, doctype: eu.europa.ec.av.1)
+    CV-->>RP: {transaction_id,<br/>authorization_request_uri}
+
+    Note over RP,AVI: Authorization Request (OpenID4VP §5)
+    RP->>User: Display QR code / open deep link
+    User->>AVI: Scan QR code / tap deep link
+
+    Note over AVI: av://?client_id=redirect_uri:{response_uri}<br/>&response_type=vp_token<br/>&response_mode=direct_post<br/>&response_uri=...&nonce=...&state=...<br/>&dcql_query={...}&client_metadata={...}
+
+    AVI->>AVI: Parse inline Authorization Request<br/>(no signature verification required)
+    AVI->>AVI: Evaluate DCQL Credential Query<br/>against stored credentials
+    AVI->>User: Present consent dialog
+    User->>AVI: Authorize presentation
+
+    Note over AVI,CV: Authorization Response — direct_post (OpenID4VP §8.2)
+    AVI->>AVI: Build VP Token (DCQL response map)<br/>{credential_query_id: [base64url(DeviceResponse)]}
+    AVI->>CV: POST {response_uri}<br/>vp_token={...}&state={state}
+    CV->>CV: Store Authorization Response<br/>Update transaction status → received
+    CV-->>AVI: HTTP 200 OK {}
+
+    Note over RP,CV: Transaction Status Polling
+    RP->>CV: GET /api/openid4vp/status/{transaction_id}
+    CV-->>RP: {status: "received",<br/>authorization_response, nonce}
+
+    Note over RP,CV: Credential Verification
+    RP->>CV: POST /api/verify {vp_token, nonce}
+    CV->>CV: Decode CBOR DeviceResponse (ISO 18013-5)<br/>Verify IssuerAuth (COSE_Sign1)<br/>Validate Issuer certificate chain<br/>Extract claims (age_over_18)
+    CV->>CV: Sign Attestation (JWT, ES256)
+    CV-->>RP: {success, claims, attestation_jwt}
+
+    RP->>User: Display verification result
 ```
 
 ### Annex A Key Characteristics
 
-- **Inline Parameters**: All authorization request parameters must be passed directly in the URL (no `request_uri`)
-- **No JAR**: Authorization Request is sent as plain query parameters, not a signed JWT
-- **`redirect_uri` scheme**: The `client_id` is literally `redirect_uri:` followed by the callback URL
-- **`direct_post`**: The wallet POSTs the VP Token directly (not wrapped in a JWT)
-- **Simple trust**: No certificate chain verification; the RP is identified by its redirect URI
-- **`av://` deep link**: The AV App registers this custom URL scheme
-- **`client_metadata`**: When provided inline, must use `vp_formats_supported` field (not `vp_formats`)
+- **Inline Authorization Request**: All parameters are passed directly in the `av://` URI — no `request_uri` indirection ([Annex A §A.4](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#a4-authorization-request))
+- **No JAR**: The Authorization Request is sent as plain query parameters, not as a JWT-Secured Authorization Request (no RFC 9101)
+- **`redirect_uri` Client ID Scheme**: `client_id` = `redirect_uri:{response_uri}` — the Verifier is identified by its callback URL
+- **`direct_post` Response Mode** (OpenID4VP §8.2): The Wallet POSTs the plain VP Token directly to `response_uri`
+- **Simple trust model**: No certificate chain verification; the Verifier is identified solely by its redirect URI
+- **`av://` URL Scheme**: Custom deep link registered by the Age Verification App
+- **`client_metadata`**: When provided inline, uses `vp_formats_supported` field with COSE algorithm identifiers
 
-## Flow 2: EUDI Wallet (HAIP Profile)
+## Flow 2: EUDI Wallet — HAIP Profile, mso_mdoc Credential Format
 
-This flow implements the **High Assurance Interoperability Profile (HAIP)**, which requires signed requests and certificate-based trust.
+This flow implements the **High Assurance Interoperability Profile (HAIP)** with `mso_mdoc` credentials (ISO 18013-5). This format is used for mobile driving licenses (`org.iso.18013.5.1.mDL`) and EU PID documents (`eu.europa.ec.eudi.pid.1`).
 
-### HAIP Same-Device Flow
+> **Same-device vs Cross-device**: As with Annex A, the only difference is how the Authorization Request reaches the Wallet. In the **cross-device flow**, the RP displays a QR code. In the **same-device flow**, the RP opens the `eudi-openid4vp://` deep link directly. The JAR fetch, encrypted response, and verification steps are identical.
+
+### HAIP mso_mdoc OpenID4VP Flow
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant Browser as RP Webapp UI<br/>(Browser)
-    participant EUDI as EUDI Wallet<br/>(HAIP)
-    participant Backend as RP Webapp<br/>Backend
-    participant Verifier as ewQwe<br/>Credential Verifier
+    participant RP as RP Webapp
+    participant EUDI as EUDI Wallet
+    participant CV as ewQwe<br/>Credential Verifier
 
-    User->>Browser: 1. Click "Verify Credentials"
-    
-    Note over Browser,Backend: Initialize Transaction
-    Browser->>Backend: 2. POST /api/openid4vp/init_transaction<br/>{credential_type, claims, profile:"haip"}
-    Backend->>Backend: 3. Generate nonce, state, transaction_id
-    Backend->>Backend: 4. Build DCQL query
-    Backend->>Backend: 5. Create client_id=x509_san_dns:rp.example.com
-    Backend->>Backend: 6. Sign JAR with ES256 + x5c cert chain
-    Backend->>Backend: 7. Store signed JAR at /request/{transaction_id}
-    Backend-->>Browser: 8. Return {authorization_request_uri, request_uri}
-    
-    Note over Browser,EUDI: HAIP Authorization Request (x509_san_dns + JAR)
-    Browser->>EUDI: 9. Redirect to eudi-openid4vp://?<br/>client_id=x509_san_dns:rp.example.com<br/>&request_uri=https://.../request/{id}
-    
-    EUDI->>Backend: 10. GET /api/openid4vp/request/{transaction_id}
-    Backend-->>EUDI: 11. Return signed JAR JWT
-    EUDI->>EUDI: 12. Extract x5c certificate chain from JWT header
-    EUDI->>EUDI: 13. Verify cert chain against Reader Trust Store
-    EUDI->>EUDI: 14. Verify client_id matches cert SAN
-    EUDI->>EUDI: 15. Verify JWT signature with leaf cert public key
-    EUDI->>EUDI: 16. Parse JAR payload (nonce, dcql_query, response_uri)
-    EUDI->>EUDI: 17. Match credentials to DCQL query
-    EUDI->>User: 18. Show consent screen (RP name from cert)
-    User->>EUDI: 19. Approve presentation
-    
-    Note over EUDI,Backend: Direct Post JWT Response (JWE-encrypted VP Token)
-    EUDI->>EUDI: 20. Build VP Token as DCQL map
-    EUDI->>EUDI: 21. Encrypt VP Token as JWE (ECDH-ES + A256GCM)
-    EUDI->>Backend: 22. POST /api/openid4vp/direct_post<br/>response={jwe_encrypted_vp_token}<br/>state=abc
-    
-    Note over Backend,Verifier: Credential Verification via mTLS
-    Backend->>Backend: 23. Decrypt JWE response using ECDH private key
-    Backend->>Backend: 24. Extract vp_token from decrypted payload
-    Backend->>Verifier: 25. POST /api/verify (HTTPS + mTLS)<br/>{vp_token, presentation_submission, nonce}
-    Verifier->>Verifier: 26. Decode mDoc CBOR presentation
-    Verifier->>Verifier: 27. Verify COSE signature
-    Verifier->>Verifier: 28. Validate issuer certificate
-    Verifier->>Verifier: 29. Extract claims (family_name, given_name, ...)
-    Verifier->>Verifier: 30. Create signed attestation JWT (ES256)
-    Verifier-->>Backend: 31. 200 OK {success, claims, attestation_jwt}
-    
-    Backend->>Backend: 32. Store result in session
-    Backend-->>Browser: 33. Redirect 302 → /verification/result?state=abc
-    Browser->>Backend: 34. GET /verification/result?state=abc
-    Backend-->>Browser: 35. Return HTML with claims
-    Browser->>User: 36. Display verification result with claims
+    User->>RP: Click "Verify Credentials"
+
+    Note over RP,CV: Transaction Initialization
+    RP->>CV: POST /api/openid4vp/init<br/>{profile: "haip", dcql_query}
+    CV->>CV: Generate transaction_id, nonce, state<br/>Build DCQL Credential Query<br/>(format: mso_mdoc, doctype: ...)<br/>Generate ephemeral ECDH key pair for JWE
+    CV-->>RP: {transaction_id,<br/>authorization_request_uri}
+
+    Note over RP,EUDI: Authorization Request (OpenID4VP §5)
+    RP->>User: Display QR code / open deep link
+    User->>EUDI: Scan QR code / tap deep link
+
+    Note over EUDI: eudi-openid4vp://?<br/>client_id=x509_san_dns:{dns_san}<br/>&request_uri={request_uri}
+
+    EUDI->>CV: GET {request_uri}
+    CV->>CV: Sign Authorization Request Object<br/>(JAR — RFC 9101, alg: ES256,<br/>typ: oauth-authz-req+jwt, x5c chain)
+    CV-->>EUDI: Content-Type: application/oauth-authz-req+jwt
+
+    Note over EUDI: JAR payload: client_id, nonce, state,<br/>response_mode: direct_post.jwt,<br/>response_uri, dcql_query,<br/>client_metadata {jwks, encryption params}
+
+    EUDI->>EUDI: Verify x5c certificate chain<br/>against Reader Trust Store
+    EUDI->>EUDI: Verify client_id matches<br/>certificate SAN (DNS name)
+    EUDI->>EUDI: Verify JWT signature<br/>with leaf certificate public key
+    EUDI->>EUDI: Evaluate DCQL Credential Query<br/>against stored credentials
+    EUDI->>User: Present consent dialog<br/>(Verifier identity from certificate)
+    User->>EUDI: Authorize presentation
+
+    Note over EUDI,CV: Authorization Response — direct_post.jwt (OpenID4VP §8.3)
+    EUDI->>EUDI: Build VP Token (DCQL response map)<br/>{credential_query_id: [base64url(DeviceResponse)]}
+    EUDI->>EUDI: Encrypt Authorization Response<br/>as JWE (ECDH-ES + A256GCM)
+    EUDI->>CV: POST {response_uri}<br/>response={jwe}&state={state}
+    CV->>CV: Decrypt JWE (ECDH-ES key agreement)<br/>Extract VP Token<br/>Update transaction status → received
+    CV-->>EUDI: HTTP 200 OK {}
+
+    Note over RP,CV: Transaction Status Polling
+    RP->>CV: GET /api/openid4vp/status/{transaction_id}
+    CV-->>RP: {status: "received",<br/>authorization_response, nonce}
+
+    Note over RP,CV: Credential Verification
+    RP->>CV: POST /api/verify {vp_token, nonce}
+    CV->>CV: Decode CBOR DeviceResponse (ISO 18013-5)<br/>Verify IssuerAuth (COSE_Sign1)<br/>Validate Issuer certificate chain<br/>Extract namespaced claims
+    CV->>CV: Sign Attestation (JWT, ES256)
+    CV-->>RP: {success, claims, attestation_jwt}
+
+    RP->>User: Display verification result
+```
+
+## Flow 3: EUDI Wallet — HAIP Profile, SD-JWT VC Credential Format
+
+This flow implements HAIP with `dc+sd-jwt` credentials ([SD-JWT-based Verifiable Credentials](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html)). This format is used for EU PID documents (`urn:eudi:pid:1`) and other credentials that use selective disclosure with JSON-based claims.
+
+The DCQL Credential Query specifies `format: "dc+sd-jwt"` with `vct_values` (Verifiable Credential Type) instead of the `doctype_value` used by mso_mdoc. Claims Path Pointers use a flat structure (`[claim_name]`) rather than the namespaced `[namespace, element_identifier]` paths of mso_mdoc.
+
+### HAIP SD-JWT VC OpenID4VP Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant RP as RP Webapp
+    participant EUDI as EUDI Wallet
+    participant CV as ewQwe<br/>Credential Verifier
+
+    User->>RP: Click "Verify Credentials"
+
+    Note over RP,CV: Transaction Initialization
+    RP->>CV: POST /api/openid4vp/init<br/>{profile: "haip", dcql_query}
+    CV->>CV: Generate transaction_id, nonce, state<br/>Build DCQL Credential Query<br/>(format: dc+sd-jwt, vct_values: [...])<br/>Generate ephemeral ECDH key pair for JWE
+    CV-->>RP: {transaction_id,<br/>authorization_request_uri}
+
+    Note over RP,EUDI: Authorization Request (OpenID4VP §5)
+    RP->>User: Display QR code / open deep link
+    User->>EUDI: Scan QR code / tap deep link
+
+    Note over EUDI: eudi-openid4vp://?<br/>client_id=x509_san_dns:{dns_san}<br/>&request_uri={request_uri}
+
+    EUDI->>CV: GET {request_uri}
+    CV->>CV: Sign Authorization Request Object<br/>(JAR — RFC 9101, alg: ES256,<br/>typ: oauth-authz-req+jwt, x5c chain)
+    CV-->>EUDI: Content-Type: application/oauth-authz-req+jwt
+
+    Note over EUDI: JAR payload: client_id, nonce, state,<br/>response_mode: direct_post.jwt,<br/>response_uri, dcql_query,<br/>client_metadata {jwks, encryption params}
+
+    EUDI->>EUDI: Verify x5c certificate chain<br/>against Reader Trust Store
+    EUDI->>EUDI: Verify client_id matches<br/>certificate SAN (DNS name)
+    EUDI->>EUDI: Verify JWT signature<br/>with leaf certificate public key
+    EUDI->>EUDI: Evaluate DCQL Credential Query<br/>against stored credentials
+    EUDI->>User: Present consent dialog<br/>(Verifier identity from certificate)
+    User->>EUDI: Authorize presentation
+
+    Note over EUDI,CV: Authorization Response — direct_post.jwt (OpenID4VP §8.3)
+    EUDI->>EUDI: Build VP Token (DCQL response map)<br/>{credential_query_id: [Issuer-signed JWT~Disclosures~KB-JWT]}
+    EUDI->>EUDI: Encrypt Authorization Response<br/>as JWE (ECDH-ES + A256GCM)
+    EUDI->>CV: POST {response_uri}<br/>response={jwe}&state={state}
+    CV->>CV: Decrypt JWE (ECDH-ES key agreement)<br/>Extract VP Token<br/>Update transaction status → received
+    CV-->>EUDI: HTTP 200 OK {}
+
+    Note over RP,CV: Transaction Status Polling
+    RP->>CV: GET /api/openid4vp/status/{transaction_id}
+    CV-->>RP: {status: "received",<br/>authorization_response, nonce}
+
+    Note over RP,CV: Credential Verification
+    RP->>CV: POST /api/verify {vp_token, nonce}
+    CV->>CV: Decode Issuer-signed JWT<br/>Verify SD-JWT Disclosures (SD-JWT VC §6)<br/>Verify Key Binding JWT (if present)<br/>Extract selectively disclosed claims
+    CV->>CV: Sign Attestation (JWT, ES256)
+    CV-->>RP: {success, claims, attestation_jwt}
+
+    RP->>User: Display verification result
 ```
 
 ### HAIP Key Characteristics
 
-- **Signed JAR**: Authorization Request must be a signed JWT with `x5c` certificate chain
-- **`x509_san_dns` scheme**: The `client_id` is the domain from the certificate's SAN
-- **Certificate validation**: Wallet verifies the certificate chain against its trust store
-- **`direct_post.jwt`**: The VP Token is wrapped in a signed JWT before POSTing
-- **Root CA required**: The RP's root CA must be added to the wallet's Reader Trust Store
-- **`eudi-openid4vp://` deep link**: The EUDI Wallet registers this URL scheme
+- **JWT-Secured Authorization Request (JAR)**: The Authorization Request Object is a signed JWT (RFC 9101) with `ES256` and an `x5c` header containing the certificate chain (`typ: oauth-authz-req+jwt`)
+- **`x509_san_dns` Client ID Scheme**: `client_id` = `x509_san_dns:{dns_san}` — the Verifier is identified by the DNS SAN of its X.509 certificate
+- **Certificate chain verification**: The Wallet verifies the `x5c` certificate chain against its Reader Trust Store and confirms the `client_id` matches the leaf certificate's SAN
+- **`direct_post.jwt` Response Mode** (OpenID4VP §8.3): The Wallet encrypts the Authorization Response as a JWE (ECDH-ES + A256GCM) before POSTing to `response_uri`
+- **JWE Response Encryption**: The JAR's `client_metadata` includes `jwks` with the Verifier's ephemeral public key and `authorization_encrypted_response_alg` / `authorization_encrypted_response_enc` parameters
+- **Two Credential Formats**:
+  - **`mso_mdoc`** (ISO 18013-5): CBOR-encoded DeviceResponse with COSE_Sign1 IssuerAuth — DCQL uses namespaced Claims Path Pointers `[namespace, element_identifier]`
+  - **`dc+sd-jwt`** (SD-JWT VC): Issuer-signed JWT with selectively disclosable claims — DCQL uses flat Claims Path Pointers `[claim_name]` and `vct_values` in credential query metadata
+- **`eudi-openid4vp://` URL Scheme**: Custom deep link registered by the EUDI Wallet
+- **Root CA required**: The Verifier's root CA must be present in the Wallet's Reader Trust Store
 
 ## Wallet Compatibility Matrix
 
@@ -209,17 +274,15 @@ When implementing a Relying Party, choose your approach based on which wallets y
 
 ## Verification Flow (Common to All)
 
-Regardless of which wallet and profile is used, the verification flow through the ewQwe Credential Verifier is the same:
+Regardless of which Wallet and profile is used, the verification flow through the ewQwe Credential Verifier is the same:
 
-1. **RP Backend receives VP Token** (either plain or JWT-wrapped)
-2. **RP calls Credential Verifier** via HTTPS (optionally with mTLS)
-3. **Verifier validates**:
-   - VP Token cryptographic signature
-   - Credential issuer certificate chain
-   - Credential expiration and revocation status
-   - Requested claims are present
-4. **Verifier returns signed attestation** confirming successful verification
-5. **RP uses attestation** for session establishment or access control
+1. **RP Webapp receives the Authorization Response** (VP Token) via transaction status polling
+2. **RP Webapp calls the Credential Verifier's** `/api/verify` **endpoint** with the VP Token and nonce
+3. **Credential Verifier validates** the Verifiable Presentation:
+   - **mso_mdoc**: Decodes CBOR DeviceResponse, verifies IssuerAuth (COSE_Sign1), validates Issuer certificate chain, extracts namespaced claims
+   - **dc+sd-jwt**: Decodes Issuer-signed JWT, verifies Disclosures, verifies Key Binding JWT, extracts selectively disclosed claims
+4. **Credential Verifier returns a signed Attestation JWT** (ES256) confirming successful verification, along with the extracted claims
+5. **RP Webapp uses the Attestation** for session establishment or access control
 
 See [The ewQwe Credential Verifier](./credential_verifier_server.md) for detailed API documentation.
 
@@ -228,6 +291,9 @@ See [The ewQwe Credential Verifier](./credential_verifier_server.md) for detaile
 - [EU Age Verification Profile (Annex A)](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/) — Annex A specification
 - [Annex A.9 - Comparison with HAIP](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#a9-comparison-with-haip) — Detailed differences
 - [OpenID4VP 1.0 Specification](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) — Protocol standard
+- [SD-JWT-based Verifiable Credentials](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html) — SD-JWT VC specification
+- [ISO/IEC 18013-5](https://www.iso.org/standard/69084.html) — Mobile driving licence (mDL) data retrieval
+- [RFC 9101 — JWT-Secured Authorization Request (JAR)](https://datatracker.ietf.org/doc/html/rfc9101) — Signed authorization requests
 - [Age Verification App Documentation](./av_wallet_android_studio.md) — Installing the AV App
 - [EUDI Wallet Documentation](./eudi_wallet_android_studio.md) — Installing the EUDI Wallet
 - [Demo Wallet Browser Extension](./demo_wallet_extension.md) — Browser-based fallback
