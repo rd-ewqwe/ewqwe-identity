@@ -1,4 +1,3 @@
-
 # European Digital Identity Acronyms and Abbreviations
 
 | Term               | Definition                                                      |

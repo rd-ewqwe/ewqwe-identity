@@ -126,7 +126,15 @@ export interface DigitalCredentialResponse {
 // Stored credential type for the wallet
 export interface StoredCredential {
   id: string;
-  type: "mdl" | "national-id" | "education" | "employment" | "verifiable-credential";
+  type:
+    | "mdl"
+    | "national-id"
+    | "proof-of-age"
+    | "education"
+    | "employment"
+    | "verifiable-credential";
+  docType: string; // ISO docType e.g., "org.iso.18013.5.1.mDL"
+  namespace: string; // ISO namespace e.g., "org.iso.18013.5.1"
   displayName: string;
   issuer: string;
   issuedAt: string;

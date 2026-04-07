@@ -1,7 +1,16 @@
 import type { DebugLogger } from "./debug.ts";
-import type { OpenID4VPRequest, OpenID4VPResponse, VerificationResult } from "./types.ts";
-import { CREDENTIAL_TYPES, getDefaultClaims, getClaimsForType } from "./config.ts";
-import { buildPresentationRequest, requestCredentials, verifyCredential, sendToBackend } from "./credentials.ts";
+import type {
+  OpenID4VPRequest,
+  OpenID4VPResponse,
+  VerificationResult,
+} from "./types.ts";
+import { getClaimsForType, getDefaultClaims } from "./config.ts";
+import {
+  buildPresentationRequest,
+  requestCredentials,
+  sendToBackend,
+  verifyCredential,
+} from "./credentials.ts";
 
 /**
  * Relying Party Application - Main controller
@@ -23,7 +32,7 @@ export class RelyingPartyApp {
     this.checkAPISupport();
     this.renderClaims();
     this.updateRequestPreview();
-    
+
     // Initialize with default claims
     getDefaultClaims(this.selectedCredentialType).forEach((claim) => {
       this.selectedClaims.add(claim);
@@ -44,41 +53,54 @@ export class RelyingPartyApp {
     });
 
     // Protocol selection
-    document.getElementById("protocol-select")?.addEventListener("change", (e) => {
-      this.selectedProtocol = (e.target as HTMLSelectElement).value;
-      this.updateRequestPreview();
-    });
+    document
+      .getElementById("protocol-select")
+      ?.addEventListener("change", (e) => {
+        this.selectedProtocol = (e.target as HTMLSelectElement).value;
+        this.updateRequestPreview();
+      });
 
     // Request credentials button
-    document.getElementById("request-credentials-btn")?.addEventListener("click", () => {
-      this.handleCredentialRequest();
-    });
+    document
+      .getElementById("request-credentials-btn")
+      ?.addEventListener("click", () => {
+        this.handleCredentialRequest();
+      });
 
     // Show request JSON toggle
-    document.getElementById("show-request-btn")?.addEventListener("click", () => {
-      const preview = document.getElementById("request-preview");
-      preview?.classList.toggle("hidden");
-    });
+    document
+      .getElementById("show-request-btn")
+      ?.addEventListener("click", () => {
+        const preview = document.getElementById("request-preview");
+        preview?.classList.toggle("hidden");
+      });
 
     // Toggle debug result
-    document.getElementById("toggle-debug-result")?.addEventListener("click", () => {
-      const debug = document.getElementById("debug-result");
-      debug?.classList.toggle("hidden");
-    });
+    document
+      .getElementById("toggle-debug-result")
+      ?.addEventListener("click", () => {
+        const debug = document.getElementById("debug-result");
+        debug?.classList.toggle("hidden");
+      });
 
     // New request button
-    document.getElementById("new-request-btn")?.addEventListener("click", () => {
-      this.resetUI();
-    });
+    document
+      .getElementById("new-request-btn")
+      ?.addEventListener("click", () => {
+        this.resetUI();
+      });
   }
 
   private selectCredentialType(type: string): void {
     this.selectedCredentialType = type;
     this.selectedClaims.clear();
-    
+
     // Update UI
     document.querySelectorAll(".credential-type-btn").forEach((btn) => {
-      btn.classList.toggle("active", (btn as HTMLElement).dataset.type === type);
+      btn.classList.toggle(
+        "active",
+        (btn as HTMLElement).dataset.type === type,
+      );
     });
 
     // Re-render claims and select defaults
@@ -97,7 +119,7 @@ export class RelyingPartyApp {
     if (!container) return;
 
     const claims = getClaimsForType(this.selectedCredentialType);
-    
+
     container.innerHTML = claims
       .map(
         (claim) => `
@@ -105,7 +127,7 @@ export class RelyingPartyApp {
           <input type="checkbox" value="${claim.id}" />
           <span class="text-sm">${claim.name}</span>
         </label>
-      `
+      `,
       )
       .join("");
 
@@ -127,9 +149,11 @@ export class RelyingPartyApp {
   private updateClaimsUI(): void {
     document.querySelectorAll(".claim-checkbox").forEach((label) => {
       const claimId = (label as HTMLElement).dataset.claim;
-      const checkbox = label.querySelector("input[type='checkbox']") as HTMLInputElement;
+      const checkbox = label.querySelector(
+        "input[type='checkbox']",
+      ) as HTMLInputElement;
       const isSelected = claimId && this.selectedClaims.has(claimId);
-      
+
       label.classList.toggle("selected", isSelected || false);
       if (checkbox) {
         checkbox.checked = isSelected || false;
@@ -145,7 +169,7 @@ export class RelyingPartyApp {
       const request = buildPresentationRequest(
         this.selectedCredentialType,
         Array.from(this.selectedClaims),
-        this.selectedProtocol
+        this.selectedProtocol,
       );
       this.currentRequest = request;
       requestJson.textContent = JSON.stringify(request, null, 2);
@@ -169,17 +193,21 @@ export class RelyingPartyApp {
         name: "Credential Management",
         supported: "credentials" in navigator,
         icon: "📋",
-        infoUrl: "https://developer.mozilla.org/docs/Web/API/Credential_Management_API",
+        infoUrl:
+          "https://developer.mozilla.org/docs/Web/API/Credential_Management_API",
       },
       {
         name: "Secure Context",
         supported: globalThis.isSecureContext,
         icon: "🔒",
-        infoUrl: "https://developer.mozilla.org/docs/Web/Security/Secure_Contexts",
+        infoUrl:
+          "https://developer.mozilla.org/docs/Web/Security/Secure_Contexts",
       },
       {
         name: "Crypto API",
-        supported: typeof crypto !== "undefined" && typeof crypto.randomUUID === "function",
+        supported:
+          typeof crypto !== "undefined" &&
+          typeof crypto.randomUUID === "function",
         icon: "🔑",
         infoUrl: "https://developer.mozilla.org/docs/Web/API/Crypto",
       },
@@ -194,11 +222,13 @@ export class RelyingPartyApp {
           </a>
           <div class="text-2xl mb-1">${check.icon}</div>
           <div class="text-xs text-gray-400">${check.name}</div>
-          <div class="${check.supported ? "text-green-400" : "text-amber-400"} text-sm font-medium">
+          <div class="${
+            check.supported ? "text-green-400" : "text-amber-400"
+          } text-sm font-medium">
             ${check.supported ? "✓ Supported" : "⚠ Limited"}
           </div>
         </div>
-      `
+      `,
       )
       .join("");
 
@@ -217,7 +247,9 @@ export class RelyingPartyApp {
     }
 
     // Show loading state
-    const btn = document.getElementById("request-credentials-btn") as HTMLButtonElement;
+    const btn = document.getElementById(
+      "request-credentials-btn",
+    ) as HTMLButtonElement;
     const originalContent = btn.innerHTML;
     btn.disabled = true;
     btn.innerHTML = `
@@ -232,8 +264,11 @@ export class RelyingPartyApp {
       this.logger.log("Starting credential request");
 
       // Request credentials
-      const response = await requestCredentials(this.currentRequest, this.logger);
-      
+      const response = await requestCredentials(
+        this.currentRequest,
+        this.logger,
+      );
+
       if (!response) {
         throw new Error("Request was cancelled or failed");
       }
@@ -241,7 +276,11 @@ export class RelyingPartyApp {
       this.currentResponse = response;
 
       // Verify the credential
-      let verificationResult = await verifyCredential(response, this.currentRequest, this.logger);
+      let verificationResult = await verifyCredential(
+        response,
+        this.currentRequest,
+        this.logger,
+      );
 
       // Also try to send to backend (will fall back gracefully if not available)
       const backendResult = await sendToBackend(response, this.logger);
@@ -251,17 +290,21 @@ export class RelyingPartyApp {
 
       // Display the result
       this.displayVerificationResult(verificationResult, response);
-
     } catch (error) {
       this.logger.error("Credential request failed", error);
-      this.displayError(error instanceof Error ? error.message : "Unknown error");
+      this.displayError(
+        error instanceof Error ? error.message : "Unknown error",
+      );
     } finally {
       btn.disabled = false;
       btn.innerHTML = originalContent;
     }
   }
 
-  private displayVerificationResult(result: VerificationResult, response: OpenID4VPResponse): void {
+  private displayVerificationResult(
+    result: VerificationResult,
+    response: OpenID4VPResponse,
+  ): void {
     const resultSection = document.getElementById("verification-result");
     const resultIcon = document.getElementById("result-icon");
     const resultTitle = document.getElementById("result-title");
@@ -289,7 +332,7 @@ export class RelyingPartyApp {
                 <span class="text-gray-400">${this.formatClaimName(key)}</span>
                 <span class="font-medium">${this.formatClaimValue(value)}</span>
               </div>
-            `
+            `,
             )
             .join("")
         : "";
@@ -315,7 +358,9 @@ export class RelyingPartyApp {
       resultTitle.className = "result-error";
 
       const errorsHtml = result.errors
-        ? result.errors.map((err) => `<li class="text-red-400">${err}</li>`).join("")
+        ? result.errors
+            .map((err) => `<li class="text-red-400">${err}</li>`)
+            .join("")
         : "";
 
       resultContent.innerHTML = `
@@ -326,7 +371,11 @@ export class RelyingPartyApp {
             </svg>
             <div>
               <p class="text-red-400 font-medium">${result.message}</p>
-              ${errorsHtml ? `<ul class="mt-2 list-disc list-inside text-sm">${errorsHtml}</ul>` : ""}
+              ${
+                errorsHtml
+                  ? `<ul class="mt-2 list-disc list-inside text-sm">${errorsHtml}</ul>`
+                  : ""
+              }
             </div>
           </div>
         </div>
@@ -338,7 +387,11 @@ export class RelyingPartyApp {
       rawResponse.textContent = JSON.stringify(response, null, 2);
     }
     if (verificationDetails && result.verificationDetails) {
-      verificationDetails.textContent = JSON.stringify(result.verificationDetails, null, 2);
+      verificationDetails.textContent = JSON.stringify(
+        result.verificationDetails,
+        null,
+        2,
+      );
     }
   }
 
@@ -349,14 +402,19 @@ export class RelyingPartyApp {
         message: "Request failed",
         errors: [message],
       },
-      { vp_token: "", presentation_submission: { id: "", definition_id: "", descriptor_map: [] } }
+      {
+        vp_token: "",
+        presentation_submission: {
+          id: "",
+          definition_id: "",
+          descriptor_map: [],
+        },
+      },
     );
   }
 
   private formatClaimName(key: string): string {
-    return key
-      .replace(/_/g, " ")
-      .replace(/\b\w/g, (c) => c.toUpperCase());
+    return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
   private formatClaimValue(value: unknown): string {

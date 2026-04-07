@@ -24,7 +24,9 @@ export class CredentialStore {
         credentials.forEach((cred) => {
           this.credentials.set(cred.id, cred);
         });
-        this.logger.log(`Loaded ${credentials.length} credentials from storage`);
+        this.logger.log(
+          `Loaded ${credentials.length} credentials from storage`,
+        );
       }
     } catch (error) {
       this.logger.error("Failed to load credentials from storage", error);
@@ -78,13 +80,23 @@ export class CredentialStore {
    * Generate a demo credential for testing
    * In a real implementation, this would come from an Attestation Provider
    */
-  generateDemoCredential(type: "mdl" | "national-id" | "education" | "employment"): StoredCredential {
+  generateDemoCredential(
+    type: "mdl" | "national-id" | "proof-of-age" | "education" | "employment",
+  ): StoredCredential {
     const id = crypto.randomUUID();
     const now = new Date();
     const expiresAt = new Date(now);
     expiresAt.setFullYear(expiresAt.getFullYear() + 5);
 
-    const baseCredential: Omit<StoredCredential, "credential" | "claims" | "displayName" | "issuer"> = {
+    const baseCredential: Omit<
+      StoredCredential,
+      | "credential"
+      | "claims"
+      | "displayName"
+      | "issuer"
+      | "docType"
+      | "namespace"
+    > = {
       id,
       type,
       issuedAt: now.toISOString(),
@@ -95,6 +107,8 @@ export class CredentialStore {
       case "mdl":
         return {
           ...baseCredential,
+          docType: "org.iso.18013.5.1.mDL",
+          namespace: "org.iso.18013.5.1",
           displayName: "Mobile Driver's License",
           issuer: "Department of Motor Vehicles",
           claims: {
@@ -103,7 +117,8 @@ export class CredentialStore {
             birth_date: "1990-01-15",
             age_over_21: true,
             age_over_18: true,
-            document_number: "DL-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+            document_number:
+              "DL-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
             issuing_authority: "State DMV",
             issuing_country: "US",
           },
@@ -117,14 +132,20 @@ export class CredentialStore {
       case "national-id":
         return {
           ...baseCredential,
-          displayName: "National ID Card",
+          docType: "eu.europa.ec.eudi.pid.1",
+          namespace: "eu.europa.ec.eudi.pid.1",
+          displayName: "National ID Card (EU PID)",
           issuer: "Government Identity Office",
           claims: {
             family_name: "Smith",
             given_name: "John",
             birth_date: "1990-01-15",
-            nationality: "US",
-            document_number: "ID-" + Math.random().toString(36).substring(2, 12).toUpperCase(),
+            nationality: ["US"],
+            place_of_birth: { locality: "New York", country: "US" },
+            document_number:
+              "ID-" + Math.random().toString(36).substring(2, 12).toUpperCase(),
+            issuing_authority: "Government Identity Office",
+            issuing_country: "US",
           },
           credential: this.createVerifiableCredential(id, "NationalID", {
             familyName: "Smith",
@@ -134,9 +155,29 @@ export class CredentialStore {
           }),
         };
 
+      case "proof-of-age":
+        return {
+          ...baseCredential,
+          docType: "eu.europa.ec.av.1",
+          namespace: "eu.europa.ec.av.1",
+          displayName: "Proof of Age (EU AV)",
+          issuer: "EU Age Verification Authority",
+          expiresAt: new Date(
+            now.getTime() + 90 * 24 * 60 * 60 * 1000,
+          ).toISOString(), // 90 days
+          claims: {
+            age_over_18: true,
+          },
+          credential: this.createVerifiableCredential(id, "ProofOfAge", {
+            age_over_18: true,
+          }),
+        };
+
       case "education":
         return {
           ...baseCredential,
+          docType: "org.w3c.vc.EducationalCredential",
+          namespace: "org.w3c.vc",
           displayName: "University Degree",
           issuer: "State University",
           claims: {
@@ -145,16 +186,22 @@ export class CredentialStore {
             graduation_date: "2012-05-15",
             gpa: "3.8",
           },
-          credential: this.createVerifiableCredential(id, "EducationalCredential", {
-            degree: "Bachelor of Science",
-            field: "Computer Science",
-            graduationDate: "2012-05-15",
-          }),
+          credential: this.createVerifiableCredential(
+            id,
+            "EducationalCredential",
+            {
+              degree: "Bachelor of Science",
+              field: "Computer Science",
+              graduationDate: "2012-05-15",
+            },
+          ),
         };
 
       case "employment":
         return {
           ...baseCredential,
+          docType: "org.w3c.vc.EmploymentCredential",
+          namespace: "org.w3c.vc",
           displayName: "Proof of Employment",
           issuer: "TechCorp Inc.",
           claims: {
@@ -163,11 +210,15 @@ export class CredentialStore {
             start_date: "2020-03-01",
             status: "active",
           },
-          credential: this.createVerifiableCredential(id, "EmploymentCredential", {
-            employer: "TechCorp Inc.",
-            position: "Senior Software Engineer",
-            startDate: "2020-03-01",
-          }),
+          credential: this.createVerifiableCredential(
+            id,
+            "EmploymentCredential",
+            {
+              employer: "TechCorp Inc.",
+              position: "Senior Software Engineer",
+              startDate: "2020-03-01",
+            },
+          ),
         };
 
       default:
@@ -179,7 +230,7 @@ export class CredentialStore {
   private createVerifiableCredential(
     id: string,
     type: string,
-    subject: Record<string, unknown>
+    subject: Record<string, unknown>,
   ): VerifiableCredential {
     return {
       "@context": [
