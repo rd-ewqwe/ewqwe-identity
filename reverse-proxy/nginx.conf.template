@@ -1,6 +1,6 @@
 # Full nginx configuration template.
-# ${DESTINATION} is substituted by entrypoint.sh using envsubst (only that variable
-# is substituted; nginx's own $-variables such as $host are left intact).
+# ${DESTINATION} and ${DOMAIN} are substituted by entrypoint.sh using envsubst.
+# nginx's own $-variables such as $host are left intact.
 
 events {
     worker_connections 1024;
@@ -10,7 +10,7 @@ http {
     # HTTP: serve ACME renewal challenges and redirect everything else to HTTPS.
     server {
         listen 80;
-        server_name id.demo.ewqwe.eu;
+        server_name ${DOMAIN};
 
         location /.well-known/acme-challenge/ {
             root /var/www/certbot;
@@ -24,10 +24,10 @@ http {
     # HTTPS: TLS termination with Let's Encrypt certificate, proxy to backend.
     server {
         listen 443 ssl;
-        server_name id.demo.ewqwe.eu;
+        server_name ${DOMAIN};
 
-        ssl_certificate     /etc/letsencrypt/live/id.demo.ewqwe.eu/fullchain.pem;
-        ssl_certificate_key /etc/letsencrypt/live/id.demo.ewqwe.eu/privkey.pem;
+        ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
 
         ssl_protocols             TLSv1.2 TLSv1.3;
         ssl_ciphers               ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;

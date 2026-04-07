@@ -1,6 +1,8 @@
-# TLS reverse proxy for id.demo.ewqwe.eu
+# TLS reverse proxy – domain configurable at runtime
 #
 # Required environment variables at runtime:
+#   DOMAIN         – public hostname to serve and obtain a certificate for
+#                    (e.g. id.demo.ewqwe.eu)
 #   DESTINATION    – upstream IP:port, e.g. 192.168.1.100:8443
 #                    Traffic is forwarded to https://<DESTINATION> with
 #                    certificate verification disabled (self-signed certs accepted).
@@ -20,6 +22,7 @@
 #   docker run -d \
 #     --platform linux/amd64 \
 #     -p 80:80 -p 443:443 \
+#     -e DOMAIN=id.demo.ewqwe.eu \
 #     -e DESTINATION=192.168.1.100:8443 \
 #     -e CERTBOT_EMAIL=admin@example.com \
 #     -v letsencrypt:/etc/letsencrypt \
@@ -43,8 +46,8 @@ RUN mkdir -p /var/www/certbot
 # ensure it exists so the entrypoint can write into it unconditionally).
 RUN mkdir -p /etc/letsencrypt/renewal-hooks/deploy
 
-# Temporary HTTP-only nginx config used solely during initial cert acquisition.
-COPY nginx-http.conf      /etc/nginx/nginx-http.conf
+# Temporary HTTP-only nginx config template – ${DOMAIN} is substituted at startup.
+COPY nginx-http.conf      /etc/nginx/nginx-http.conf.template
 
 # Full nginx config template – ${DESTINATION} is substituted at startup.
 COPY nginx.conf.template  /etc/nginx/nginx.conf.template

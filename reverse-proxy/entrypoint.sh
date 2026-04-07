@@ -1,18 +1,20 @@
 #!/bin/bash
 set -euo pipefail
 
-DOMAIN="id.demo.ewqwe.eu"
-CERT_DIR="/etc/letsencrypt/live/${DOMAIN}"
-
 # ── Validate required environment variables ────────────────────────────────────
+: "${DOMAIN:?DOMAIN environment variable is required (e.g. id.demo.ewqwe.eu)}"
 : "${CERTBOT_EMAIL:?CERTBOT_EMAIL environment variable is required (e.g. admin@example.com)}"
 : "${DESTINATION:?DESTINATION environment variable is required (e.g. 192.168.1.100:8443)}"
+
+CERT_DIR="/etc/letsencrypt/live/${DOMAIN}"
 
 log() { echo "[entrypoint] $*"; }
 
 # ── Step 1: Obtain initial certificate via ACME webroot ────────────────────────
 if [ ! -f "${CERT_DIR}/fullchain.pem" ]; then
     log "No certificate found for ${DOMAIN}."
+    log "Rendering HTTP-only nginx config for domain ${DOMAIN}..."
+    envsubst '${DOMAIN}' < /etc/nginx/nginx-http.conf.template > /etc/nginx/nginx-http.conf
     log "Starting nginx with HTTP-only config for ACME webroot challenge..."
     nginx -c /etc/nginx/nginx-http.conf
 
@@ -34,8 +36,8 @@ else
 fi
 
 # ── Step 2: Render nginx config (substitute DESTINATION only) ─────────────────
-log "Writing nginx config: proxy -> https://${DESTINATION}"
-envsubst '${DESTINATION}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
+log "Writing nginx config: domain=${DOMAIN} proxy -> https://${DESTINATION}"
+envsubst '${DOMAIN} ${DESTINATION}' < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
 # ── Step 3: Install certbot auto-renewal deploy hook ──────────────────────────
 # Drop a deploy hook that reloads nginx whenever certbot successfully renews the
