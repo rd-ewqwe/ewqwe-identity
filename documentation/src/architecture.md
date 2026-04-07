@@ -2,11 +2,11 @@
 
 ## System Components
 
-```
+```text
 ┌─────────────────────────────────────────────────────────────────────────────────┐
 │                              BROWSER                                            │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                        WALLET EXTENSION                                   │   │
+│  │                        WALLET EXTENSION                                  │   │
 │  │  ┌─────────────────┐  ┌─────────────────┐  ┌─────────────────────────┐   │   │
 │  │  │  Background     │  │    Popup UI     │  │    Content Script       │   │   │
 │  │  │  Service Worker │  │  (Credential    │  │  (Injected into pages)  │   │   │
@@ -15,24 +15,24 @@
 │  │  │  - Matching     │  │  - View creds   │  │  - Credential selector  │   │   │
 │  │  │  - Credentials  │  │  - Reset wallet │  │  - VP response builder  │   │   │
 │  │  └────────┬────────┘  └─────────────────┘  └───────────┬─────────────┘   │   │
-│  │           │                                            │                  │   │
-│  │           └──────────── runtime.sendMessage ───────────┘                  │   │
+│  │           │                                            │                 │   │
+│  │           └──────────── runtime.sendMessage ───────────┘                 │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
 │                                      │                                          │
 │                                      │ window.postMessage                       │
 │                                      │ (EU_AV_WALLET_REQUEST/RESPONSE)          │
 │                                      ▼                                          │
 │  ┌──────────────────────────────────────────────────────────────────────────┐   │
-│  │                         WEBAPP UI (Frontend)                              │   │
-│  │                         http://localhost:5174                             │   │
-│  │                                                                           │   │
-│  │  ┌─────────────────────────────────────────────────────────────────────┐  │   │
-│  │  │  RelyingPartyApp                                                    │  │   │
-│  │  │  - Credential type selection (mDL, PID, Proof of Age)               │  │   │
-│  │  │  - Claims selection                                                 │  │   │
-│  │  │  - Protocol selection (W3C DC API, OpenID4VP)                       │  │   │
-│  │  │  - Request credentials → Display verification results               │  │   │
-│  │  └─────────────────────────────────────────────────────────────────────┘  │   │
+│  │                         WEBAPP UI (Frontend)                             │   │
+│  │                         http://localhost:5174                            │   │
+│  │                                                                          │   │
+│  │  ┌─────────────────────────────────────────────────────────────────────┐ │   │
+│  │  │  RelyingPartyApp                                                    │ │   │
+│  │  │  - Credential type selection (mDL, PID, Proof of Age)               │ │   │
+│  │  │  - Claims selection                                                 │ │   │
+│  │  │  - Protocol selection (W3C DC API, OpenID4VP)                       │ │   │
+│  │  │  - Request credentials → Display verification results               │ │   │
+│  │  └─────────────────────────────────────────────────────────────────────┘ │   │
 │  └──────────────────────────────────────────────────────────────────────────┘   │
 └─────────────────────────────────────────────────────────────────────────────────┘
                                        │
@@ -74,92 +74,7 @@
 │                                                                                 │
 │  * Signature verification is simulated in demo mode                             │
 └─────────────────────────────────────────────────────────────────────────────────┘
-
-
-## Complete Request Flow
-
-┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
-│    User      │     │  Webapp UI   │     │   Wallet     │     │   Webapp     │
-│              │     │  (Browser)   │     │  Extension   │     │   Backend    │
-└──────┬───────┘     └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
-       │                    │                    │                    │
-       │  1. Select         │                    │                    │
-       │  credential type   │                    │                    │
-       │  & claims          │                    │                    │
-       │───────────────────>│                    │                    │
-       │                    │                    │                    │
-       │  2. Click          │                    │                    │
-       │  "Request          │                    │                    │
-       │   Credentials"     │                    │                    │
-       │───────────────────>│                    │                    │
-       │                    │                    │                    │
-       │                    │  3. postMessage    │                    │
-       │                    │  EU_AV_WALLET_     │                    │
-       │                    │  REQUEST           │                    │
-       │                    │  {protocol,data}   │                    │
-       │                    │───────────────────>│                    │
-       │                    │                    │                    │
-       │                    │                    │  4. Query matching │
-       │                    │                    │  credentials from  │
-       │                    │                    │  storage           │
-       │                    │                    │────────┐           │
-       │                    │                    │        │           │
-       │                    │                    │<───────┘           │
-       │                    │                    │                    │
-       │                    │  5. Show credential│                    │
-       │                    │  selector overlay  │                    │
-       │                    │<───────────────────│                    │
-       │                    │                    │                    │
-       │  6. User selects   │                    │                    │
-       │  credential        │                    │                    │
-       │───────────────────>│───────────────────>│                    │
-       │                    │                    │                    │
-       │                    │  7. postMessage    │                    │
-       │                    │  EU_AV_WALLET_     │                    │
-       │                    │  RESPONSE          │                    │
-       │                    │  {vp_token,...}    │                    │
-       │                    │<───────────────────│                    │
-       │                    │                    │                    │
-       │                    │  8. POST           │                    │
-       │                    │  /api/verify       │                    │
-       │                    │  {vp_token,nonce}  │                    │
-       │                    │───────────────────────────────────────>│
-       │                    │                    │                    │
-       │                    │                    │                    │
-       │                    │                    │     ┌──────────────┴──────────────┐
-       │                    │                    │     │   Credential Verifier       │
-       │                    │                    │     │   (Rust Server)             │
-       │                    │                    │     └──────────────┬──────────────┘
-       │                    │                    │                    │
-       │                    │                    │  9. POST           │
-       │                    │                    │  /api/verify       │
-       │                    │                    │  (TLS with CA)     │
-       │                    │                    │───────────────────>│
-       │                    │                    │                    │
-       │                    │                    │                    │  10. Verify
-       │                    │                    │                    │  credential
-       │                    │                    │                    │────────┐
-       │                    │                    │                    │        │
-       │                    │                    │                    │<───────┘
-       │                    │                    │                    │
-       │                    │                    │                    │  11. Create
-       │                    │                    │                    │  signed
-       │                    │                    │                    │  attestation
-       │                    │                    │                    │────────┐
-       │                    │                    │                    │        │
-       │                    │                    │                    │<───────┘
-       │                    │                    │                    │
-       │                    │                    │  12. Return        │
-       │                    │                    │  {success,claims,  │
-       │                    │                    │   attestation}     │
-       │                    │<─────────────────────────────────────────
-       │                    │                    │                    │
-       │  13. Display       │                    │                    │
-       │  verification      │                    │                    │
-       │  result            │                    │                    │
-       │<───────────────────│                    │                    │
-       │                    │                    │                    │
-
+```
 
 ## Port Assignments
 
@@ -169,7 +84,6 @@
 | Webapp Backend (Deno)  | 5175  | HTTP     | API server (proxied via Vite)        |
 | Credential Verifier    | 9443  | HTTPS    | Rust server with TLS                 |
 | Redis                  | 6379  | TCP      | Session storage for Credential Verifier |
-
 
 ## Message Types
 
@@ -187,7 +101,6 @@
 | GET_CREDENTIALS   | Popup/Content → Background | -                                |
 | DC_API_REQUEST    | Content → Background       | {request: {protocol, data}}      |
 | RESET_CREDENTIALS | Popup → Background         | -                                |
-
 
 ## Startup Commands
 

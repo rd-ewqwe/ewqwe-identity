@@ -2,17 +2,17 @@
 
 ## Overview
 
-This document describes how the EU Age Verification webapp requests credentials from the wallet extension using the **W3C Digital Credentials API**. This is the primary protocol for same-device credential presentation as specified in the [EU Age Verification Profile](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile).
+This document describes how the EU Age Verification web app requests credentials from the wallet extension using the **W3C Digital Credentials API**. This is the primary protocol for same-device credential presentation as specified in the [EU Age Verification Profile](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile).
 
 ## Normative References
 
 | Specification | URL | Description |
 |---------------|-----|-------------|
-| W3C Digital Credentials API | https://wicg.github.io/digital-credentials/ | Browser API for requesting digital credentials |
-| W3C Credential Management Level 1 | https://www.w3.org/TR/credential-management-1/ | Base credential management API |
-| OpenID for Verifiable Presentations (OpenID4VP) 1.0 | https://openid.net/specs/openid-4-verifiable-presentations-1_0.html | Protocol for requesting and presenting VPs |
-| ISO/IEC 18013-5:2021 | https://www.iso.org/standard/69084.html | Mobile driving licence (mDL) standard |
-| EU Age Verification Profile | https://ageverification.dev | EU-specific age verification profile |
+| W3C Digital Credentials API | <https://wicg.github.io/digital-credentials/> | Browser API for requesting digital credentials |
+| W3C Credential Management Level 1 | <https://www.w3.org/TR/credential-management-1/> | Base credential management API |
+| OpenID for Verifiable Presentations (OpenID4VP) 1.0 | <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html> | Protocol for requesting and presenting VPs |
+| ISO/IEC 18013-5:2021 | <https://www.iso.org/standard/69084.html> | Mobile driving licence (mDL) standard |
+| EU Age Verification Profile | <https://ageverification.dev> | EU-specific age verification profile |
 
 ## W3C Digital Credentials API
 
@@ -27,7 +27,7 @@ if (typeof globalThis.DigitalCredential !== "undefined") {
 }
 ```
 
-### API Interface
+### API
 
 The Digital Credentials API adds the `digital` option to `navigator.credentials.get()`:
 
@@ -50,10 +50,10 @@ interface DigitalCredentialRequest {
 
 ### 1. Building the Presentation Request
 
-The webapp constructs an OpenID4VP-compatible presentation request:
+The web app constructs an OpenID4VP-compatible presentation request:
 
 ```typescript
-// From webapp/src/credentials.ts
+// From web app/src/credentials.ts
 
 const request: OpenID4VPRequest = {
   // Client identification
@@ -111,7 +111,7 @@ const request: OpenID4VPRequest = {
 When the native Digital Credentials API is available:
 
 ```typescript
-// From webapp/src/credentials.ts
+// From web app/src/credentials.ts
 
 const credential = await navigator.credentials.get({
   digital: {
@@ -131,10 +131,10 @@ const digitalCredential = credential as {
 
 ### 3. Fallback: Extension Communication via postMessage
 
-When native API is unavailable, the webapp communicates with the wallet extension via `postMessage`:
+When the native API is unavailable, web appbapp communicates with the wallet extension via `postMessage`:
 
 ```typescript
-// From webapp/src/credentials.ts
+// From web app/src/credentials.ts
 
 // Send request to extension's content script
 window.postMessage({
@@ -299,11 +299,13 @@ interface OpenID4VPResponse {
 ### Available Claims by Type
 
 #### Proof of Age (`eu.europa.ec.av.1`)
+
 | Claim | Type | Description |
 |-------|------|-------------|
 | `age_over_18` | boolean | Subject is 18 or older |
 
 #### Mobile Driver's License (`org.iso.18013.5.1`)
+
 | Claim | Type | Description |
 |-------|------|-------------|
 | `family_name` | string | Family name |
@@ -321,6 +323,7 @@ interface OpenID4VPResponse {
 ### Nonce Binding
 
 The `nonce` parameter MUST be:
+
 1. Generated fresh for each request using cryptographically secure randomness
 2. Bound to the VP token in the response
 3. Verified by the Credential Verifier to prevent replay attacks
@@ -345,6 +348,7 @@ const siteInfo = window.location.origin;  // Shown to user in credential selecto
 ### Selective Disclosure
 
 When `limit_disclosure: "required"` is set:
+
 - Wallet MUST only reveal the specifically requested claims
 - Other claims in the credential remain hidden
 - Supports privacy-preserving age verification (reveal `age_over_18` without revealing exact birth date)
