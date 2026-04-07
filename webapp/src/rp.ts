@@ -4,7 +4,11 @@ import type {
   OpenID4VPResponse,
   VerificationResult,
 } from "./types.ts";
-import { getClaimsForType, getDefaultClaims } from "./config.ts";
+import {
+  getClaimsForType,
+  getDefaultClaims,
+  getProfileForType,
+} from "./config.ts";
 import {
   buildPresentationRequest,
   requestCredentials,
@@ -31,6 +35,7 @@ export class RelyingPartyApp {
     this.checkAPISupport();
     this.renderClaims();
     this.updateRequestPreview();
+    this.updateProfileInfo();
 
     // Initialize with default claims
     getDefaultClaims(this.selectedCredentialType).forEach((claim) => {
@@ -132,8 +137,55 @@ export class RelyingPartyApp {
     });
     this.updateClaimsUI();
     this.updateRequestPreview();
+    this.updateProfileInfo();
 
     this.logger.log(`Selected credential type: ${type}`);
+  }
+
+  /**
+   * Update the profile information display based on selected credential type
+   */
+  private updateProfileInfo(): void {
+    const profileContainer = document.getElementById("profile-info");
+    if (!profileContainer) return;
+
+    const profile = getProfileForType(this.selectedCredentialType);
+    if (!profile) {
+      profileContainer.innerHTML = "";
+      return;
+    }
+
+    const isHaip = profile.id === "haip";
+    const badgeColor = isHaip ? "bg-blue-600" : "bg-green-600";
+    const borderColor = isHaip ? "border-blue-500/30" : "border-green-500/30";
+    const bgColor = isHaip ? "bg-blue-950/30" : "bg-green-950/30";
+
+    profileContainer.innerHTML = `
+      <div class="rounded-lg ${bgColor} ${borderColor} border p-4 mb-6">
+        <div class="flex items-center gap-2 mb-3">
+          <span class="px-2 py-1 ${badgeColor} text-xs font-semibold rounded-full">${profile.name}</span>
+          <span class="text-gray-400 text-sm">${profile.description}</span>
+        </div>
+        <div class="grid grid-cols-2 gap-4 text-sm">
+          <div>
+            <span class="text-gray-500">Client ID Scheme:</span>
+            <span class="ml-2 text-white font-mono">${profile.clientIdScheme}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Request Format:</span>
+            <span class="ml-2 text-white font-mono">${profile.requestFormat === "jar" ? "Signed JAR" : "Plain JSON"}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">Response Mode:</span>
+            <span class="ml-2 text-white font-mono">${profile.responseMode}</span>
+          </div>
+          <div>
+            <span class="text-gray-500">URL Scheme:</span>
+            <span class="ml-2 text-white font-mono">${profile.urlSchemes[0]}</span>
+          </div>
+        </div>
+      </div>
+    `;
   }
 
   private renderClaims(): void {

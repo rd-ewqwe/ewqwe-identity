@@ -85,6 +85,28 @@ export interface DescriptorMap {
 // Credential types for display
 export type CredentialType = "mdl" | "national-id" | "proof-of-age";
 
+// Protocol profile types
+export type ProfileId = "haip" | "annex-a";
+export type ClientIdScheme = "x509_san_dns" | "redirect_uri";
+export type RequestFormat = "jar" | "plain";
+export type ResponseMode = "direct_post" | "direct_post.jwt";
+
+/**
+ * Protocol Profile Configuration
+ *
+ * Defines the OpenID4VP profile to use for a credential type.
+ */
+export interface ProtocolProfile {
+  id: ProfileId;
+  name: string;
+  description: string;
+  clientIdScheme: ClientIdScheme;
+  requestFormat: RequestFormat;
+  responseMode: ResponseMode;
+  urlSchemes: string[];
+  requiresJarSigning: boolean;
+}
+
 export interface ClaimDefinition {
   id: string;
   name: string;
@@ -97,6 +119,7 @@ export interface CredentialTypeConfig {
   name: string;
   docType: string;
   namespace: string;
+  profile: ProfileId;
   claims: ClaimDefinition[];
 }
 

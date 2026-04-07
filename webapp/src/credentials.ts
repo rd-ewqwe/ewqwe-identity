@@ -8,7 +8,7 @@ import type {
   VerificationResult,
 } from "./types.ts";
 import type { DebugLogger } from "./debug.ts";
-import { CREDENTIAL_TYPES } from "./config.ts";
+import { CREDENTIAL_TYPES, PROTOCOL_PROFILES } from "./config.ts";
 
 /**
  * Build an OpenID4VP presentation request
@@ -23,6 +23,7 @@ export function buildPresentationRequest(
     throw new Error(`Unknown credential type: ${credentialType}`);
   }
 
+  const profile = PROTOCOL_PROFILES[config.profile];
   const nonce = crypto.randomUUID();
   const state = crypto.randomUUID();
 
@@ -61,9 +62,9 @@ export function buildPresentationRequest(
 
   return {
     client_id: window.location.origin,
-    client_id_scheme: "redirect_uri",
+    client_id_scheme: profile?.clientIdScheme || "redirect_uri",
     response_type: "vp_token",
-    response_mode: "direct_post",
+    response_mode: profile?.responseMode || "direct_post",
     nonce,
     state,
     presentation_definition: presentationDefinition,
@@ -75,7 +76,9 @@ export function buildPresentationRequest(
         jwt_vp: { alg: ["ES256", "ES384", "ES512", "EdDSA"] },
       },
     },
-  };
+    // Include credential type for profile determination on backend
+    credential_type: credentialType,
+  } as OpenID4VPRequest & { credential_type: string };
 }
 
 /**
@@ -185,7 +188,7 @@ async function requestViaW3CDC(
  * 4. Return the VP token once received
  */
 async function requestViaOpenID4VPCrossDevice(
-  request: OpenID4VPRequest,
+  request: OpenID4VPRequest & { credential_type?: string },
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
   logger.log("OpenID4VP cross-device flow - initializing transaction");
@@ -197,10 +200,17 @@ async function requestViaOpenID4VPCrossDevice(
     presentation_definition?: unknown;
     nonce?: string;
     client_metadata?: unknown;
+    credential_type?: string;
   } = {
     nonce: request.nonce,
     client_metadata: request.client_metadata,
   };
+
+  // Include credential_type for profile determination on backend
+  if (request.credential_type) {
+    initRequest.credential_type = request.credential_type;
+    logger.log(`Credential type: ${request.credential_type}`);
+  }
 
   // If we have a presentation_definition, include it (backend will convert to DCQL)
   if (request.presentation_definition) {
@@ -224,15 +234,23 @@ async function requestViaOpenID4VPCrossDevice(
     transaction_id: string;
     authorization_request_uri: string;
     expires_in: number;
+    profile: string;
+    client_id_scheme: string;
   };
 
   logger.log("Transaction initialized", {
     transactionId: initData.transaction_id,
     expiresIn: initData.expires_in,
+    profile: initData.profile,
+    clientIdScheme: initData.client_id_scheme,
   });
 
-  // Step 2: Show QR code modal
-  const qrModal = showQRCodeModal(initData.authorization_request_uri, logger);
+  // Step 2: Show QR code modal with profile info
+  const qrModal = showQRCodeModal(
+    initData.authorization_request_uri,
+    logger,
+    initData.profile,
+  );
 
   try {
     // Step 3: Poll for wallet response
@@ -279,15 +297,24 @@ interface QRCodeModal {
 function showQRCodeModal(
   authorizationRequestUri: string,
   logger: DebugLogger,
+  profile?: string,
 ): QRCodeModal {
   logger.log("Showing QR code modal", {
     uri: authorizationRequestUri.slice(0, 50) + "...",
+    profile,
   });
 
   let cancelResolve: () => void;
   const onCancel = new Promise<void>((resolve) => {
     cancelResolve = resolve;
   });
+
+  // Determine the wallet type based on profile
+  const isHaip = profile === "haip";
+  const walletName = isHaip ? "EUDI Wallet" : "Age Verification App";
+  const profileBadge = isHaip
+    ? '<span class="inline-block px-2 py-1 bg-blue-600 text-xs rounded-full">HAIP</span>'
+    : '<span class="inline-block px-2 py-1 bg-green-600 text-xs rounded-full">Annex A</span>';
 
   // Create modal overlay
   const overlay = document.createElement("div");
@@ -298,9 +325,12 @@ function showQRCodeModal(
   overlay.innerHTML = `
     <div class="bg-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-white/20">
       <div class="text-center">
-        <h3 class="text-xl font-semibold mb-2">Scan with your Wallet</h3>
+        <div class="flex items-center justify-center gap-2 mb-2">
+          <h3 class="text-xl font-semibold">Scan with your Wallet</h3>
+          ${profileBadge}
+        </div>
         <p class="text-gray-400 text-sm mb-6">
-          Scan this QR code with your EUDI Wallet or compatible mobile wallet app
+          Scan this QR code with your ${walletName} or compatible mobile wallet app
         </p>
         
         <div id="qr-code-container" class="bg-white p-4 rounded-xl inline-block mb-6">
@@ -486,7 +516,7 @@ function pollForWalletResponse(
  * This is suitable for mobile browsers where the wallet app is installed.
  */
 async function requestViaOpenID4VPSameDevice(
-  request: OpenID4VPRequest,
+  request: OpenID4VPRequest & { credential_type?: string },
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
   logger.log("OpenID4VP same-device flow requested");
@@ -500,10 +530,17 @@ async function requestViaOpenID4VPSameDevice(
     presentation_definition?: unknown;
     nonce?: string;
     mode?: string;
+    credential_type?: string;
   } = {
     nonce: request.nonce,
     mode: "same-device",
   };
+
+  // Include credential_type for profile determination on backend
+  if (request.credential_type) {
+    initRequest.credential_type = request.credential_type;
+    logger.log(`Credential type: ${request.credential_type}`);
+  }
 
   // If we have a presentation_definition, include it (backend will convert to DCQL)
   if (request.presentation_definition) {

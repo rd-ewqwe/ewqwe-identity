@@ -286,16 +286,19 @@ The wallet POSTs a `application/x-www-form-urlencoded` body to the `response_uri
 
 | Parameter | Required | Description |
 |-----------|----------|-------------|
-| `vp_token` | ✓ | The Verifiable Presentation containing the requested claims |
-| `presentation_submission` | ✓ | Descriptor mapping the VP token to the DCQL query (OpenID4VP Section 6) |
+| `vp_token` | ✓ | The Verifiable Presentation containing the requested claims. With DCQL queries, this is a JSON object where keys are credential IDs from the query and values are arrays of presentations. |
+| `presentation_submission` | No (DCQL) | **Not included when using `dcql_query`**. With DCQL, the `vp_token` structure itself maps credentials to the query. Only required with `presentation_definition`. |
 | `state` | optional | Echoed from the request if provided |
+
+> **Note**: Per OpenID4VP Section 8.1, when using DCQL queries, the response does NOT include `presentation_submission`. The `vp_token` is a JSON object like `{"credential_id": ["base64url_presentation"]}` where the keys correspond to the `id` values in the DCQL query.
 
 ### TypeScript/JavaScript example (RP endpoint)
 
 ```typescript
 // Express.js / Node.js example
 app.post("/api/openid4vp/callback", async (req, res) => {
-  const { vp_token, presentation_submission, state } = req.body;
+  const { vp_token, state } = req.body;
+  // Note: presentation_submission is NOT included with DCQL queries
 
   // 1) Validate state (if used)
   if (state && !validateState(state)) {
@@ -303,11 +306,13 @@ app.post("/api/openid4vp/callback", async (req, res) => {
   }
 
   // 2) Parse the VP token
-  // The format depends on the credential type (JWT, mDoc CBOR, etc.)
-  // For this example, assume JWT-encoded VP
+  // With DCQL, vp_token is a JSON object: {"credential_id": ["base64url_presentation"]}
   let vpPayload;
   try {
-    vpPayload = parseAndVerifyVP(vp_token); // verify signature, issuer trust, etc.
+    const vpTokenObj = JSON.parse(vp_token);
+    // Get the first credential from the DCQL response
+    const [credentialId, presentations] = Object.entries(vpTokenObj)[0];
+    vpPayload = parseAndVerifyPresentation(presentations[0]); // verify signature, issuer trust, etc.
   } catch (error) {
     return res.status(400).json({ error: "invalid_vp_token" });
   }
@@ -367,6 +372,8 @@ app.post("/api/openid4vp/callback", async (req, res) => {
 ```
 
 ### Example presentation_submission
+
+> **Note**: This structure is only used with `presentation_definition`. When using `dcql_query` (as required by Annex A), the wallet does NOT send `presentation_submission`. Instead, the `vp_token` itself is structured with credential IDs as keys.
 
 ```json
 {
@@ -448,7 +455,8 @@ app.post("/api/openid4vp/callback", async (req, res) => {
 - [ ] `nonce` is fresh, random, and stored server-side.
 - [ ] `dcql_query` is valid JSON and follows the DCQL schema.
 - [ ] `response_uri` is HTTPS and handles POST requests.
-- [ ] Wallet POSTs `vp_token` + `presentation_submission` + optional `state`.
+- [ ] Wallet POSTs `vp_token` + optional `state` (no `presentation_submission` with DCQL).
+- [ ] RP parses DCQL `vp_token` format: `{"credential_id": ["presentation"]}`.
 - [ ] RP validates `nonce`, `aud`, signature, and claim values.
 - [ ] RP returns a redirect URI or success indicator to the wallet.
 

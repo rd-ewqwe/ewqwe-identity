@@ -229,7 +229,10 @@ interface OpenID4VPTransaction {
   status: "pending" | "received" | "verified" | "error";
   dcqlQuery: DCQLQuery;
   clientId: string;
+  clientIdScheme: "x509_san_dns" | "redirect_uri";
   responseUri: string;
+  responseMode: "direct_post" | "direct_post.jwt";
+  profile: "haip" | "annex-a";
   walletResponse?: WalletDirectPostResponse;
   verificationResult?: VerifyResponse;
   errorMessage?: string;
@@ -282,6 +285,10 @@ interface InitTransactionRequest {
   presentation_definition?: unknown;
   nonce?: string;
   client_metadata?: ClientMetadata;
+  /** Protocol profile: "haip" or "annex-a" */
+  profile?: "haip" | "annex-a";
+  /** Credential type being requested (used to determine profile if not specified) */
+  credential_type?: string;
 }
 
 interface InitTransactionResponse {
@@ -292,6 +299,10 @@ interface InitTransactionResponse {
   /** Alias for authorization_request_uri, used by same-device flow */
   deep_link_uri: string;
   expires_in: number;
+  /** The protocol profile used for this transaction */
+  profile: "haip" | "annex-a";
+  /** Client ID scheme used */
+  client_id_scheme: "x509_san_dns" | "redirect_uri";
 }
 
 // In-memory transaction storage (use Redis in production)
@@ -315,7 +326,9 @@ setInterval(() => {
 
 interface VerifyRequest {
   vp_token: string;
-  presentation_submission: {
+  // presentation_submission is optional for DCQL-based responses (OpenID4VP Section 8.1)
+  // With DCQL, the vp_token is already structured with credential IDs as keys
+  presentation_submission?: {
     id: string;
     definition_id: string;
     descriptor_map: Array<{
@@ -323,7 +336,7 @@ interface VerifyRequest {
       format: string;
       path: string;
     }>;
-  };
+  } | null;
   nonce?: string;
   state?: string;
   client_id?: string;
@@ -560,13 +573,50 @@ async function handleGetPublicJwkSet(
 }
 
 /**
+ * Determine the protocol profile based on credential type or explicit profile
+ *
+ * - mDL and PID use HAIP (x509_san_dns, JAR signing, eudi-openid4vp://)
+ * - Proof of Age uses Annex A (redirect_uri, plain request, av://)
+ */
+function determineProfile(
+  credentialType?: string,
+  explicitProfile?: "haip" | "annex-a",
+): "haip" | "annex-a" {
+  // Explicit profile takes precedence
+  if (explicitProfile) {
+    return explicitProfile;
+  }
+
+  // Determine from credential type
+  if (credentialType === "proof-of-age") {
+    return "annex-a";
+  }
+
+  // Default to HAIP for mDL, PID, and unknown types
+  return "haip";
+}
+
+/**
  * Initialize an OpenID4VP transaction for cross-device presentation
- * Compatible with EUDI Wallet (Android/iOS) reference implementation
+ *
+ * Supports two profiles:
+ *
+ * **HAIP Profile** (for mDL, PID):
+ * - Client ID Scheme: x509_san_dns (X.509 certificate with SAN DNS)
+ * - Request: Signed JAR (JWT Authorization Request with x5c header)
+ * - Response Mode: direct_post.jwt
+ * - URL Scheme: eudi-openid4vp:// or openid4vp://
+ *
+ * **Annex A Profile** (for Proof of Age):
+ * - Client ID Scheme: redirect_uri
+ * - Request: Plain parameters (no JAR signing)
+ * - Response Mode: direct_post
+ * - URL Scheme: av://
  *
  * The wallet will:
  * 1. Scan the QR code containing the authorization_request_uri
- * 2. Fetch the authorization request from request_uri (returns signed JAR)
- * 3. POST the VP token to response_uri (direct_post)
+ * 2. For HAIP: Fetch signed JAR from request_uri; For Annex A: Use inline params
+ * 3. POST the VP token to response_uri
  */
 async function handleInitOpenID4VPTransaction(
   req: Request,
@@ -579,6 +629,10 @@ async function handleInitOpenID4VPTransaction(
   try {
     const body: InitTransactionRequest = await req.json();
 
+    // Determine which profile to use
+    const profile = determineProfile(body.credential_type, body.profile);
+    console.log(`[OpenID4VP] Using profile: ${profile.toUpperCase()}`);
+
     // Generate unique identifiers
     const transactionId = crypto.randomUUID();
     const state = crypto.randomUUID();
@@ -590,14 +644,32 @@ async function handleInitOpenID4VPTransaction(
     // Build the response_uri where wallet will POST the VP token
     const responseUri = `${PUBLIC_URL}/api/openid4vp/direct_post`;
 
-    // Build the request_uri where wallet will fetch the full authorization request (JAR)
+    // Build the request_uri where wallet will fetch the full authorization request
     const requestUri = `${PUBLIC_URL}/api/openid4vp/request/${transactionId}`;
 
-    // Client ID using x509_san_dns scheme
-    // The SAN DNS name from the leaf certificate is used as the client identifier.
-    // The EUDI Wallet will verify that the JAR is signed with a certificate
-    // whose SAN DNS entry matches this client_id.
-    const clientId = `x509_san_dns:${jarSanDnsName}`;
+    // Determine client_id and client_id_scheme based on profile
+    let clientId: string;
+    let clientIdScheme: "x509_san_dns" | "redirect_uri";
+    let responseMode: "direct_post" | "direct_post.jwt";
+    let urlScheme: string;
+
+    if (profile === "haip") {
+      // HAIP Profile: x509_san_dns with JAR signing
+      clientIdScheme = "x509_san_dns";
+      clientId = `x509_san_dns:${jarSanDnsName}`;
+      responseMode = "direct_post.jwt";
+      urlScheme = "eudi-openid4vp://";
+    } else {
+      // Annex A Profile: redirect_uri without JAR signing
+      clientIdScheme = "redirect_uri";
+      clientId = `redirect_uri:${responseUri}`;
+      responseMode = "direct_post";
+      urlScheme = "av://";
+    }
+
+    console.log(`[OpenID4VP] Client ID Scheme: ${clientIdScheme}`);
+    console.log(`[OpenID4VP] Response Mode: ${responseMode}`);
+    console.log(`[OpenID4VP] URL Scheme: ${urlScheme}`);
 
     // Convert presentation_definition to DCQL query if needed, or use dcql_query directly
     let dcqlQuery: DCQLQuery;
@@ -638,7 +710,10 @@ async function handleInitOpenID4VPTransaction(
       status: "pending",
       dcqlQuery,
       clientId,
+      clientIdScheme,
       responseUri,
+      responseMode,
+      profile,
       clientMetadata,
     };
     transactions.set(transactionId, transaction);
@@ -653,22 +728,70 @@ async function handleInitOpenID4VPTransaction(
     console.log(`[OpenID4VP] DCQL Query:`, JSON.stringify(dcqlQuery, null, 2));
 
     // Build the authorization request URI for the QR code
-    // EUDI Wallet supports: openid4vp://, mdoc-openid4vp://, haip-vp://
-    const authorizationRequestUri = `openid4vp://?client_id=${encodeURIComponent(clientId)}&request_uri=${encodeURIComponent(requestUri)}`;
+    // The format depends on the profile
+    let authorizationRequestUri: string;
+    if (profile === "haip") {
+      // HAIP: Use request_uri to fetch signed JAR
+      // EUDI Wallet supports: eudi-openid4vp://, openid4vp://, mdoc-openid4vp://
+      authorizationRequestUri = `${urlScheme}?client_id=${encodeURIComponent(clientId)}&request_uri=${encodeURIComponent(requestUri)}`;
+    } else {
+      // Annex A: Pass all parameters INLINE in the URL
+      // IMPORTANT: For redirect_uri client_id_scheme, the wallet expects all
+      // authorization request parameters to be in the URL, NOT via request_uri.
+      // Using request_uri with redirect_uri scheme causes the wallet to try
+      // parsing the response as a signed JWT, which fails with "JAR JWT parse error".
+      //
+      // See: eudi-lib-jvm-openid4vp-kt/UnvalidatedRequestResolverTest.kt examples:
+      // "client_id=redirect_uri%3Ahttps%3A%2F%2F...&response_type=vp_token&nonce=..."
+      //
+      // IMPORTANT: The field MUST be named "vp_formats_supported" (not "vp_formats")
+      // per ValidatedClientMetaData.kt which has @Required annotation on this field.
+      const clientMetadataForUrl = {
+        client_name: "EwQwE Age Verification Demo",
+        logo_uri: `${PUBLIC_URL}/logo.png`,
+        vp_formats_supported: {
+          mso_mdoc: {
+            issuerauth_alg_values: [-7, -35, -36],
+            deviceauth_alg_values: [-7, -35, -36],
+          },
+        },
+      };
+
+      // Build the inline authorization request URL with all parameters
+      // For direct_post response mode, use response_uri (NOT redirect_uri)
+      // Per RequestObjectValidator.kt: "direct_post" -> requiredResponseUriAndNotProvidedRedirectUri()
+      const params = new URLSearchParams();
+      params.set("client_id", clientId);
+      params.set("response_type", "vp_token");
+      params.set("response_mode", responseMode);
+      // For direct_post, use response_uri (redirect_uri must NOT be provided)
+      params.set("response_uri", responseUri);
+      params.set("nonce", nonce);
+      params.set("state", state);
+      params.set("dcql_query", JSON.stringify(dcqlQuery));
+      params.set("client_metadata", JSON.stringify(clientMetadataForUrl));
+
+      authorizationRequestUri = `${urlScheme}?${params.toString()}`;
+    }
 
     console.log(
-      `[OpenID4VP] Authorization Request URI: ${authorizationRequestUri.slice(0, 100)}...`,
+      `[OpenID4VP] Authorization Request URI length: ${authorizationRequestUri.length}`,
+    );
+    console.log(
+      `[OpenID4VP] Authorization Request URI: ${authorizationRequestUri.slice(0, 200)}...`,
     );
     console.log("=".repeat(60) + "\n");
 
     const response: InitTransactionResponse = {
       transaction_id: transactionId,
       client_id: clientId,
+      client_id_scheme: clientIdScheme,
       request_uri: requestUri,
       authorization_request_uri: authorizationRequestUri,
       // Include deep_link_uri as an alias for same-device flow
       deep_link_uri: authorizationRequestUri,
       expires_in: Math.floor(TRANSACTION_TTL_MS / 1000),
+      profile,
     };
 
     return new Response(JSON.stringify(response), {
@@ -798,8 +921,13 @@ function getDefaultAgeVerificationDCQL(): DCQLQuery {
  * Get the authorization request for a transaction
  * The wallet fetches this via the request_uri in the QR code
  *
- * IMPORTANT: Returns a signed JWT (JAR - JWT Secured Authorization Request) per RFC 9101
- * Content-Type: application/oauth-authz-req+jwt
+ * For HAIP profile:
+ * - Returns a signed JWT (JAR - JWT Secured Authorization Request) per RFC 9101
+ * - Content-Type: application/oauth-authz-req+jwt
+ *
+ * For Annex A profile:
+ * - Returns plain JSON authorization request (no JAR signing)
+ * - Content-Type: application/json
  */
 async function handleGetAuthorizationRequest(
   transactionId: string,
@@ -807,9 +935,7 @@ async function handleGetAuthorizationRequest(
   req: Request,
 ): Promise<Response> {
   console.log("\n" + "=".repeat(60));
-  console.log(
-    "[OpenID4VP] === WALLET FETCHING AUTHORIZATION REQUEST (JAR) ===",
-  );
+  console.log("[OpenID4VP] === WALLET FETCHING AUTHORIZATION REQUEST ===");
   console.log(`[OpenID4VP] Transaction ID: ${transactionId.slice(0, 8)}...`);
   console.log(`[OpenID4VP] Method: ${req.method}`);
   console.log(`[OpenID4VP] Accept: ${req.headers.get("accept")}`);
@@ -838,14 +964,10 @@ async function handleGetAuthorizationRequest(
     });
   }
 
-  try {
-    // Build the JWT claims for the authorization request
-    const now = Math.floor(Date.now() / 1000);
-    const exp = Math.floor(transaction.expiresAt / 1000);
+  console.log(`[OpenID4VP] Profile: ${transaction.profile.toUpperCase()}`);
 
+  try {
     // Build client_metadata
-    // For x509_san_dns, the wallet extracts the public key from the x5c certificate
-    // chain in the JWT header, so we don't need to include jwks.
     const clientMetadata = {
       client_name:
         transaction.clientMetadata?.client_name ||
@@ -862,61 +984,90 @@ async function handleGetAuthorizationRequest(
       },
     };
 
-    // Build the JWT payload (authorization request claims)
-    // Per OpenID4VP and EUDI Wallet expectations
-    const jwtPayload: jose.JWTPayload = {
-      // Standard JWT claims
-      iss: transaction.clientId,
-      aud: "https://self-issued.me/v2", // Self-issued OP v2
-      iat: now,
-      exp: exp,
+    if (transaction.profile === "haip") {
+      // HAIP Profile: Return signed JAR (JWT with x5c header)
+      // For x509_san_dns, the wallet verifies:
+      // 1. The JWT signature using the public key from the leaf certificate in x5c
+      // 2. That the leaf certificate's SAN DNS matches the client_id
+      // 3. The certificate chain is trusted
+      const now = Math.floor(Date.now() / 1000);
+      const exp = Math.floor(transaction.expiresAt / 1000);
 
-      // OpenID4VP required claims
-      client_id: transaction.clientId,
-      client_id_scheme: "x509_san_dns",
-      response_type: "vp_token",
-      response_mode: "direct_post",
-      response_uri: transaction.responseUri,
-      state: transaction.state,
-      nonce: transaction.nonce,
+      const jwtPayload = {
+        // JWT standard claims
+        iss: transaction.clientId,
+        aud: "https://self-issued.me/v2",
+        iat: now,
+        exp: exp,
 
-      // DCQL query (the credential request)
-      dcql_query: transaction.dcqlQuery,
+        // OpenID4VP required claims
+        client_id: transaction.clientId,
+        client_id_scheme: transaction.clientIdScheme,
+        response_type: "vp_token",
+        response_mode: transaction.responseMode,
+        response_uri: transaction.responseUri,
+        state: transaction.state,
+        nonce: transaction.nonce,
 
-      // Client metadata
-      client_metadata: clientMetadata,
-    };
+        // DCQL query (the credential request)
+        dcql_query: transaction.dcqlQuery,
 
-    console.log(`[OpenID4VP] Building JAR with claims:`);
-    console.log(JSON.stringify(jwtPayload, null, 2));
+        // Client metadata
+        client_metadata: clientMetadata,
+      };
 
-    // Sign the JWT (JAR) with the x5c certificate chain in the header
-    // For x509_san_dns, the wallet verifies:
-    // 1. The JWT signature using the public key from the leaf certificate in x5c
-    // 2. That the leaf certificate's SAN DNS matches the client_id
-    // 3. The certificate chain is trusted
-    const jwt = await new jose.SignJWT(jwtPayload)
-      .setProtectedHeader({
-        alg: "ES256",
-        typ: "oauth-authz-req+jwt",
-        kid: JAR_KEY_ID,
-        x5c: jarX5cChain,
-      })
-      .sign(jarSigningKey);
+      console.log(`[OpenID4VP] Building signed JAR (HAIP):`);
+      console.log(JSON.stringify(jwtPayload, null, 2));
 
-    console.log(
-      `[OpenID4VP] Generated JAR (first 100 chars): ${jwt.slice(0, 100)}...`,
-    );
-    console.log("=".repeat(60) + "\n");
+      const jwt = await new jose.SignJWT(jwtPayload as jose.JWTPayload)
+        .setProtectedHeader({
+          alg: "ES256",
+          typ: "oauth-authz-req+jwt",
+          kid: JAR_KEY_ID,
+          x5c: jarX5cChain,
+        })
+        .sign(jarSigningKey);
 
-    // Return the signed JWT with proper content-type
-    // RFC 9101: application/oauth-authz-req+jwt
-    return new Response(jwt, {
-      headers: {
-        "Content-Type": "application/oauth-authz-req+jwt",
-        ...corsHeaders,
-      },
-    });
+      console.log(
+        `[OpenID4VP] Generated signed JAR (first 100 chars): ${jwt.slice(0, 100)}...`,
+      );
+      console.log("=".repeat(60) + "\n");
+
+      return new Response(jwt, {
+        headers: {
+          "Content-Type": "application/oauth-authz-req+jwt",
+          ...corsHeaders,
+        },
+      });
+    } else {
+      // Annex A Profile: Return plain JSON authorization request
+      // redirect_uri scheme does NOT use signed JARs
+      // Only include OpenID4VP parameters, NOT JWT claims (iss, aud, iat, exp)
+      const authRequest = {
+        client_id: transaction.clientId,
+        client_id_scheme: transaction.clientIdScheme,
+        response_type: "vp_token",
+        response_mode: transaction.responseMode,
+        response_uri: transaction.responseUri,
+        state: transaction.state,
+        nonce: transaction.nonce,
+        dcql_query: transaction.dcqlQuery,
+        client_metadata: clientMetadata,
+      };
+
+      console.log(
+        `[OpenID4VP] Building plain authorization request (Annex A):`,
+      );
+      console.log(JSON.stringify(authRequest, null, 2));
+      console.log("=".repeat(60) + "\n");
+
+      return new Response(JSON.stringify(authRequest), {
+        headers: {
+          "Content-Type": "application/json",
+          ...corsHeaders,
+        },
+      });
+    }
   } catch (error) {
     console.error("[OpenID4VP] Error creating JAR:", error);
     return new Response(

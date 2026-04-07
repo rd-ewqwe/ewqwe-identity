@@ -486,6 +486,9 @@ export async function handlePresentationRequest(
   // Create VP Token with selective disclosure
   const vpToken = await createVPToken(selected, request);
   
+  // Note: Native DCQL wallets return vp_token as {"credential_id": ["presentation"]}
+  // and do NOT include presentation_submission (per OpenID4VP Section 8.1).
+  // This browser extension format is a fallback demo implementation.
   return {
     vp_token: vpToken,
     presentation_submission: {

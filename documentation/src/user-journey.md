@@ -72,7 +72,7 @@ sequenceDiagram
     User->>AVI: 9. Approve presentation
     
     Note over AVI,Backend: direct_post response mode (plain, not JWT-wrapped)
-    AVI->>Backend: 10. POST /cb<br/>vp_token={mDoc presentation}&<br/>presentation_submission={...}
+    AVI->>Backend: 10. POST /cb<br/>vp_token={"credential_id":[mdoc]}&state=...
     
     Note over Backend,Verifier: Verification Flow
     Backend->>Verifier: 11. POST /verify (HTTPS + mTLS)
@@ -88,11 +88,13 @@ sequenceDiagram
 
 ### Annex A Key Characteristics
 
+- **Inline Parameters**: All authorization request parameters must be passed directly in the URL (no `request_uri`)
 - **No JAR**: Authorization Request is sent as plain query parameters, not a signed JWT
 - **`redirect_uri` scheme**: The `client_id` is literally `redirect_uri:` followed by the callback URL
 - **`direct_post`**: The wallet POSTs the VP Token directly (not wrapped in a JWT)
 - **Simple trust**: No certificate chain verification; the RP is identified by its redirect URI
 - **`av://` deep link**: The AV App registers this custom URL scheme
+- **`client_metadata`**: When provided inline, must use `vp_formats_supported` field (not `vp_formats`)
 
 ## Flow 2: EUDI Wallet (HAIP Profile)
 
@@ -177,8 +179,8 @@ sequenceDiagram
     Wallet->>Wallet: 5. Match credentials from storage
     Wallet->>WebappUI: 6. Show credential selector overlay
     User->>Wallet: 7. User selects credential
-    Wallet->>Wallet: 8. Build OpenID4VP response<br/>{vp_token, presentation_submission}
-    Wallet->>WebappUI: 9. postMessage EU_AV_WALLET_RESPONSE<br/>{response: {vp_token, ...}}
+    Wallet->>Wallet: 8. Build OpenID4VP response<br/>{vp_token: {"cred_id": [mdoc]}}
+    Wallet->>WebappUI: 9. postMessage EU_AV_WALLET_RESPONSE<br/>{response: {vp_token, state}}
     
     Note over WebappUI,Verifier: Verification Flow
     WebappUI->>Backend: 10. POST /api/verify<br/>{vp_token, nonce, client_id}

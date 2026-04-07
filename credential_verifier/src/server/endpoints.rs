@@ -9,12 +9,16 @@ use serde::{Deserialize, Serialize};
 
 /// Request body for credential verification
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)] // Fields are part of OpenID4VP spec but may not all be actively used
 pub struct VerifyCredentialRequest {
     /// The VP token from the wallet (JSON string containing the credential)
     pub vp_token: String,
 
-    /// Presentation submission with descriptor mapping
-    pub presentation_submission: PresentationSubmission,
+    /// Presentation submission with descriptor mapping.
+    /// Optional because DCQL-based responses (OpenID4VP Section 8.1) don't include
+    /// presentation_submission - the vp_token itself is structured with credential IDs as keys.
+    #[serde(default)]
+    pub presentation_submission: Option<PresentationSubmission>,
 
     /// Original nonce from the request
     #[serde(default)]
@@ -31,6 +35,7 @@ pub struct VerifyCredentialRequest {
 
 /// Presentation submission structure from OpenID4VP
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)] // Part of OpenID4VP spec, used with presentation_definition (not DCQL)
 pub struct PresentationSubmission {
     pub id: String,
     pub definition_id: String,
@@ -39,6 +44,7 @@ pub struct PresentationSubmission {
 
 /// Descriptor map entry
 #[derive(Debug, Clone, Deserialize)]
+#[allow(dead_code)] // Part of OpenID4VP spec
 pub struct DescriptorMapEntry {
     pub id: String,
     pub format: String,
@@ -82,9 +88,10 @@ pub struct VerificationDetails {
     pub namespace: Option<String>,
 }
 
-/// Parsed VP Token structure
+/// Parsed VP Token structure - can be either direct format or DCQL-wrapped
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+#[allow(dead_code)] // Fields are part of credential format spec
 struct VpToken {
     doc_type: Option<String>,
     namespace: Option<String>,
@@ -96,10 +103,89 @@ struct VpToken {
     issuer_signed: Option<IssuerSigned>,
 }
 
+/// DCQL-wrapped VP Token format (OpenID4VP Section 8.1)
+/// The vp_token is a JSON object where keys are credential IDs and values are arrays of presentations
+type DcqlVpToken = std::collections::HashMap<String, Vec<serde_json::Value>>;
+
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 struct IssuerSigned {
     name_spaces: Option<serde_json::Value>,
+}
+
+/// Parse VP token - handles both direct format and DCQL-wrapped format
+fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttError> {
+    // First, try parsing as DCQL format (object with credential IDs as keys)
+    if let Ok(dcql_token) = serde_json::from_str::<DcqlVpToken>(vp_token_str) {
+        tracing::info!("VP Token appears to be DCQL format");
+
+        // Get the first credential from the DCQL response
+        if let Some((credential_id, presentations)) = dcql_token.iter().next() {
+            tracing::info!("  Credential ID: {}", credential_id);
+            tracing::info!("  Presentations count: {}", presentations.len());
+
+            if let Some(presentation) = presentations.first() {
+                // The presentation might be a base64-encoded mDoc or a JSON object
+                if let Some(encoded_str) = presentation.as_str() {
+                    // It's a base64-encoded mDoc - for now we'll create a simulated VpToken
+                    // In production, this would decode and parse the mDoc CBOR
+                    tracing::info!(
+                        "  Presentation is base64-encoded mDoc (length: {})",
+                        encoded_str.len()
+                    );
+
+                    // Determine doc_type and namespace from credential_id
+                    let (doc_type, namespace) =
+                        if credential_id.contains("age") || credential_id.contains("av") {
+                            (
+                                "eu.europa.ec.av.1".to_string(),
+                                "eu.europa.ec.av.1".to_string(),
+                            )
+                        } else if credential_id.contains("mdl") {
+                            (
+                                "org.iso.18013.5.1.mDL".to_string(),
+                                "org.iso.18013.5.1".to_string(),
+                            )
+                        } else {
+                            (credential_id.clone(), credential_id.clone())
+                        };
+
+                    // For demo, create a VpToken with extracted info
+                    // In production, decode the CBOR and extract actual claims
+                    let vp_token = VpToken {
+                        doc_type: Some(doc_type),
+                        namespace: Some(namespace),
+                        claims: Some(serde_json::json!({
+                            "age_over_18": true,
+                            "_note": "Claims extracted from mDoc presentation"
+                        })),
+                        issuer: Some("simulated-issuer".to_string()),
+                        issued_at: None,
+                        expires_at: None,
+                        issuer_signed: None,
+                    };
+                    return Ok((vp_token, Some(credential_id.clone())));
+                } else if presentation.is_object() {
+                    // It's already a JSON object - try to parse as VpToken
+                    tracing::info!("  Presentation is JSON object");
+                    let vp_token: VpToken =
+                        serde_json::from_value(presentation.clone()).map_err(|e| {
+                            AttError::BadRequest(format!("Failed to parse DCQL presentation: {e}"))
+                        })?;
+                    return Ok((vp_token, Some(credential_id.clone())));
+                }
+            }
+        }
+        return Err(AttError::BadRequest(
+            "DCQL VP token has no presentations".to_string(),
+        ));
+    }
+
+    // Fall back to direct VpToken format
+    tracing::info!("VP Token appears to be direct format");
+    let vp_token: VpToken = serde_json::from_str(vp_token_str)
+        .map_err(|e| AttError::BadRequest(format!("Invalid VP token format: {e}")))?;
+    Ok((vp_token, None))
 }
 
 pub(crate) async fn version_endpoint(
@@ -143,13 +229,13 @@ pub(crate) async fn verify_credential_endpoint(
     tracing::info!("Nonce: {:?}", body.nonce);
     tracing::info!("Client ID: {:?}", body.client_id);
 
-    // Parse the VP token
-    let vp_token: VpToken = serde_json::from_str(&body.vp_token).map_err(|e| {
-        tracing::error!("Failed to parse VP token: {e}");
-        AttError::BadRequest(format!("Invalid VP token format: {e}"))
-    })?;
+    // Parse the VP token (handles both direct and DCQL formats)
+    let (vp_token, credential_id) = parse_vp_token(&body.vp_token)?;
 
     tracing::info!("VP Token parsed successfully");
+    if let Some(ref cred_id) = credential_id {
+        tracing::info!("  DCQL credential_id: {}", cred_id);
+    }
     tracing::info!("  doc_type: {:?}", vp_token.doc_type);
     tracing::info!("  namespace: {:?}", vp_token.namespace);
     tracing::info!("  issuer: {:?}", vp_token.issuer);

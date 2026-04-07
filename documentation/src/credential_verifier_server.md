@@ -260,22 +260,16 @@ Verifies a Verifiable Presentation (VP) token from a user's wallet and returns a
 
 ```json
 {
-  "vp_token": "eyJ...",
-  "presentation_submission": {
-    "id": "submission-123",
-    "definition_id": "proof-of-age",
-    "descriptor_map": [
-      {
-        "id": "proof_of_age",
-        "format": "mso_mdoc",
-        "path": "$"
-      }
-    ]
-  },
+  "vp_token": "{\"proof_of_age\":[\"base64url_mdoc_presentation\"]}",
+  "presentation_submission": null,
   "nonce": "random-nonce-from-request",
   "state": "session-state",
   "client_id": "https://example.com"
 }
+```
+
+> **Note**: `presentation_submission` is **optional** and typically `null` when the wallet uses DCQL queries (OpenID4VP Section 8.1). With DCQL, the `vp_token` is a JSON object where keys are credential IDs from the query.
+
 ```
 
 **Response** (Success):

@@ -91,7 +91,7 @@ Per [Annex A, Section A.5](https://ageverification.dev/Technical%20Specification
 The demo implementation uses `window.postMessage` to communicate OpenID4VP protocol messages between the webapp and wallet extension. This is a valid transport mechanism because:
 
 - ✅ Annex A specifies the protocol (OpenID4VP) but not the transport layer
-- ✅ The `vp_token` format and `presentation_submission` are identical to the native API
+- ✅ The `vp_token` format follows OpenID4VP conventions (note: native DCQL wallets omit `presentation_submission`)
 - ✅ All required fields (`nonce`, `client_id`, DCQL query, etc.) are preserved
 - ✅ Works within browser extension architectural constraints
 
@@ -243,22 +243,38 @@ The OpenID4VP request structure is identical whether sent via the native API or 
 
 | Parameter | Type | Required | Description |
 |-----------|------|----------|-------------|
-| `client_id` | string | ✓ | RP identifier (e.g., `"http://localhost:5174"`) |
-| `client_id_scheme` | string | ✓ | How to validate client_id: `"redirect_uri"` \| `"x509_san_dns"` \| `"verifier_attestation"` |
+| `client_id` | string | ✓ | RP identifier (format depends on `client_id_scheme`) |
+| `client_id_scheme` | string | ✓ | How to validate client_id: `"redirect_uri"` (Annex A) \| `"x509_san_dns"` (HAIP) |
 | `response_type` | string | ✓ | Always `"vp_token"` for credential presentations |
-| `response_mode` | string | ✓ | `"direct_post"` \| `"fragment"` \| `"query"` |
+| `response_mode` | string | ✓ | `"direct_post"` (Annex A) \| `"direct_post.jwt"` (HAIP) |
 | `nonce` | string | ✓ | Replay protection (cryptographically random) |
 | `state` | string | | Optional correlation value |
 | `presentation_definition` | object | ✓ | Defines required credentials and claims (DCQL format) |
 | `client_metadata` | object | | RP metadata (name, purpose, supported formats) |
 
+> **Important**: When `client_metadata` is provided, it **MUST** include the `vp_formats_supported` field (required by the wallet library). This field specifies the VP formats the RP supports (e.g., `mso_mdoc` with algorithm IDs).
+
+### Profile-Based Request Differences
+
+The webapp uses two profiles that affect how requests are formatted:
+
+| Aspect | HAIP Profile (mDL, PID) | Annex A Profile (Proof of Age) |
+|--------|------------------------|-------------------------------|
+| **Client ID Format** | `x509_san_dns:hq.ewqwe.com` | `redirect_uri:https://host/callback` |
+| **Request Delivery** | `request_uri` → wallet fetches signed JAR | All parameters inline in URL (no `request_uri`) |
+| **Request Format** | Signed JAR (JWT with x5c) | Plain URL parameters (redirect_uri forbids signing) |
+| **Response Mode** | `direct_post.jwt` | `direct_post` |
+| **Target Wallet** | EUDI Wallet | Age Verification App |
+
+> **Note**: The `redirect_uri` client_id_scheme explicitly forbids signed requests. For Annex A, all authorization request parameters must be passed inline in the URL. Using `request_uri` would trigger JWT parsing, which fails.
+
 The `presentation_definition` uses **Digital Credentials Query Language (DCQL)** to specify which credentials and claims are requested. For detailed DCQL query examples and syntax, see [DCQL Age Verification](./dcql_age_verification.md).
 
-**Minimal Example**:
+**Minimal Example (Annex A Profile)**:
 
 ```typescript
 const request: OpenID4VPRequest = {
-  client_id: "http://localhost:5174",
+  client_id: "redirect_uri:http://localhost:5175/api/openid4vp/direct_post",
   client_id_scheme: "redirect_uri",
   response_type: "vp_token",
   response_mode: "direct_post",
@@ -280,15 +296,48 @@ const request: OpenID4VPRequest = {
 };
 ```
 
+**Minimal Example (HAIP Profile)**:
+
+```typescript
+const request: OpenID4VPRequest = {
+  client_id: "x509_san_dns:hq.ewqwe.com",
+  client_id_scheme: "x509_san_dns",
+  response_type: "vp_token",
+  response_mode: "direct_post.jwt",
+  nonce: crypto.randomUUID(),
+  
+  presentation_definition: {
+    id: "mdl-verification",
+    name: "Driver License Verification",
+    input_descriptors: [{
+      id: "mdl_credential",
+      format: { mso_mdoc: { alg: ["ES256"] } },
+      constraints: {
+        limit_disclosure: "required",
+        fields: [
+          { path: ["$['org.iso.18013.5.1']['family_name']"] },
+          { path: ["$['org.iso.18013.5.1']['given_name']"] }
+        ]
+      }
+    }]
+  }
+};
+```
+
 ## OpenID4VP Response Format
+
+> **Note**: This format is used by the **browser extension fallback**. Native wallets using DCQL queries (per OpenID4VP Section 8.1) return a different format where:
+>
+> - `vp_token` is a JSON object with credential IDs as keys: `{"credential_id": ["base64_presentation"]}`
+> - `presentation_submission` is **not included**
 
 ```typescript
 interface OpenID4VPResponse {
   // Verifiable Presentation token (JSON-stringified credential)
   vp_token: string;
   
-  // Describes how VP maps to the request
-  presentation_submission: {
+  // Describes how VP maps to the request (browser extension only; not sent by DCQL wallets)
+  presentation_submission?: {
     id: string;
     definition_id: string;              // Matches request.presentation_definition.id
     descriptor_map: DescriptorMapEntry[];
@@ -727,12 +776,14 @@ const matchingCredentials = allCredentials.filter(credential => {
 
 **Status:** ✅ **Compliant** - Full DCQL support for credential querying and matching.
 
-#### ✅ Requirement: Presentation Submission
+#### ✅ Requirement: Presentation Submission (Browser Extension)
+
+> **Note**: This section applies to the **browser extension fallback** only. Native DCQL wallets (like the EUDI AV Wallet) do **not** include `presentation_submission` in their response per OpenID4VP Section 8.1. With DCQL, the `vp_token` structure itself maps credentials to the query.
 
 **Annex A.5.2 (implicit in "DCQL response"):**
 > The response must include a `presentation_submission` per [OID4VP] Section 6.
 
-**Our Implementation:**
+**Our Browser Extension Implementation:**
 
 ```typescript
 return {
@@ -830,6 +881,8 @@ The choice of HTTP POST vs. postMessage is an **implementation detail** at the t
 
 ### Comparison to Annex A Example (Section A.10)
 
+> **Note**: The examples below show the browser extension format with `presentation_submission`. Native DCQL wallets return a different format where the `vp_token` is structured as `{"credential_id": ["presentation"]}` and no `presentation_submission` is included.
+
 **Annex A.10 shows an OpenID4VP response:**
 
 ```http
@@ -919,10 +972,12 @@ While this demo uses postMessage for same-device communication, the EU AV Profil
 For cross-device scenarios (e.g., scanning QR code with mobile wallet):
 
 1. RP generates authorization request with `response_uri`
-2. RP displays QR code containing `av://` link with request_uri
+2. RP displays QR code containing `av://` link with **all parameters inline** (no `request_uri` for Annex A profile)
 3. User scans QR code with mobile wallet
-4. Wallet fetches authorization request from `request_uri`
+4. Wallet parses authorization request parameters directly from the URL
 5. Wallet POSTs VP response to RP's `response_uri` (direct_post mode)
+
+> **Note**: The Annex A profile (redirect_uri client_id_scheme) requires all parameters to be passed inline in the URL. Using `request_uri` would cause the wallet to attempt JWT parsing, which fails since signed requests are forbidden for this scheme.
 
 This is outlined in **Annex A.10** examples.
 
@@ -930,10 +985,10 @@ This is outlined in **Annex A.10** examples.
 
 For same-device flow with deep links:
 
-1. RP creates `av://` link with embedded request
+1. RP creates `av://` link with all request parameters embedded inline
 2. User clicks link
 3. OS invokes registered AVI
-4. AVI processes request and redirects back to RP with response
+4. AVI processes request parameters and redirects back to RP with response
 
 Our Demo Wallet Browser Extension supports this via link interception in the content script.
 
