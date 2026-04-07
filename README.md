@@ -20,6 +20,8 @@ Open two terminal windows:
 
 ```bash
 cd webapp
+
+PUBLIC_URL=https://<WEB_APP_URL> \
 deno task api
 ```
 
@@ -48,6 +50,10 @@ Then run the verifier with:
 
 ```bash
 cd credential_verifier
+
+RUST_LOG=info \
+X509_CERT_PATH=src/tests/certificates/ec/ewqwe.server.fullchain.pem \
+X509_KEY_PATH=src/tests/certificates/ec/ewqwe.server.key.pem \
 cargo run --features openssl
 ```
 

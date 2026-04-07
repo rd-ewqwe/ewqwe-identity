@@ -95,6 +95,10 @@ async function proxyToVerifier(
 
   const upstream = await fetch(url, fetchOptions);
 
+  console.log(
+    `[Server] Proxied ${req.method} ${upstreamPath} → ${upstream.status}`,
+  );
+
   // Build proxied response with CORS
   const respHeaders = new Headers();
   for (const [k, v] of upstream.headers.entries()) {
