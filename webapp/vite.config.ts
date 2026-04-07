@@ -15,7 +15,7 @@ export default defineConfig({
     alias: {
       "@ewqwe/digital-identity": path.resolve(
         import.meta.dirname!,
-        "../js-lib/ewqwe-digital-identity/mod.ts",
+        "../js-lib/ewqwe-npm/src/lib.ts",
       ),
     },
   },

@@ -150,7 +150,7 @@ async function requestViaW3CDC(
         },
       ],
     },
-  });
+  } as CredentialRequestOptions);
 
   if (!credential) {
     logger.log("User cancelled the credential request");

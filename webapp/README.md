@@ -22,6 +22,8 @@ The wallet is now a browser extension. See [wallet-extension/README.md](wallet-e
 - **Styling**: Tailwind CSS
 - **No JavaScript Framework** (vanilla TypeScript)
 
+The shared credential/query utilities are resolved from [../js-lib/ewqwe-npm/src/lib.ts](/Users/bgrieder/projects/ewqwe-identity/js-lib/ewqwe-npm/src/lib.ts) during local development.
+
 ## Getting Started
 
 ### Prerequisites
