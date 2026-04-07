@@ -497,7 +497,18 @@ export class RelyingPartyApp {
       return value ? "Yes ✓" : "No ✗";
     }
     if (Array.isArray(value)) {
-      return value.join(", ");
+      return value.map((v) => this.formatClaimValue(v)).join(", ");
+    }
+    if (typeof value === "object") {
+      // Nested object (e.g. place_of_birth: {country, region, locality})
+      // Show non-empty leaf values joined by ", "
+      const parts: string[] = [];
+      for (const v of Object.values(value as Record<string, unknown>)) {
+        if (v !== null && v !== undefined && v !== "") {
+          parts.push(this.formatClaimValue(v));
+        }
+      }
+      return parts.length > 0 ? parts.join(", ") : "—";
     }
     return String(value);
   }

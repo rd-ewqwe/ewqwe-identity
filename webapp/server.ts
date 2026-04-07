@@ -559,10 +559,18 @@ async function handleVerifyCredential(
           verifierResponse.status,
           errorText,
         );
-        console.log("[Backend] Falling back to simulation mode");
 
-        // Fall back to local simulation if verifier is unavailable
-        return simulateVerification(body, corsHeaders);
+        return new Response(
+          JSON.stringify({
+            success: false,
+            message: `Credential Verifier returned ${verifierResponse.status}`,
+            errors: [errorText],
+          }),
+          {
+            status: verifierResponse.status,
+            headers: { "Content-Type": "application/json", ...corsHeaders },
+          },
+        );
       }
 
       const result: VerifyResponse = await verifierResponse.json();
@@ -576,13 +584,23 @@ async function handleVerifyCredential(
         headers: { "Content-Type": "application/json", ...corsHeaders },
       });
     } catch (fetchError) {
-      console.warn(
-        "[Backend] Credential Verifier unavailable, using simulation:",
-        fetchError,
-      );
+      console.error("[Backend] Credential Verifier unavailable:", fetchError);
 
-      // Fall back to local simulation
-      return simulateVerification(body, corsHeaders);
+      return new Response(
+        JSON.stringify({
+          success: false,
+          message: "Credential Verifier is unreachable",
+          errors: [
+            fetchError instanceof Error
+              ? fetchError.message
+              : "Connection failed",
+          ],
+        }),
+        {
+          status: 502,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
     }
   } catch (error) {
     console.error("[Backend] Error processing verification request:", error);
@@ -1207,10 +1225,7 @@ async function handleWalletDirectPost(
             kty: privateJwk.kty ?? "EC",
             kid: JWE_KEY_ID,
           };
-          const decryptKey = await jose.importJWK(
-            privateJwkWithKid,
-            "ECDH-ES",
-          );
+          const decryptKey = await jose.importJWK(privateJwkWithKid, "ECDH-ES");
 
           // Decrypt the JWE → yields either a nested JWS or a plain JWT payload
           const { plaintext, protectedHeader } = await jose.compactDecrypt(
@@ -1410,56 +1425,6 @@ function handleGetTransactionStatus(
       headers: { "Content-Type": "application/json", ...corsHeaders },
     },
   );
-}
-
-/**
- * Simulate verification when Credential Verifier is unavailable
- * This is for development/demo purposes only
- */
-function simulateVerification(
-  body: VerifyRequest,
-  corsHeaders: Record<string, string>,
-): Response {
-  console.log("[Backend] Using simulated verification (demo mode)");
-
-  try {
-    // Parse the VP token
-    const vpToken =
-      typeof body.vp_token === "string"
-        ? JSON.parse(body.vp_token)
-        : body.vp_token;
-    const claims = vpToken.claims || {};
-
-    const response: VerifyResponse = {
-      success: true,
-      message: "Credential verified (simulation mode)",
-      claims,
-      verification_details: {
-        signature_valid: true,
-        not_expired: true,
-        issuer_trusted: true,
-        timestamp: new Date().toISOString(),
-        doc_type: vpToken.docType,
-        namespace: vpToken.namespace,
-      },
-    };
-
-    return new Response(JSON.stringify(response), {
-      headers: { "Content-Type": "application/json", ...corsHeaders },
-    });
-  } catch {
-    return new Response(
-      JSON.stringify({
-        success: false,
-        message: "Failed to parse VP token",
-        errors: ["Invalid VP token format"],
-      }),
-      {
-        status: 400,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      },
-    );
-  }
 }
 
 /**

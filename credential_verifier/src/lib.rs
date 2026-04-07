@@ -3,6 +3,8 @@ pub use authenticated_user::AuthenticatedUser;
 
 pub mod attestation;
 
+pub mod mdoc_decoder;
+
 mod server;
 pub use server::{AttServerParams, start_att_server};
 

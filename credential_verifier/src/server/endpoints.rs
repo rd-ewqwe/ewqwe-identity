@@ -1,6 +1,7 @@
 use crate::{
     AttError,
     attestation::{AttestationClaims, AttestationSigner, JwtSigner, SigningAlgorithm},
+    mdoc_decoder,
     server::Version,
 };
 use actix_session::Session;
@@ -127,39 +128,96 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
             if let Some(presentation) = presentations.first() {
                 // The presentation might be a base64-encoded mDoc or a JSON object
                 if let Some(encoded_str) = presentation.as_str() {
-                    // It's a base64-encoded mDoc - for now we'll create a simulated VpToken
-                    // In production, this would decode and parse the mDoc CBOR
+                    // It's a base64-encoded mDoc — decode the CBOR to extract claims
                     tracing::info!(
                         "  Presentation is base64-encoded mDoc (length: {})",
                         encoded_str.len()
                     );
 
-                    // Determine doc_type and namespace from credential_id
-                    let (doc_type, namespace) =
-                        if credential_id.contains("age") || credential_id.contains("av") {
-                            (
-                                "eu.europa.ec.av.1".to_string(),
-                                "eu.europa.ec.av.1".to_string(),
-                            )
-                        } else if credential_id.contains("mdl") {
-                            (
-                                "org.iso.18013.5.1.mDL".to_string(),
-                                "org.iso.18013.5.1".to_string(),
-                            )
-                        } else {
-                            (credential_id.clone(), credential_id.clone())
-                        };
+                    let decode_error_msg;
+                    match mdoc_decoder::decode_mdoc_presentation(encoded_str) {
+                        Ok(decoded) => {
+                            tracing::info!(
+                                "  mDoc decoded successfully: docType={}, namespaces={}",
+                                decoded.doc_type,
+                                decoded.namespaces.len()
+                            );
 
-                    // For demo, create a VpToken with extracted info
-                    // In production, decode the CBOR and extract actual claims
+                            // Capture the first namespace key before we consume the map
+                            let first_ns = decoded
+                                .namespaces
+                                .keys()
+                                .next()
+                                .cloned()
+                                .unwrap_or_else(|| decoded.doc_type.clone());
+
+                            // Flatten all namespaced claims into a single JSON object.
+                            // One namespace → flat; multiple → nested by namespace.
+                            let claims = if decoded.namespaces.len() == 1 {
+                                let (_, ns_claims) = decoded.namespaces.into_iter().next().unwrap();
+                                serde_json::Value::Object(ns_claims.into_iter().collect())
+                            } else {
+                                let mut obj = serde_json::Map::new();
+                                for (ns, ns_claims) in decoded.namespaces {
+                                    let ns_obj: serde_json::Map<String, serde_json::Value> =
+                                        ns_claims.into_iter().collect();
+                                    obj.insert(ns, serde_json::Value::Object(ns_obj));
+                                }
+                                serde_json::Value::Object(obj)
+                            };
+
+                            let vp_token = VpToken {
+                                doc_type: Some(decoded.doc_type),
+                                namespace: Some(first_ns),
+                                claims: Some(claims),
+                                issuer: Some("mdoc-issuer".to_string()),
+                                issued_at: None,
+                                expires_at: None,
+                                issuer_signed: None,
+                            };
+                            return Ok((vp_token, Some(credential_id.clone())));
+                        }
+                        Err(e) => {
+                            tracing::warn!("  mDoc CBOR decode failed: {}", e);
+                            decode_error_msg = e.to_string();
+                        }
+                    }
+
+                    // Fallback: CBOR decoding failed — determine type from credential_id
+                    let (doc_type, namespace) = if credential_id.contains("age")
+                        || credential_id.contains("av")
+                    {
+                        (
+                            "eu.europa.ec.av.1".to_string(),
+                            "eu.europa.ec.av.1".to_string(),
+                        )
+                    } else if credential_id.contains("mdl") {
+                        (
+                            "org.iso.18013.5.1.mDL".to_string(),
+                            "org.iso.18013.5.1".to_string(),
+                        )
+                    } else if credential_id.contains("national") || credential_id.contains("pid") {
+                        (
+                            "eu.europa.ec.eudi.pid.1".to_string(),
+                            "eu.europa.ec.eudi.pid.1".to_string(),
+                        )
+                    } else {
+                        (credential_id.clone(), credential_id.clone())
+                    };
+
+                    let fallback_claims = serde_json::json!({
+                        "_note": "mDoc CBOR decoding failed — raw presentation could not be parsed",
+                        "_error": decode_error_msg,
+                        "_credential_id": credential_id,
+                        "_doc_type": &doc_type,
+                        "_presentation_length": encoded_str.len()
+                    });
+
                     let vp_token = VpToken {
                         doc_type: Some(doc_type),
                         namespace: Some(namespace),
-                        claims: Some(serde_json::json!({
-                            "age_over_18": true,
-                            "_note": "Claims extracted from mDoc presentation"
-                        })),
-                        issuer: Some("simulated-issuer".to_string()),
+                        claims: Some(fallback_claims),
+                        issuer: Some("unknown".to_string()),
                         issued_at: None,
                         expires_at: None,
                         issuer_signed: None,

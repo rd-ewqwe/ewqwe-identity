@@ -11,6 +11,14 @@ import type { DebugLogger } from "./debug.ts";
 import { CREDENTIAL_TYPES, PROTOCOL_PROFILES } from "./config.ts";
 
 /**
+ * Detect whether the browser is running on a mobile device (Android or iOS).
+ */
+function isMobileDevice(): boolean {
+  const ua = navigator.userAgent || "";
+  return /android/i.test(ua) || /iphone|ipad|ipod/i.test(ua);
+}
+
+/**
  * Build an OpenID4VP presentation request
  */
 export function buildPresentationRequest(
@@ -135,7 +143,16 @@ async function requestWithFallback(
     logger.log("W3C DC failed, trying OpenID4VP fallback", error);
   }
 
-  // Fall back to OpenID4VP cross-device flow (QR code)
+  // Fall back to OpenID4VP:
+  //  - same-device on Android/iOS (deep link)
+  //  - cross-device (QR code) on desktop
+  if (isMobileDevice()) {
+    logger.log(
+      "Mobile device detected — falling back to OpenID4VP same-device",
+    );
+    return await requestViaOpenID4VPSameDevice(request, logger);
+  }
+  logger.log("Desktop detected — falling back to OpenID4VP cross-device (QR)");
   return await requestViaOpenID4VPCrossDevice(request, logger);
 }
 
