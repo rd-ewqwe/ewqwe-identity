@@ -5,7 +5,7 @@ import type {
   PresentationSubmission,
   InputDescriptor,
   ConstraintField,
-  VerificationResult,
+  VerifyResponse,
 } from "./types.ts";
 import type { DebugLogger } from "./debug.ts";
 import { CREDENTIAL_TYPES, PROTOCOL_PROFILES } from "./config.ts";
@@ -775,7 +775,7 @@ function simulateCredentialResponse(
 
   // Extract requested claims from the presentation definition
   const requestedClaims: Record<string, unknown> = {};
-  const inputDescriptor = request.presentation_definition.input_descriptors[0];
+  const inputDescriptor = request.presentation_definition?.input_descriptors[0];
 
   if (inputDescriptor?.constraints?.fields) {
     inputDescriptor.constraints.fields.forEach((field) => {
@@ -808,7 +808,7 @@ function simulateCredentialResponse(
     vp_token: btoa(JSON.stringify(vpToken)),
     presentation_submission: {
       id: crypto.randomUUID(),
-      definition_id: request.presentation_definition.id,
+      definition_id: request.presentation_definition?.id ?? "default",
       descriptor_map: [
         {
           id: inputDescriptor?.id || "credential",
@@ -932,7 +932,7 @@ export async function sendToBackend(
   response: OpenID4VPResponse,
   originalRequest: OpenID4VPRequest | null,
   logger: DebugLogger,
-): Promise<VerificationResult> {
+): Promise<VerifyResponse> {
   const backendUrl = "/api/verify";
 
   logger.log(`Sending credential to backend: ${backendUrl}`);
@@ -960,7 +960,7 @@ export async function sendToBackend(
     const result = await fetchResponse.json();
     logger.success("Backend verification complete", result);
 
-    return result as VerificationResult;
+    return result as VerifyResponse;
   } catch (error) {
     logger.error("Backend verification failed", error);
 

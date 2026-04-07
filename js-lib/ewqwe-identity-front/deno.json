@@ -1,0 +1,8 @@
+{
+  "name": "@ewqwe/identity-front",
+  "version": "0.1.0",
+  "exports": "./mod.ts",
+  "compilerOptions": {
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  }
+}

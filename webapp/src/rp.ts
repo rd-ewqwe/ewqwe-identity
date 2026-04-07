@@ -2,7 +2,7 @@ import type { DebugLogger } from "./debug.ts";
 import type {
   OpenID4VPRequest,
   OpenID4VPResponse,
-  VerificationResult,
+  VerifyResponse,
 } from "./types.ts";
 import {
   getClaimsForType,
@@ -374,7 +374,7 @@ export class RelyingPartyApp {
   }
 
   private displayVerificationResult(
-    result: VerificationResult,
+    result: VerifyResponse,
     response: OpenID4VPResponse,
   ): void {
     const resultSection = document.getElementById("verification-result");
@@ -458,9 +458,9 @@ export class RelyingPartyApp {
     if (rawResponse) {
       rawResponse.textContent = JSON.stringify(response, null, 2);
     }
-    if (verificationDetails && result.verificationDetails) {
+    if (verificationDetails && result.verification_details) {
       verificationDetails.textContent = JSON.stringify(
-        result.verificationDetails,
+        result.verification_details,
         null,
         2,
       );
