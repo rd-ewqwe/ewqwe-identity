@@ -95,34 +95,6 @@ impl PostgresJournalStore {
 
         Ok(())
     }
-
-    fn parse_row(
-        id: String,
-        username: String,
-        previous_hash: Option<String>,
-        entry_hash: String,
-        attestation_signature_hash: String,
-        attestation_jti: Option<String>,
-        client_id: Option<String>,
-        doc_type: Option<String>,
-        namespace: Option<String>,
-        verification_summary: serde_json::Value,
-        created_at: DateTime<Utc>,
-    ) -> JournalEntry {
-        JournalEntry {
-            id,
-            username,
-            previous_hash,
-            entry_hash,
-            attestation_signature_hash,
-            attestation_jti,
-            client_id,
-            doc_type,
-            namespace,
-            verification_summary,
-            created_at,
-        }
-    }
 }
 
 // ============================================================================
@@ -183,13 +155,12 @@ impl JournalStore for PostgresJournalStore {
         .map_err(|e| JournalError::Storage(format!("Postgres ensure head row: {e}")))?;
 
         // Lock the head row for the duration of this transaction.
-        let (actual_head,): (Option<String>,) = sqlx::query_as(
-            "SELECT head_hash FROM journal_heads WHERE username = $1 FOR UPDATE",
-        )
-        .bind(&entry.username)
-        .fetch_one(&mut *tx)
-        .await
-        .map_err(|e| JournalError::Storage(format!("Postgres lock head: {e}")))?;
+        let (actual_head,): (Option<String>,) =
+            sqlx::query_as("SELECT head_hash FROM journal_heads WHERE username = $1 FOR UPDATE")
+                .bind(&entry.username)
+                .fetch_one(&mut *tx)
+                .await
+                .map_err(|e| JournalError::Storage(format!("Postgres lock head: {e}")))?;
 
         // CAS check.
         if actual_head.as_deref() != expected_previous_hash {
@@ -294,9 +265,21 @@ impl JournalStore for PostgresJournalStore {
 
         Ok(rows
             .into_iter()
-            .map(|(id, un, prev, eh, ash, jti, cid, dt, ns, vs, ca)| {
-                Self::parse_row(id, un, prev, eh, ash, jti, cid, dt, ns, vs, ca)
-            })
+            .map(
+                |(id, un, prev, eh, ash, jti, cid, dt, ns, vs, ca)| JournalEntry {
+                    id,
+                    username: un,
+                    previous_hash: prev,
+                    entry_hash: eh,
+                    attestation_signature_hash: ash,
+                    attestation_jti: jti,
+                    client_id: cid,
+                    doc_type: dt,
+                    namespace: ns,
+                    verification_summary: vs,
+                    created_at: ca,
+                },
+            )
             .collect())
     }
 

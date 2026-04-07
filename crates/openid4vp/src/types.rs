@@ -385,13 +385,13 @@ impl DCQLQuery {
             }
 
             // §6.1.1: trusted_authorities, if present, must be non-empty.
-            if let Some(ta) = &cred.trusted_authorities {
-                if ta.is_empty() {
-                    return Err(format!(
-                        "Credential query {:?}: 'trusted_authorities' must be non-empty when present",
-                        cred.id
-                    ));
-                }
+            if let Some(ta) = &cred.trusted_authorities
+                && ta.is_empty()
+            {
+                return Err(format!(
+                    "Credential query {:?}: 'trusted_authorities' must be non-empty when present",
+                    cred.id
+                ));
             }
 
             // §6.4.1: claim_sets MUST NOT be present if claims is absent.

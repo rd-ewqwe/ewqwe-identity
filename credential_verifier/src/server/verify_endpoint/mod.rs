@@ -604,10 +604,10 @@ fn extract_claims(vp_token: &VpToken) -> serde_json::Value {
     if let Some(claims) = &vp_token.claims {
         return claims.clone();
     }
-    if let Some(issuer_signed) = &vp_token.issuer_signed {
-        if let Some(namespaces) = &issuer_signed.name_spaces {
-            return namespaces.clone();
-        }
+    if let Some(issuer_signed) = &vp_token.issuer_signed
+        && let Some(namespaces) = &issuer_signed.name_spaces
+    {
+        return namespaces.clone();
     }
     serde_json::json!({})
 }
@@ -765,7 +765,7 @@ fn create_attestation(
 /// The `jti` is embedded in the JSON payload (second dot-separated segment).
 /// Returns `None` on any parse failure — the journal will simply record a null jti.
 fn extract_attestation_jti(compact_jwt: &str) -> Option<String> {
-    let payload_b64 = compact_jwt.splitn(3, '.').nth(1)?;
+    let payload_b64 = compact_jwt.split('.').nth(1)?;
     let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
         .decode(payload_b64)
         .ok()?;

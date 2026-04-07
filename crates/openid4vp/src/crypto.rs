@@ -337,17 +337,17 @@ pub fn sign_jar(payload: &JarPayload, jar_key: &JarKeyMaterial) -> OpenID4VPResu
     });
 
     // §8.4: include transaction_data when present
-    if let Some(ref td) = payload.transaction_data {
-        if let Some(obj) = jwt_claims.as_object_mut() {
-            obj.insert(
-                "transaction_data".to_string(),
-                serde_json::Value::Array(
-                    td.iter()
-                        .map(|s| serde_json::Value::String(s.clone()))
-                        .collect(),
-                ),
-            );
-        }
+    if let Some(ref td) = payload.transaction_data
+        && let Some(obj) = jwt_claims.as_object_mut()
+    {
+        obj.insert(
+            "transaction_data".to_string(),
+            serde_json::Value::Array(
+                td.iter()
+                    .map(|s| serde_json::Value::String(s.clone()))
+                    .collect(),
+            ),
+        );
     }
 
     let header = serde_json::json!({
@@ -921,7 +921,7 @@ mod tests {
             "{}.{}.{}.{}.{}",
             header_b64,
             "", // empty encrypted key for ECDH-ES
-            URL_SAFE_NO_PAD.encode(&iv_bytes),
+            URL_SAFE_NO_PAD.encode(iv_bytes),
             URL_SAFE_NO_PAD.encode(&ct),
             URL_SAFE_NO_PAD.encode(&tag),
         );

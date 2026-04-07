@@ -255,10 +255,9 @@ impl OpenID4VPService {
             .map_err(|msg| OpenID4VPError::BadRequest(format!("Invalid dcql_query: {msg}")))?;
 
         // Client metadata (use request-provided or defaults)
-        let client_metadata = request.client_metadata.unwrap_or_else(|| {
-            let mut meta = ClientMetadata::default();
-            meta.logo_uri = Some(format!("{public_url}/logo.png"));
-            meta
+        let client_metadata = request.client_metadata.unwrap_or_else(|| ClientMetadata {
+            logo_uri: Some(format!("{public_url}/logo.png")),
+            ..Default::default()
         });
 
         // Store the transaction
@@ -437,17 +436,17 @@ impl OpenID4VPService {
                 "client_metadata": metadata,
             });
             // §8.4: include transaction_data when present
-            if let Some(ref td) = transaction.transaction_data {
-                if let Some(obj) = auth_request.as_object_mut() {
-                    obj.insert(
-                        "transaction_data".to_string(),
-                        serde_json::Value::Array(
-                            td.iter()
-                                .map(|s| serde_json::Value::String(s.clone()))
-                                .collect(),
-                        ),
-                    );
-                }
+            if let Some(ref td) = transaction.transaction_data
+                && let Some(obj) = auth_request.as_object_mut()
+            {
+                obj.insert(
+                    "transaction_data".to_string(),
+                    serde_json::Value::Array(
+                        td.iter()
+                            .map(|s| serde_json::Value::String(s.clone()))
+                            .collect(),
+                    ),
+                );
             }
             Ok(AuthorizationRequestResult {
                 body: serde_json::to_string(&auth_request)
@@ -480,7 +479,7 @@ impl OpenID4VPService {
                 )
             })?;
             // HAIP: Decrypt JWE
-            let decrypted: DecryptedWalletResponse = decrypt_jwe_response(jwe, &jwe_key)?;
+            let decrypted: DecryptedWalletResponse = decrypt_jwe_response(jwe, jwe_key)?;
             let state = if decrypted.state.is_empty() {
                 fallback_state.unwrap_or("").to_string()
             } else {
@@ -578,18 +577,18 @@ impl OpenID4VPService {
             .await?
             .ok_or_else(|| OpenID4VPError::NotFound("Transaction not found".into()))?;
 
-        if transaction.status == TransactionStatus::Received {
-            if let Some(ref wr) = transaction.wallet_response {
-                return Ok(TransactionStatusResult {
-                    status: TransactionStatus::Received,
-                    expires_in: None,
-                    authorization_response: Some(wr.clone()),
-                    nonce: Some(transaction.nonce.clone()),
-                    wallet_error: None,
-                    error_message: None,
-                    transaction_data: transaction.transaction_data.clone(),
-                });
-            }
+        if transaction.status == TransactionStatus::Received
+            && let Some(ref wr) = transaction.wallet_response
+        {
+            return Ok(TransactionStatusResult {
+                status: TransactionStatus::Received,
+                expires_in: None,
+                authorization_response: Some(wr.clone()),
+                nonce: Some(transaction.nonce.clone()),
+                wallet_error: None,
+                error_message: None,
+                transaction_data: transaction.transaction_data.clone(),
+            });
         }
 
         if transaction.status == TransactionStatus::Error {

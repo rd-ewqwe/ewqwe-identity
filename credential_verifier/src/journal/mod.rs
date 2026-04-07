@@ -78,8 +78,10 @@ impl From<JournalError> for AttError {
 /// Which backend the journal uses.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "backend", rename_all = "snake_case")]
+#[derive(Default)]
 pub enum JournalBackend {
     /// SQLite in-memory — no persistence, ideal for tests and development.
+    #[default]
     SqliteMemory,
 
     /// SQLite file — single-instance deployments with persistence across restarts.
@@ -94,12 +96,6 @@ pub enum JournalBackend {
         /// `postgres://user:password@host/db` style connection URL.
         url: String,
     },
-}
-
-impl Default for JournalBackend {
-    fn default() -> Self {
-        Self::SqliteMemory
-    }
 }
 
 /// Top-level journal configuration section (embedded in [`ServerParams`]).

@@ -148,16 +148,14 @@ pub(super) fn decode_sd_jwt_presentation(raw: &str) -> Result<DecodedSdJwt, SdJw
             if let Ok(kb_payload_bytes) = base64::engine::general_purpose::URL_SAFE_NO_PAD
                 .decode(kb_parts[1])
                 .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(kb_parts[1]))
-            {
-                if let Ok(kb_payload) =
+                && let Ok(kb_payload) =
                     serde_json::from_slice::<serde_json::Value>(&kb_payload_bytes)
-                {
-                    kb_nonce = kb_payload
-                        .get("nonce")
-                        .and_then(|v| v.as_str())
-                        .map(|s| s.to_string());
-                    tracing::debug!(nonce_present = kb_nonce.is_some(), "KB-JWT parsed");
-                }
+            {
+                kb_nonce = kb_payload
+                    .get("nonce")
+                    .and_then(|v| v.as_str())
+                    .map(|s| s.to_string());
+                tracing::debug!(nonce_present = kb_nonce.is_some(), "KB-JWT parsed");
             }
             continue;
         }
@@ -429,8 +427,7 @@ fn verify_kb_jwt(rest: &str, issuer_claims: &serde_json::Value, errors: &mut Vec
     let kb_jwt = rest
         .split('~')
         .filter(|s| !s.is_empty())
-        .filter(|s| s.starts_with("eyJ") && s.chars().filter(|&c| c == '.').count() == 2)
-        .last();
+        .rfind(|s| s.starts_with("eyJ") && s.chars().filter(|&c| c == '.').count() == 2);
 
     let kb_jwt = match kb_jwt {
         Some(j) => j,

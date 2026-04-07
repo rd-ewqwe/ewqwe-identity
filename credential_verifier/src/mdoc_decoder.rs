@@ -76,7 +76,7 @@ pub fn decode_mdoc_presentation(encoded: &str) -> Result<DecodedMdoc, MdocDecode
     // The top level is either a DeviceResponse (map with "documents") or a
     // bare Document (map with "docType").
     let document = extract_document(&cbor)?;
-    parse_document(&document)
+    parse_document(document)
 }
 
 // ---------------------------------------------------------------------------

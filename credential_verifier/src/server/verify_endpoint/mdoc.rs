@@ -388,6 +388,7 @@ fn verify_cose_sign1_embedded(cose: &CoseSign1, key: &PKey<Public>) -> Result<()
         -7 | -35 | -36 => cose.verify_signature(&[], |signature, data| {
             verify_ecdsa_signature(alg, data, signature, key)
         }),
+        #[allow(clippy::manual_range_patterns)]
         -257 | -258 | -259 => cose.verify_signature(&[], |signature, data| {
             verify_rsa_signature(alg, data, signature, key)
         }),
@@ -407,6 +408,7 @@ fn verify_cose_sign1_detached(
         -7 | -35 | -36 => cose.verify_detached_signature(payload, &[], |signature, data| {
             verify_ecdsa_signature(alg, data, signature, key)
         }),
+        #[allow(clippy::manual_range_patterns)]
         -257 | -258 | -259 => cose.verify_detached_signature(payload, &[], |signature, data| {
             verify_rsa_signature(alg, data, signature, key)
         }),

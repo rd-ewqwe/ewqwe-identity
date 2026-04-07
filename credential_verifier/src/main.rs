@@ -52,10 +52,7 @@ async fn main() -> std::io::Result<()> {
         }
         Err(e) => {
             tracing::error!("Server error: {}", e);
-            Err(std::io::Error::new(
-                std::io::ErrorKind::Other,
-                e.to_string(),
-            ))
+            Err(std::io::Error::other(e.to_string()))
         }
     }
 }
