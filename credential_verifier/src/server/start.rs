@@ -4,6 +4,7 @@ use crate::{
         ServerParams, openid4vp_endpoints,
         verify_endpoint::{verify_credential_endpoint, version_endpoint},
     },
+    tls::SslAuth,
 };
 use actix_cors::Cors;
 use actix_web::{
@@ -18,8 +19,7 @@ use std::{
 };
 use tracing::info;
 
-#[cfg(feature = "openssl")]
-use crate::tls::openssl_config::{create_openssl_acceptor, extract_openssl_peer_certificate};
+use crate::tls::{create_openssl_acceptor, extract_openssl_peer_certificate};
 
 /// Inner function to start the attestation server asynchronously.
 pub async fn start_server(
@@ -72,7 +72,8 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         let app = App::new()
             .app_data(Data::new(server_params.clone())) // Share the attestation server parameters across the app.
             .app_data(PayloadConfig::new(1_000_000)) // Set the maximum size of the request payload.
-            .app_data(JsonConfig::default().limit(1_000_000)); // Set the maximum size of the JSON request payload.
+            .app_data(JsonConfig::default().limit(1_000_000)) // Set the maximum size of the JSON request payload.
+            .wrap(SslAuth);
 
         // Optionally share the OpenID4VP service
         let app = app.app_data(Data::new(openid4vp_service.clone()));
@@ -122,20 +123,11 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
     ))
     .client_request_timeout(std::time::Duration::from_secs(10)); // keep 10 seconds timeout for KMIP attestation vectors
 
-    #[cfg(feature = "openssl")]
     let server = server
         .on_connect(extract_openssl_peer_certificate)
         .bind_openssl(address, create_openssl_acceptor(&params.tls_params)?)
         .map_err(|e| {
             crate::AttError::Config(format!("Failed binding the OpenSSL TLS connector: {e}"))
-        })?;
-
-    #[cfg(feature = "rustls")]
-    let server = server
-        .on_connect(extract_rustls_peer_certificate)
-        .bind_rustls_0_23(address, rustls_server_config(&params.tls_params)?)
-        .map_err(|e| {
-            crate::AttError::Config(format!("Failed binding the Rustls TLS connector: {e}"))
         })?;
 
     let server = server.run();

@@ -19,6 +19,10 @@ pub enum AttError {
     #[error("bad request: {0}")]
     BadRequest(String),
 
+    // Error related to authentication failure
+    #[error("authentication error: {0}")]
+    Authentication(String),
+
     #[cfg(test)]
     #[error("test error: {0}")]
     Test(String),

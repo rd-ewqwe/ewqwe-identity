@@ -20,7 +20,7 @@
 //!     Attestation, JwtSigner, SigningAlgorithm, AttestationSigner
 //! };
 //!
-//! let claims = Attestation::new(
+//! let attestation = Attestation::new(
 //!     "verifier.example.com",
 //!     "rp.example.com",
 //!     "session-123",
@@ -28,16 +28,16 @@
 //! );
 //!
 //! let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, &private_key_pem)?
-//! let token = signer.sign(&claims)?;
+//! let token = signer.sign(&attestation)?;
 //! ```
 
-mod claims;
+mod attestation_struct;
 mod cose_signer;
 mod jwt_signer;
 #[cfg(test)]
 mod tests;
 
-pub use claims::Attestation;
+pub use attestation_struct::Attestation;
 pub use cose_signer::{CoseSigner, CoseSigningAlgorithm, verify_cose_attestation};
 pub use jwt_signer::{JwtSigner, SigningAlgorithm};
 

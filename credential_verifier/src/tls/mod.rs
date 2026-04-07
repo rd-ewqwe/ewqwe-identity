@@ -1,4 +1,5 @@
-#[cfg(feature = "openssl")]
-pub mod openssl_config;
-#[cfg(feature = "rustls")]
-pub mod rustls_config;
+mod openssl_config;
+mod ssl_auth_middleware;
+
+pub use openssl_config::create_openssl_acceptor;
+pub use ssl_auth_middleware::{PeerCertificate, SslAuth, extract_openssl_peer_certificate};

@@ -86,7 +86,6 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
                     .to_string_lossy()
                     .to_string(),
             ),
-            #[cfg(feature = "openssl")]
             tls_cipher_suites: None,
             // tls_cipher_suites: Some(
             //     tls::openssl_config::TLS13_CIPHER_SUITES
@@ -94,15 +93,13 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
             //         .map(|s| s.to_string())
             //         .collect(),
             // ),
-            #[cfg(feature = "rustls")]
-            tls_cipher_suites: None,
         },
         default_username: Some("default_user".to_string()),
         openid4vp_config: OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests
             transaction_store: Default::default(),
             haip_config: Some(HaipConfig {
-                // Use the pre-built fullchain PEM (leaf + CA) for x5c
+                // Use the pre-built full chain PEM (leaf + CA) for x5c
                 x509_cert_path: certificates_dir
                     .join("ewqwe.server.fullchain.pem")
                     .to_string_lossy()

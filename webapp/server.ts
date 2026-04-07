@@ -14,9 +14,6 @@
  *   POST /api/openid4vp/request/:id  — Wallet posts to authorization request
  *   GET  /api/openid4vp/.well-known/jwks.json — Public JWK Set
  *   POST /api/verify                 — Credential verification
- *
- * Local endpoints:
- *   GET  /api/health                 — Health check
  */
 
 // ============================================================================

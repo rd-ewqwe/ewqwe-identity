@@ -190,7 +190,6 @@ impl ServerParams {
     ///
     /// Reads `attestation_issuer_certificate` (or falls back to
     /// `tls_params.server_certificate`) and extracts the Subject CN.
-    #[cfg(feature = "openssl")]
     pub fn attestation_issuer_iss(&self) -> AttResult<String> {
         use openssl::nid::Nid;
         use openssl::x509::X509;
@@ -218,17 +217,10 @@ impl ServerParams {
             })
     }
 
-    /// Fallback `iss` for builds without OpenSSL.
-    #[cfg(not(feature = "openssl"))]
-    pub fn attestation_issuer_iss(&self) -> AttResult<String> {
-        Ok("credential-verifier".to_string())
-    }
-
     /// RFC 7638 JWK thumbprint of the attestation signing certificate's public key.
     ///
     /// Used as the `kid` in both the JWKS and the signed attestation JWT header
     /// so the verifier can locate the right key without ambiguity.
-    #[cfg(feature = "openssl")]
     pub fn attestation_issuer_kid(&self) -> Option<String> {
         use base64::Engine as _;
         use openssl::x509::X509;

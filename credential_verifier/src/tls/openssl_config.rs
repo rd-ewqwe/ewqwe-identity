@@ -1,16 +1,12 @@
 use crate::error::AttError;
 use crate::error::AttResult;
 use crate::parameters::TlsParams;
-use actix_web::dev::Extensions;
-use tracing::debug;
-use tracing::error;
-use tracing::{info, trace};
 use openssl::pkey::PKey;
 use openssl::{
     ssl::{SslAcceptor, SslAcceptorBuilder, SslMethod, SslVerifyMode, SslVersion},
     x509::{X509, store::X509StoreBuilder},
 };
-use std::any::Any;
+use tracing::{info, trace};
 /// The extension struct holding the peer certificate during the connection.
 ///
 /// This struct stores the peer certificate in the request context.
@@ -18,37 +14,6 @@ use std::any::Any;
 pub struct PeerCertificate {
     /// The peer certificate.
     pub cert: X509,
-}
-
-/// Extract the peer certificate from the TLS stream and pass it to middleware.
-///
-/// This function extracts the peer certificate from the TLS stream and passes it to the middleware.
-/// The middleware can then use the peer certificate to authenticate the client.
-pub fn extract_openssl_peer_certificate(cnx: &dyn Any, extensions: &mut Extensions) {
-    // Check if the connection is a TLS connection.
-
-    use std::net::TcpStream;
-    if let Some(tls_socket) =
-        cnx.downcast_ref::<actix_tls::accept::openssl::TlsStream<actix_web::rt::net::TcpStream>>()
-    {
-        if let Some(cert) = tls_socket.ssl().peer_certificate() {
-            // The certificate is already an openssl::X509 object
-            debug!(
-                "Extracted peer certificate from TLS connection: {:?}",
-                cert.subject_name()
-            );
-            extensions.insert(PeerCertificate { cert });
-        } else {
-            debug!("No peer certificate presented by client");
-        }
-    } else if let Some(cnx) = cnx.downcast_ref::<TcpStream>() {
-        error!("Not a TLS connection: {:?}", cnx.peer_addr());
-    } else {
-        error!(
-            "Unknown connection type (neither TLS nor clear text): {:#?}",
-            cnx
-        );
-    }
 }
 
 // TLS 1.3 cipher suites as defined in RFC 8446
@@ -189,9 +154,7 @@ fn configure_cipher_suites(cipher_suites: Option<&String>) -> AttResult<SslAccep
                 })?;
             builder
                 .set_cipher_list(&tls12_ciphers.join(":"))
-                .map_err(|e| {
-                    AttError::Config(format!("Failed to set TLS 1.2 cipher list: {e}"))
-                })?;
+                .map_err(|e| AttError::Config(format!("Failed to set TLS 1.2 cipher list: {e}")))?;
         }
 
         if !tls13_ciphers.is_empty() {

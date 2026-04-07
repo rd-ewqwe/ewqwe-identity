@@ -15,25 +15,15 @@ path = "src/lib.rs"
 name = "credential-verifier"
 path = "src/main.rs"
 
-[features]
-default = ["openssl"]
-openssl = ["actix-web/openssl", "dep:openssl"]
-rustls = ["actix-web/rustls-0_23", "dep:rustls"]
-# no_jwt_validation: only useful for tests, do not enable in production
-# this feature will disable JWT verification of the token issuer and expiration date
-no_jwt_validation = []
 
 [dependencies]
 alcoholic_jwt = { workspace = true }
 actix-cors = { workspace = true }
 actix-identity = { workspace = true }
 actix-files = { workspace = true }
-actix-session = { workspace = true, features = [
-    "cookie-session",
-    "redis-session",
-] }
+actix-service = { workspace = true }
 actix-tls = { workspace = true }
-actix-web = { workspace = true, features = ["macros"] }
+actix-web = { workspace = true, features = ["macros", "openssl"] }
 base64 = "0.22"
 chrono = { workspace = true }
 ciborium = { workspace = true }
@@ -42,14 +32,14 @@ ewqwe_logging = { workspace = true }
 ewqwe_openid4vp = { workspace = true }
 futures = { workspace = true }
 jsonwebtoken = { workspace = true }
-openssl = { workspace = true, features = ["vendored"], optional = true }
+openssl = { workspace = true, features = ["vendored"] }
 reqwest = { workspace = true, features = [
     "json",
     "native-tls",
     "http2",
     "cookies",
 ] }
-rustls = { workspace = true, optional = true }
+# rustls = { workspace = true, optional = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
 thiserror = { workspace = true }
