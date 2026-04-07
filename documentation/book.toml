@@ -1,5 +1,5 @@
 [book]
-title = "EwQwE Identity"
+title = "EwQwE Digital Identity"
 authors = ["EwQwE Contributors"]
 language = "en"
 
@@ -11,4 +11,5 @@ command = "mdbook-mermaid"
 [output]
 
 [output.html]
+additional-css = ["custom-theme.css"]
 additional-js = ["mermaid.min.js", "mermaid-init.js"]

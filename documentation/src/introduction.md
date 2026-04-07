@@ -1,6 +1,5 @@
-# EwQwE Identity
 
-**EwQwE** (pronounced /juːˈkwiː/ or *you-kwee*) **Identity** is a comprehensive software suite for implementing Digital Identity solutions, with specific focus on [European Digital Identity (EUDI)](https://digital-strategy.ec.europa.eu/en/policies/eudi-regulation) standards and protocols.
+**EwQwE** (pronounced /juːˈkwiː/ or *you-kwee*) **Digital Identity** is a comprehensive software suite for implementing Digital Identity solutions, with specific focus on [European Digital Identity (EUDI)](https://digital-strategy.ec.europa.eu/en/policies/eudi-regulation) standards and protocols.
 
 ## Primary Use Case: EU Age Verification
 

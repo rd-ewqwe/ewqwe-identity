@@ -1,0 +1,119 @@
+/* Custom theme with subtle violet/indigo accents */
+
+/* Light theme accents */
+:root {
+  --links: rgb(99, 102, 241); /* indigo-500 */
+  --links-hover: rgb(124, 58, 237); /* purple-600 */
+}
+
+/* Add subtle purple gradient to sidebar header */
+.sidebar .sidebar-scrollbox {
+  border-right: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+/* Style chapter links with indigo/purple */
+.chapter li.part-title {
+  color: rgb(124, 58, 237);
+  opacity: 0.9;
+}
+
+.chapter li a:hover {
+  color: rgb(124, 58, 237);
+}
+
+.chapter li a.active {
+  color: rgb(99, 102, 241);
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.1), transparent);
+  border-left: 3px solid rgb(124, 58, 237);
+}
+
+/* Style headers with subtle purple */
+h1, h2 {
+  color: inherit;
+  border-bottom-color: rgba(124, 58, 237, 0.2);
+}
+
+h1 {
+  background: linear-gradient(135deg, rgb(99, 102, 241), rgb(124, 58, 237));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Code blocks - subtle purple accent */
+.hljs {
+  border-left: 3px solid rgba(124, 58, 237, 0.3);
+}
+
+/* Navigation buttons */
+.nav-chapters a {
+  color: rgb(99, 102, 241);
+  transition: all 0.2s ease;
+}
+
+.nav-chapters a:hover {
+  color: rgb(124, 58, 237);
+  text-decoration: none;
+}
+
+/* Search bar highlight */
+#searchbar:focus {
+  border-color: rgb(99, 102, 241);
+  outline: 2px solid rgba(99, 102, 241, 0.2);
+}
+
+/* Menu bar with subtle gradient */
+.menu-bar {
+  border-bottom: 1px solid rgba(124, 58, 237, 0.1);
+}
+
+/* Dark theme adjustments */
+.ayu, .coal, .navy {
+  --links: rgb(147, 149, 255); /* lighter indigo for dark themes */
+  --links-hover: rgb(167, 139, 250); /* lighter purple for dark themes */
+}
+
+.ayu h1, .coal h1, .navy h1 {
+  background: linear-gradient(135deg, rgb(147, 149, 255), rgb(167, 139, 250));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ayu .chapter li a.active,
+.coal .chapter li a.active,
+.navy .chapter li a.active {
+  background: linear-gradient(90deg, rgba(147, 149, 255, 0.15), transparent);
+  border-left: 3px solid rgb(167, 139, 250);
+}
+
+/* Subtle purple accent on tables */
+table thead {
+  background: linear-gradient(180deg, rgba(99, 102, 241, 0.05), transparent);
+  border-bottom: 2px solid rgba(124, 58, 237, 0.3);
+}
+
+/* Blockquote accent */
+blockquote {
+  border-left-color: rgb(124, 58, 237);
+  background: rgba(99, 102, 241, 0.03);
+}
+
+.ayu blockquote, .coal blockquote, .navy blockquote {
+  background: rgba(147, 149, 255, 0.05);
+}
+
+/* Inline code subtle highlight */
+:not(pre) > .hljs {
+  background: rgba(99, 102, 241, 0.05);
+  color: rgb(99, 102, 241);
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.ayu :not(pre) > .hljs,
+.coal :not(pre) > .hljs,
+.navy :not(pre) > .hljs {
+  background: rgba(147, 149, 255, 0.1);
+  color: rgb(147, 149, 255);
+}
