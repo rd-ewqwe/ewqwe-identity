@@ -711,7 +711,7 @@ fn verify_vp_token(
 /// The issuer (`iss`) claim is the Subject CN of [`ServerParams::attestation_issuer_certificate`].
 /// The `kid` JWT header is the SHA-256 fingerprint of the certificate so the verifier
 /// can locate the matching public key in the JWKS served at
-/// `/api/openid4vp/.well-known/jwks.json`.
+/// `/ewqwe_api/openid4vp/.well-known/jwks.json`.
 fn create_attestation(
     client_id: &str,
     nonce: Option<&str>,

@@ -134,8 +134,8 @@ export class OpenID4VPService {
     const now = Date.now();
     const expiresAt = now + this.ttlMs;
 
-    const responseUri = `${this.config.publicUrl}/api/openid4vp/direct_post`;
-    const requestUri = `${this.config.publicUrl}/api/openid4vp/request/${transactionId}`;
+    const responseUri = `${this.config.publicUrl}/ewqwe_api/openid4vp/direct_post`;
+    const requestUri = `${this.config.publicUrl}/ewqwe_api/openid4vp/request/${transactionId}`;
 
     // Determine client_id, scheme, response_mode, and URL scheme per profile
     let clientId: string;
@@ -431,7 +431,7 @@ export class OpenID4VPService {
       delete body.presentation_submission;
     }
 
-    const verifierUrl = `${this.config.credentialVerifierUrl}/api/verify`;
+    const verifierUrl = `${this.config.credentialVerifierUrl}/ewqwe_api/verify`;
     const fetchOptions: RequestInit & { client?: Deno.HttpClient } = {
       method: "POST",
       headers: { "Content-Type": "application/json" },

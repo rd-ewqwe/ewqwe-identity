@@ -274,7 +274,7 @@ The `presentation_definition` uses **Digital Credentials Query Language (DCQL)**
 
 ```typescript
 const request: OpenID4VPRequest = {
-  client_id: "redirect_uri:http://localhost:5175/api/openid4vp/direct_post",
+  client_id: "redirect_uri:http://localhost:5175/ewqwe_api/openid4vp/direct_post",
   client_id_scheme: "redirect_uri",
   response_type: "vp_token",
   response_mode: "direct_post",

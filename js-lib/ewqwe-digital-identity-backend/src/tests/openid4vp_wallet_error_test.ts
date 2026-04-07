@@ -38,9 +38,9 @@ function makeTransaction(
     expiresAt: now + ttlMs,
     status: "pending",
     dcqlQuery: { credentials: [] },
-    clientId: "redirect_uri:https://rp.example.com/api/openid4vp/direct_post",
+    clientId: "redirect_uri:https://rp.example.com/ewqwe_api/openid4vp/direct_post",
     clientIdScheme: "redirect_uri",
-    responseUri: "https://rp.example.com/api/openid4vp/direct_post",
+    responseUri: "https://rp.example.com/ewqwe_api/openid4vp/direct_post",
     responseMode: "direct_post",
     profile: "annex-a",
   };

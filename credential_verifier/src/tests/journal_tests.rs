@@ -399,7 +399,7 @@ async fn test_journal_entries_endpoint_requires_tls() -> AttResult<()> {
 
     // Without a client certificate the endpoint must reject with 401.
     let response = client
-        .get_raw("/api/journal/user1.acme.com/entries")
+        .get_raw("/ewqwe_api/journal/user1.acme.com/entries")
         .await?;
 
     assert_eq!(
@@ -418,7 +418,7 @@ async fn test_journal_verify_endpoint_requires_tls() -> AttResult<()> {
     let client = TestClient::new(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/api/journal/user1.acme.com/verify")
+        .get_raw("/ewqwe_api/journal/user1.acme.com/verify")
         .await?;
 
     assert_eq!(
@@ -437,7 +437,7 @@ async fn test_journal_download_endpoint_requires_tls() -> AttResult<()> {
     let client = TestClient::new(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/api/journal/user1.acme.com/download")
+        .get_raw("/ewqwe_api/journal/user1.acme.com/download")
         .await?;
 
     assert_eq!(
@@ -457,7 +457,7 @@ async fn test_journal_entries_empty_for_new_user() -> AttResult<()> {
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/api/journal/user1.acme.com/entries")
+        .get_raw("/ewqwe_api/journal/user1.acme.com/entries")
         .await?;
 
     assert_eq!(
@@ -485,7 +485,7 @@ async fn test_journal_access_denied_for_other_user() -> AttResult<()> {
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/api/journal/user2.acme.com/entries")
+        .get_raw("/ewqwe_api/journal/user2.acme.com/entries")
         .await?;
 
     assert_eq!(
@@ -504,7 +504,7 @@ async fn test_journal_chain_verify_empty() -> AttResult<()> {
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/api/journal/user1.acme.com/verify")
+        .get_raw("/ewqwe_api/journal/user1.acme.com/verify")
         .await?;
 
     assert_eq!(response.status(), reqwest::StatusCode::OK);
@@ -533,7 +533,7 @@ async fn test_journal_download_returns_json_file() -> AttResult<()> {
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/api/journal/user1.acme.com/download")
+        .get_raw("/ewqwe_api/journal/user1.acme.com/download")
         .await?;
 
     assert_eq!(response.status(), reqwest::StatusCode::OK);

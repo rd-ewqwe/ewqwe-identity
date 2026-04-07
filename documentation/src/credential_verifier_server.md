@@ -24,7 +24,7 @@ flowchart LR
     Sign[Attestation Signing]
     Store[(Transaction Store<br/>SQLite / PostgreSQL / Redis)]
 
-    RP -->|HTTPS POST<br/>/api/verify| Verifier
+    RP -->|HTTPS POST<br/>/ewqwe_api/verify| Verifier
     Verifier --> TLS
     Verifier --> VP
     Verifier --> Sign
@@ -245,10 +245,10 @@ Configure with `server_private_key`, `server_certificate`, and `server_ca_chain`
 
 Configure with `client_ca_cert_chain` in `[tls_params]` to require client certificates.
 
-**How it works for `/api/verify`**:
+**How it works for `/ewqwe_api/verify`**:
 
 1. The TLS listener is configured to validate client certificates against the configured CA chain when a client certificate is presented.
-2. The `SslAuth` middleware runs in front of `POST /api/verify` and requires a client certificate for that endpoint.
+2. The `SslAuth` middleware runs in front of `POST /ewqwe_api/verify` and requires a client certificate for that endpoint.
 3. The server extracts the client certificate from the TLS connection.
 4. The Common Name (CN) field of the client certificate is extracted and used as the **username**.
 5. Wildcard usernames are rejected (`CN` values ending in `*` are denied).
@@ -267,7 +267,7 @@ server_ca_chain       = "certs/ca.chain.pem"
 client_ca_cert_chain  = "certs/client-ca.pem"  # Required for mTLS
 ```
 
-**Behavior for `POST /api/verify`**:
+**Behavior for `POST /ewqwe_api/verify`**:
 
 - ✅ **Valid client certificate**: Request proceeds with `username` = certificate CN
 - ❌ **No client certificate**: Request rejected with `401 Unauthorized`
@@ -308,7 +308,7 @@ All certificates must be in **PEM format**:
 
 ## API Endpoints
 
-### `POST /api/verify` — Verify Credential
+### `POST /ewqwe_api/verify` — Verify Credential
 
 Verifies a Verifiable Presentation (VP) token from a user's wallet and returns a signed attestation if valid.
 
@@ -477,12 +477,12 @@ The journal is **disabled by default** (`enabled = false`) to preserve backward 
 
 ### Journal HTTP API
 
-All journal endpoints are under `/api/journal/{username}/` and require mTLS authentication. A client may only access its **own** journal (the authenticated CN must match the `{username}` path parameter).
+All journal endpoints are under `/ewqwe_api/journal/{username}/` and require mTLS authentication. A client may only access its **own** journal (the authenticated CN must match the `{username}` path parameter).
 
 #### List Entries
 
 ```
-GET /api/journal/{username}/entries
+GET /ewqwe_api/journal/{username}/entries
 ```
 
 | Query Param | Type         | Default | Description                           |
@@ -514,7 +514,7 @@ Returns a JSON array of journal entries (newest first):
 #### Verify Chain Integrity
 
 ```
-GET /api/journal/{username}/verify
+GET /ewqwe_api/journal/{username}/verify
 ```
 
 Recomputes every `entry_hash` from genesis and checks the head pointer. Returns:
@@ -535,7 +535,7 @@ If any entry has been tampered with, `valid` is `false` and `error` contains a d
 #### Download Journal
 
 ```
-GET /api/journal/{username}/download?before=&after=&limit=
+GET /ewqwe_api/journal/{username}/download?before=&after=&limit=
 ```
 
 Returns the same filtered entries as `list_entries` as a `Content-Disposition: attachment` JSON file named `journal_{username}.json`.

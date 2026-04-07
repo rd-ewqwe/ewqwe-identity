@@ -7,13 +7,13 @@
  * to the Rust credential_verifier server. No business logic here.
  *
  * Proxied endpoints (→ credential_verifier):
- *   POST /api/openid4vp/init         — Initialize a new transaction
- *   GET  /api/openid4vp/status/:id   — Poll transaction status
- *   POST /api/openid4vp/direct_post  — Wallet posts VP token
- *   GET  /api/openid4vp/request/:id  — Wallet fetches authorization request
- *   POST /api/openid4vp/request/:id  — Wallet posts to authorization request
- *   GET  /api/openid4vp/.well-known/jwks.json — Public JWK Set
- *   POST /api/verify                 — Credential verification
+ *   POST /ewqwe_api/openid4vp/init         — Initialize a new transaction
+ *   GET  /ewqwe_api/openid4vp/status/:id   — Poll transaction status
+ *   POST /ewqwe_api/openid4vp/direct_post  — Wallet posts VP token
+ *   GET  /ewqwe_api/openid4vp/request/:id  — Wallet fetches authorization request
+ *   POST /ewqwe_api/openid4vp/request/:id  — Wallet posts to authorization request
+ *   GET  /ewqwe_api/openid4vp/.well-known/jwks.json — Public JWK Set
+ *   POST /ewqwe_api/verify                 — Credential verification
  */
 
 // ============================================================================
@@ -195,7 +195,7 @@ async function handleRequest(req: Request): Promise<Response> {
 
   try {
     // ── All API requests — straight proxy ─────────────────────
-    if (path.startsWith("/api/")) {
+    if (path.startsWith("/ewqwe_api/")) {
       return await proxyToVerifier(path, req);
     }
 

@@ -127,7 +127,7 @@ export interface OpenID4VPTransaction {
 // Init Transaction
 // ============================================================================
 
-/** Request body for POST /api/openid4vp/init */
+/** Request body for POST /ewqwe_api/openid4vp/init */
 export interface InitTransactionRequest {
   dcql_query?: DCQLQuery;
   /** Legacy presentation_definition (will be converted to DCQL) */
@@ -161,7 +161,7 @@ export interface AuthorizationRequestResult {
 // Verification
 // ============================================================================
 
-/** Request body for POST /api/verify — forwarded to credential verifier. */
+/** Request body for POST /ewqwe_api/verify — forwarded to credential verifier. */
 export interface VerifyRequest {
   // deno-lint-ignore no-explicit-any
   vp_token: string | Record<string, any>;

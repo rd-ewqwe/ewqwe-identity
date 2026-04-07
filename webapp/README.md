@@ -132,7 +132,7 @@ The application is designed to send received credentials to a Rust backend serve
 ### Backend API Endpoint
 
 ```http
-POST /api/verify
+POST /ewqwe_api/verify
 Content-Type: application/json
 
 {

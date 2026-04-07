@@ -212,8 +212,8 @@ impl OpenID4VPService {
         let expires_at = now + (self.ttl_secs * 1000);
 
         let public_url = request.public_url.trim_end_matches('/');
-        let response_uri = format!("{public_url}/api/openid4vp/direct_post");
-        let request_uri = format!("{public_url}/api/openid4vp/request/{transaction_id}");
+        let response_uri = format!("{public_url}/ewqwe_api/openid4vp/direct_post");
+        let request_uri = format!("{public_url}/ewqwe_api/openid4vp/request/{transaction_id}");
 
         // Determine client_id, scheme, response_mode, and URL scheme per profile
         let (client_id, client_id_scheme, response_mode, url_scheme) = match profile {
@@ -786,7 +786,7 @@ mod tests {
         assert!(
             response
                 .request_uri
-                .starts_with("https://rp.example.com/api/openid4vp/request/")
+                .starts_with("https://rp.example.com/ewqwe_api/openid4vp/request/")
         );
         assert!(response.authorization_request_uri.starts_with("av://"));
         assert!(response.expires_in > 0);

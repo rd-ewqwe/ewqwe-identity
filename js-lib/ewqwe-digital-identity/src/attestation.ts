@@ -236,7 +236,7 @@ function readTlvBounds(bytes: Uint8Array, offset: number): [number, number] {
  *
  * @param jwt     - Compact-serialized JWT from `VerifyResponse.attestation`.
  * @param jwksUrl - URL of the JWK Set that contains the attestation signing key,
- *                  e.g. `"/api/openid4vp/.well-known/jwks.json"`.
+ *                  e.g. `"/ewqwe_api/openid4vp/.well-known/jwks.json"`.
  * @throws If the JWKS cannot be fetched, no matching key is found, or verification fails.
  */
 export async function parseAttestation(

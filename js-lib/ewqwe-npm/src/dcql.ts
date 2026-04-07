@@ -281,7 +281,7 @@ export function getDefaultAgeVerificationDCQL(): DCQLQuery {
  * @param publicUrl - The public URL the wallet is going to call back to
  * @param credentialType - The type of credential to request
  * @param selectedClaims - Array of claim IDs to include (e.g. `["age_over_18"]`)
- * @returns `InitTransactionRequest` ready to POST to `/api/openid4vp/init`
+ * @returns `InitTransactionRequest` ready to POST to `/ewqwe_api/openid4vp/init`
  */
 export function buildInitTransactionRequest(
   publicUrl: string,

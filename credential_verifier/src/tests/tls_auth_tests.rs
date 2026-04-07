@@ -10,13 +10,13 @@ async fn test_verify_endpoint_requires_client_certificate() -> AttResult<()> {
 
     let client = TestClient::new(&ctx.base_url())?;
     let response = client
-        .post_raw("/api/verify", &json!({ "vp_token": "{}" }))
+        .post_raw("/ewqwe_api/verify", &json!({ "vp_token": "{}" }))
         .await?;
 
     assert_eq!(
         response.status(),
         reqwest::StatusCode::UNAUTHORIZED,
-        "Expected /api/verify to reject requests without client certificate"
+        "Expected /ewqwe_api/verify to reject requests without client certificate"
     );
 
     ctx.stop_server().await?;
@@ -29,13 +29,13 @@ async fn test_verify_endpoint_accepts_valid_client_certificate() -> AttResult<()
 
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
     let response = client
-        .post_raw("/api/verify", &json!({ "vp_token": "{}" }))
+        .post_raw("/ewqwe_api/verify", &json!({ "vp_token": "{}" }))
         .await?;
 
     assert_ne!(
         response.status(),
         reqwest::StatusCode::UNAUTHORIZED,
-        "Expected /api/verify to pass mTLS middleware when a valid client certificate is provided"
+        "Expected /ewqwe_api/verify to pass mTLS middleware when a valid client certificate is provided"
     );
 
     assert_eq!(

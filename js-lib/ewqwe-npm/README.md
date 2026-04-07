@@ -133,7 +133,7 @@ const profile = determineProfile('mdl'); // 'haip'
 import { parseAttestation, verifyAttestation } from '@ewqwe/digital-identity';
 
 // Parse and verify attestation from backend response
-const attestation = await parseAttestation(jwtToken, '/api/jwks');
+const attestation = await parseAttestation(jwtToken, '/ewqwe_api/jwks');
 
 // Or verify with pre-imported public key
 const publicKey = await importVerifierPublicKey(pemOrSpki);

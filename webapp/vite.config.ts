@@ -23,7 +23,7 @@ export default defineConfig({
     host: "0.0.0.0",
     port: 5174,
     proxy: {
-      "/api": {
+      "/ewqwe_api": {
         target: "http://localhost:5175",
         changeOrigin: true,
         timeout: 30000,

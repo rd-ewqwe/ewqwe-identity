@@ -43,7 +43,7 @@ flowchart TB
     QRModal -.->|Scan QR| WalletApp
     WalletApp -->|POST direct_post| APIServer
     Protocol -->|Poll status| APIServer
-    Protocol -->|POST /api/verify| APIServer
+    Protocol -->|POST /ewqwe_api/verify| APIServer
     APIServer -->|HTTPS| CredVerifier[ewQwe Credential Verifier]
 
     style Webapp fill:#7c3aed
@@ -125,7 +125,7 @@ When using OpenID4VP cross-device mode, the webapp implements the cross-device f
 
 The implementation follows the EUDI Wallet specifications for HAIP, and the EU Age Verification Profile for Annex A:
 
-- **Profile-Aware Requests**: The `/api/openid4vp/init` endpoint accepts a `credential_type` parameter to determine the profile
+- **Profile-Aware Requests**: The `/ewqwe_api/openid4vp/init` endpoint accepts a `credential_type` parameter to determine the profile
 - **Request Delivery**:
   - **HAIP**: QR code contains `request_uri`; wallet fetches signed JAR from that URI
   - **Annex A**: QR code contains ALL parameters inline (no `request_uri`); wallet parses parameters directly from the URL
@@ -149,18 +149,18 @@ sequenceDiagram
     W->>U: Display QR Code (contains request_uri)
 
     U->>M: Scan QR Code
-    M->>W: GET /api/openid4vp/request/{id}
+    M->>W: GET /ewqwe_api/openid4vp/request/{id}
     W-->>M: Signed JWT (JAR) with DCQL query
     M->>U: Show credential sharing prompt
     U->>M: Approve sharing
-    M->>W: POST /api/openid4vp/direct_post (vp_token)
+    M->>W: POST /ewqwe_api/openid4vp/direct_post (vp_token)
     W-->>M: 200 OK
 
     loop Poll for response
-        W->>W: GET /api/openid4vp/status/{id}
+        W->>W: GET /ewqwe_api/openid4vp/status/{id}
     end
 
-    W->>V: POST /api/verify (vp_token)
+    W->>V: POST /ewqwe_api/verify (vp_token)
     V-->>W: Signed attestation
     W->>U: Display verified claims
 ```
@@ -182,14 +182,14 @@ sequenceDiagram
     Note over M: Parse params from URL directly<br/>(no HTTP fetch needed)
     M->>U: Show credential sharing prompt
     U->>M: Approve sharing
-    M->>W: POST /api/openid4vp/direct_post (vp_token)
+    M->>W: POST /ewqwe_api/openid4vp/direct_post (vp_token)
     W-->>M: 200 OK
 
     loop Poll for response
-        W->>W: GET /api/openid4vp/status/{id}
+        W->>W: GET /ewqwe_api/openid4vp/status/{id}
     end
 
-    W->>V: POST /api/verify (vp_token)
+    W->>V: POST /ewqwe_api/verify (vp_token)
     V-->>W: Signed attestation
     W->>U: Display verified claims
 ```
@@ -219,19 +219,19 @@ sequenceDiagram
 
     U->>W: Click "Open EUDI Wallet"
     W->>M: Deep link (openid4vp://...)
-    M->>W: GET /api/openid4vp/request/{id}
+    M->>W: GET /ewqwe_api/openid4vp/request/{id}
     W-->>M: Authorization Request (JSON)
     M->>U: Show credential sharing prompt
     U->>M: Approve sharing
-    M->>W: POST /api/openid4vp/direct_post (vp_token)
+    M->>W: POST /ewqwe_api/openid4vp/direct_post (vp_token)
     W-->>M: 200 OK
 
     Note over W: (User switches back to browser)
     loop Poll for response
-        W->>W: GET /api/openid4vp/status/{id}
+        W->>W: GET /ewqwe_api/openid4vp/status/{id}
     end
 
-    W->>V: POST /api/verify (vp_token)
+    W->>V: POST /ewqwe_api/verify (vp_token)
     V-->>W: Signed attestation
     W->>U: Display verified claims
 ```
@@ -336,10 +336,10 @@ This is particularly useful for:
 
 | Endpoint | Method | Description |
 | -------- | ------ | ----------- |
-| `/api/openid4vp/init` | POST | Initialize a new transaction, returns QR code data and profile info |
-| `/api/openid4vp/request/{id}` | GET | Wallet fetches authorization request (signed JAR for HAIP, plain JSON for Annex A) |
-| `/api/openid4vp/direct_post` | POST | Wallet posts VP token (response_uri) |
-| `/api/openid4vp/status/{id}` | GET | Frontend polls for transaction status |
+| `/ewqwe_api/openid4vp/init` | POST | Initialize a new transaction, returns QR code data and profile info |
+| `/ewqwe_api/openid4vp/request/{id}` | GET | Wallet fetches authorization request (signed JAR for HAIP, plain JSON for Annex A) |
+| `/ewqwe_api/openid4vp/direct_post` | POST | Wallet posts VP token (response_uri) |
+| `/ewqwe_api/openid4vp/status/{id}` | GET | Frontend polls for transaction status |
 
 #### Init Transaction Request
 
@@ -373,8 +373,8 @@ interface InitTransactionResponse {
 
 | Endpoint | Method | Description |
 | -------- | ------ | ----------- |
-| `/api/verify` | POST | Verify a VP token (proxies to Credential Verifier) |
-| `/api/health` | GET | Health check |
+| `/ewqwe_api/verify` | POST | Verify a VP token (proxies to Credential Verifier) |
+| `/ewqwe_api/health` | GET | Health check |
 
 ## Environment Variables
 

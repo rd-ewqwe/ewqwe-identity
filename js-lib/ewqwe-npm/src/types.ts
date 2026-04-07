@@ -362,7 +362,7 @@ export interface SimpleClientMetadata {
 }
 
 /**
- * Request body for `POST /api/openid4vp/init`.
+ * Request body for `POST /ewqwe_api/openid4vp/init`.
  *
  * Sent by the frontend to the RP backend to initialize a new OpenID4VP
  * transaction. The backend injects `public_url` and constructs the actual

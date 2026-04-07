@@ -987,7 +987,7 @@ mod tests {
             client_id: format!("x509_san_dns:{}", jar_key.san_dns_name),
             client_id_scheme: "x509_san_dns".to_string(),
             response_mode: "direct_post.jwt".to_string(),
-            response_uri: "https://rp.example.com/api/openid4vp/direct_post".to_string(),
+            response_uri: "https://rp.example.com/ewqwe_api/openid4vp/direct_post".to_string(),
             state: "state-123".to_string(),
             nonce: "nonce-456".to_string(),
             dcql_query: serde_json::json!({"credentials": []}),

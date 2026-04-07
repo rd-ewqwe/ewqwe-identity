@@ -8,9 +8,9 @@
 //!
 //! | Method | Path                                     | Description                                 |
 //! |--------|------------------------------------------|---------------------------------------------|
-//! | GET    | `/api/journal/{username}/entries`        | Query recent entries (with optional filters)|
-//! | GET    | `/api/journal/{username}/verify`         | Verify the full chain integrity             |
-//! | GET    | `/api/journal/{username}/download`       | Download all (or filtered) entries as JSON  |
+//! | GET    | `/ewqwe_api/journal/{username}/entries`        | Query recent entries (with optional filters)|
+//! | GET    | `/ewqwe_api/journal/{username}/verify`         | Verify the full chain integrity             |
+//! | GET    | `/ewqwe_api/journal/{username}/download`       | Download all (or filtered) entries as JSON  |
 
 use crate::{
     AttError,
@@ -26,7 +26,7 @@ use std::sync::Arc;
 // Query parameter structs
 // ============================================================================
 
-/// Query parameters for `GET /api/journal/{username}/entries`.
+/// Query parameters for `GET /ewqwe_api/journal/{username}/entries`.
 #[derive(Deserialize, Default)]
 pub struct EntriesQuery {
     /// Maximum number of entries to return (defaults to 20, capped at 1000).
@@ -37,7 +37,7 @@ pub struct EntriesQuery {
     pub after: Option<DateTime<Utc>>,
 }
 
-/// Query parameters for `GET /api/journal/{username}/download`.
+/// Query parameters for `GET /ewqwe_api/journal/{username}/download`.
 #[derive(Deserialize, Default)]
 pub struct DownloadQuery {
     /// Return only entries created strictly before this RFC 3339 timestamp.

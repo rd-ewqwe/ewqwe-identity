@@ -187,7 +187,7 @@ async function requestViaOpenID4VPCrossDevice(
   }
 
   // Step 1: Initialize the transaction on the backend
-  const initResponse = await fetch("/api/openid4vp/init", {
+  const initResponse = await fetch("/ewqwe_api/openid4vp/init", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
@@ -419,7 +419,7 @@ function pollForWalletResponse(
       }
 
       try {
-        const response = await fetch(`/api/openid4vp/status/${transactionId}`);
+        const response = await fetch(`/ewqwe_api/openid4vp/status/${transactionId}`);
         const data: TransactionStatusResult = await response.json();
 
         if (data.status === "received") {
@@ -498,7 +498,7 @@ async function requestViaOpenID4VPSameDevice(
     logger.log(`Init Transaction Request:`, request);
   }
 
-  const initResponse = await fetch("/api/openid4vp/init", {
+  const initResponse = await fetch("/ewqwe_api/openid4vp/init", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(request),
@@ -729,7 +729,7 @@ export async function sendToBackend(
   _originalRequest: InitTransactionRequest | null,
   logger: DebugLogger,
 ): Promise<VerifyResponse> {
-  const backendUrl = "/api/verify";
+  const backendUrl = "/ewqwe_api/verify";
 
   // When there is no state (DC API same-device flow) the backend cannot look up
   // the client_id from a stored transaction, so we supply it explicitly.

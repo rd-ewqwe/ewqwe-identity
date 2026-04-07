@@ -110,7 +110,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             )
             .route("/version", web::get().to(version_endpoint));
 
-        let openid4vp_scope = web::scope("/api")
+        let openid4vp_scope = web::scope("/ewqwe_api")
             .service(
                 web::resource("/verify")
                     .wrap(SslAuth)

@@ -9,12 +9,12 @@
 //!
 //! | Method | Path                                     | Description                              |
 //! |--------|------------------------------------------|------------------------------------------|
-//! | POST   | `/api/openid4vp/init`                    | Initialize a new transaction             |
-//! | GET    | `/api/openid4vp/status/{id}`             | Poll transaction status                  |
-//! | POST   | `/api/openid4vp/direct_post`             | Wallet posts VP token                    |
-//! | GET    | `/api/openid4vp/request/{id}`            | Wallet fetches authorization request     |
-//! | POST   | `/api/openid4vp/request/{id}`            | Wallet fetches authorization request     |
-//! | GET    | `/api/openid4vp/.well-known/jwks.json`   | Public JWK Set for JAR verification      |
+//! | POST   | `/ewqwe_api/openid4vp/init`                    | Initialize a new transaction             |
+//! | GET    | `/ewqwe_api/openid4vp/status/{id}`             | Poll transaction status                  |
+//! | POST   | `/ewqwe_api/openid4vp/direct_post`             | Wallet posts VP token                    |
+//! | GET    | `/ewqwe_api/openid4vp/request/{id}`            | Wallet fetches authorization request     |
+//! | POST   | `/ewqwe_api/openid4vp/request/{id}`            | Wallet fetches authorization request     |
+//! | GET    | `/ewqwe_api/openid4vp/.well-known/jwks.json`   | Public JWK Set for JAR verification      |
 
 use crate::server::ServerParams;
 use actix_web::{HttpRequest, HttpResponse, web};
@@ -45,7 +45,7 @@ pub async fn init_transaction(
     service: web::Data<Arc<OpenID4VPService>>,
     body: web::Json<InitTransactionRequest>,
 ) -> HttpResponse {
-    info!("POST /api/openid4vp/init");
+    info!("POST /ewqwe_api/openid4vp/init");
     let request = body.into_inner();
 
     match service.init_transaction(request).await {
@@ -65,7 +65,7 @@ pub async fn init_transaction(
 ///
 /// Returns the current status. When `status == "received"`, the response includes
 /// `vp_token`, `presentation_submission`, `nonce`, and `state` for the RP to
-/// forward to `/api/verify`.
+/// forward to `/ewqwe_api/verify`.
 pub async fn get_transaction_status(
     service: web::Data<Arc<OpenID4VPService>>,
     path: web::Path<String>,
@@ -89,7 +89,7 @@ pub async fn handle_direct_post(
     req: HttpRequest,
     body: web::Bytes,
 ) -> HttpResponse {
-    info!("POST /api/openid4vp/direct_post");
+    info!("POST /ewqwe_api/openid4vp/direct_post");
 
     let content_type = req
         .headers()
@@ -237,7 +237,7 @@ pub async fn get_authorization_request(
     let transaction_id = path.into_inner();
     info!(
         transaction_id_prefix = &transaction_id[..transaction_id.len().min(8)],
-        "GET /api/openid4vp/request"
+        "GET /ewqwe_api/openid4vp/request"
     );
 
     match service.get_authorization_request(&transaction_id).await {
@@ -257,7 +257,7 @@ pub async fn get_authorization_request(
 /// 1. **JAR signing key** (present only in HAIP mode): used by the wallet to verify
 ///    signed Authorization Requests (RFC 9101 JARs).
 /// 2. **Attestation verification key**: used by the Relying Party to verify the
-///    signed attestation JWT returned by `POST /api/verify`.  The key is extracted
+///    signed attestation JWT returned by `POST /ewqwe_api/verify`.  The key is extracted
 ///    from `ServerParams::attestation_issuer_certificate` (or the TLS server
 ///    certificate when not configured).  The corresponding `kid` value is also
 ///    embedded in every attestation JWT header so the RP can look it up by ID.

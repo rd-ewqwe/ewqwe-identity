@@ -970,7 +970,7 @@ pub struct OpenID4VPTransaction {
 // API Request / Response Types
 // ============================================================================
 
-/// Request body for `POST /api/openid4vp/init`.
+/// Request body for `POST /ewqwe_api/openid4vp/init`.
 ///
 /// The RP sends this to the credential verifier to start a new transaction.
 /// `public_url` tells the verifier which URL the wallet should use for
@@ -1019,7 +1019,7 @@ pub struct InitTransactionRequest {
     pub transaction_data: Option<Vec<String>>,
 }
 
-/// Response from `POST /api/openid4vp/init`.
+/// Response from `POST /ewqwe_api/openid4vp/init`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InitTransactionResponse {
     /// Unique transaction ID for polling status.
@@ -1049,7 +1049,7 @@ pub struct InitTransactionResponse {
     pub qr_code_data_url: Option<String>,
 }
 
-/// Response from `GET /api/openid4vp/status/:id`.
+/// Response from `GET /ewqwe_api/openid4vp/status/:id`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionStatusResult {
     pub status: TransactionStatus,

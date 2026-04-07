@@ -199,7 +199,7 @@ The following requirements are **mandatory** when using OpenID4VP for age verifi
 - The RP MAY include a `state` parameter per RFC 6749 / OpenID4VP.
 - If present, it is an opaque client-maintained correlation value, not a wallet-generated field.
 - In a delegated architecture, the component that owns the wallet-facing `response_uri` may generate and store this value on behalf of the RP.
-- The verifier in this repository accepts caller-supplied `state` on `/api/openid4vp/init` and otherwise generates a fresh request-id for the delegated flow.
+- The verifier in this repository accepts caller-supplied `state` on `/ewqwe_api/openid4vp/init` and otherwise generates a fresh request-id for the delegated flow.
 
 ### 9) Client authentication is not required
 
@@ -217,7 +217,7 @@ const nonce = crypto.randomUUID(); // or a cryptographic random string
 const state = crypto.randomUUID(); // optional but recommended for correlation
 
 // 2) Define the response_uri where the wallet will POST back
-const responseUri = "https://rp.example.com/api/openid4vp/callback";
+const responseUri = "https://rp.example.com/ewqwe_api/openid4vp/callback";
 
 // 3) Build the client_id using the redirect_uri scheme
 const clientId = `redirect_uri:${responseUri}`;
@@ -297,7 +297,7 @@ The wallet POSTs a `application/x-www-form-urlencoded` body to the `response_uri
 
 ```typescript
 // Express.js / Node.js example
-app.post("/api/openid4vp/callback", async (req, res) => {
+app.post("/ewqwe_api/openid4vp/callback", async (req, res) => {
   const { vp_token, state } = req.body;
   // Note: presentation_submission is NOT included with DCQL queries
 
@@ -353,7 +353,7 @@ app.post("/api/openid4vp/callback", async (req, res) => {
 ```json
 {
   "iss": "https://wallet.example.com",
-  "aud": "redirect_uri:https://rp.example.com/api/openid4vp/callback",
+  "aud": "redirect_uri:https://rp.example.com/ewqwe_api/openid4vp/callback",
   "nonce": "550e8400-e29b-41d4-a716-446655440000",
   "vp": {
     "@context": ["https://www.w3.org/2018/credentials/v1"],

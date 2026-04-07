@@ -511,7 +511,7 @@ export class RelyingPartyApp {
       // signature is verified against the key published in the server JWKS.
       const attestationClaims = await parseAttestation(
         result.attestation,
-        "/api/openid4vp/.well-known/jwks.json",
+        "/ewqwe_api/openid4vp/.well-known/jwks.json",
       );
       this.logger.log(
         "Parsed and verified attestation claims",
