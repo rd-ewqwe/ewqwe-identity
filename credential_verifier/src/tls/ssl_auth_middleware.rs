@@ -129,18 +129,18 @@ where
                 debug!("An authenticated user was already found; skipping SSL authentication",);
             } else {
                 match ssl_auth(&req) {
-                    Ok(user) => {
-                        // Authentication successful, insert the claim into request extensions
-                        // and proceed with the request
+                    Ok(Some(user)) => {
                         debug!(
                             "Client certificate authentication successful for user: {}",
                             user.username
                         );
                         req.extensions_mut().insert(user);
                     }
+                    Ok(None) => {
+                        debug!("No client certificate presented; continuing without user");
+                    }
                     Err(e) => {
                         debug!("Client certificate authentication failed: {e:?}");
-                        // Return 401 Unauthorized for unauthenticated requests
                         let response = req.into_response(
                             HttpResponse::Unauthorized()
                                 .body(format!("Authentication failed: {}", e)),
@@ -155,42 +155,36 @@ where
     }
 }
 
-fn ssl_auth(req: &ServiceRequest) -> AttResult<AuthenticatedUser> {
-    // Get the peer certificate from the context of the request.
-    let Some(certificate) = req.conn_data::<PeerCertificate>() else {
-        // Log that the peer certificate is not present.
-        return Err(AttError::Authentication(
-            "SSL Authentication: no peer certificate found".to_owned(),
-        ));
+fn ssl_auth(req: &ServiceRequest) -> AttResult<Option<AuthenticatedUser>> {
+    let certificate = match req.conn_data::<PeerCertificate>() {
+        Some(cert) => cert,
+        None => {
+            return Ok(None);
+        }
     };
 
-    // Extract the common name from the peer certificate.
-    match certificate
+    let username = certificate
         .cert
         .subject_name()
         .entries_by_nid(Nid::COMMONNAME)
         .next()
-    {
-        None => Err(AttError::Authentication(
-            "Client certificate has no common name".to_owned(),
-        )),
-        Some(cn) => match cn.data().as_utf8() {
-            Ok(cn_data) => {
-                let username = cn_data.to_string();
-                trace!("Client certificate common name: {}", username);
+        .ok_or_else(|| {
+            AttError::Authentication("Client certificate has no common name".to_owned())
+        })?
+        .data()
+        .as_utf8()
+        .map_err(|e| {
+            AttError::Authentication(format!("Client certificate common name is not UTF-8: {e}"))
+        })?
+        .to_string();
 
-                // Reject wildcard usernames (security: prevent certificate substitution attacks)
-                if username.ends_with('*') {
-                    return Err(AttError::Authentication(
-                        "Wildcard usernames are not permitted".to_owned(),
-                    ));
-                }
+    trace!("Client certificate common name: {}", username);
 
-                Ok(AuthenticatedUser { username })
-            }
-            Err(e) => Err(AttError::Authentication(format!(
-                "Client certificate common name is not UTF-8: {e}"
-            ))),
-        },
+    if username.ends_with('*') {
+        return Err(AttError::Authentication(
+            "Wildcard usernames are not permitted".to_owned(),
+        ));
     }
+
+    Ok(Some(AuthenticatedUser { username }))
 }

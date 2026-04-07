@@ -4,6 +4,8 @@ pub use start::start_server;
 pub(crate) mod journal_endpoints;
 pub(crate) mod openid4vp_endpoints;
 pub(crate) mod verify_endpoint;
+mod ensure_auth_middleware;
+pub use ensure_auth_middleware::EnsureAuth;
 
 mod params;
 pub use params::ServerParams;

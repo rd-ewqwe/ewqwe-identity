@@ -7,7 +7,7 @@ use crate::{
         DynJournalStore, JournalBackend, JournalConfig, JournalError, JournalQuery, JournalStore,
         append_verification, compute_attestation_signature_hash, compute_entry_hash,
     },
-    tests::{start_journal_test_server, test_client::TestClient},
+    tests::{make_test_server_params, start_journal_test_server, start_test_server, test_client::TestClient},
 };
 use serde_json::json;
 
@@ -407,6 +407,23 @@ async fn test_journal_entries_endpoint_requires_tls() -> AttResult<()> {
         reqwest::StatusCode::UNAUTHORIZED,
         "Journal entries endpoint must require mTLS"
     );
+
+    ctx.stop_server().await?;
+    Ok(())
+}
+
+#[actix_web::test]
+async fn test_journal_entries_endpoint_allows_disable_authentication_without_cert() -> AttResult<()> {
+    let server_params = make_test_server_params(true, "test");
+    let ctx = start_test_server(server_params).await?;
+    let client = TestClient::new(&ctx.base_url())?;
+
+    let response = client
+        .get_raw("/ewqwe_api/journal/test/entries")
+        .await?;
+
+    // Since there are no journal entries yet, state may be 200 empty list.
+    assert_eq!(response.status(), reqwest::StatusCode::OK);
 
     ctx.stop_server().await?;
     Ok(())

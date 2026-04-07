@@ -18,6 +18,16 @@ pub struct ServerParams {
     pub tls_params: TlsParams,
     pub default_username: Option<String>,
     pub openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig,
+    /// If true, skip requiring client certificate authentication and use a default
+    /// authenticated user for all requests.
+    #[serde(default)]
+    pub disable_authentication: bool,
+
+    /// Username to insert into request context when `disable_authentication=true`.
+    /// Defaults to "test" when omitted.
+    #[serde(default)]
+    pub disabled_authentication_user: Option<String>,
+
     /// Directory containing trusted credential-issuer CA certificates (PEM files).
     /// All `*.pem` files in this directory are loaded as trusted CA certificates.
     /// Credentials whose issuer JWT `x5c` chain or mDoc `issuerAuth` chain
@@ -193,6 +203,13 @@ impl ServerParams {
             .unwrap_or("issuer_certificates")
     }
 
+    /// Username to use when authentication is disabled.
+    pub fn disabled_authentication_user(&self) -> &str {
+        self.disabled_authentication_user
+            .as_deref()
+            .unwrap_or("test")
+    }
+
     /// Path to the PEM certificate for attestation JWT verification.
     /// Falls back to [`TlsParams::server_certificate`] when not configured.
     pub fn attestation_issuer_certificate_path(&self) -> &str {
@@ -334,5 +351,29 @@ x509_key_path = "certs/server.key.pem"
         );
 
         fs::remove_dir_all(&temp_dir).expect("failed to remove temp config directory");
+    }
+
+    #[test]
+    fn server_params_enable_disable_authentication_defaults() {
+        let params = ServerParams {
+            host_name: "127.0.0.1".to_string(),
+            host_port: 9443,
+            tls_params: crate::parameters::TlsParams::default(),
+            default_username: None,
+            openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig {
+                transaction_ttl_secs: None,
+                haip_config: None,
+                transaction_store: Default::default(),
+            },
+            disable_authentication: false,
+            disabled_authentication_user: None,
+            trusted_issuer_certs_dir: None,
+            attestation_issuer_certificate: None,
+            attestation_issuer_key: None,
+            journal_config: crate::journal::JournalConfig::default(),
+        };
+
+        assert!(!params.disable_authentication);
+        assert_eq!(params.disabled_authentication_user(), "test");
     }
 }

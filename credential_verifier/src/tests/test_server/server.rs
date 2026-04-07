@@ -119,9 +119,74 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         attestation_issuer_certificate: None,
         attestation_issuer_key: None,
         journal_config: Default::default(),
+        disable_authentication: false,
+        disabled_authentication_user: None,
     };
 
     start_test_server(server_params).await
+}
+
+pub fn make_test_server_params(
+    disable_authentication: bool,
+    disabled_authentication_user: impl Into<String>,
+) -> ServerParams {
+    let cargo_manifest_dir = PathBuf::from(
+        std::env::var("CARGO_MANIFEST_DIR")
+            .expect("Failed to find cargo manifest dir"),
+    );
+    let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
+
+    ServerParams {
+        host_name: "127.0.0.1".to_string(),
+        host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
+        tls_params: TlsParams {
+            server_certificate: certificates_dir
+                .join("ewqwe.server.cert.pem")
+                .to_string_lossy()
+                .to_string(),
+            server_private_key: certificates_dir
+                .join("ewqwe.server.key.pem")
+                .to_string_lossy()
+                .to_string(),
+            server_ca_chain: certificates_dir
+                .join("ewqwe.chain.pem")
+                .to_string_lossy()
+                .to_string(),
+            client_ca_cert_chain: Some(
+                certificates_dir
+                    .join("ewqwe.chain.pem")
+                    .to_string_lossy()
+                    .to_string(),
+            ),
+            tls_cipher_suites: None,
+        },
+        default_username: Some("default_user".to_string()),
+        openid4vp_config: OpenID4VPServiceConfig {
+            transaction_ttl_secs: Some(60), // 1 minute for tests
+            transaction_store: Default::default(),
+            haip_config: Some(HaipConfig {
+                x509_cert_path: certificates_dir
+                    .join("ewqwe.server.fullchain.pem")
+                    .to_string_lossy()
+                    .to_string(),
+                x509_key_path: certificates_dir
+                    .join("ewqwe.server.key.pem")
+                    .to_string_lossy()
+                    .to_string(),
+            }),
+        },
+        trusted_issuer_certs_dir: Some(
+            cargo_manifest_dir
+                .join("src/tests/certificates/trusted_issuers")
+                .to_string_lossy()
+                .to_string(),
+        ),
+        attestation_issuer_certificate: None,
+        attestation_issuer_key: None,
+        journal_config: Default::default(),
+        disable_authentication,
+        disabled_authentication_user: Some(disabled_authentication_user.into()),
+    }
 }
 
 /// Starts a test server with the verification journal enabled (SQLite in-memory backend).
@@ -187,6 +252,8 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
             enabled: true,
             backend: JournalBackend::SqliteMemory,
         },
+        disable_authentication: false,
+        disabled_authentication_user: None,
     };
 
     start_test_server(server_params).await

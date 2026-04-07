@@ -2,7 +2,7 @@ use crate::{
     AttResult, AttResultHelper,
     journal::DynJournalStore,
     server::{
-        ServerParams, journal_endpoints, openid4vp_endpoints,
+        EnsureAuth, ServerParams, journal_endpoints, openid4vp_endpoints,
         verify_endpoint::{verify_credential_endpoint, version_endpoint},
     },
     tls::SslAuth,
@@ -69,7 +69,10 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             .map_err(|e| {
                 crate::AttError::Config(format!("Failed to initialise journal store: {e}"))
             })?;
-        info!("Verification journal enabled (backend: {:?})", params.journal_config.backend);
+        info!(
+            "Verification journal enabled (backend: {:?})",
+            params.journal_config.backend
+        );
         Some(Arc::new(store))
     } else {
         info!("Verification journal disabled");
@@ -78,6 +81,10 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
 
     // Clone attestation server params for HttpServer closure
     let server_params = params.clone();
+    let ensure_auth = EnsureAuth::new(
+        params.disable_authentication,
+        params.disabled_authentication_user().to_string(),
+    );
 
     // let default_username = params.default_username.clone();
 
@@ -111,11 +118,9 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             .route("/version", web::get().to(version_endpoint));
 
         let openid4vp_scope = web::scope("/ewqwe_api")
-            .service(
-                web::resource("/verify")
-                    .wrap(SslAuth)
-                    .route(web::post().to(verify_credential_endpoint)),
-            )
+            .wrap(SslAuth)
+            .wrap(ensure_auth.clone())
+            .service(web::resource("/verify").route(web::post().to(verify_credential_endpoint)))
             .route(
                 "/openid4vp/init",
                 web::post().to(openid4vp_endpoints::init_transaction),
@@ -140,20 +145,17 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
                 "/openid4vp/.well-known/jwks.json",
                 web::get().to(openid4vp_endpoints::get_jwks),
             )
-            // Journal endpoints — require mTLS (SslAuth applied to each resource).
+            // Journal endpoints — use shared authentication pipeline.
             .service(
                 web::resource("/journal/{username}/entries")
-                    .wrap(SslAuth)
                     .route(web::get().to(journal_endpoints::list_journal_entries)),
             )
             .service(
                 web::resource("/journal/{username}/verify")
-                    .wrap(SslAuth)
                     .route(web::get().to(journal_endpoints::verify_journal_chain)),
             )
             .service(
                 web::resource("/journal/{username}/download")
-                    .wrap(SslAuth)
                     .route(web::get().to(journal_endpoints::download_journal)),
             );
 

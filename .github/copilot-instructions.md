@@ -4,50 +4,65 @@
 
 This is an **EU Age Verification** system implementing the [EU Age Verification Profile](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile) using W3C Digital Credentials:
 
-- **Wallet** (`wallet/`) - TypeScript/Deno **Age Verification App Instance (AVI)** - stores Proof of Age attestations
-- **Webapp** (`webapp/`) - TypeScript/Deno **Relying Party (RP)** - requests age verification from the wallet
-- **Credential Verifier** (`credential_verifier/`) - Rust actix-web server - verifies proofs on behalf of RPs
+- **Wallet Extension** (`wallet-extension/`) plus shared library (`js-lib/ewqwe-digital-identity/`) - TypeScript/vanilla JS extension host and helper library for storing Proof of Age credentials.
+- **Webapp** (`webapp/`) - TypeScript/Deno **Relying Party (RP)** - performs verification requests and receives attestations.
+- **Credential Verifier** (`credential_verifier/`) - Rust actix-web server - receives VP Tokens, validates proofs, and issues signed attestations.
+- **OpenID4VP Rust helper crate** (`crates/openid4vp/`) - reusable protocol implementation and DCQL matching logic.
 
-Standards: W3C Digital Credentials API, ISO/IEC 18013-5 (mDL/mDoc), OpenID4VP 1.0, EU Age Verification Profile.
+Standards: W3C Digital Credentials API, ISO/IEC 18013-5 (mDL/mDoc), OpenID4VP 1.0, EU Age Verification Profile, Harvard/Concerned Human Analysis Profile (HAIP).
 
 ## Architecture
 
-The RP **delegates verification** to the credential_verifier, which returns a signed attestation:
+The RP **delegates verification** to the credential_verifier, which validates the VP token (OpenID4VP / W3C DCQL) and returns a signed attestation (JWT or COSE). A dedicated `crates/openid4vp/` module contains shared request/response parsing, DCQL evaluation, and HAIP/JAR support.
 
 ```
-┌─────────────────┐  (1) Request   ┌─────────────────┐  (2) VP Token    ┌─────────────────┐
-│   Relying       │  Proof of Age  │     Wallet      │  (Presentation)  │   Credential    │
-│   Party (RP)    │ ──────────────>│     (AVI)       │                  │    Verifier     │
-│   webapp/       │                │    wallet/      │                  │credential_verif/│
-└────────┬────────┘                └────────┬────────┘                  └────────┬────────┘
+┌─────────────────┐  (1) Request   ┌─────────────────────────────────┐  (2) VP Token    ┌─────────────────┐
+│   Relying       │  OpenID4VP/DCQL  │   Wallet Extension (UI flow)  │  (Presentation)  │   Credential    │
+│   Party (RP)    │ ──────────────>│      (wallet-extension/)        │  (presented)     │    Verifier     │
+│   webapp/       │                │  w3c-dc-fallback / openid4vp-*  │                  │credential_verif/│
+└────────┬────────┘                └────────┬────────────────────────┘                  └────────┬────────┘
          │                                  │                                    │
-         │  (3) Send VP Token for verification                                   │
-         └───────────────────────────────────────────────────────────────────────>
+         │  (3) Send VP Token to verifier    │                                    │
+         └─────────────────────────────────>│                                    │
                                                                                  │
          <─────────────────────────────────────────────────────────────────────────
-                              (4) Return signed attestation (proof is valid)
+                            (4) Return signed attestation (proof is valid)
 ```
 
-## OpenID4VP Flows
+## OpenID4VP + W3C DCQL Flows
 
-This project implements [OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html):
+This project implements [OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) and W3C Digital Credentials Query Language (DCQL) with HAIP additions.
 
-### Same-Device Flow (Section 3.1)
+### Protocol modes in webapp
+
+- `w3c-dc-fallback`: attempt W3C DC first, then OpenID4VP if not available.
+- `w3c-dc`: direct W3C DCQL verification path.
+- `openid4vp-cross-device`: QR code based cross-device OpenID4VP flow, `response_mode=direct_post`.
+- `openid4vp-same-device`: same-device redirect flow, `response_mode=fragment`.
+- `simulated`: local simulated proof path for development/test.
+
+### Same-Device Flow (OpenID4VP)
 
 - RP and Wallet on same device
 - Uses redirects with `response_mode=fragment`
-- Authorization Request → Wallet → Authorization Response (VP Token)
+- Authorization Request → Wallet Extension → Authorization Response (VP Token)
+- Recover from page reload with `sessionStorage` state restore in `webapp/src/relying_party_app.ts`
 
-### Cross-Device Flow (Section 3.2)
+### Cross-Device Flow (OpenID4VP)
 
 - RP on different device than Wallet (e.g., QR code scanning)
 - Uses `response_mode=direct_post` with `response_uri`
-- Wallet POSTs VP Token directly to RP's endpoint
+- Wallet POSTs VP Token directly to RP endpoint (via `webapp/src/server.ts` proxy to `credential_verifier`)
+
+### HAIP / JAR support
+
+- `credential_verifier` supports `application/jwt` / `application/json` id_token handling and JAR profile requirement `authentication_request` via `openid4vp_endpoints`.
+- JOSE/JWK discovery via `/.well-known/jwks.json` exposes verifier key IDs and optional JAR signing keys.
 
 Key parameters:
 
 - `response_type=vp_token` - Request Verifiable Presentations
-- `dcql_query` - Digital Credentials Query Language for specifying required claims
+- `dcql_query` - Digital Credentials Query Language for required claims
 - `nonce` - Binds presentation to transaction (replay prevention)
 - `client_id` with prefixes like `redirect_uri:` or `x509_san_dns:`
 
@@ -56,8 +71,13 @@ Key parameters:
 ### Cargo Workspace Structure
 
 - **Root workspace** (`Cargo.toml`): Defines shared dependencies via `[workspace.dependencies]`
-- **Members**: `credential_verifier`, `crates/logging`
+- **Members**: `credential_verifier`, `crates/logging`, `crates/openid4vp`
 - All members use `workspace = true` for version, edition, rust-version, authors, license
+
+### OpenID4VP Service Layer
+
+- `crates/openid4vp` contains reusable OpenID4VP + DCQL evaluation, request validation, and HAIP/JAR support. `credential_verifier` uses this crate for its HTTP endpoints.
+- `credential_verifier/src/server/openid4vp_endpoints.rs` exposes: `/ewqwe_api/openid4vp/init`, `/ewqwe_api/openid4vp/direct_post`, `/ewqwe_api/openid4vp/request/{id}`, `/ewqwe_api/openid4vp/status/{id}`, `/.well-known/jwks.json`.
 
 ### Error Handling Pattern
 
@@ -118,18 +138,19 @@ tracing::debug!(user_id = %id, "processing request");
 
 ### Project Structure
 
-Both `wallet/` and `webapp/` follow the same pattern:
+Both `wallet-extension/` and `webapp/` follow the same pattern:
 
 - `deno.json`: Tasks and imports configuration
 - `vite.config.ts`: Vite bundler config
 - `tailwind.config.js` + `postcss.config.js`: Tailwind CSS
 - `src/`: TypeScript sources (no framework - vanilla TS)
+- For shared credential types and protocol helpers, see `js-lib/ewqwe-digital-identity/`.
 
 ### Development Commands
 
 ```bash
-cd wallet/    # or webapp/
-deno task dev      # Start dev server (wallet: 5173, webapp: 5174)
+cd wallet-extension/    # or webapp/
+deno task dev      # Start dev server (wallet-extension: 5173, webapp: 5174)
 deno task build    # Production build
 deno task preview  # Preview production build
 ```
@@ -175,8 +196,8 @@ export const CREDENTIAL_TYPES: Record<string, CredentialTypeConfig> = {
 ### Running the Full Stack
 
 ```bash
-# Terminal 1: Wallet
-cd wallet && deno task dev
+# Terminal 1: Wallet Extension
+cd wallet-extension && deno task dev
 
 # Terminal 2: Webapp (RP)
 cd webapp && deno task dev
@@ -185,6 +206,12 @@ cd webapp && deno task dev
 cd credential_verifier
 cargo run --features openssl
 ```
+
+### Webapp Proxy to Credential Verifier
+
+- `webapp/server.ts` proxies `/ewqwe_api/openid4vp/*` to `CREDENTIAL_VERIFIER_URL`.
+- Supports TLS with `CA_CERT_PATH`, connection retries for stale TLS sessions, and auto CA certificate reload for cert rotation.
+- `poolIdleTimeout=30000` by default.
 
 ### Adding Rust Dependencies
 
@@ -335,7 +362,7 @@ let verified = verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigning
 | Test certificates (EC)  | [credential_verifier/src/tests/certificates/ec/](credential_verifier/src/tests/certificates/ec/)   |
 | Test certificates (RSA) | [credential_verifier/src/tests/certificates/rsa/](credential_verifier/src/tests/certificates/rsa/) |
 | DCQL query examples     | [documentation/dcql_age_verification.md](documentation/dcql_age_verification.md)                   |
-| Wallet main logic       | [wallet/src/wallet.ts](wallet/src/wallet.ts)                                                       |
+| Wallet main logic       | [wallet-extension/src/wallet.ts](wallet-extension/src/wallet.ts)                                   |
 | RP credential handling  | [webapp/src/credentials.ts](webapp/src/credentials.ts)                                             |
 | ISO credential configs  | [webapp/src/config.ts](webapp/src/config.ts)                                                       |
 | Standards documentation | [documentation/](documentation/)                                                                   |

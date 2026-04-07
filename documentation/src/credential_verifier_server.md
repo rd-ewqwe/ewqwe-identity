@@ -163,6 +163,12 @@ url     = "redis://127.0.0.1:6379"
 x509_cert_path = "certs/server.fullchain.pem"
 x509_key_path  = "certs/server.key.pem"
 
+# Optional authentication bypass for local development and tests
+# When set, client certificate verification is not required and all requests are
+# treated as coming from the configured user.
+disable_authentication = true
+disabled_authentication_user = "test"
+
 [journal_config]
 enabled = true
 backend = "postgres"
