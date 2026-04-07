@@ -54,6 +54,7 @@ toml = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
 ewqwe_digital_credential = { workspace = true }
+ewqwe_verifier_app = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]

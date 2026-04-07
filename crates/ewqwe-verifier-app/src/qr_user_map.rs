@@ -1,9 +1,9 @@
-//! Thread-safe mapping from OpenID4VP transaction IDs to the QR Code APP user
+//! Thread-safe mapping from OpenID4VP transaction IDs to the Verifier App user
 //! that initiated them.
 //!
 //! Used to:
 //!  - enforce ownership when polling status (only the initiating user can poll)
-//!  - attribute journal entries to the correct QR Code APP user (Phase E)
+//!  - attribute journal entries to the correct Verifier App user
 
 use std::{collections::HashMap, sync::Mutex};
 
@@ -47,7 +47,11 @@ impl QrUserMap {
         map.retain(|_, v| v.expires_at > now);
         map.insert(
             transaction_id,
-            QrUserEntry { user_id, user_email, expires_at },
+            QrUserEntry {
+                user_id,
+                user_email,
+                expires_at,
+            },
         );
     }
 

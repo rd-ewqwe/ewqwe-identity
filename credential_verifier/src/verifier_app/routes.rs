@@ -1,4 +1,4 @@
-//! HTTP route handlers for the QR Code APP.
+//! HTTP route handlers for the Verifier App.
 
 use std::sync::Arc;
 
@@ -11,17 +11,18 @@ use uuid::Uuid;
 
 use crate::{
     journal::{DynJournalStore, JournalStore},
-    qrcode_app::{
+    verifier_app::{
         auth,
-        db::{DynQrcodeAppStore, QrcodeAppStore},
-        error::QrcodeAppError,
+        db::{DynVerifierAppStore, VerifierAppStore},
+        error::VerifierAppError,
         models::{
             AdminJournalQuery, BootstrapRequest, CreateUserRequest, I18nQuery, LoginRequest,
-            NewUserRecord, QrcodeAppRole, UpdateUserRequest, UserChanges, UserResponse,
+            NewUserRecord, UpdateUserRequest, UserChanges, UserResponse, VerifierAppRole,
         },
         qr_user_map::QrUserMap,
     },
 };
+use serde::Deserialize;
 
 // ─── Error helpers ────────────────────────────────────────────────────────────
 
@@ -42,17 +43,17 @@ fn bad_request(msg: &str) -> HttpResponse {
 }
 
 fn internal_error(msg: &str) -> HttpResponse {
-    tracing::error!("qrcode_app internal error: {msg}");
+    tracing::error!("verifier_app internal error: {msg}");
     HttpResponse::InternalServerError().json(json!({"error": "internal server error"}))
 }
 
-/// Map a `QrcodeAppError` to an `HttpResponse`.
-fn store_error_response(e: QrcodeAppError) -> HttpResponse {
+/// Map a `VerifierAppError` to an `HttpResponse`.
+fn store_error_response(e: VerifierAppError) -> HttpResponse {
     match e {
-        QrcodeAppError::NotFound => not_found(),
-        QrcodeAppError::Conflict(msg) => conflict(&msg),
-        QrcodeAppError::Storage(msg) => internal_error(&msg),
-        QrcodeAppError::Config(msg) => internal_error(&msg),
+        VerifierAppError::NotFound => not_found(),
+        VerifierAppError::Conflict(msg) => conflict(&msg),
+        VerifierAppError::Storage(msg) => internal_error(&msg),
+        VerifierAppError::Config(msg) => internal_error(&msg),
     }
 }
 
@@ -62,7 +63,7 @@ fn store_error_response(e: QrcodeAppError) -> HttpResponse {
 /// store.  Returns `None` (→ 401) when the cookie is absent or stale.
 async fn current_user(
     identity: Option<Identity>,
-    store: &DynQrcodeAppStore,
+    store: &DynVerifierAppStore,
 ) -> Option<UserResponse> {
     let id = identity?.id().ok()?;
     match store.get_user_by_id(&id).await {
@@ -73,13 +74,13 @@ async fn current_user(
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
-/// `POST /qrcode_app/api/setup/bootstrap`
+/// `POST /verifier_app/api/setup/bootstrap`
 ///
 /// One-time first-admin creation.  Fails with `409 Conflict` after the first
 /// successful call.
 pub async fn bootstrap(
     req: HttpRequest,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
     body: web::Json<BootstrapRequest>,
 ) -> HttpResponse {
     // Guard: only allowed before any admin user exists.
@@ -111,7 +112,7 @@ pub async fn bootstrap(
         password_hash: Some(hash),
         first_name: body.first_name.clone(),
         last_name: body.last_name.clone(),
-        role: QrcodeAppRole::Admin,
+        role: VerifierAppRole::Admin,
         is_superadmin: true,
     };
 
@@ -125,16 +126,16 @@ pub async fn bootstrap(
         tracing::warn!("Failed to create identity session after bootstrap: {e}");
     }
 
-    tracing::info!(email = %email, "QR Code APP: superadmin created via bootstrap");
+    tracing::info!(email = %email, "Verifier App: superadmin created via bootstrap");
     HttpResponse::Created().json(UserResponse::from(user))
 }
 
 // ─── Authentication ───────────────────────────────────────────────────────────
 
-/// `POST /qrcode_app/api/auth/login`
+/// `POST /verifier_app/api/auth/login`
 pub async fn login(
     req: HttpRequest,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
     body: web::Json<LoginRequest>,
 ) -> HttpResponse {
     let email = body.email.trim().to_lowercase();
@@ -174,11 +175,11 @@ pub async fn login(
         return internal_error("session creation failed");
     }
 
-    tracing::info!(email = %email, "QR Code APP: user logged in");
+    tracing::info!(email = %email, "Verifier App: user logged in");
     HttpResponse::Ok().json(UserResponse::from(user))
 }
 
-/// `POST /qrcode_app/api/auth/logout`
+/// `POST /verifier_app/api/auth/logout`
 pub async fn logout(identity: Option<Identity>) -> HttpResponse {
     if let Some(id) = identity {
         id.logout();
@@ -186,10 +187,10 @@ pub async fn logout(identity: Option<Identity>) -> HttpResponse {
     HttpResponse::Ok().json(json!({"status": "logged out"}))
 }
 
-/// `GET /qrcode_app/api/auth/me`
+/// `GET /verifier_app/api/auth/me`
 pub async fn me(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
 ) -> HttpResponse {
     match current_user(identity, &store).await {
         Some(user) => HttpResponse::Ok().json(user),
@@ -199,14 +200,14 @@ pub async fn me(
 
 // ─── QR Code generation & status ─────────────────────────────────────────────
 
-/// `POST /qrcode_app/api/qr/generate`
+/// `POST /verifier_app/api/qr/generate`
 ///
 /// Initiates an Annex-A OpenID4VP age-verification transaction and returns the
 /// QR code data URL together with the transaction ID for status polling.
 pub async fn generate_qr(
     req: HttpRequest,
     identity: Option<Identity>,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
     service: web::Data<Arc<OpenID4VPService>>,
     qr_map: web::Data<Arc<QrUserMap>>,
 ) -> HttpResponse {
@@ -236,7 +237,7 @@ pub async fn generate_qr(
     let resp = match service.init_transaction(init_req).await {
         Ok(r) => r,
         Err(e) => {
-            tracing::error!("QR Code APP: init_transaction failed: {e}");
+            tracing::error!("Verifier App: init_transaction failed: {e}");
             return internal_error("failed to create verification transaction");
         }
     };
@@ -254,7 +255,7 @@ pub async fn generate_qr(
     tracing::info!(
         user_id = %user.id,
         transaction_id = %resp.transaction_id,
-        "QR Code APP: QR transaction created"
+        "Verifier App: QR transaction created"
     );
 
     HttpResponse::Ok().json(json!({
@@ -265,13 +266,13 @@ pub async fn generate_qr(
     }))
 }
 
-/// `GET /qrcode_app/api/qr/{id}/status`
+/// `GET /verifier_app/api/qr/{id}/status`
 ///
 /// Polls the verification status for a transaction created by this user.
 /// Returns `403 Forbidden` if the transaction belongs to a different user.
 pub async fn qr_status(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
     service: web::Data<Arc<OpenID4VPService>>,
     qr_map: web::Data<Arc<QrUserMap>>,
     path: web::Path<String>,
@@ -289,7 +290,7 @@ pub async fn qr_status(
         .as_ref()
         .map(|e| e.user_id == user.id)
         .unwrap_or(false);
-    let is_admin = user.role == QrcodeAppRole::Admin;
+    let is_admin = user.role == VerifierAppRole::Admin;
 
     // Allow if the user owns the transaction, or if they are an admin.
     // Also allow if ownership is unknown (entry expired from map) — the
@@ -315,19 +316,19 @@ pub async fn qr_status(
 /// Require the calling user to be an active admin, or return `403 Forbidden`.
 async fn require_admin(
     identity: Option<Identity>,
-    store: &DynQrcodeAppStore,
+    store: &DynVerifierAppStore,
 ) -> Result<UserResponse, HttpResponse> {
     match current_user(identity, store).await {
-        Some(user) if user.role == QrcodeAppRole::Admin => Ok(user),
+        Some(user) if user.role == VerifierAppRole::Admin => Ok(user),
         Some(_) => Err(HttpResponse::Forbidden().json(json!({"error": "admin role required"}))),
         None => Err(unauthorized()),
     }
 }
 
-/// `GET /qrcode_app/api/admin/users`
+/// `GET /verifier_app/api/admin/users`
 pub async fn list_users(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
 ) -> HttpResponse {
     if let Err(resp) = require_admin(identity, &store).await {
         return resp;
@@ -341,10 +342,10 @@ pub async fn list_users(
     }
 }
 
-/// `POST /qrcode_app/api/admin/users`
+/// `POST /verifier_app/api/admin/users`
 pub async fn create_user(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
     body: web::Json<CreateUserRequest>,
 ) -> HttpResponse {
     if let Err(resp) = require_admin(identity, &store).await {
@@ -382,10 +383,10 @@ pub async fn create_user(
     }
 }
 
-/// `PUT /qrcode_app/api/admin/users/{id}`
+/// `PUT /verifier_app/api/admin/users/{id}`
 pub async fn update_user(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
     path: web::Path<String>,
     body: web::Json<UpdateUserRequest>,
 ) -> HttpResponse {
@@ -424,10 +425,10 @@ pub async fn update_user(
     }
 }
 
-/// `DELETE /qrcode_app/api/admin/users/{id}`
+/// `DELETE /verifier_app/api/admin/users/{id}`
 pub async fn delete_user(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
     path: web::Path<String>,
 ) -> HttpResponse {
     if let Err(resp) = require_admin(identity, &store).await {
@@ -442,10 +443,10 @@ pub async fn delete_user(
 
 // ─── Admin: journal ───────────────────────────────────────────────────────────
 
-/// `GET /qrcode_app/api/admin/journal`
+/// `GET /verifier_app/api/admin/journal`
 pub async fn admin_journal(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynQrcodeAppStore>>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
     journal: Option<web::Data<Arc<DynJournalStore>>>,
     query: web::Query<AdminJournalQuery>,
 ) -> HttpResponse {
@@ -476,18 +477,27 @@ static UI_INDEX: &[u8] = include_bytes!("static/index.html");
 static I18N_EN: &[u8] = include_bytes!("static/i18n/en.json");
 static I18N_DE: &[u8] = include_bytes!("static/i18n/de.json");
 static I18N_FR: &[u8] = include_bytes!("static/i18n/fr.json");
+static LOGO_PNG: &[u8] = include_bytes!("static/logo.png");
 
 /// Serve the embedded SPA.
-/// Handles `GET /qrcode_app/` and `GET /qrcode_app/ui`.
+/// Handles `GET /verifier_app/` and `GET /verifier_app/ui`.
 pub async fn ui_index() -> HttpResponse {
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(UI_INDEX)
 }
 
+/// `GET /verifier_app/logo.png` — embedded ewqwe logo.
+pub async fn logo_png() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("image/png")
+        .insert_header(("Cache-Control", "public, max-age=86400"))
+        .body(LOGO_PNG)
+}
+
 // ─── Internationalisation ─────────────────────────────────────────────────────
 
-/// `GET /qrcode_app/api/i18n?lang=<code>`
+/// `GET /verifier_app/api/i18n?lang=<code>`
 pub async fn get_i18n(query: web::Query<I18nQuery>) -> HttpResponse {
     let (bytes, lang) = match query.lang.as_deref().unwrap_or("en") {
         "de" => (I18N_DE, "de"),
@@ -498,4 +508,77 @@ pub async fn get_i18n(query: web::Query<I18nQuery>) -> HttpResponse {
         .content_type("application/json; charset=utf-8")
         .insert_header(("Content-Language", lang))
         .body(bytes)
+}
+
+// ─── Setup status ─────────────────────────────────────────────────────────────
+
+/// `GET /verifier_app/api/setup/status`
+///
+/// Public endpoint. Returns `{"bootstrapped": true}` once the first admin
+/// account exists, `{"bootstrapped": false}` before bootstrap.
+pub async fn setup_status(store: web::Data<Arc<DynVerifierAppStore>>) -> HttpResponse {
+    match store.user_count().await {
+        Ok(count) => HttpResponse::Ok().json(json!({ "bootstrapped": count > 0 })),
+        Err(e) => internal_error(&e.to_string()),
+    }
+}
+
+// ─── App settings ─────────────────────────────────────────────────────────────
+
+/// `GET /verifier_app/api/settings`
+///
+/// Public endpoint. Returns the current app display settings.
+pub async fn get_settings(
+    store: web::Data<Arc<DynVerifierAppStore>>,
+    server_params: web::Data<Arc<crate::server::ServerParams>>,
+) -> HttpResponse {
+    // DB overrides config defaults.
+    let app_name = match store.get_setting("app_name").await {
+        Ok(Some(v)) => v,
+        _ => server_params
+            .verifier_app_config
+            .app_name
+            .clone()
+            .unwrap_or_else(|| "Verifier App".to_string()),
+    };
+    let logo_url = match store.get_setting("logo_url").await {
+        Ok(v) => v.or_else(|| server_params.verifier_app_config.logo_url.clone()),
+        Err(_) => server_params.verifier_app_config.logo_url.clone(),
+    };
+    HttpResponse::Ok().json(json!({ "app_name": app_name, "logo_url": logo_url }))
+}
+
+/// Body for `PUT /verifier_app/api/admin/settings`.
+#[derive(Debug, Deserialize)]
+pub struct UpdateSettingsRequest {
+    pub app_name: Option<String>,
+    pub logo_url: Option<String>,
+}
+
+/// `PUT /verifier_app/api/admin/settings`
+///
+/// Admin-only. Persists app display settings to the database.
+pub async fn update_settings(
+    identity: Option<Identity>,
+    store: web::Data<Arc<DynVerifierAppStore>>,
+    body: web::Json<UpdateSettingsRequest>,
+) -> HttpResponse {
+    if let Err(resp) = require_admin(identity, &store).await {
+        return resp;
+    }
+    if let Some(ref name) = body.app_name {
+        let name = name.trim().to_string();
+        if name.is_empty() {
+            return bad_request("app_name must not be empty");
+        }
+        if let Err(e) = store.set_setting("app_name", &name).await {
+            return internal_error(&e.to_string());
+        }
+    }
+    if let Some(ref url) = body.logo_url {
+        if let Err(e) = store.set_setting("logo_url", url).await {
+            return internal_error(&e.to_string());
+        }
+    }
+    HttpResponse::Ok().json(json!({"status": "settings updated"}))
 }

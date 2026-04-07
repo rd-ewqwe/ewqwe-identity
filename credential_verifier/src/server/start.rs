@@ -1,7 +1,6 @@
 use crate::{
     AttResult, AttResultHelper,
-    journal::DynJournalStore,
-    qrcode_app::{db::DynQrcodeAppStore, qr_user_map::QrUserMap},
+    journal::{DynJournalStore, JournalStore},
     server::{
         EnsureAuth, ServerParams, journal_endpoints, openid4vp_endpoints,
         verify_endpoint::{self, verify_credential_endpoint, version_endpoint},
@@ -18,6 +17,9 @@ use actix_web::{
     web::{self, Data, JsonConfig, PayloadConfig},
 };
 use ewqwe_openid4vp::OpenID4VPService;
+use ewqwe_verifier_app::{
+    VerifierJournalProvider, db::DynVerifierAppStore, qr_user_map::QrUserMap,
+};
 use std::{
     io,
     sync::{Arc, mpsc},
@@ -26,6 +28,31 @@ use tracing::info;
 
 use crate::server::verify_endpoint::load_credential_issuer_cas;
 use crate::tls::{create_openssl_acceptor, extract_openssl_peer_certificate};
+
+/// Adapts [`DynJournalStore`] to the [`VerifierJournalProvider`] interface required
+/// by `ewqwe_verifier_app`.  This breaks the dependency cycle between the two crates.
+struct JournalProviderForVerifier(std::sync::Arc<DynJournalStore>);
+
+#[async_trait::async_trait]
+impl VerifierJournalProvider for JournalProviderForVerifier {
+    async fn list_verifier_entries(
+        &self,
+        user_id: Option<&str>,
+        limit: u32,
+        offset: u32,
+    ) -> Result<Vec<serde_json::Value>, String> {
+        self.0
+            .list_qrcode_app_entries(user_id, limit, offset)
+            .await
+            .map(|entries| {
+                entries
+                    .iter()
+                    .map(|e| serde_json::to_value(e).unwrap_or_default())
+                    .collect()
+            })
+            .map_err(|e| e.to_string())
+    }
+}
 
 /// Inner function to start the attestation server asynchronously.
 pub async fn start_server(
@@ -84,20 +111,21 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         None
     };
 
-    // Initialise the QR Code APP user store (when the app is enabled).
-    let qrcode_app_store: Option<Arc<DynQrcodeAppStore>> = if params.qrcode_app_config.enabled {
-        let store = DynQrcodeAppStore::new(&params.qrcode_app_config)
+    // Initialise the Verifier App user store (when the app is enabled).
+    let verifier_app_store: Option<Arc<DynVerifierAppStore>> = if params.verifier_app_config.enabled
+    {
+        let store = DynVerifierAppStore::new(&params.verifier_app_config)
             .await
             .map_err(|e| {
-                crate::AttError::Config(format!("Failed to initialise QR Code APP store: {e}"))
+                crate::AttError::Config(format!("Failed to initialise Verifier App store: {e}"))
             })?;
         info!(
-            "QR Code APP store enabled (backend: {:?})",
-            params.qrcode_app_config.db
+            "Verifier App store enabled (backend: {:?})",
+            params.verifier_app_config.db
         );
         Some(Arc::new(store))
     } else {
-        info!("QR Code APP disabled");
+        info!("Verifier App disabled");
         None
     };
 
@@ -110,24 +138,24 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         "Loaded credential issuer CAs at startup; restart required to reload"
     );
 
-    // Build session cookie key for the QR Code APP (only when enabled).
-    let qrcode_app_session_key: Option<CookieKey> = if params.qrcode_app_config.enabled {
-        let key = if let Some(hex_key) = &params.qrcode_app_config.session_secret_key {
+    // Build session cookie key for the Verifier App (only when enabled).
+    let verifier_app_session_key: Option<CookieKey> = if params.verifier_app_config.enabled {
+        let key = if let Some(hex_key) = &params.verifier_app_config.session_secret_key {
             let bytes = hex::decode(hex_key).map_err(|e| {
                 crate::AttError::Config(format!(
-                    "qrcode_app.session_secret_key must be valid hex: {e}"
+                    "verifier_app.session_secret_key must be valid hex: {e}"
                 ))
             })?;
             if bytes.len() < 32 {
                 return Err(crate::AttError::Config(
-                    "qrcode_app.session_secret_key must decode to at least 32 bytes (64 hex chars)"
+                    "verifier_app.session_secret_key must decode to at least 32 bytes (64 hex chars)"
                         .to_string(),
                 ));
             }
             CookieKey::derive_from(&bytes)
         } else {
             tracing::warn!(
-                "qrcode_app.session_secret_key not set — sessions will be invalidated on \
+                "verifier_app.session_secret_key not set — sessions will be invalidated on \
                  server restart; configure a stable secret for production"
             );
             CookieKey::generate()
@@ -139,6 +167,14 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
 
     // Create the QR Code APP transaction→user map (shared across all workers).
     let qr_user_map: Arc<QrUserMap> = Arc::new(QrUserMap::new());
+
+    // Build journal provider adapter for the Verifier App (bridges DynJournalStore
+    // to the VerifierJournalProvider trait defined in ewqwe_verifier_app).
+    let journal_provider_for_va: Option<Arc<dyn VerifierJournalProvider>> =
+        journal_store.as_ref().map(|j| {
+            Arc::new(JournalProviderForVerifier(j.clone())) as Arc<dyn VerifierJournalProvider>
+        });
+    let verifier_app_config = Arc::new(params.verifier_app_config.clone());
 
     // Clone attestation server params for HttpServer closure
     let server_params = params.clone();
@@ -170,8 +206,8 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             app
         };
 
-        // Optionally share the QR Code APP user store
-        let app = if let Some(store) = &qrcode_app_store {
+        // Optionally share the Verifier App user store
+        let app = if let Some(store) = &verifier_app_store {
             app.app_data(Data::new(store.clone()))
         } else {
             app
@@ -179,6 +215,16 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
 
         // Share the QR Code APP transaction→user map.
         let app = app.app_data(Data::new(qr_user_map.clone()));
+
+        // Share VerifierApp config for the get_settings endpoint.
+        let app = app.app_data(Data::new(verifier_app_config.clone()));
+
+        // Optionally share the journal provider adapter for the Verifier App.
+        let app = if let Some(ref jp) = journal_provider_for_va {
+            app.app_data(Data::new(jp.clone()))
+        } else {
+            app
+        };
 
         // The default scope serves from the root / the KMIP, permissions, and TEE endpoints
         let default_scope = web::scope("")
@@ -238,21 +284,21 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             );
 
         // Register openid4vp_scope first (most specific prefix /ewqwe_api).
-        // qrcode_app_scope must come before default_scope: default_scope uses an
+        // verifier_app_scope must come before default_scope: default_scope uses an
         // empty prefix ("") which actix-web matches for *every* path; if it is
-        // registered first, requests to /qrcode_app/* are absorbed by default_scope
-        // and never reach the qrcode_app scope.
+        // registered first, requests to /verifier_app/* are absorbed by default_scope
+        // and never reach the verifier_app scope.
         let app = app.service(openid4vp_scope);
 
-        let app = if let Some(ref session_key) = qrcode_app_session_key {
-            let qrcode_app_scope = web::scope("/qrcode_app")
+        let app = if let Some(ref session_key) = verifier_app_session_key {
+            let verifier_app_scope = web::scope("/verifier_app")
                 .wrap(IdentityMiddleware::default())
                 .wrap(SessionMiddleware::new(
                     CookieSessionStore::default(),
                     session_key.clone(),
                 ))
-                .configure(crate::qrcode_app::configure_routes);
-            app.service(qrcode_app_scope)
+                .configure(ewqwe_verifier_app::configure_routes);
+            app.service(verifier_app_scope)
         } else {
             app
         };

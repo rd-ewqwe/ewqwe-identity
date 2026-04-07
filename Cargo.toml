@@ -9,7 +9,7 @@ repository = ""
 description = "ewQwe Identity"
 
 [workspace]
-members = ["credential_verifier", "crates/logging", "crates/openid4vp", "crates/ewqwe-digital-identity", "crates/ewqwe-digital-credential"]
+members = ["credential_verifier", "crates/logging", "crates/openid4vp", "crates/ewqwe-digital-identity", "crates/ewqwe-digital-credential", "crates/ewqwe-verifier-app"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -38,6 +38,7 @@ ewqwe_digital_credential = { path = "crates/ewqwe-digital-credential", default-f
 ewqwe_digital_identity = { path = "crates/ewqwe-digital-identity", default-features = false }
 ewqwe_logging = { path = "crates/logging" }
 ewqwe_openid4vp = { path = "crates/openid4vp" }
+ewqwe_verifier_app = { path = "crates/ewqwe-verifier-app" }
 eyre = "0.6.12"
 futures = "0.3.31"
 hex = { version = "0.4.3", features = ["serde"] }

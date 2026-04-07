@@ -5,7 +5,7 @@ pub mod attestation;
 
 pub mod journal;
 
-pub mod qrcode_app;
+pub use ewqwe_verifier_app as verifier_app;
 
 mod server;
 pub use server::{ServerParams, start_server};

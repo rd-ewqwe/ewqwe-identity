@@ -1,20 +1,20 @@
-//! QR Code APP — PostgreSQL-backed user store.
+//! Verifier App — PostgreSQL-backed user store.
 
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
 use std::str::FromStr as _;
 
-use crate::qrcode_app::{
-    db::QrcodeAppStore,
-    error::{QrcodeAppError, QrcodeAppResult},
-    models::{NewUserRecord, QrcodeAppRole, QrcodeAppUser, UserChanges},
+use crate::{
+    db::VerifierAppStore,
+    error::{VerifierAppError, VerifierAppResult},
+    models::{NewUserRecord, VerifierAppRole, VerifierAppUser, UserChanges},
 };
 
 // ============================================================================
 // Store struct
 // ============================================================================
 
-pub struct PostgresQrcodeAppStore {
+pub struct PostgresVerifierAppStore {
     pool: sqlx::PgPool,
 }
 
@@ -22,19 +22,19 @@ pub struct PostgresQrcodeAppStore {
 // Construction & migration
 // ============================================================================
 
-impl PostgresQrcodeAppStore {
+impl PostgresVerifierAppStore {
     /// Connect to PostgreSQL and initialise the schema.
-    pub async fn new(url: &str) -> QrcodeAppResult<Self> {
+    pub async fn new(url: &str) -> VerifierAppResult<Self> {
         let pool = sqlx::PgPool::connect(url)
             .await
-            .map_err(|e| QrcodeAppError::Config(format!("PostgreSQL connect: {e}")))?;
+            .map_err(|e| VerifierAppError::Config(format!("PostgreSQL connect: {e}")))?;
         let store = Self { pool };
         store.migrate().await?;
         Ok(store)
     }
 
     /// Create tables and indexes if they do not already exist.
-    async fn migrate(&self) -> QrcodeAppResult<()> {
+    async fn migrate(&self) -> VerifierAppResult<()> {
         sqlx::query(
             r#"
             CREATE TABLE IF NOT EXISTS qrcode_app_users (
@@ -64,15 +64,19 @@ impl PostgresQrcodeAppStore {
                 created_by    TEXT REFERENCES qrcode_app_users(id),
                 created_at    TIMESTAMPTZ NOT NULL
             );
+            CREATE TABLE IF NOT EXISTS verifier_app_settings (
+                key   TEXT PRIMARY KEY,
+                value TEXT NOT NULL
+            );
             "#,
         )
         .execute(&self.pool)
         .await
-        .map_err(|e| QrcodeAppError::Storage(format!("Postgres migration: {e}")))?;
+        .map_err(|e| VerifierAppError::Storage(format!("Postgres migration: {e}")))?;
         Ok(())
     }
 
-    /// Parse a raw database row into a [`QrcodeAppUser`].
+    /// Parse a raw database row into a [`VerifierAppUser`].
     #[allow(clippy::too_many_arguments)]
     fn parse_row(
         id: String,
@@ -85,10 +89,10 @@ impl PostgresQrcodeAppStore {
         is_superadmin: bool,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
-    ) -> QrcodeAppResult<QrcodeAppUser> {
-        let role = QrcodeAppRole::from_str(&role)
-            .map_err(|e| QrcodeAppError::Storage(format!("invalid role in db: {e}")))?;
-        Ok(QrcodeAppUser {
+    ) -> VerifierAppResult<VerifierAppUser> {
+        let role = VerifierAppRole::from_str(&role)
+            .map_err(|e| VerifierAppError::Storage(format!("invalid role in db: {e}")))?;
+        Ok(VerifierAppUser {
             id,
             email,
             password_hash,
@@ -104,7 +108,7 @@ impl PostgresQrcodeAppStore {
 }
 
 // ============================================================================
-// QrcodeAppStore implementation
+// VerifierAppStore implementation
 // ============================================================================
 
 type UserRow = (
@@ -124,16 +128,16 @@ const SELECT_COLS: &str = "id, email, password_hash, first_name, last_name, \
     role, is_active, is_superadmin, created_at, updated_at";
 
 #[async_trait]
-impl QrcodeAppStore for PostgresQrcodeAppStore {
-    async fn user_count(&self) -> QrcodeAppResult<u64> {
+impl VerifierAppStore for PostgresVerifierAppStore {
+    async fn user_count(&self) -> VerifierAppResult<u64> {
         let (count,): (i64,) = sqlx::query_as("SELECT COUNT(*) FROM qrcode_app_users")
             .fetch_one(&self.pool)
             .await
-            .map_err(|e| QrcodeAppError::Storage(format!("user_count: {e}")))?;
+            .map_err(|e| VerifierAppError::Storage(format!("user_count: {e}")))?;
         Ok(count as u64)
     }
 
-    async fn create_user(&self, record: &NewUserRecord) -> QrcodeAppResult<QrcodeAppUser> {
+    async fn create_user(&self, record: &NewUserRecord) -> VerifierAppResult<VerifierAppUser> {
         let now = Utc::now();
         sqlx::query(
             "INSERT INTO qrcode_app_users \
@@ -154,28 +158,28 @@ impl QrcodeAppStore for PostgresQrcodeAppStore {
         .map_err(|e| {
             let msg = e.to_string();
             if msg.contains("unique") || msg.contains("duplicate") {
-                QrcodeAppError::Conflict(format!(
+                VerifierAppError::Conflict(format!(
                     "a user with email {} already exists",
                     record.email
                 ))
             } else {
-                QrcodeAppError::Storage(format!("create_user: {e}"))
+                VerifierAppError::Storage(format!("create_user: {e}"))
             }
         })?;
 
         self.get_user_by_id(&record.id)
             .await?
-            .ok_or(QrcodeAppError::NotFound)
+            .ok_or(VerifierAppError::NotFound)
     }
 
-    async fn get_user_by_email(&self, email: &str) -> QrcodeAppResult<Option<QrcodeAppUser>> {
+    async fn get_user_by_email(&self, email: &str) -> VerifierAppResult<Option<VerifierAppUser>> {
         let row: Option<UserRow> = sqlx::query_as(&format!(
             "SELECT {SELECT_COLS} FROM qrcode_app_users WHERE email = $1"
         ))
         .bind(email)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| QrcodeAppError::Storage(format!("get_user_by_email: {e}")))?;
+        .map_err(|e| VerifierAppError::Storage(format!("get_user_by_email: {e}")))?;
 
         row.map(|(id, email, ph, fn_, ln, role, ia, isa, ca, ua)| {
             Self::parse_row(id, email, ph, fn_, ln, role, ia, isa, ca, ua)
@@ -183,14 +187,14 @@ impl QrcodeAppStore for PostgresQrcodeAppStore {
         .transpose()
     }
 
-    async fn get_user_by_id(&self, id: &str) -> QrcodeAppResult<Option<QrcodeAppUser>> {
+    async fn get_user_by_id(&self, id: &str) -> VerifierAppResult<Option<VerifierAppUser>> {
         let row: Option<UserRow> = sqlx::query_as(&format!(
             "SELECT {SELECT_COLS} FROM qrcode_app_users WHERE id = $1"
         ))
         .bind(id)
         .fetch_optional(&self.pool)
         .await
-        .map_err(|e| QrcodeAppError::Storage(format!("get_user_by_id: {e}")))?;
+        .map_err(|e| VerifierAppError::Storage(format!("get_user_by_id: {e}")))?;
 
         row.map(|(id, email, ph, fn_, ln, role, ia, isa, ca, ua)| {
             Self::parse_row(id, email, ph, fn_, ln, role, ia, isa, ca, ua)
@@ -198,7 +202,7 @@ impl QrcodeAppStore for PostgresQrcodeAppStore {
         .transpose()
     }
 
-    async fn list_users(&self, active_only: bool) -> QrcodeAppResult<Vec<QrcodeAppUser>> {
+    async fn list_users(&self, active_only: bool) -> VerifierAppResult<Vec<VerifierAppUser>> {
         let sql = if active_only {
             format!(
                 "SELECT {SELECT_COLS} FROM qrcode_app_users \
@@ -211,7 +215,7 @@ impl QrcodeAppStore for PostgresQrcodeAppStore {
         let rows: Vec<UserRow> = sqlx::query_as(&sql)
             .fetch_all(&self.pool)
             .await
-            .map_err(|e| QrcodeAppError::Storage(format!("list_users: {e}")))?;
+            .map_err(|e| VerifierAppError::Storage(format!("list_users: {e}")))?;
 
         rows.into_iter()
             .map(|(id, email, ph, fn_, ln, role, ia, isa, ca, ua)| {
@@ -220,11 +224,11 @@ impl QrcodeAppStore for PostgresQrcodeAppStore {
             .collect()
     }
 
-    async fn update_user(&self, id: &str, changes: &UserChanges) -> QrcodeAppResult<QrcodeAppUser> {
+    async fn update_user(&self, id: &str, changes: &UserChanges) -> VerifierAppResult<VerifierAppUser> {
         let current = self
             .get_user_by_id(id)
             .await?
-            .ok_or(QrcodeAppError::NotFound)?;
+            .ok_or(VerifierAppError::NotFound)?;
 
         let first_name = changes
             .first_name
@@ -257,20 +261,20 @@ impl QrcodeAppStore for PostgresQrcodeAppStore {
         .bind(id)
         .execute(&self.pool)
         .await
-        .map_err(|e| QrcodeAppError::Storage(format!("update_user: {e}")))?;
+        .map_err(|e| VerifierAppError::Storage(format!("update_user: {e}")))?;
 
         self.get_user_by_id(id)
             .await?
-            .ok_or(QrcodeAppError::NotFound)
+            .ok_or(VerifierAppError::NotFound)
     }
 
-    async fn delete_user(&self, id: &str) -> QrcodeAppResult<()> {
+    async fn delete_user(&self, id: &str) -> VerifierAppResult<()> {
         let user = self
             .get_user_by_id(id)
             .await?
-            .ok_or(QrcodeAppError::NotFound)?;
+            .ok_or(VerifierAppError::NotFound)?;
         if user.is_superadmin {
-            return Err(QrcodeAppError::Conflict(
+            return Err(VerifierAppError::Conflict(
                 "the superadmin account cannot be deleted".to_string(),
             ));
         }
@@ -279,7 +283,30 @@ impl QrcodeAppStore for PostgresQrcodeAppStore {
             .bind(id)
             .execute(&self.pool)
             .await
-            .map_err(|e| QrcodeAppError::Storage(format!("delete_user: {e}")))?;
+            .map_err(|e| VerifierAppError::Storage(format!("delete_user: {e}")))?;
+        Ok(())
+    }
+
+    async fn get_setting(&self, key: &str) -> VerifierAppResult<Option<String>> {
+        let row: Option<(String,)> =
+            sqlx::query_as("SELECT value FROM verifier_app_settings WHERE key = $1")
+                .bind(key)
+                .fetch_optional(&self.pool)
+                .await
+                .map_err(|e| VerifierAppError::Storage(format!("get_setting: {e}")))?;
+        Ok(row.map(|(v,)| v))
+    }
+
+    async fn set_setting(&self, key: &str, value: &str) -> VerifierAppResult<()> {
+        sqlx::query(
+            "INSERT INTO verifier_app_settings (key, value) VALUES ($1, $2) \
+             ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+        )
+        .bind(key)
+        .bind(value)
+        .execute(&self.pool)
+        .await
+        .map_err(|e| VerifierAppError::Storage(format!("set_setting: {e}")))?;
         Ok(())
     }
 }

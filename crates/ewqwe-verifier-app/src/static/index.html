@@ -1,0 +1,1012 @@
+<!doctype html>
+<html lang="en" class="h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title id="page-title">Verifier App</title>
+  <link rel="icon" type="image/png" href="/verifier_app/logo.png" />
+
+  <!-- Tailwind Play CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              bg:     '#181f38',
+              mid:    '#1f2745',
+              indigo: '#7358cf',
+              violet: '#9b7de8',
+            },
+          },
+          backdropBlur: { lg: '16px' },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    body {
+      background:
+        radial-gradient(circle at top, rgba(115,88,207,0.26) 0%, transparent 48%),
+        linear-gradient(135deg, #181f38 0%, #1f2745 52%, #181f38 100%);
+      min-height: 100vh;
+    }
+
+    /* Glass card */
+    .glass {
+      background: rgba(255,255,255,0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255,255,255,0.14);
+      border-radius: 1rem;
+    }
+
+    /* Primary gradient button */
+    .btn-primary {
+      background: linear-gradient(135deg, #6366f1, #7c3aed);
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.6rem 1.25rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* Ghost button */
+    .btn-ghost {
+      background: transparent;
+      color: rgba(255,255,255,0.75);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 0.5rem;
+      padding: 0.55rem 1.1rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+
+    /* Danger button */
+    .btn-danger {
+      background: linear-gradient(135deg, #dc2626, #b91c1c);
+      color: #fff;
+      border: none;
+      border-radius: 0.5rem;
+      padding: 0.5rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    .btn-danger:hover { opacity: 0.85; }
+
+    /* Form input */
+    .form-input {
+      width: 100%;
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.18);
+      border-radius: 0.5rem;
+      color: #fff;
+      padding: 0.6rem 0.85rem;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    .form-input:focus { border-color: #7358cf; }
+    .form-input::placeholder { color: rgba(255,255,255,0.35); }
+    select.form-input option { background: #1f2745; color: #fff; }
+
+    /* Nav link */
+    .nav-link {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      padding: 0.55rem 0.9rem;
+      border-radius: 0.5rem;
+      color: rgba(255,255,255,0.65);
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      border: none;
+      background: none;
+      width: 100%;
+      text-align: left;
+    }
+    .nav-link:hover   { background: rgba(255,255,255,0.07); color: #fff; }
+    .nav-link.active  { background: rgba(115,88,207,0.3); color: #fff; }
+
+    /* Slide-in drawer */
+    #drawer {
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+    }
+    #drawer.open { transform: translateX(0); }
+
+    /* Table */
+    .tbl { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    .tbl th {
+      background: rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.6);
+      text-align: left;
+      padding: 0.6rem 0.75rem;
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .tbl td {
+      padding: 0.65rem 0.75rem;
+      border-bottom: 1px solid rgba(255,255,255,0.07);
+      color: rgba(255,255,255,0.85);
+    }
+    .tbl tr:last-child td { border-bottom: none; }
+    .tbl tr:hover td { background: rgba(255,255,255,0.04); }
+
+    /* Badge */
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.6rem;
+      border-radius: 9999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+    .badge-green  { background: rgba(22,163,74,0.25);  color: #86efac; }
+    .badge-amber  { background: rgba(217,119,6,0.25);  color: #fcd34d; }
+    .badge-red    { background: rgba(220,38,38,0.25);  color: #fca5a5; }
+    .badge-indigo { background: rgba(115,88,207,0.25); color: #c4b5fd; }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 2rem; height: 2rem;
+      border: 3px solid rgba(255,255,255,0.15);
+      border-top-color: #7358cf;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    /* Toast */
+    #toast {
+      position: fixed;
+      bottom: 1.5rem;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.7rem 1.5rem;
+      border-radius: 0.6rem;
+      font-weight: 600;
+      font-size: 0.92rem;
+      z-index: 9999;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s;
+    }
+    #toast.show { opacity: 1; }
+    #toast.ok  { background: rgba(22,163,74,0.9);  color: #fff; }
+    #toast.err { background: rgba(220,38,38,0.9);  color: #fff; }
+
+    /* Modal overlay */
+    .modal-bg {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.55);
+      backdrop-filter: blur(4px);
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .modal-card { max-width: 480px; width: 100%; }
+
+    /* QR container */
+    #qr-img {
+      display: block;
+      max-width: 280px;
+      width: 100%;
+      border-radius: 0.75rem;
+      margin: 0 auto;
+      background: #fff;
+      padding: 0.75rem;
+    }
+
+    /* Scroll thin */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(115,88,207,0.4); border-radius: 9999px; }
+  </style>
+</head>
+
+<body class="text-white min-h-screen flex flex-col">
+
+<!-- ═══════════════════════════════════════════════════════ TOAST ══ -->
+<div id="toast"></div>
+
+<!-- ═══════════════════════════════════════════════════ MOBILE DRAWER ══ -->
+<div id="drawer-overlay" class="fixed inset-0 bg-black/50 z-40 hidden" onclick="closeDrawer()"></div>
+<aside id="drawer" class="fixed top-0 left-0 h-full w-64 z-50 glass p-5 flex flex-col gap-1 shadow-2xl hidden">
+  <div class="flex items-center justify-between mb-4">
+    <span id="drawer-app-name" class="font-bold text-lg text-white">Verifier App</span>
+    <button onclick="closeDrawer()" class="text-white/60 hover:text-white text-xl leading-none">&times;</button>
+  </div>
+  <nav id="drawer-nav"></nav>
+</aside>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- PAGE: login -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="page-login" class="hidden flex-1 flex items-center justify-center p-4">
+  <div class="glass p-8 w-full max-w-sm">
+    <div class="flex justify-center mb-6">
+      <img src="/verifier_app/logo.png" alt="ewQwe" class="h-10 w-auto" />
+    </div>
+    <h1 id="login-title" class="text-2xl font-bold mb-1">Sign In</h1>
+    <p id="login-subtitle" class="text-white/55 text-sm mb-7">Age Verification Dashboard</p>
+
+    <form id="login-form" onsubmit="doLogin(event)" class="flex flex-col gap-4">
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Email</label>
+        <input id="login-email" type="email" required autocomplete="username"
+               class="form-input" placeholder="admin@example.com" />
+      </div>
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Password</label>
+        <input id="login-password" type="password" required autocomplete="current-password"
+               class="form-input" placeholder="••••••••••••" />
+      </div>
+      <p id="login-error" class="text-red-400 text-sm hidden"></p>
+      <button type="submit" class="btn-primary w-full mt-1">Sign In</button>
+    </form>
+
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- PAGE: bootstrap -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="page-bootstrap" class="hidden flex-1 flex items-center justify-center p-4">
+  <div class="glass p-8 w-full max-w-sm">
+    <div class="flex justify-center mb-6">
+      <img src="/verifier_app/logo.png" alt="ewQwe" class="h-10 w-auto" />
+    </div>
+    <h1 class="text-2xl font-bold mb-1">Create Admin Account</h1>
+    <p class="text-white/55 text-sm mb-7">One-time initial setup</p>
+
+    <form id="bootstrap-form" onsubmit="doBootstrap(event)" class="flex flex-col gap-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm text-white/70 mb-1">First Name</label>
+          <input id="bs-first" type="text" class="form-input" placeholder="Alice" />
+        </div>
+        <div>
+          <label class="block text-sm text-white/70 mb-1">Last Name</label>
+          <input id="bs-last" type="text" class="form-input" placeholder="Smith" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Email</label>
+        <input id="bs-email" type="email" required class="form-input" placeholder="admin@example.com" />
+      </div>
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Password <span class="text-white/40">(min 12 chars)</span></label>
+        <input id="bs-password" type="password" required minlength="12" class="form-input" placeholder="••••••••••••" />
+      </div>
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Confirm Password</label>
+        <input id="bs-password2" type="password" required minlength="12" class="form-input" placeholder="••••••••••••" />
+      </div>
+      <p id="bs-error" class="text-red-400 text-sm hidden"></p>
+      <button type="submit" class="btn-primary w-full mt-1">Create Admin Account</button>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- APP SHELL (nav + page area) — shown when logged in -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div id="app-shell" class="hidden flex-1 flex flex-col overflow-hidden">
+
+  <!-- Top bar -->
+  <header class="glass m-3 mb-0 px-4 py-3 flex items-center gap-3 shrink-0">
+    <!-- Mobile hamburger -->
+    <button id="hamburger" onclick="openDrawer()"
+            class="md:hidden text-white/70 hover:text-white mr-1">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+      </svg>
+    </button>
+
+    <!-- App name -->
+    <span id="topbar-app-name" class="font-bold text-base text-white flex-1">Verifier App</span>
+
+    <!-- Desktop nav -->
+    <nav id="topbar-nav" class="hidden md:flex items-center gap-1"></nav>
+  </header>
+
+  <!-- Page content -->
+  <main class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+
+    <!-- ── Dashboard ────────────────────────────────────────── -->
+    <section id="page-dashboard" class="hidden flex flex-col items-center gap-6 pt-4">
+      <!-- QR + status -->
+      <div class="glass p-6 w-full max-w-sm text-center">
+        <h2 class="text-lg font-bold mb-4">Age Verification QR</h2>
+
+        <div id="qr-area-empty" class="">
+          <p class="text-white/55 text-sm mb-4">Generate a QR code for the user to scan with their EU Wallet.</p>
+          <button onclick="generateQR()" id="qr-generate-btn" class="btn-primary">Generate QR Code</button>
+        </div>
+
+        <div id="qr-area-loading" class="hidden flex flex-col items-center gap-3 py-4">
+          <div class="spinner"></div>
+          <p class="text-white/55 text-sm">Creating verification request…</p>
+        </div>
+
+        <div id="qr-area-code" class="hidden flex-col items-center gap-4">
+          <img id="qr-img" src="" alt="QR Code" />
+          <div id="qr-status-badge" class="badge badge-indigo px-4 py-1 text-sm">Waiting for scan…</div>
+          <p class="text-white/45 text-xs">Scan with your EU Digital Identity Wallet</p>
+          <button onclick="resetQR()" class="btn-ghost text-sm">New QR Code</button>
+        </div>
+
+        <div id="qr-area-verified" class="hidden flex-col items-center gap-3 py-2">
+          <svg class="w-14 h-14 text-green-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+          </svg>
+          <p class="text-green-300 font-bold text-xl">Age Verified ✓</p>
+          <p class="text-white/55 text-sm">The user meets the age requirement.</p>
+          <button onclick="resetQR()" class="btn-primary mt-2">New Verification</button>
+        </div>
+
+        <div id="qr-area-failed" class="hidden flex-col items-center gap-3 py-2">
+          <svg class="w-14 h-14 text-red-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"/>
+          </svg>
+          <p class="text-red-300 font-bold text-xl">Verification Failed</p>
+          <p id="qr-fail-reason" class="text-white/55 text-sm">The presentation was rejected or expired.</p>
+          <button onclick="resetQR()" class="btn-primary mt-2">Try Again</button>
+        </div>
+      </div>
+
+      <!-- ewqwe branding -->
+      <div class="flex flex-col items-center gap-2 opacity-45">
+        <img src="/verifier_app/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45">powered by ewQwe Digital Identity</p>
+      </div>
+    </section>
+
+    <!-- ── Users ─────────────────────────────────────────────── -->
+    <section id="page-users" class="hidden flex flex-col gap-4">
+      <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold">Users</h2>
+        <button onclick="openCreateUserModal()" class="btn-primary text-sm">+ New User</button>
+      </div>
+
+      <div class="glass overflow-x-auto">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Email</th>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+            <tr><td colspan="5" class="text-center text-white/40 py-6">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── Journal ───────────────────────────────────────────── -->
+    <section id="page-journal" class="hidden flex flex-col gap-4">
+      <div class="flex items-center justify-between flex-wrap gap-2">
+        <h2 class="text-xl font-bold">Audit Journal</h2>
+        <div class="flex gap-2">
+          <button onclick="loadJournal(0)" class="btn-ghost text-sm">Refresh</button>
+        </div>
+      </div>
+
+      <div class="glass overflow-x-auto">
+        <table class="tbl">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Action</th>
+              <th>User</th>
+              <th>Detail</th>
+            </tr>
+          </thead>
+          <tbody id="journal-tbody">
+            <tr><td colspan="4" class="text-center text-white/40 py-6">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-between items-center text-sm text-white/55">
+        <button id="journal-prev" onclick="journalPage(-1)" class="btn-ghost text-sm" disabled>← Prev</button>
+        <span id="journal-page-info">Page 1</span>
+        <button id="journal-next" onclick="journalPage(1)" class="btn-ghost text-sm">Next →</button>
+      </div>
+    </section>
+
+    <!-- ── Settings ──────────────────────────────────────────── -->
+    <section id="page-settings" class="hidden flex flex-col gap-6 max-w-lg">
+      <h2 class="text-xl font-bold">App Settings</h2>
+
+      <div class="glass p-6 flex flex-col gap-5">
+        <h3 class="font-semibold text-white/80">Display</h3>
+        <div>
+          <label class="block text-sm text-white/70 mb-1">App Name</label>
+          <input id="settings-app-name" type="text" class="form-input" placeholder="Verifier App" />
+          <p class="text-white/40 text-xs mt-1">Displayed in the navigation bar.</p>
+        </div>
+        <div>
+          <label class="block text-sm text-white/70 mb-1">Logo URL <span class="text-white/35">(optional)</span></label>
+          <input id="settings-logo-url" type="url" class="form-input" placeholder="https://example.com/logo.png" />
+        </div>
+        <div class="flex gap-3 mt-1">
+          <button onclick="saveSettings()" class="btn-primary">Save Settings</button>
+          <button onclick="loadSettings()" class="btn-ghost">Cancel</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- MODALS -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+
+<!-- Create / Edit User Modal -->
+<div id="modal-user" class="modal-bg hidden">
+  <div class="glass modal-card p-7">
+    <h3 id="modal-user-title" class="text-lg font-bold mb-5">Create User</h3>
+    <form id="modal-user-form" onsubmit="submitUserModal(event)" class="flex flex-col gap-4">
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="block text-sm text-white/70 mb-1">First Name</label>
+          <input id="mu-first" type="text" class="form-input" />
+        </div>
+        <div>
+          <label class="block text-sm text-white/70 mb-1">Last Name</label>
+          <input id="mu-last" type="text" class="form-input" />
+        </div>
+      </div>
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Email</label>
+        <input id="mu-email" type="email" class="form-input" />
+      </div>
+      <div id="mu-password-wrap">
+        <label class="block text-sm text-white/70 mb-1">Password <span class="text-white/40">(min 12 chars)</span></label>
+        <input id="mu-password" type="password" minlength="12" class="form-input" placeholder="••••••••••••" />
+      </div>
+      <div>
+        <label class="block text-sm text-white/70 mb-1">Role</label>
+        <select id="mu-role" class="form-input">
+          <option value="verifier">Verifier</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div id="mu-active-wrap" class="hidden flex items-center gap-2">
+        <input id="mu-active" type="checkbox" class="w-4 h-4 accent-brand-indigo" />
+        <label for="mu-active" class="text-sm text-white/70">Active</label>
+      </div>
+      <p id="mu-error" class="text-red-400 text-sm hidden"></p>
+      <div class="flex gap-3 mt-1">
+        <button type="submit" class="btn-primary flex-1">Save</button>
+        <button type="button" onclick="closeUserModal()" class="btn-ghost flex-1">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!-- JAVASCRIPT -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<script>
+'use strict';
+
+const BASE = '/verifier_app/api';
+
+// ── State ──────────────────────────────────────────────────────────
+let state = {
+  user: null,          // { id, email, role, ... }
+  bootstrapped: false,
+  appName: 'Verifier App',
+  qrTxId: null,
+  qrPollTimer: null,
+  journalOffset: 0,
+  journalLimit: 50,
+  editUserId: null,    // null = create, else = update
+};
+
+// ── API helpers ────────────────────────────────────────────────────
+async function api(method, path, body = undefined) {
+  const opts = {
+    method,
+    credentials: 'same-origin',
+    headers: body ? { 'Content-Type': 'application/json' } : {},
+    body: body ? JSON.stringify(body) : undefined,
+  };
+  const r = await fetch(BASE + path, opts);
+  let data = null;
+  try { data = await r.json(); } catch { /* empty body */ }
+  return { ok: r.ok, status: r.status, data };
+}
+
+// ── Toast ──────────────────────────────────────────────────────────
+let _toastTimer = null;
+function toast(msg, type = 'ok') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `show ${type}`;
+  if (_toastTimer) clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => { el.className = ''; }, 3000);
+}
+
+// ── Page routing ───────────────────────────────────────────────────
+const PAGES = ['login', 'bootstrap', 'dashboard', 'users', 'journal', 'settings'];
+
+function showPage(name) {
+  PAGES.forEach(p => {
+    const el = document.getElementById('page-' + p);
+    if (el) el.classList.add('hidden');
+  });
+  document.getElementById('app-shell').classList.add('hidden');
+
+  if (['dashboard', 'users', 'journal', 'settings'].includes(name)) {
+    document.getElementById('app-shell').classList.remove('hidden');
+    document.getElementById('page-' + name).classList.remove('hidden');
+    renderNav();
+    if (name === 'users')    loadUsers();
+    if (name === 'journal')  loadJournal(0);
+    if (name === 'settings') loadSettings();
+  } else {
+    document.getElementById('page-' + name).classList.remove('hidden');
+    document.getElementById('page-' + name).style.display = 'flex';
+  }
+  closeDrawer();
+}
+
+// ── Navigation ─────────────────────────────────────────────────────
+const ADMIN_NAV = [
+  { id: 'dashboard', label: 'Dashboard', icon: '⊞' },
+  { id: 'users',     label: 'Users',     icon: '👤' },
+  { id: 'journal',   label: 'Journal',   icon: '📋' },
+  { id: 'settings',  label: 'Settings',  icon: '⚙️'  },
+];
+const VERIFIER_NAV = [
+  { id: 'dashboard', label: 'Dashboard', icon: '⊞' },
+];
+
+function currentNav() {
+  return state.user?.role === 'admin' ? ADMIN_NAV : VERIFIER_NAV;
+}
+
+function activePageId() {
+  for (const p of ['dashboard', 'users', 'journal', 'settings']) {
+    const el = document.getElementById('page-' + p);
+    if (el && !el.classList.contains('hidden')) return p;
+  }
+  return null;
+}
+
+function navHTML(items, includeLogout) {
+  const active = activePageId();
+  let html = items.map(item => `
+    <button class="nav-link ${item.id === active ? 'active' : ''}"
+            onclick="showPage('${item.id}')">
+      <span>${item.icon}</span><span>${item.label}</span>
+    </button>`).join('');
+  if (includeLogout) {
+    html += `<button class="nav-link text-red-300" onclick="doLogout()">
+      <span>⏻</span><span>Logout</span>
+    </button>`;
+  }
+  return html;
+}
+
+function renderNav() {
+  const items = currentNav();
+  const topbar = document.getElementById('topbar-nav');
+  const drawer  = document.getElementById('drawer-nav');
+  if (topbar) topbar.innerHTML = navHTML(items, true);
+  if (drawer)  drawer.innerHTML = navHTML(items, true);
+}
+
+// ── Drawer (mobile) ────────────────────────────────────────────────
+function openDrawer() {
+  const d = document.getElementById('drawer');
+  const o = document.getElementById('drawer-overlay');
+  d.classList.remove('hidden');
+  d.classList.add('open');
+  o.classList.remove('hidden');
+}
+function closeDrawer() {
+  const d = document.getElementById('drawer');
+  const o = document.getElementById('drawer-overlay');
+  d.classList.remove('open');
+  o.classList.add('hidden');
+  setTimeout(() => d.classList.add('hidden'), 260);
+}
+
+// ── App name ───────────────────────────────────────────────────────
+function applyAppName(name) {
+  state.appName = name || 'Verifier App';
+  document.title = state.appName;
+  document.getElementById('page-title').textContent = state.appName;
+  document.getElementById('topbar-app-name').textContent = state.appName;
+  document.getElementById('drawer-app-name').textContent = state.appName;
+  const loginTitle = document.getElementById('login-title');
+  if (loginTitle) loginTitle.textContent = state.appName;
+}
+
+// ── Init ───────────────────────────────────────────────────────────
+async function init() {
+  // Parallel: setup status + session check + settings
+  const [statusRes, meRes, settingsRes] = await Promise.all([
+    api('GET', '/setup/status'),
+    api('GET', '/auth/me'),
+    api('GET', '/settings'),
+  ]);
+
+  if (settingsRes.ok && settingsRes.data?.app_name) {
+    applyAppName(settingsRes.data.app_name);
+  }
+
+  state.bootstrapped = statusRes.ok && statusRes.data?.bootstrapped === true;
+
+  if (!state.bootstrapped) {
+    showPage('bootstrap');
+    return;
+  }
+
+  if (meRes.ok && meRes.data?.id) {
+    state.user = meRes.data;
+    showPage('dashboard');
+  } else {
+    showPage('login');
+  }
+}
+
+// ── Auth ───────────────────────────────────────────────────────────
+async function doLogin(e) {
+  e.preventDefault();
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const err      = document.getElementById('login-error');
+
+  err.classList.add('hidden');
+  const r = await api('POST', '/auth/login', { email, password });
+  if (r.ok) {
+    state.user = r.data;
+    showPage('dashboard');
+  } else {
+    err.textContent = r.data?.error || 'Invalid credentials';
+    err.classList.remove('hidden');
+  }
+}
+
+async function doLogout() {
+  await api('POST', '/auth/logout');
+  state.user = null;
+  stopQrPoll();
+  showPage('login');
+}
+
+// ── Bootstrap ──────────────────────────────────────────────────────
+async function doBootstrap(e) {
+  e.preventDefault();
+  const err = document.getElementById('bs-error');
+  err.classList.add('hidden');
+
+  const password  = document.getElementById('bs-password').value;
+  const password2 = document.getElementById('bs-password2').value;
+  if (password !== password2) {
+    err.textContent = 'Passwords do not match';
+    err.classList.remove('hidden');
+    return;
+  }
+
+  const r = await api('POST', '/setup/bootstrap', {
+    email:      document.getElementById('bs-email').value.trim(),
+    password,
+    first_name: document.getElementById('bs-first').value.trim() || null,
+    last_name:  document.getElementById('bs-last').value.trim()  || null,
+  });
+
+  if (r.ok) {
+    state.bootstrapped = true;
+    state.user = r.data;
+    toast('Admin account created!');
+    showPage('dashboard');
+  } else {
+    err.textContent = r.data?.error || 'Bootstrap failed';
+    err.classList.remove('hidden');
+  }
+}
+
+// ── QR Generation & Polling ────────────────────────────────────────
+function qrArea(name) {
+  ['empty', 'loading', 'code', 'verified', 'failed'].forEach(n => {
+    const el = document.getElementById('qr-area-' + n);
+    if (el) {
+      el.classList.add('hidden');
+      el.style.display = 'none';
+    }
+  });
+  const target = document.getElementById('qr-area-' + name);
+  if (target) {
+    target.classList.remove('hidden');
+    target.style.display = 'flex';
+  }
+}
+
+function stopQrPoll() {
+  if (state.qrPollTimer) { clearInterval(state.qrPollTimer); state.qrPollTimer = null; }
+  state.qrTxId = null;
+}
+
+function resetQR() {
+  stopQrPoll();
+  qrArea('empty');
+}
+
+async function generateQR() {
+  qrArea('loading');
+  const btn = document.getElementById('qr-generate-btn');
+  if (btn) btn.disabled = true;
+
+  const r = await api('POST', '/qr/generate');
+  if (!r.ok) {
+    toast('Failed to generate QR: ' + (r.data?.error || r.status), 'err');
+    qrArea('empty');
+    if (btn) btn.disabled = false;
+    return;
+  }
+
+  state.qrTxId = r.data.transaction_id;
+  const img = document.getElementById('qr-img');
+  img.src = r.data.qr_code_data_url || '';
+  qrArea('code');
+
+  // Start polling
+  state.qrPollTimer = setInterval(pollQrStatus, 2000);
+}
+
+async function pollQrStatus() {
+  if (!state.qrTxId) return;
+  const r = await api('GET', `/qr/${state.qrTxId}/status`);
+  if (!r.ok) { stopQrPoll(); qrArea('failed'); return; }
+
+  const status = r.data?.status;
+  const badge  = document.getElementById('qr-status-badge');
+
+  if (status === 'pending' || status === 'initiated') {
+    if (badge) badge.textContent = 'Waiting for scan…';
+  } else if (status === 'scanned') {
+    if (badge) badge.textContent = 'Scanned — verifying…';
+  } else if (status === 'verified' || status === 'complete' || status === 'ok') {
+    stopQrPoll();
+    qrArea('verified');
+    toast('Age verification successful!');
+  } else if (status === 'failed' || status === 'rejected' || status === 'expired') {
+    stopQrPoll();
+    const reason = document.getElementById('qr-fail-reason');
+    if (reason) reason.textContent = `Status: ${status}`;
+    qrArea('failed');
+    toast('Verification failed: ' + status, 'err');
+  }
+}
+
+// ── Users ──────────────────────────────────────────────────────────
+async function loadUsers() {
+  const tbody = document.getElementById('users-tbody');
+  tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/40 py-6">Loading…</td></tr>';
+  const r = await api('GET', '/admin/users');
+  if (!r.ok) { tbody.innerHTML = '<tr><td colspan="5" class="text-center text-red-400 py-4">Failed to load users</td></tr>'; return; }
+
+  if (!r.data.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="text-center text-white/40 py-6">No users found</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = r.data.map(u => `
+    <tr>
+      <td>${esc(u.email)}</td>
+      <td>${esc([u.first_name, u.last_name].filter(Boolean).join(' ') || '—')}</td>
+      <td><span class="badge ${u.role === 'admin' ? 'badge-indigo' : 'badge-amber'}">${esc(u.role)}</span></td>
+      <td><span class="badge ${u.is_active ? 'badge-green' : 'badge-red'}">${u.is_active ? 'Active' : 'Inactive'}</span></td>
+      <td class="flex gap-2">
+        <button onclick="openEditUserModal(${JSON.stringify(u).replace(/"/g, '&quot;')})" class="btn-ghost text-xs py-1 px-2">Edit</button>
+        ${!u.is_superadmin ? `<button onclick="deleteUser('${esc(u.id)}')" class="btn-danger text-xs py-1 px-2">Delete</button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+
+function openCreateUserModal() {
+  state.editUserId = null;
+  document.getElementById('modal-user-title').textContent = 'Create User';
+  document.getElementById('mu-first').value    = '';
+  document.getElementById('mu-last').value     = '';
+  document.getElementById('mu-email').value    = '';
+  document.getElementById('mu-email').disabled = false;
+  document.getElementById('mu-password').value = '';
+  document.getElementById('mu-password').required = true;
+  document.getElementById('mu-password-wrap').style.display = '';
+  document.getElementById('mu-role').value     = 'verifier';
+  document.getElementById('mu-active-wrap').classList.add('hidden');
+  document.getElementById('mu-error').classList.add('hidden');
+  document.getElementById('modal-user').classList.remove('hidden');
+}
+
+function openEditUserModal(u) {
+  state.editUserId = u.id;
+  document.getElementById('modal-user-title').textContent = 'Edit User';
+  document.getElementById('mu-first').value    = u.first_name || '';
+  document.getElementById('mu-last').value     = u.last_name  || '';
+  document.getElementById('mu-email').value    = u.email;
+  document.getElementById('mu-email').disabled = true;
+  document.getElementById('mu-password').value = '';
+  document.getElementById('mu-password').required = false;
+  document.getElementById('mu-password-wrap').style.display = '';
+  document.getElementById('mu-role').value     = u.role || 'verifier';
+  document.getElementById('mu-active-wrap').classList.remove('hidden');
+  document.getElementById('mu-active').checked = u.is_active !== false;
+  document.getElementById('mu-error').classList.add('hidden');
+  document.getElementById('modal-user').classList.remove('hidden');
+}
+
+function closeUserModal() {
+  document.getElementById('modal-user').classList.add('hidden');
+}
+
+async function submitUserModal(e) {
+  e.preventDefault();
+  const err = document.getElementById('mu-error');
+  err.classList.add('hidden');
+
+  const password = document.getElementById('mu-password').value;
+  const isCreate = !state.editUserId;
+
+  if (isCreate) {
+    if (password.length < 12) {
+      err.textContent = 'Password must be at least 12 characters';
+      err.classList.remove('hidden');
+      return;
+    }
+    const body = {
+      email:      document.getElementById('mu-email').value.trim(),
+      password,
+      first_name: document.getElementById('mu-first').value.trim() || null,
+      last_name:  document.getElementById('mu-last').value.trim()  || null,
+      role:       document.getElementById('mu-role').value,
+    };
+    const r = await api('POST', '/admin/users', body);
+    if (r.ok) {
+      toast('User created');
+      closeUserModal();
+      loadUsers();
+    } else {
+      err.textContent = r.data?.error || 'Failed to create user';
+      err.classList.remove('hidden');
+    }
+  } else {
+    const body = {
+      first_name:   document.getElementById('mu-first').value.trim() || null,
+      last_name:    document.getElementById('mu-last').value.trim()  || null,
+      role:         document.getElementById('mu-role').value,
+      is_active:    document.getElementById('mu-active').checked,
+      new_password: password.length >= 12 ? password : null,
+    };
+    const r = await api('PUT', `/admin/users/${state.editUserId}`, body);
+    if (r.ok) {
+      toast('User updated');
+      closeUserModal();
+      loadUsers();
+    } else {
+      err.textContent = r.data?.error || 'Failed to update user';
+      err.classList.remove('hidden');
+    }
+  }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Delete this user? This cannot be undone.')) return;
+  const r = await api('DELETE', `/admin/users/${id}`);
+  if (r.ok) { toast('User deleted'); loadUsers(); }
+  else toast(r.data?.error || 'Delete failed', 'err');
+}
+
+// ── Journal ────────────────────────────────────────────────────────
+async function loadJournal(offset) {
+  state.journalOffset = offset;
+  const tbody = document.getElementById('journal-tbody');
+  tbody.innerHTML = '<tr><td colspan="4" class="text-center text-white/40 py-6">Loading…</td></tr>';
+
+  const r = await api('GET', `/admin/journal?limit=${state.journalLimit}&offset=${offset}`);
+  if (!r.ok) { tbody.innerHTML = '<tr><td colspan="4" class="text-center text-red-400 py-4">Failed to load journal</td></tr>'; return; }
+
+  const entries = Array.isArray(r.data) ? r.data : (r.data?.entries || []);
+  document.getElementById('journal-prev').disabled = offset <= 0;
+  document.getElementById('journal-next').disabled = entries.length < state.journalLimit;
+  document.getElementById('journal-page-info').textContent = `Offset ${offset}`;
+
+  if (!entries.length) {
+    tbody.innerHTML = '<tr><td colspan="4" class="text-center text-white/40 py-6">No entries</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = entries.map(e => `
+    <tr>
+      <td class="text-white/55 text-xs">${esc(fmtTime(e.created_at || e.timestamp))}</td>
+      <td><span class="badge badge-indigo">${esc(e.action || e.event_type || '—')}</span></td>
+      <td class="text-xs">${esc(e.user_email || e.actor || '—')}</td>
+      <td class="text-xs text-white/55">${esc(e.detail || e.message || '')}</td>
+    </tr>`).join('');
+}
+
+function journalPage(dir) {
+  const next = state.journalOffset + dir * state.journalLimit;
+  if (next < 0) return;
+  loadJournal(next);
+}
+
+// ── Settings ───────────────────────────────────────────────────────
+async function loadSettings() {
+  const r = await api('GET', '/settings');
+  if (r.ok) {
+    document.getElementById('settings-app-name').value  = r.data?.app_name  || '';
+    document.getElementById('settings-logo-url').value  = r.data?.logo_url  || '';
+  }
+}
+
+async function saveSettings() {
+  const body = {
+    app_name: document.getElementById('settings-app-name').value.trim() || null,
+    logo_url: document.getElementById('settings-logo-url').value.trim() || null,
+  };
+  const r = await api('PUT', '/admin/settings', body);
+  if (r.ok) {
+    toast('Settings saved');
+    const name = body.app_name;
+    if (name) applyAppName(name);
+  } else {
+    toast(r.data?.error || 'Save failed', 'err');
+  }
+}
+
+// ── Utils ──────────────────────────────────────────────────────────
+function esc(s) {
+  if (s == null) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  try {
+    return new Date(ts).toLocaleString(undefined, {
+      dateStyle: 'short', timeStyle: 'short',
+    });
+  } catch { return ts; }
+}
+
+// ── Boot ───────────────────────────────────────────────────────────
+init().catch(err => {
+  console.error('init error:', err);
+  showPage('login');
+});
+</script>
+</body>
+</html>

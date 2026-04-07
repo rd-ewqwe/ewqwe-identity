@@ -1,4 +1,4 @@
-//! Password hashing and verification helpers for the QR Code APP.
+//! Password hashing and verification helpers for the Verifier App.
 //!
 //! Uses Argon2id (RFC 9106 recommended variant) via the `argon2` crate.
 
@@ -7,17 +7,17 @@ use argon2::{
     password_hash::{PasswordHash, PasswordHasher, PasswordVerifier, SaltString, rand_core::OsRng},
 };
 
-use crate::qrcode_app::error::{QrcodeAppError, QrcodeAppResult};
+use crate::error::{VerifierAppError, VerifierAppResult};
 
 /// Hash a plaintext password using Argon2id with a random salt.
 ///
 /// Returns the PHC-formatted hash string suitable for storage.
-pub fn hash_password(password: &str) -> QrcodeAppResult<String> {
+pub fn hash_password(password: &str) -> VerifierAppResult<String> {
     let salt = SaltString::generate(&mut OsRng);
     let argon2 = Argon2::default(); // Argon2id, recommended parameters
     let hash = argon2
         .hash_password(password.as_bytes(), &salt)
-        .map_err(|e| QrcodeAppError::Config(format!("Password hashing failed: {e}")))?;
+        .map_err(|e| VerifierAppError::Config(format!("Password hashing failed: {e}")))?;
     Ok(hash.to_string())
 }
 

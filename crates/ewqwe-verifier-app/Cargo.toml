@@ -1,0 +1,28 @@
+[package]
+name = "ewqwe_verifier_app"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Verifier App — embedded age-verification web application for the ewQwe credential verifier"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+actix-identity = { workspace = true }
+actix-session = { workspace = true }
+actix-web = { workspace = true }
+argon2 = { workspace = true }
+async-trait = { workspace = true }
+chrono = { workspace = true }
+ewqwe_openid4vp = { workspace = true }
+hex = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sqlx = { workspace = true }
+thiserror = { workspace = true }
+tracing = { workspace = true }
+uuid = { workspace = true }

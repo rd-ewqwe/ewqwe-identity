@@ -1,4 +1,4 @@
-//! Domain models and request/response DTOs for the QR Code APP.
+//! Domain models and request/response DTOs for the Verifier App.
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -8,10 +8,10 @@ use std::str::FromStr;
 // Role
 // ============================================================================
 
-/// User role within the QR Code APP.
+/// User role within the Verifier App.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Default)]
 #[serde(rename_all = "snake_case")]
-pub enum QrcodeAppRole {
+pub enum VerifierAppRole {
     /// Administrator — can manage users, view the full journal, and configure
     /// OIDC providers.
     Admin,
@@ -20,7 +20,7 @@ pub enum QrcodeAppRole {
     Verifier,
 }
 
-impl QrcodeAppRole {
+impl VerifierAppRole {
     /// Returns the lowercase string representation stored in the database.
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -30,13 +30,13 @@ impl QrcodeAppRole {
     }
 }
 
-impl FromStr for QrcodeAppRole {
+impl FromStr for VerifierAppRole {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "admin" => Ok(Self::Admin),
             "verifier" => Ok(Self::Verifier),
-            other => Err(format!("unknown QR Code APP role: {other}")),
+            other => Err(format!("unknown Verifier App role: {other}")),
         }
     }
 }
@@ -45,16 +45,16 @@ impl FromStr for QrcodeAppRole {
 // User (domain model)
 // ============================================================================
 
-/// A QR Code APP user account, as stored in the database.
+/// A Verifier App user account, as stored in the database.
 #[derive(Debug, Clone)]
-pub struct QrcodeAppUser {
+pub struct VerifierAppUser {
     pub id: String,
     pub email: String,
     /// Argon2id hash of the password.  `None` for OIDC-only accounts.
     pub password_hash: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: QrcodeAppRole,
+    pub role: VerifierAppRole,
     pub is_active: bool,
     /// Marks the first admin created by the bootstrap endpoint.
     /// Superadmin accounts cannot be deleted via the UI.
@@ -74,15 +74,15 @@ pub struct UserResponse {
     pub email: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: QrcodeAppRole,
+    pub role: VerifierAppRole,
     pub is_active: bool,
     pub is_superadmin: bool,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
 
-impl From<QrcodeAppUser> for UserResponse {
-    fn from(u: QrcodeAppUser) -> Self {
+impl From<VerifierAppUser> for UserResponse {
+    fn from(u: VerifierAppUser) -> Self {
         Self {
             id: u.id,
             email: u.email,
@@ -101,7 +101,7 @@ impl From<QrcodeAppUser> for UserResponse {
 // Internal store records
 // ============================================================================
 
-/// Data passed to [`QrcodeAppStore::create_user`].
+/// Data passed to [`crate::db::VerifierAppStore::create_user`].
 pub struct NewUserRecord {
     /// Pre-generated UUIDv4 string (caller is responsible for uniqueness).
     pub id: String,
@@ -109,18 +109,18 @@ pub struct NewUserRecord {
     pub password_hash: Option<String>,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: QrcodeAppRole,
+    pub role: VerifierAppRole,
     pub is_superadmin: bool,
 }
 
-/// Partial update applied by [`QrcodeAppStore::update_user`].
+/// Partial update applied by [`crate::db::VerifierAppStore::update_user`].
 ///
 /// `None` fields mean "no change"; `Some` fields are written to the database.
 #[derive(Default)]
 pub struct UserChanges {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: Option<QrcodeAppRole>,
+    pub role: Option<VerifierAppRole>,
     pub is_active: Option<bool>,
     /// Pre-hashed password (argon2id).  `None` = no password change.
     pub password_hash: Option<String>,
@@ -130,7 +130,7 @@ pub struct UserChanges {
 // API request DTOs
 // ============================================================================
 
-/// Body for `POST /qrcode_app/api/setup/bootstrap`.
+/// Body for `POST /verifier_app/api/setup/bootstrap`.
 #[derive(Debug, Deserialize)]
 pub struct BootstrapRequest {
     pub email: String,
@@ -139,41 +139,41 @@ pub struct BootstrapRequest {
     pub last_name: Option<String>,
 }
 
-/// Body for `POST /qrcode_app/api/auth/login`.
+/// Body for `POST /verifier_app/api/auth/login`.
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
 
-/// Body for `POST /qrcode_app/api/admin/users`.
+/// Body for `POST /verifier_app/api/admin/users`.
 #[derive(Debug, Deserialize)]
 pub struct CreateUserRequest {
     pub email: String,
     pub password: String,
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: Option<QrcodeAppRole>,
+    pub role: Option<VerifierAppRole>,
 }
 
-/// Body for `PUT /qrcode_app/api/admin/users/{id}`.
+/// Body for `PUT /verifier_app/api/admin/users/{id}`.
 #[derive(Debug, Deserialize, Default)]
 pub struct UpdateUserRequest {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
-    pub role: Option<QrcodeAppRole>,
+    pub role: Option<VerifierAppRole>,
     pub is_active: Option<bool>,
     pub new_password: Option<String>,
 }
 
-/// Body for `POST /qrcode_app/api/qr/generate`.
+/// Body for `POST /verifier_app/api/qr/generate`.
 #[derive(Debug, Deserialize, Default)]
 pub struct GenerateQrRequest {
     /// Reserved for future multi-profile support. Currently only `"annex_a"` is supported.
     pub profile: Option<String>,
 }
 
-/// Query parameters for `GET /qrcode_app/api/admin/journal`.
+/// Query parameters for `GET /verifier_app/api/admin/journal`.
 #[derive(Debug, Deserialize, Default)]
 pub struct AdminJournalQuery {
     /// Filter to entries attributed to this QR app user ID.
@@ -184,7 +184,7 @@ pub struct AdminJournalQuery {
     pub offset: Option<u32>,
 }
 
-/// Query parameters for `GET /qrcode_app/api/i18n`.
+/// Query parameters for `GET /verifier_app/api/i18n`.
 #[derive(Debug, Deserialize, Default)]
 pub struct I18nQuery {
     /// BCP-47 language code (e.g. `en`, `de`, `fr`). Defaults to `en`.

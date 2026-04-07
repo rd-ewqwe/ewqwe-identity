@@ -10,7 +10,7 @@ use crate::{
     AttError,
     attestation::{Attestation, AttestationSigner, JwtSigner, SigningAlgorithm},
     journal::{DynJournalStore, append_verification},
-    qrcode_app::qr_user_map::QrUserMap,
+    verifier_app::qr_user_map::QrUserMap,
     server::{ServerParams, Version},
     tls::AuthenticatedUser,
 };

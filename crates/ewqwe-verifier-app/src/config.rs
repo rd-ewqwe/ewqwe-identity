@@ -1,13 +1,11 @@
-//! Configuration for the QR Code APP embedded web application.
+//! Configuration for the Verifier App embedded web application.
 
 use serde::{Deserialize, Serialize};
 
-/// Database backend for the QR Code APP.
-///
-/// Follows the same pattern as [`crate::journal::JournalBackend`].
+/// Database backend for the Verifier App.
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 #[serde(tag = "backend", rename_all = "snake_case")]
-pub enum QrcodeAppDbBackend {
+pub enum VerifierAppDbBackend {
     /// SQLite in-memory — no persistence, suitable for development/testing.
     #[default]
     SqliteMemory,
@@ -25,12 +23,12 @@ pub enum QrcodeAppDbBackend {
     },
 }
 
-/// Top-level configuration section for the QR Code APP.
+/// Top-level configuration section for the Verifier App.
 ///
-/// Embedded in [`crate::server::ServerParams`] as `[qrcode_app]` in the TOML config.
+/// Embedded in the server configuration file as `[verifier_app]`.
 ///
 /// ```toml
-/// [qrcode_app]
+/// [verifier_app]
 /// enabled = true
 /// app_name = "My Age Verifier"
 /// # session_secret_key = "<128 hex chars = 64 bytes>"   # stable sessions across restarts
@@ -40,21 +38,21 @@ pub enum QrcodeAppDbBackend {
 ///
 /// # SQLite file (persistent, single-instance):
 /// # backend = "sqlite_file"
-/// # path    = "/var/lib/ewqwe/qrcode_app.db"
+/// # path    = "/var/lib/ewqwe/verifier_app.db"
 ///
 /// # PostgreSQL (HA / multi-instance):
 /// # backend = "postgres"
 /// # url     = "postgres://ewqwe:ewqwe@localhost/ewqwe"
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct QrcodeAppConfig {
-    /// Whether the QR Code APP is enabled. Defaults to `true` (opt-in).
+pub struct VerifierAppConfig {
+    /// Whether the Verifier App is enabled. Defaults to `false` (opt-in).
     ///
-    /// When `false`, all `/qrcode_app/*` routes are disabled and return 404.
+    /// When `false`, all `/verifier_app/*` routes are disabled and return 404.
     #[serde(default = "default_true")]
     pub enabled: bool,
 
-    /// Display name shown in the UI header.  Defaults to `"QR Code APP"`.
+    /// Display name shown in the UI header.  Defaults to `"Verifier App"`.
     #[serde(default)]
     pub app_name: Option<String>,
 
@@ -75,16 +73,9 @@ pub struct QrcodeAppConfig {
     ///
     /// Defaults to `sqlite_memory` when not specified.
     #[serde(default)]
-    pub db: QrcodeAppDbBackend,
+    pub db: VerifierAppDbBackend,
 }
 
 fn default_true() -> bool {
     true
-}
-
-impl QrcodeAppConfig {
-    /// Returns the configured `app_name` or the default `"QR Code APP"`.
-    pub fn app_name(&self) -> &str {
-        self.app_name.as_deref().unwrap_or("QR Code APP")
-    }
 }

@@ -1,21 +1,24 @@
-//! QR Code APP — embedded age-verification web application.
+//! Verifier App — embedded age-verification web application.
 //!
 //! This module is **fully isolated** from the core credential verifier.  All
-//! HTTP routes are registered under the `/qrcode_app` scope and can be
-//! enabled or disabled via the `[qrcode_app]` section in the server
+//! HTTP routes are registered under the `/verifier_app` scope and can be
+//! enabled or disabled via the `[verifier_app]` section in the server
 //! configuration file.
 //!
 //! ## Architecture
 //!
 //! ```text
-//! /qrcode_app/api/setup/bootstrap     — one-time admin creation
-//! /qrcode_app/api/auth/*              — login / logout / me
-//! /qrcode_app/api/qr/generate         — initiate OpenID4VP transaction + QR
-//! /qrcode_app/api/qr/{id}/status      — poll verification result
-//! /qrcode_app/api/admin/users/*       — admin: user management
-//! /qrcode_app/api/admin/journal       — admin: filterable audit log
-//! /qrcode_app/api/i18n                — locale JSON files
-//! /qrcode_app/*                       — static SPA assets (Phase F)
+//! /verifier_app/api/setup/bootstrap     — one-time admin creation
+//! /verifier_app/api/setup/status        — bootstrap status (public)
+//! /verifier_app/api/auth/*              — login / logout / me
+//! /verifier_app/api/qr/generate         — initiate OpenID4VP transaction + QR
+//! /verifier_app/api/qr/{id}/status      — poll verification result
+//! /verifier_app/api/admin/users/*       — admin: user management
+//! /verifier_app/api/admin/journal       — admin: filterable audit log
+//! /verifier_app/api/admin/settings      — admin: update app settings
+//! /verifier_app/api/settings            — public: read app settings
+//! /verifier_app/api/i18n                — locale JSON files
+//! /verifier_app/*                       — static SPA assets
 //! ```
 //!
 //! ## Enabling
@@ -23,11 +26,11 @@
 //! Add the following to `credential-server.toml`:
 //!
 //! ```toml
-//! [qrcode_app]
+//! [verifier_app]
 //! enabled = true
 //! ```
 //!
-//! See [`config::QrcodeAppConfig`] for all available options.
+//! See [`config::VerifierAppConfig`] for all available options.
 
 pub mod auth;
 pub mod config;
@@ -38,14 +41,14 @@ pub mod qr_user_map;
 mod routes;
 pub mod stores;
 
-pub use config::QrcodeAppConfig;
+pub use config::VerifierAppConfig;
 
 use actix_web::web;
 
-/// Register all QR Code APP routes on the given [`web::ServiceConfig`].
+/// Register all Verifier App routes on the given [`web::ServiceConfig`].
 ///
-/// Called from `server::start` when `qrcode_app_config.enabled = true`.
-/// The `/qrcode_app` scope prefix is applied by the caller.
+/// Called from `server::start` when `verifier_app_config.enabled = true`.
+/// The `/verifier_app` scope prefix is applied by the caller.
 pub fn configure_routes(cfg: &mut web::ServiceConfig) {
     cfg
         // ── Static SPA ─────────────────────────────────────────────────────
@@ -54,12 +57,16 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/", web::get().to(routes::ui_index))
         .route("/ui", web::get().to(routes::ui_index))
         .route("/ui/", web::get().to(routes::ui_index))
+        .route("/logo.png", web::get().to(routes::logo_png))
         // ── Setup (no auth) ────────────────────────────────────────────────
         .route("/api/setup/bootstrap", web::post().to(routes::bootstrap))
+        .route("/api/setup/status", web::get().to(routes::setup_status))
         // ── Authentication ─────────────────────────────────────────────────
         .route("/api/auth/login", web::post().to(routes::login))
         .route("/api/auth/logout", web::post().to(routes::logout))
         .route("/api/auth/me", web::get().to(routes::me))
+        // ── Public settings ────────────────────────────────────────────────
+        .route("/api/settings", web::get().to(routes::get_settings))
         // ── QR Code generation & status polling ────────────────────────────
         .route("/api/qr/generate", web::post().to(routes::generate_qr))
         .route("/api/qr/{id}/status", web::get().to(routes::qr_status))
@@ -73,6 +80,11 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         )
         // ── Admin: journal ─────────────────────────────────────────────────
         .route("/api/admin/journal", web::get().to(routes::admin_journal))
+        // ── Admin: settings ───────────────────────────────────────────────
+        .route(
+            "/api/admin/settings",
+            web::put().to(routes::update_settings),
+        )
         // ── Internationalisation ────────────────────────────────────────────
         .route("/api/i18n", web::get().to(routes::get_i18n));
 }

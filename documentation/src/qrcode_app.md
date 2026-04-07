@@ -1,6 +1,6 @@
-# QR Code APP
+# Verifier App
 
-The QR Code APP is an embedded, session-authenticated web application served directly by the credential verifier under the `/qrcode_app` path. It provides a self-contained UI for age-verification operators — no separate deployment is required.
+The Verifier App is an embedded, session-authenticated web application served directly by the credential verifier under the `/verifier_app` path. It provides a self-contained UI for age-verification operators — no separate deployment is required.
 
 ## Overview
 
@@ -8,13 +8,17 @@ The QR Code APP is an embedded, session-authenticated web application served dir
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                  Credential Verifier  (:9443)                            │
 │                                                                          │
-│   GET  /qrcode_app/           → embedded SPA (index.html)               │
-│   GET  /qrcode_app/ui         → same SPA (alias)                        │
-│   POST /qrcode_app/api/auth/login                                        │
-│   POST /qrcode_app/api/qr/generate   → OpenID4VP QR transaction         │
-│   GET  /qrcode_app/api/qr/{id}/status                                   │
-│   GET  /qrcode_app/api/admin/users   (admin role only)                  │
-│   GET  /qrcode_app/api/admin/journal (admin role only)                  │
+│   GET  /verifier_app/                     → embedded SPA (index.html)   │
+│   GET  /verifier_app/ui                   → same SPA (alias)            │
+│   POST /verifier_app/api/setup/bootstrap  → one-time admin creation     │
+│   GET  /verifier_app/api/setup/status     → bootstrap status (public)   │
+│   POST /verifier_app/api/auth/login                                      │
+│   POST /verifier_app/api/qr/generate      → OpenID4VP QR transaction    │
+│   GET  /verifier_app/api/qr/{id}/status                                 │
+│   GET  /verifier_app/api/settings         → public app settings         │
+│   GET  /verifier_app/api/admin/users      → (admin role only)           │
+│   PUT  /verifier_app/api/admin/settings   → (admin role only)           │
+│   GET  /verifier_app/api/admin/journal    → (admin role only)           │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -22,19 +26,19 @@ All assets are embedded in the server binary at compile time — there are no se
 
 ---
 
-## Enabling the QR Code APP
+## Enabling the Verifier App
 
 Add the following section to `credential-server.toml`:
 
 ```toml
-[qrcode_app]
+[verifier_app]
 enabled = true
 app_name = "My Age Verifier"          # optional display name
 # logo_url = "https://example.com/logo.png"   # optional logo
 # session_secret_key = "<128 hex chars>"       # recommended for production
 ```
 
-When `enabled = false` (the default if the section is absent), all `/qrcode_app/*` routes return 404.
+When `enabled = false` (the default if the section is absent), all `/verifier_app/*` routes return 404.
 
 ### Session Secret Key
 
@@ -52,37 +56,37 @@ Paste the output as the value of `session_secret_key`.
 
 ## Database Backend
 
-The QR Code APP manages user accounts in a separate database from the main credential store. Three backends are supported:
+The Verifier App manages user accounts in a separate database from the main credential store. Three backends are supported:
 
 | Backend | Use-case | Config |
 |---------|----------|--------|
 | `sqlite_memory` (default) | Development / testing | _(no extra config needed)_ |
-| `sqlite_file` | Single-instance with persistence | `path = "/var/lib/ewqwe/qrcode_app.db"` |
+| `sqlite_file` | Single-instance with persistence | `path = "/var/lib/ewqwe/verifier_app.db"` |
 | `postgres` | Multi-instance / HA | `url = "postgres://user:pw@host/db"` |
 
 ```toml
-[qrcode_app]
+[verifier_app]
 enabled = true
 backend = "sqlite_file"
-path    = "/var/lib/ewqwe/qrcode_app.db"
+path    = "/var/lib/ewqwe/verifier_app.db"
 ```
 
 ```toml
-[qrcode_app]
+[verifier_app]
 enabled = true
 backend = "postgres"
-url     = "postgres://ewqwe:secret@db.internal/ewqwe_qrcodeapp"
+url     = "postgres://ewqwe:secret@db.internal/ewqwe_verifierapp"
 ```
 
 ---
 
 ## First-Time Setup
 
-On the first visit, navigate to `https://<server>/qrcode_app/`.
+On the first visit, navigate to `https://<server>/verifier_app/`.
 
-Because no users exist yet, click **"Create admin account"** (or navigate directly to `/qrcode_app/ui` then follow the on-screen link) to reach the bootstrap form. Fill in the admin email and a password of at least 12 characters.
+Because no users exist yet, click **"Create admin account"** (or navigate directly to `/verifier_app/ui` then follow the on-screen link) to reach the bootstrap form. Fill in the admin email and a password of at least 12 characters.
 
-This `POST /qrcode_app/api/setup/bootstrap` endpoint is automatically locked after the first admin is created — subsequent calls return `409 Conflict`.
+This `POST /verifier_app/api/setup/bootstrap` endpoint is automatically locked after the first admin is created — subsequent calls return `409 Conflict`.
 
 ---
 
@@ -99,7 +103,7 @@ The first account created via bootstrap is always an admin with `is_superadmin =
 
 ## Generating a QR Code
 
-1. Sign in at `https://<server>/qrcode_app/`.
+1. Sign in at `https://<server>/verifier_app/`.
 2. Click **Generate QR Code** on the _Verify Age_ screen.
 3. A QR code based on the EU Age Verification Profile ([Annex A](https://ageverification.dev)) is displayed.
 4. The holder scans it with their EU digital wallet; the status badge updates automatically every 2 seconds:
@@ -131,7 +135,7 @@ Password requirements: minimum 12 characters.
 
 ## Admin: Journal
 
-Navigate to **Journal** (admin only) to browse the verification audit log. Each entry is attributed to the QR Code APP user who initiated the transaction.
+Navigate to **Journal** (admin only) to browse the verification audit log. Each entry is attributed to the Verifier App user who initiated the transaction.
 
 Available filter:
 
@@ -146,7 +150,7 @@ Entries are paginated (20 per page). The journal backend must be enabled in the 
 The UI fetches locale strings from:
 
 ```
-GET /qrcode_app/api/i18n?lang=<code>
+GET /verifier_app/api/i18n?lang=<code>
 ```
 
 Supported language codes:
@@ -158,19 +162,20 @@ Supported language codes:
 | `fr` | French |
 
 Locale files are embedded in the binary at compile time from  
-`credential_verifier/src/qrcode_app/static/i18n/`.
+`credential_verifier/src/verifier_app/static/i18n/`.
 
 ---
 
 ## API Reference
 
-All API endpoints are under `/qrcode_app/api/` and require `Content-Type: application/json` for POST/PUT requests. Sessions are managed via `HttpOnly` cookies.
+All API endpoints are under `/verifier_app/api/` and require `Content-Type: application/json` for POST/PUT requests. Sessions are managed via `HttpOnly` cookies.
 
 ### Setup
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
 | `POST` | `/api/setup/bootstrap` | `{email, password, first_name, last_name?}` | One-time admin creation |
+| `GET`  | `/api/setup/status`    | — | `{"bootstrapped": bool}` — public endpoint |
 
 ### Auth
 
@@ -197,6 +202,18 @@ All API endpoints are under `/qrcode_app/api/` and require `Content-Type: applic
   "expires_in": 300
 }
 ```
+
+### Settings (public)
+
+| Method | Path | Body | Description |
+|--------|------|------|-------------|
+| `GET`  | `/api/settings` | — | `{"app_name": "...", "logo_url": "...|null"}` |
+
+### Admin: Settings
+
+| Method | Path | Body | Description |
+|--------|------|------|-------------|
+| `PUT`  | `/api/admin/settings` | `{app_name?, logo_url?}` | Persist display settings |
 
 `status` response:
 

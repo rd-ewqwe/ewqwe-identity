@@ -1,5 +1,18 @@
 use thiserror::Error;
 
+impl From<ewqwe_verifier_app::error::VerifierAppError> for AttError {
+    fn from(e: ewqwe_verifier_app::error::VerifierAppError) -> Self {
+        use ewqwe_verifier_app::error::VerifierAppError;
+        match e {
+            VerifierAppError::NotFound => AttError::BadRequest("not found".to_string()),
+            VerifierAppError::Conflict(msg) => AttError::BadRequest(msg),
+            VerifierAppError::Storage(msg) | VerifierAppError::Config(msg) => {
+                AttError::Generic(msg)
+            }
+        }
+    }
+}
+
 // Each error type must have a corresponding HTTP status code (see `kmip_endpoint.rs`)
 #[derive(Error, Debug)]
 pub enum AttError {
