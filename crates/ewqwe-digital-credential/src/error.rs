@@ -17,9 +17,14 @@ pub enum CredentialError {
     #[error("CBOR error: {0}")]
     Cbor(String),
 
-    /// A required field was missing or had an unexpected value.
+    /// A required field was missing or had an unexpected value during credential building.
     #[error("Credential building error: {0}")]
     Build(String),
+
+    /// An incoming credential presentation was malformed, its signature was invalid,
+    /// or a required field was missing during verification.
+    #[error("Invalid presentation: {0}")]
+    InvalidPresentation(String),
 }
 
 /// Convenience alias.

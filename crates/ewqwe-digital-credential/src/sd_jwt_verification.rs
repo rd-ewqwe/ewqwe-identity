@@ -2,26 +2,16 @@
 //!
 //! Implements [IETF SD-JWT](https://www.ietf.org/archive/id/draft-ietf-oauth-selective-disclosure-jwt-12.html)
 //! presentation decoding, issuer JWT `x5c` certificate-chain validation, and
-//! Key Binding JWT holder-binding verification.
+//! Key Binding JWT holder‑binding verification.
+//!
+//! # Split of responsibilities
+//!
+//! - [`decode_sd_jwt_presentation`] — extracts claims and nonce, no crypto.
+//! - [`verify_sd_jwt_signatures`]   — verifies issuer JWT `x5c` chain and KB-JWT.
 
 use base64::Engine;
 
-// ============================================================================
-// Error types
-// ============================================================================
-
-/// Errors that can occur during SD-JWT VC decoding.
-#[derive(Debug, thiserror::Error)]
-pub(super) enum SdJwtDecodeError {
-    #[error("not an SD-JWT: no '~' separator found")]
-    NotSdJwt,
-    #[error("malformed JWT: expected 3 dot-separated parts")]
-    MalformedJwt,
-    #[error("base64 decode failed: {0}")]
-    Base64(#[from] base64::DecodeError),
-    #[error("JSON parse failed: {0}")]
-    Json(#[from] serde_json::Error),
-}
+use crate::error::{CredentialError, Result};
 
 // ============================================================================
 // Return types
@@ -29,35 +19,42 @@ pub(super) enum SdJwtDecodeError {
 
 /// Intermediate result from decoding an SD-JWT VC compact presentation.
 ///
-/// This is a plain data struct; the caller constructs the full
-/// [`super::VpToken`] from these fields.
-pub(super) struct DecodedSdJwt {
-    pub(super) vct: String,
-    pub(super) claims: serde_json::Map<String, serde_json::Value>,
-    pub(super) issuer: String,
-    pub(super) issued_at: Option<String>,
-    pub(super) expires_at: Option<String>,
-    /// Nonce extracted from the Key Binding JWT, if present.
-    pub(super) nonce: Option<String>,
+/// Format: `<Issuer-Signed JWT>~<Disclosure1>~…~[KB-JWT]`
+///
+/// Claims include both clear-text payload fields and any `~`-separated
+/// selective-disclosure disclosures.
+pub struct DecodedSdJwt {
+    /// `vct` claim (credential type URI).
+    pub vct: String,
+    /// All confirmed claims (clear-text + disclosed).
+    pub claims: serde_json::Map<String, serde_json::Value>,
+    /// `iss` claim.
+    pub issuer: String,
+    /// `iat` as RFC 3339 string, if present.
+    pub issued_at: Option<String>,
+    /// `exp` as RFC 3339 string, if present.
+    pub expires_at: Option<String>,
+    /// Nonce extracted from the Key Binding JWT `nonce` claim, if present.
+    pub nonce: Option<String>,
 }
 
 /// Result of cryptographic signature verification on an SD-JWT VC presentation.
-pub(super) struct SigVerificationResult {
+pub struct SigVerificationResult {
     /// Whether the issuer JWT signature was successfully verified.
-    pub(super) issuer_sig_valid: bool,
+    pub issuer_sig_valid: bool,
     /// Whether the KB-JWT signature was successfully verified.
-    pub(super) kb_sig_valid: bool,
+    pub kb_sig_valid: bool,
     /// Whether the issuer's leaf certificate chains to a trusted CA.
-    pub(super) issuer_trusted: bool,
+    pub issuer_trusted: bool,
     /// `true` when the presentation was not an SD-JWT and verification was skipped.
-    pub(super) skipped: bool,
+    pub skipped: bool,
     /// Human-readable error messages accumulated during verification.
-    pub(super) errors: Vec<String>,
+    pub errors: Vec<String>,
 }
 
 impl SigVerificationResult {
-    /// Build a result that represents skipped verification (e.g. non-SD-JWT credential).
-    pub(super) fn skipped(reason: &str) -> Self {
+    /// Build a result representing skipped verification (e.g. non-SD-JWT credential).
+    pub fn skipped(reason: &str) -> Self {
         Self {
             issuer_sig_valid: false,
             kb_sig_valid: false,
@@ -69,34 +66,45 @@ impl SigVerificationResult {
 }
 
 // ============================================================================
-// SD-JWT VC decoding
+// SD-JWT VC decoding (no crypto)
 // ============================================================================
 
 /// Decode an SD-JWT VC compact presentation.
 ///
-/// Format (IETF SD-JWT §1): `<Issuer-Signed JWT>~<Disclosure1>~...~[KB-JWT]`
+/// Format (IETF SD-JWT §1):  `<Issuer-Signed JWT>~<Disclosure1>~...~[KB-JWT]`
 ///
-/// Each disclosure is a base64url-encoded JSON array: `[salt, claim_name, value]`.
-/// The last `~`-separated element may be a Key Binding JWT (starts with "eyJ" and contains
-/// exactly 2 dots). The nonce from the KB-JWT payload is extracted and returned.
-pub(super) fn decode_sd_jwt_presentation(raw: &str) -> Result<DecodedSdJwt, SdJwtDecodeError> {
+/// Each disclosure is a base64url-encoded JSON array `[salt, claim_name, value]`.
+/// The last `~`-separated element may be a Key Binding JWT (starts with `"eyJ"`
+/// and contains exactly 2 dots). The nonce from the KB-JWT payload is extracted
+/// and returned.
+///
+/// Returns [`CredentialError::InvalidPresentation`] if the input is not an SD-JWT
+/// or the issuer JWT payload cannot be decoded.
+pub fn decode_sd_jwt_presentation(raw: &str) -> Result<DecodedSdJwt> {
     if !raw.contains('~') {
-        return Err(SdJwtDecodeError::NotSdJwt);
+        return Err(CredentialError::InvalidPresentation(
+            "not an SD-JWT: no '~' separator found".into(),
+        ));
     }
 
     let parts: Vec<&str> = raw.splitn(2, '~').collect();
     let issuer_jwt = parts[0];
     let rest = if parts.len() > 1 { parts[1] } else { "" };
 
-    // Decode JWT payload (middle dot-separated part)
     let jwt_parts: Vec<&str> = issuer_jwt.split('.').collect();
     if jwt_parts.len() != 3 {
-        return Err(SdJwtDecodeError::MalformedJwt);
+        return Err(CredentialError::InvalidPresentation(
+            "malformed JWT: expected 3 dot-separated parts".into(),
+        ));
     }
     let payload_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
         .decode(jwt_parts[1])
-        .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(jwt_parts[1]))?;
-    let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)?;
+        .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(jwt_parts[1]))
+        .map_err(|e| {
+            CredentialError::InvalidPresentation(format!("base64 decode of JWT payload failed: {e}"))
+        })?;
+    let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
+        .map_err(|e| CredentialError::InvalidPresentation(format!("JSON parse of JWT payload: {e}")))?;
 
     tracing::debug!("SD-JWT payload claims: {}", payload);
 
@@ -185,7 +193,8 @@ pub(super) fn decode_sd_jwt_presentation(raw: &str) -> Result<DecodedSdJwt, SdJw
         }
     }
 
-    tracing::debug!(vct = %vct, %issuer, claims_count = claims.len(), nonce_bound = kb_nonce.is_some(), "SD-JWT VC decoded");
+    tracing::debug!(vct = %vct, issuer = %issuer, claims_count = claims.len(),
+        nonce_bound = kb_nonce.is_some(), "SD-JWT VC decoded");
 
     Ok(DecodedSdJwt {
         vct,
@@ -206,12 +215,15 @@ pub(super) fn decode_sd_jwt_presentation(raw: &str) -> Result<DecodedSdJwt, SdJw
 /// Given `raw` = `<issuer-jwt>~<disc1>~…~[kb-jwt]`:
 ///
 /// 1. **Issuer JWT** — the JWT header MUST contain `x5c` (required by HAIP §2 and
-///    OpenID4VP §6.1.1). The leaf certificate is extracted and validated against the
-///    trusted CA directory; its public key verifies the issuer JWT via `jsonwebtoken`.
+///    OpenID4VP §6.1.1). The leaf certificate is extracted and validated against
+///    `trusted_cas`; its public key verifies the issuer JWT via `jsonwebtoken`.
 ///    Presentations without `x5c` are rejected.
-/// 2. **KB-JWT** — the holder public key from the `cnf.jwk` claim in the issuer
-///    payload verifies the KB-JWT signature.
-pub(super) fn verify_sd_jwt_signatures(
+/// 2. **KB-JWT** — the holder public key from `cnf.jwk` in the issuer payload
+///    verifies the KB-JWT signature.
+///
+/// This function is infallible; errors are accumulated in the returned
+/// [`SigVerificationResult::errors`] field.
+pub fn verify_sd_jwt_signatures(
     raw: &str,
     trusted_cas: &[openssl::x509::X509],
 ) -> SigVerificationResult {
@@ -236,11 +248,7 @@ pub(super) fn verify_sd_jwt_signatures(
     };
 
     let alg = header.alg;
-    tracing::debug!(
-        ?alg,
-        x5c_present = header.x5c.is_some(),
-        "issuer JWT header"
-    );
+    tracing::debug!(?alg, x5c_present = header.x5c.is_some(), "issuer JWT header");
 
     let (issuer_decoding_key, issuer_trusted) = match &header.x5c {
         Some(x5c) if !x5c.is_empty() => match extract_key_from_x5c(x5c, trusted_cas, alg) {
@@ -257,7 +265,6 @@ pub(super) fn verify_sd_jwt_signatures(
             }
         },
         _ => {
-            // HAIP §2 and OpenID4VP §6.1.1 require `x5c` in the issuer JWT header.
             errors.push(
                 "issuer JWT is missing the required x5c header; presentation rejected".into(),
             );
@@ -276,26 +283,23 @@ pub(super) fn verify_sd_jwt_signatures(
     validation.validate_aud = false;
     validation.required_spec_claims.clear();
 
-    let issuer_token_data = match jsonwebtoken::decode::<serde_json::Value>(
-        issuer_jwt,
-        &issuer_decoding_key,
-        &validation,
-    ) {
-        Ok(data) => {
-            tracing::debug!("issuer JWT signature verified");
-            data
-        }
-        Err(e) => {
-            errors.push(format!("issuer JWT signature invalid: {e}"));
-            return SigVerificationResult {
-                issuer_sig_valid: false,
-                kb_sig_valid: false,
-                issuer_trusted,
-                skipped: false,
-                errors,
-            };
-        }
-    };
+    let issuer_token_data =
+        match jsonwebtoken::decode::<serde_json::Value>(issuer_jwt, &issuer_decoding_key, &validation) {
+            Ok(data) => {
+                tracing::debug!("issuer JWT signature verified");
+                data
+            }
+            Err(e) => {
+                errors.push(format!("issuer JWT signature invalid: {e}"));
+                return SigVerificationResult {
+                    issuer_sig_valid: false,
+                    kb_sig_valid: false,
+                    issuer_trusted,
+                    skipped: false,
+                    errors,
+                };
+            }
+        };
 
     let kb_sig_valid = verify_kb_jwt(rest, &issuer_token_data.claims, &mut errors);
 
@@ -312,21 +316,22 @@ pub(super) fn verify_sd_jwt_signatures(
 // Certificate chain and key helpers
 // ============================================================================
 
-/// Extract a `DecodingKey` from the `x5c` JWT header and validate the leaf
-/// certificate against the trusted CA list.
+/// Extract a [`jsonwebtoken::DecodingKey`] from the `x5c` JWT header and
+/// validate the leaf certificate against the trusted CA list.
 ///
 /// Returns `(DecodingKey, issuer_trusted)`.
 fn extract_key_from_x5c(
     x5c: &[String],
     trusted_cas: &[openssl::x509::X509],
     alg: jsonwebtoken::Algorithm,
-) -> Result<(jsonwebtoken::DecodingKey, bool), String> {
+) -> std::result::Result<(jsonwebtoken::DecodingKey, bool), String> {
     use openssl::x509::X509;
 
     let leaf_der = base64::engine::general_purpose::STANDARD
         .decode(&x5c[0])
         .map_err(|e| format!("base64 decode of x5c[0] failed: {e}"))?;
-    let leaf = X509::from_der(&leaf_der).map_err(|e| format!("DER parse of x5c[0] failed: {e}"))?;
+    let leaf =
+        X509::from_der(&leaf_der).map_err(|e| format!("DER parse of x5c[0] failed: {e}"))?;
     tracing::debug!(
         subject = ?leaf.subject_name(),
         issuer = ?leaf.issuer_name(),
@@ -350,8 +355,8 @@ fn extract_key_from_x5c(
         let der = base64::engine::general_purpose::STANDARD
             .decode(b64_cert)
             .map_err(|e| format!("base64 decode of x5c intermediate failed: {e}"))?;
-        let cert = X509::from_der(&der)
-            .map_err(|e| format!("DER parse of x5c intermediate failed: {e}"))?;
+        let cert =
+            X509::from_der(&der).map_err(|e| format!("DER parse of x5c intermediate failed: {e}"))?;
         tracing::info!(subject = ?cert.subject_name(), "loaded intermediate certificate from x5c");
         intermediates
             .push(cert)
@@ -421,8 +426,13 @@ fn extract_key_from_x5c(
 
 /// Verify the Key Binding JWT signature using the holder key from `cnf.jwk`.
 ///
-/// `rest` is the portion of the SD-JWT after the first `~` (disclosures + optional KB-JWT).
-fn verify_kb_jwt(rest: &str, issuer_claims: &serde_json::Value, errors: &mut Vec<String>) -> bool {
+/// `rest` is the portion of the SD-JWT after the first `~`
+/// (disclosures + optional KB-JWT).
+fn verify_kb_jwt(
+    rest: &str,
+    issuer_claims: &serde_json::Value,
+    errors: &mut Vec<String>,
+) -> bool {
     let kb_jwt = rest
         .split('~')
         .filter(|s| !s.is_empty())
@@ -482,7 +492,7 @@ fn verify_kb_jwt(rest: &str, issuer_claims: &serde_json::Value, errors: &mut Vec
 fn build_decoding_key_from_jwk(
     jwk: &serde_json::Value,
     alg: jsonwebtoken::Algorithm,
-) -> Result<jsonwebtoken::DecodingKey, String> {
+) -> std::result::Result<jsonwebtoken::DecodingKey, String> {
     let kty = jwk
         .get("kty")
         .and_then(|v| v.as_str())
@@ -513,8 +523,8 @@ fn build_decoding_key_from_jwk(
                 "P-521" => openssl::nid::Nid::SECP521R1,
                 _ => return Err(format!("unsupported EC curve: {crv}")),
             };
-            let group =
-                openssl::ec::EcGroup::from_curve_name(nid).map_err(|e| format!("EcGroup: {e}"))?;
+            let group = openssl::ec::EcGroup::from_curve_name(nid)
+                .map_err(|e| format!("EcGroup: {e}"))?;
             let x_bn =
                 openssl::bn::BigNum::from_slice(&x_bytes).map_err(|e| format!("BigNum x: {e}"))?;
             let y_bn =

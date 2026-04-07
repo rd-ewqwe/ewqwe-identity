@@ -74,14 +74,20 @@ Key parameters:
 - **Members**: `credential_verifier`, `crates/logging`, `crates/openid4vp`, `crates/ewqwe-digital-identity`, `crates/ewqwe-digital-credential`
 - All members use `workspace = true` for version, edition, rust-version, authors, license
 
-### Credential Building Library (`crates/ewqwe-digital-credential`)
+### Credential Building and Verification Library (`crates/ewqwe-digital-credential`)
 
-- `ewqwe_digital_credential` crate provides all tooling to build and sign EU/EUDI credentials:
+- `ewqwe_digital_credential` crate provides all tooling to build, sign, and **verify** EU/EUDI credentials.
+- Used by `credential_verifier` as a **regular runtime dependency** (not dev-only).
+- **Building:**
   - **`CredentialIssuer`**: ephemeral two-level PKI (CA → issuer leaf + device key) for test and demo scenarios
   - **SD-JWT VC**: EU Age Verification Profile (`eu.europa.ec.av.1`) and EUDI PID (`eu.europa.ec.eudi.pid.1`)
   - **mDoc DeviceResponse**: ISO/IEC 18013-5, OpenID4VP `SessionTranscript`-bound `DeviceSignature`
-  - Feature `vendored` links OpenSSL statically (used in CI / dev-dependencies)
-- Originated from `credential_verifier/src/tests/credential_builder.rs` (now removed).
+- **Verification:**
+  - **`decode_mdoc_presentation`**: lightweight CBOR claim extraction, no crypto
+  - **`decode_sd_jwt_presentation`**: SD-JWT VC claim extraction + KB-JWT nonce, no crypto
+  - **`verify_sd_jwt_signatures`**: `x5c` certificate chain + KB-JWT holder binding verification
+  - **`verify_mdoc_presentation`**: full COSE_Sign1 `IssuerAuth` + `DeviceSignature` + MSO digest verification
+- Feature `vendored` links OpenSSL statically (for CI / cross-compilation)
 - See [`crates/ewqwe-digital-credential/README.md`](crates/ewqwe-digital-credential/README.md) for full API docs.
 
 ### OpenID4VP Service Layer
@@ -363,20 +369,24 @@ let verified = verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigning
 
 ## Key Files Reference
 
-| Purpose                 | Location                                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------------------- |
-| Error types & macros    | [credential_verifier/src/error/](credential_verifier/src/error/)                                   |
-| Attestation signing     | [credential_verifier/src/attestation/](credential_verifier/src/attestation/)                       |
-| Server entry point      | [credential_verifier/src/server/att_server.rs](credential_verifier/src/server/att_server.rs)       |
-| Logging configuration   | [crates/logging/src/lib.rs](crates/logging/src/lib.rs)                                             |
-| Test certificates (EC)  | [credential_verifier/src/tests/certificates/ec/](credential_verifier/src/tests/certificates/ec/)   |
-| Test certificates (RSA) | [credential_verifier/src/tests/certificates/rsa/](credential_verifier/src/tests/certificates/rsa/) |
-| DCQL query examples     | [documentation/dcql_age_verification.md](documentation/dcql_age_verification.md)                   |
-| Credential building     | [crates/ewqwe-digital-credential/](crates/ewqwe-digital-credential/)                               |
-| Wallet main logic       | [wallet-extension/src/wallet.ts](wallet-extension/src/wallet.ts)                                   |
-| RP credential handling  | [webapp/src/credentials.ts](webapp/src/credentials.ts)                                             |
-| ISO credential configs  | [webapp/src/config.ts](webapp/src/config.ts)                                                       |
-| Standards documentation | [documentation/](documentation/)                                                                   |
+| Purpose                        | Location                                                                                                                 |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------ |
+| Error types & macros           | [credential_verifier/src/error/](credential_verifier/src/error/)                                                         |
+| Attestation signing            | [credential_verifier/src/attestation/](credential_verifier/src/attestation/)                                             |
+| Server entry point             | [credential_verifier/src/server/att_server.rs](credential_verifier/src/server/att_server.rs)                             |
+| Verify endpoint (HTTP handler) | [credential_verifier/src/server/verify_endpoint/mod.rs](credential_verifier/src/server/verify_endpoint/mod.rs)           |
+| Logging configuration          | [crates/logging/src/lib.rs](crates/logging/src/lib.rs)                                                                   |
+| Test certificates (EC)         | [credential_verifier/src/tests/certificates/ec/](credential_verifier/src/tests/certificates/ec/)                         |
+| Test certificates (RSA)        | [credential_verifier/src/tests/certificates/rsa/](credential_verifier/src/tests/certificates/rsa/)                       |
+| DCQL query examples            | [documentation/dcql_age_verification.md](documentation/dcql_age_verification.md)                                         |
+| Credential building            | [crates/ewqwe-digital-credential/](crates/ewqwe-digital-credential/)                                                     |
+| mDoc CBOR decoder (no crypto)  | [crates/ewqwe-digital-credential/src/mdoc_decoder.rs](crates/ewqwe-digital-credential/src/mdoc_decoder.rs)               |
+| SD-JWT VC verification         | [crates/ewqwe-digital-credential/src/sd_jwt_verification.rs](crates/ewqwe-digital-credential/src/sd_jwt_verification.rs) |
+| mDoc COSE verification         | [crates/ewqwe-digital-credential/src/mdoc_verification.rs](crates/ewqwe-digital-credential/src/mdoc_verification.rs)     |
+| Wallet main logic              | [wallet-extension/src/wallet.ts](wallet-extension/src/wallet.ts)                                                         |
+| RP credential handling         | [webapp/src/credentials.ts](webapp/src/credentials.ts)                                                                   |
+| ISO credential configs         | [webapp/src/config.ts](webapp/src/config.ts)                                                                             |
+| Standards documentation        | [documentation/](documentation/)                                                                                         |
 
 ## Standards Compliance
 

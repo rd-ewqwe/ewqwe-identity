@@ -6,16 +6,16 @@
 //! - [`version_endpoint`] — returns the server version
 //! - [`verify_credential_endpoint`] — verifies an OpenID4VP credential presentation
 
-mod mdoc;
-mod sd_jwt;
-
 use crate::{
     AttError,
     attestation::{Attestation, AttestationSigner, JwtSigner, SigningAlgorithm},
     journal::{DynJournalStore, append_verification},
-    mdoc_decoder,
     server::{ServerParams, Version},
     tls::AuthenticatedUser,
+};
+use ewqwe_digital_credential::{
+    decode_mdoc_presentation, decode_sd_jwt_presentation, verify_mdoc_presentation,
+    verify_sd_jwt_signatures, SigVerificationResult,
 };
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use base64::Engine as _;
@@ -290,7 +290,7 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                     // SD-JWT VC: compact format with '~' separators
                     if encoded_str.contains('~') {
                         tracing::debug!(len = encoded_str.len(), "presentation is SD-JWT VC");
-                        match sd_jwt::decode_sd_jwt_presentation(encoded_str) {
+                        match decode_sd_jwt_presentation(encoded_str) {
                             Ok(decoded) => {
                                 let vp_token = VpToken {
                                     doc_type: decoded.vct.clone(),
@@ -320,7 +320,7 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                         len = encoded_str.len(),
                         "presentation is base64-encoded mDoc"
                     );
-                    match mdoc_decoder::decode_mdoc_presentation(encoded_str) {
+                    match decode_mdoc_presentation(encoded_str) {
                         Ok(decoded) => {
                             tracing::debug!(
                                 doc_type = %decoded.doc_type,
@@ -493,15 +493,22 @@ pub(crate) async fn verify_credential_endpoint(
                 )
             })?;
 
-        let mdoc_result = mdoc::verify_mdoc_presentation(
+        let mdoc_result = verify_mdoc_presentation(
             raw_mdoc,
-            tx,
+            &tx.client_id,
+            &tx.nonce,
+            &tx.response_uri,
+            matches!(
+                tx.response_mode,
+                ewqwe_openid4vp::ResponseMode::DirectPostJwt
+                    | ewqwe_openid4vp::ResponseMode::DcApiJwt
+            ),
             response_jwk_thumbprint.as_deref(),
             trusted_cas.as_ref().as_slice(),
         )
         .map_err(|e| {
             tracing::error!(error = %e, "mDoc presentation verification failed");
-            e
+            AttError::BadRequest(e.to_string())
         })?;
 
         if !mdoc_result.issuer_trusted {
@@ -531,9 +538,9 @@ pub(crate) async fn verify_credential_endpoint(
         )
     } else {
         let sig_result = if let Some(raw) = vp_token.raw_sd_jwt.as_deref() {
-            sd_jwt::verify_sd_jwt_signatures(raw, trusted_cas.as_ref().as_slice())
+            verify_sd_jwt_signatures(raw, trusted_cas.as_ref().as_slice())
         } else {
-            sd_jwt::SigVerificationResult::skipped("presentation format not recognized")
+            SigVerificationResult::skipped("presentation format not recognized")
         };
         let claims = extract_claims(&vp_token);
         let doc_type = vp_token.doc_type.clone();
@@ -690,7 +697,7 @@ fn extract_claims(vp_token: &VpToken) -> serde_json::Value {
 fn verify_vp_token(
     vp_token: &VpToken,
     server_nonce: Option<&str>,
-    sig: &sd_jwt::SigVerificationResult,
+    sig: &SigVerificationResult,
 ) -> VerificationResult {
     let mut errors = Vec::new();
 

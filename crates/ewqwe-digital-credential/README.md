@@ -8,8 +8,11 @@ standard formats, together with an ephemeral PKI helper for test and demonstrati
 ## Overview
 
 This crate originated from the test infrastructure in `credential_verifier` and is now a
-standalone, reusable library.  It provides the complete **credential signing** side of the
-ewQwe identity system, complementing the `credential_verifier`'s **credential verification** side.
+standalone, reusable library.  It provides the complete **credential signing and verification**
+side of the ewQwe identity system.
+
+The `credential_verifier` server uses this crate as a regular dependency for all credential
+parsing and cryptographic verification.
 
 Supported credential formats and profiles:
 
@@ -25,15 +28,18 @@ Supported credential formats and profiles:
 
 ```
 ewqwe_digital_credential
-├── CredentialIssuer          ← high-level API (ephemeral PKI + build helpers)
-│   ├── build_eu_age_sd_jwt() → SD-JWT VC  (eu.europa.ec.av.1)
-│   ├── build_eudi_sd_jwt()   → SD-JWT VC  (eu.europa.ec.eudi.pid.1)
-│   └── build_eudi_mdoc()     → mDoc DeviceResponse (ISO 18013-5)
-├── sd_jwt                    ← low-level SD-JWT VC builder functions
-├── mdoc                      ← low-level mDoc/DeviceResponse builder functions
-├── pki                       ← X.509 CA and issuer leaf cert generation
-├── error                     ← CredentialError / Result type alias
-└── util                      ← shared helpers (CBOR, SHA-256, timestamps)
+├── CredentialIssuer             ← high-level API (ephemeral PKI + build helpers)
+│   ├── build_eu_age_sd_jwt()  → SD-JWT VC  (eu.europa.ec.av.1)
+│   ├── build_eudi_sd_jwt()    → SD-JWT VC  (eu.europa.ec.eudi.pid.1)
+│   └── build_eudi_mdoc()      → mDoc DeviceResponse (ISO 18013-5)
+├── sd_jwt                       ← low-level SD-JWT VC builder functions
+├── sd_jwt_verification          ← SD-JWT VC decoding + x5c/KB-JWT verification
+├── mdoc                         ← low-level mDoc/DeviceResponse builder functions
+├── mdoc_decoder                 ← lightweight mDoc CBOR claim extraction (no crypto)
+├── mdoc_verification            ← full mDoc COSE + certificate chain verification
+├── pki                          ← X.509 CA and issuer leaf cert generation
+├── error                        ← CredentialError / Result type alias
+└── util                         ← shared helpers (CBOR, SHA-256, timestamps)
 ```
 
 ---
@@ -197,6 +203,115 @@ pub fn build_openid4vp_session_transcript_direct_post(
 
 This function mirrors the transcript construction in the production `credential_verifier`.
 Use it if you need to verify a `DeviceSignature` outside of the normal verification flow.
+
+---
+
+## Verification API
+
+The crate exposes a full verification stack consumed by `credential_verifier` at runtime.
+
+### `mdoc_decoder` — Claim extraction (no crypto)
+
+Quickly extracts the claim map from a base64-encoded `DeviceResponse` CBOR without
+performing any cryptographic verification.  Useful at parse time before the full
+verification context (transaction nonce, CA list) is available.
+
+```rust
+use ewqwe_digital_credential::{decode_mdoc_presentation, DecodedMdoc};
+
+let decoded: DecodedMdoc = decode_mdoc_presentation(base64url_device_response)?;
+println!("docType: {}", decoded.doc_type);
+for (ns, claims) in &decoded.namespaces {
+    println!("  {ns}: {:?}", claims.keys().collect::<Vec<_>>());
+}
+```
+
+### `sd_jwt_verification` — SD-JWT VC verification
+
+```rust
+use ewqwe_digital_credential::{
+    decode_sd_jwt_presentation, verify_sd_jwt_signatures,
+    DecodedSdJwt, SigVerificationResult,
+};
+
+// 1. Decode claims (no crypto)
+let decoded: DecodedSdJwt = decode_sd_jwt_presentation(compact_sd_jwt)?;
+println!("vct: {}, issuer: {}", decoded.vct, decoded.issuer);
+println!("claims: {:?}", decoded.claims);
+println!("nonce from KB-JWT: {:?}", decoded.nonce);
+
+// 2. Verify x5c chain + KB-JWT signature
+let result: SigVerificationResult = verify_sd_jwt_signatures(compact_sd_jwt, trusted_cas);
+if result.issuer_sig_valid && result.kb_sig_valid && result.issuer_trusted {
+    println!("Presentation verified");
+} else {
+    println!("Errors: {:?}", result.errors);
+}
+```
+
+**`SigVerificationResult` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `issuer_sig_valid` | `bool` | Issuer JWT `x5c` signature verified |
+| `kb_sig_valid` | `bool` | Key Binding JWT signature verified |
+| `issuer_trusted` | `bool` | Issuer cert chains to a trusted CA |
+| `skipped` | `bool` | Verification skipped (non-SD-JWT presentation) |
+| `errors` | `Vec<String>` | Accumulated error messages |
+
+### `mdoc_verification` — Full mDoc/COSE verification
+
+Performs all ISO 18013-5 checks end-to-end:
+
+1. Base64-decode → CBOR parse → `DeviceResponse` navigation.
+2. `IssuerAuth` `COSE_Sign1` signature + `x5chain` certificate chain.
+3. MSO `docType` match and `IssuerSignedItem` digest verification.
+4. `DeviceSignature` over the reconstructed OpenID4VP `SessionTranscript`.
+5. MSO validity window check.
+
+```rust
+use ewqwe_digital_credential::{verify_mdoc_presentation, MdocVerificationResult};
+
+let result: MdocVerificationResult = verify_mdoc_presentation(
+    base64url_device_response,
+    client_id,          // from OpenID4VP request
+    nonce,              // from OpenID4VP request
+    response_uri,       // from OpenID4VP request
+    false,              // set true for direct_post.jwt / dc_api.jwt
+    None,               // JWK thumbprint (required when encrypted)
+    trusted_cas,
+)?;
+
+println!("doc_type: {}", result.doc_type);
+println!("issuer_trusted: {}", result.issuer_trusted);
+println!("claims: {}", result.claims);
+```
+
+**`MdocVerificationResult` fields:**
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `claims` | `serde_json::Value` | Disclosed claims (object per namespace, or nested) |
+| `doc_type` | `String` | `docType` from the `Document`, e.g. `eu.europa.ec.eudi.pid.1` |
+| `namespace` | `String` | Primary namespace, e.g. `eu.europa.ec.eudi.pid.1` |
+| `not_expired` | `bool` | MSO validUntil is in the future |
+| `issuer_trusted` | `bool` | Issuer cert chains to a trusted CA |
+
+### `CredentialError`
+
+All verification functions return `Result<_, CredentialError>`.  The relevant variant is:
+
+```rust
+#[error("Invalid presentation: {0}")]
+InvalidPresentation(String),
+```
+
+Call `.map_err(|e| AttError::BadRequest(e.to_string()))` to convert into the server's
+`AttError` type.
+
+---
+
+## Lower-level module docs
 
 ### `pki` — X.509 PKI helpers
 

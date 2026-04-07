@@ -11,6 +11,14 @@
 //! (CA → issuer leaf + device holder key) used in test scenarios and wallet
 //! demonstrations.
 //!
+//! ## Verification
+//!
+//! The crate also supports *verifying* incoming credential presentations:
+//!
+//! - [`sd_jwt_verification`] — SD-JWT VC decoding and `x5c` / KB-JWT verification.
+//! - [`mdoc_verification`]   — Full mDoc CBOR + COSE chain verification.
+//! - [`mdoc_decoder`]        — Lightweight mDoc claim extraction without crypto.
+//!
 //! ## Quick start — issue an EU Age SD-JWT
 //!
 //! ```rust,no_run
@@ -40,9 +48,17 @@
 pub mod error;
 pub mod issuer;
 pub mod mdoc;
+pub mod mdoc_decoder;
+pub mod mdoc_verification;
 pub mod pki;
 pub mod sd_jwt;
+pub mod sd_jwt_verification;
 pub(crate) mod util;
 
 pub use error::{CredentialError, Result};
 pub use issuer::CredentialIssuer;
+pub use mdoc_decoder::{DecodedMdoc, decode_mdoc_presentation};
+pub use mdoc_verification::{MdocVerificationResult, verify_mdoc_presentation};
+pub use sd_jwt_verification::{
+    DecodedSdJwt, SigVerificationResult, decode_sd_jwt_presentation, verify_sd_jwt_signatures,
+};

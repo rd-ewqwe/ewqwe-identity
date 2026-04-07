@@ -19,6 +19,7 @@ vendored = ["openssl/vendored"]
 base64 = { workspace = true }
 chrono = { workspace = true }
 ciborium = { workspace = true }
+coset = { workspace = true }
 jsonwebtoken = { workspace = true }
 openssl = { workspace = true }
 serde = { workspace = true }
@@ -26,3 +27,4 @@ serde_json = { workspace = true }
 sha2 = { workspace = true }
 uuid = { workspace = true }
 thiserror = { workspace = true }
+tracing = { workspace = true }

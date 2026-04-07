@@ -5,8 +5,6 @@ pub mod attestation;
 
 pub mod journal;
 
-pub mod mdoc_decoder;
-
 mod server;
 pub use server::{ServerParams, start_server};
 
