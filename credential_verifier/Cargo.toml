@@ -1,5 +1,5 @@
 [package]
-name = "attestation_provider"
+name = "credential_verifier"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
@@ -32,8 +32,11 @@ actix-tls = { workspace = true }
 actix-web = { workspace = true, features = ["macros"] }
 base64 = "0.22"
 chrono = { workspace = true }
+ciborium = { workspace = true }
+coset = { workspace = true }
 ewqwe_logging = { workspace = true }
 futures = { workspace = true }
+jsonwebtoken = { workspace = true }
 openssl = { workspace = true, features = ["vendored"], optional = true }
 reqwest = { workspace = true, features = [
     "json",
@@ -47,6 +50,7 @@ serde_json = { workspace = true }
 thiserror = { workspace = true }
 tracing = { workspace = true }
 url = { workspace = true }
+uuid = { workspace = true }
 
 [dev-dependencies]
 cookie_store = { workspace = true }

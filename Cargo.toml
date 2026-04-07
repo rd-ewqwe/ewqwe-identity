@@ -9,7 +9,7 @@ repository = ""
 description = "EwQwE Auth"
 
 [workspace]
-members = ["attestation_provider", "crates/logging"]
+members = ["credential_verifier", "crates/logging"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -23,6 +23,9 @@ actix-web = { version = "4.11", default-features = false, features = [
     "openssl"
 ] }
 alcoholic_jwt = "4091"
+ciborium = "0.2"
+coset = "0.3"
+jsonwebtoken = "9"
 assert_matches = "1.5.0"
 async-trait = "0.1"
 bb8-redis = "0.24.0"

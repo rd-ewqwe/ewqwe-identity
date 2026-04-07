@@ -1,6 +1,8 @@
 mod authenticated_user;
 pub use authenticated_user::AuthenticatedUser;
 
+pub mod attestation;
+
 mod server;
 pub use server::{AttServerParams, start_att_server};
 
