@@ -165,13 +165,27 @@ impl std::fmt::Display for ProfileId {
 }
 
 /// Client ID scheme used in authorization requests.
+///
+/// Specifies how the Wallet must interpret and validate the `client_id`.
+/// The prefix is prepended to the original client identifier with a `:`
+/// separator on the wire (e.g. `x509_san_dns:rp.example.com`).
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.9.3>
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ClientIdScheme {
-    /// X.509 Subject Alternative Name DNS (HAIP).
+    /// X.509 Subject Alternative Name DNS entry (HAIP profile). The leaf
+    /// certificate's `dNSName` SAN must match the bare `client_id` value.
     X509SanDns,
-    /// Redirect URI (Annex A).
+    /// The original `client_id` is the Redirect URI itself (Annex A profile).
+    /// No request signing required.
     RedirectUri,
+    /// X.509 Subject Alternative Name URI entry. Like `x509_san_dns` but uses
+    /// a `uniformResourceIdentifier` SAN field instead.
+    X509SanUri,
+    /// Decentralized Identifier (DID). Request must be signed with a key from
+    /// the DID Document's `verificationMethod` property.
+    Did,
 }
 
 impl std::fmt::Display for ClientIdScheme {
@@ -179,26 +193,55 @@ impl std::fmt::Display for ClientIdScheme {
         match self {
             ClientIdScheme::X509SanDns => write!(f, "x509_san_dns"),
             ClientIdScheme::RedirectUri => write!(f, "redirect_uri"),
+            ClientIdScheme::X509SanUri => write!(f, "x509_san_uri"),
+            ClientIdScheme::Did => write!(f, "did"),
         }
     }
 }
 
-/// Response mode for wallet responses.
+/// Response mode for wallet responses (OpenID4VP 1.0 §5.2, Appendix A.2).
+///
+/// | Value              | Description                                                         |
+/// |--------------------|---------------------------------------------------------------------|
+/// | `fragment`         | Default for `vp_token`; response in redirect URL fragment           |
+/// | `direct_post`      | Wallet POSTs response to `response_uri` (cross-device, Annex A)     |
+/// | `direct_post.jwt`  | Like `direct_post` but response is encrypted JWE (HAIP mandatory)   |
+/// | `dc_api`           | Response via W3C Digital Credentials API, unencrypted               |
+/// | `dc_api.jwt`       | Response via W3C DC API, encrypted JWE (§8.3)                       |
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.2>
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ResponseMode {
-    /// Plain direct_post (Annex A).
+    /// Default for `vp_token`; Authorization Response parameters encoded in
+    /// the redirect URL fragment (same-device flow, §5.6).
+    #[serde(rename = "fragment")]
+    Fragment,
+    /// Wallet sends an HTTP POST to `response_uri` (cross-device, §8.2).
+    /// Used by the Annex A profile.
     #[serde(rename = "direct_post")]
     DirectPost,
-    /// Encrypted direct_post.jwt (HAIP).
+    /// Like `direct_post` but the response is an encrypted JWT (JWE, §8.3.1).
+    /// Mandatory for the HAIP profile.
     #[serde(rename = "direct_post.jwt")]
     DirectPostJwt,
+    /// Response delivered via the W3C Digital Credentials API, unencrypted
+    /// (Appendix A.2).
+    #[serde(rename = "dc_api")]
+    DcApi,
+    /// Response delivered via the W3C Digital Credentials API, encrypted JWE
+    /// (Appendix A.2 + §8.3).
+    #[serde(rename = "dc_api.jwt")]
+    DcApiJwt,
 }
 
 impl std::fmt::Display for ResponseMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            ResponseMode::Fragment => write!(f, "fragment"),
             ResponseMode::DirectPost => write!(f, "direct_post"),
             ResponseMode::DirectPostJwt => write!(f, "direct_post.jwt"),
+            ResponseMode::DcApi => write!(f, "dc_api"),
+            ResponseMode::DcApiJwt => write!(f, "dc_api.jwt"),
         }
     }
 }
@@ -294,9 +337,21 @@ pub enum TransactionStatus {
 /// Data received from a wallet via `direct_post` or `direct_post.jwt`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct WalletDirectPostData {
+    /// JSON-encoded `Record<credentialQueryId, presentation[]>` per OpenID4VP
+    /// 1.0 §8.1. Each key is the `id` from a DCQL Credential Query; each value
+    /// is an array of base64url-encoded credential presentations.
     pub vp_token: String,
+
+    /// **Deprecated — absent in OpenID4VP 1.0 DCQL responses.**
+    ///
+    /// `presentation_submission` belongs to the DIF Presentation Exchange
+    /// protocol (`presentation_definition`) and is not returned when the
+    /// request uses `dcql_query` (§8.1). The `vp_token` JSON object structure
+    /// itself maps presentations to credential queries.
+    /// Kept here only for backward-compatibility with wallets on older drafts.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub presentation_submission: Option<String>,
+
     pub state: String,
 }
 
@@ -538,18 +593,22 @@ pub struct InitTransactionRequest {
 pub struct InitTransactionResponse {
     /// Unique transaction ID for polling status.
     pub transaction_id: String,
+
     /// Constructed client_id.
     pub client_id: String,
+
     /// Client ID scheme used.
-    pub client_id_scheme: String,
+    pub client_id_scheme: ClientIdScheme,
+
     /// URI where wallet fetches the authorization request.
     pub request_uri: String,
+
     /// Full authorization request URI for QR code / deep link.
     pub authorization_request_uri: String,
-    /// Alias for `authorization_request_uri`.
-    pub deep_link_uri: String,
+
     /// Seconds until transaction expires.
     pub expires_in: i64,
+
     /// Selected protocol profile.
     pub profile: ProfileId,
 }
@@ -560,8 +619,14 @@ pub struct TransactionStatusResult {
     pub status: TransactionStatus,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expires_in: Option<i64>,
+    /// JSON-encoded `Record<credentialQueryId, presentation[]>` (OpenID4VP 1.0 §8.1).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub vp_token: Option<String>,
+    /// **Deprecated — absent in OpenID4VP 1.0 DCQL responses.**
+    ///
+    /// Only populated for backward-compatibility with wallets still using DIF
+    /// Presentation Exchange (`presentation_definition`). Not present in any
+    /// spec-compliant DCQL response (§8.1).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub presentation_submission: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]

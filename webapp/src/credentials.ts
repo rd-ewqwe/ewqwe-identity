@@ -1,5 +1,6 @@
 import type {
   InitTransactionRequest,
+  InitTransactionResponse,
   OpenID4VPRequest,
   OpenID4VPResponse,
   PresentationSubmission,
@@ -181,7 +182,7 @@ async function requestViaOpenID4VPCrossDevice(
 
   if (request.credential_type) {
     logger.log(
-      `Credential type: ${request.credential_type}, url : ${document.URL}`,
+      `Credential type: ${request.credential_type}, callback url: ${request.public_url}`,
     );
   }
 
@@ -198,13 +199,7 @@ async function requestViaOpenID4VPCrossDevice(
     );
   }
 
-  const initData = (await initResponse.json()) as {
-    transaction_id: string;
-    authorization_request_uri: string;
-    expires_in: number;
-    profile: string;
-    client_id_scheme: string;
-  };
+  const initData: InitTransactionResponse = await initResponse.json();
 
   logger.log("Transaction initialized", {
     transactionId: initData.transaction_id,
@@ -252,9 +247,24 @@ async function requestViaOpenID4VPCrossDevice(
   }
 }
 
+/** Singleton state for the QR code modal's persistent button handlers. */
+const qrCodeModal = {
+  authorizationRequestUri: "",
+  cancelResolve: null as (() => void) | null,
+  logger: null as DebugLogger | null,
+  listenersAttached: false,
+};
+
 interface QRCodeModal {
   close: () => void;
   onCancel: Promise<void>;
+}
+
+/** Hide the QR code modal. */
+function closeQRCodeModal(): void {
+  document
+    .getElementById("openid4vp-qr-modal")
+    ?.classList.replace("flex", "hidden");
 }
 
 // Copy-icon SVG reused in the QR copy button
@@ -266,7 +276,8 @@ const COPY_ICON_SVG = `<svg class="w-4 h-4" fill="none" stroke="currentColor" vi
 /**
  * Show the QR code modal (defined as a hidden element in index.html).
  * Dynamic content (badge, wallet name, QR image) is updated on each call.
- * Buttons are cloned to clear any previous event listeners.
+ * Buttons are wired **once** via the qrCodeModal singleton; state is updated
+ * on each call so the handlers always target the current transaction.
  */
 function showQRCodeModal(
   authorizationRequestUri: string,
@@ -281,14 +292,17 @@ function showQRCodeModal(
   const overlay = document.getElementById("openid4vp-qr-modal");
   if (!overlay) {
     logger.error("#openid4vp-qr-modal not found in DOM");
-    const onCancel = new Promise<void>(() => {});
-    return { close: () => {}, onCancel };
+    return { close: closeQRCodeModal, onCancel: new Promise<void>(() => {}) };
   }
 
-  let cancelResolve!: () => void;
+  // Fresh promise per call so this transaction's cancellation is independent.
   const onCancel = new Promise<void>((resolve) => {
-    cancelResolve = resolve;
+    qrCodeModal.cancelResolve = resolve;
   });
+
+  // Update singleton state before any listener fires.
+  qrCodeModal.authorizationRequestUri = authorizationRequestUri;
+  qrCodeModal.logger = logger;
 
   // ── Update dynamic content ───────────────────────────────────────────────
   const isHaip = profile === "haip";
@@ -330,60 +344,49 @@ function showQRCodeModal(
     };
   }
 
-  overlay.classList.replace("hidden", "flex");
+  if (!qrCodeModal.listenersAttached) {
+    qrCodeModal.listenersAttached = true;
 
-  // ── Wire up buttons (clone to drop stale listeners) ──────────────────────
-  function rewire(id: string): HTMLElement | null {
-    const el = document.getElementById(id);
-    if (!el) return null;
-    const clone = el.cloneNode(true) as HTMLElement;
-    el.replaceWith(clone);
-    return clone;
+    document.getElementById("qr-cancel-btn")?.addEventListener("click", () => {
+      qrCodeModal.cancelResolve?.();
+      closeQRCodeModal();
+    });
+
+    document
+      .getElementById("qr-copy-btn")
+      ?.addEventListener("click", async () => {
+        const copyBtn = document.getElementById(
+          "qr-copy-btn",
+        ) as HTMLElement | null;
+        if (!copyBtn) return;
+        try {
+          await navigator.clipboard.writeText(
+            qrCodeModal.authorizationRequestUri,
+          );
+          copyBtn.innerHTML = `
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+            Copied!`;
+          setTimeout(() => {
+            copyBtn.innerHTML = `${COPY_ICON_SVG} Copy Link`;
+          }, 2000);
+        } catch {
+          qrCodeModal.logger?.error("Failed to copy to clipboard");
+        }
+      });
+
+    // Close on overlay (backdrop) click
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) {
+        qrCodeModal.cancelResolve?.();
+        closeQRCodeModal();
+      }
+    });
   }
 
-  // AbortController lets us remove the overlay click listener on close.
-  const abortCtrl = new AbortController();
-
-  const close = () => {
-    abortCtrl.abort();
-    overlay.classList.replace("flex", "hidden");
-  };
-
-  rewire("qr-cancel-btn")?.addEventListener("click", () => {
-    cancelResolve();
-    close();
-  });
-
-  const copyBtn = rewire("qr-copy-btn");
-  copyBtn?.addEventListener("click", async () => {
-    try {
-      await navigator.clipboard.writeText(authorizationRequestUri);
-      copyBtn.innerHTML = `
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-        </svg>
-        Copied!`;
-      setTimeout(() => {
-        copyBtn.innerHTML = `${COPY_ICON_SVG} Copy Link`;
-      }, 2000);
-    } catch {
-      logger.error("Failed to copy to clipboard");
-    }
-  });
-
-  // Close on overlay (backdrop) click
-  overlay.addEventListener(
-    "click",
-    (e) => {
-      if (e.target === overlay) {
-        cancelResolve();
-        close();
-      }
-    },
-    { signal: abortCtrl.signal },
-  );
-
-  return { close, onCancel };
+  overlay.classList.replace("hidden", "flex");
+  return { close: closeQRCodeModal, onCancel };
 }
 
 interface PollResponse {
@@ -482,7 +485,7 @@ async function requestViaOpenID4VPSameDevice(
 
   if (request.credential_type) {
     logger.log(
-      `Credential type: ${request.credential_type}, url: ${document.URL}`,
+      `Credential type: ${request.credential_type}, url: ${request.public_url}`,
     );
   }
 
@@ -497,16 +500,19 @@ async function requestViaOpenID4VPSameDevice(
     throw new Error(`Failed to initialize OpenID4VP transaction: ${errorText}`);
   }
 
-  const initData = await initResponse.json();
-  const { transaction_id, deep_link_uri } = initData;
+  const initData: InitTransactionResponse = await initResponse.json();
+  const { transaction_id, authorization_request_uri } = initData;
 
-  if (!deep_link_uri) {
+  if (!authorization_request_uri) {
     throw new Error(
-      "Backend did not return a deep_link_uri for same-device flow",
+      "Backend did not return a authorization_request_uri for same-device flow",
     );
   }
 
-  logger.log("Transaction initialized", { transaction_id, deep_link_uri });
+  logger.log("Transaction initialized", {
+    transaction_id,
+    authorization_request_uri,
+  });
 
   // Create a cancel promise that will be resolved when user clicks cancel
   let cancelResolve: () => void;
@@ -515,7 +521,12 @@ async function requestViaOpenID4VPSameDevice(
   });
 
   // Step 2: Show instructions and open the deep link
-  showSameDeviceModal(deep_link_uri, transaction_id, logger, cancelResolve!);
+  showSameDeviceModal(
+    authorization_request_uri,
+    transaction_id,
+    logger,
+    cancelResolve!,
+  );
 
   // Step 3: Poll for the wallet response
   const POLL_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
@@ -546,10 +557,21 @@ async function requestViaOpenID4VPSameDevice(
   }
 }
 
+/** Singleton state for the same-device modal's persistent button handlers. */
+const sameDeviceModal = {
+  deepLinkUri: "",
+  transactionId: "",
+  logger: null as DebugLogger | null,
+  onCancel: null as (() => void) | null,
+  listenersAttached: false,
+};
+
 /**
  * Show the same-device modal (defined as a hidden element in index.html).
- * Clones the interactive buttons to clear any previous event listeners before
- * wiring up fresh ones for this particular transaction.
+ *
+ * Button listeners are attached **once** on the first call; each subsequent
+ * call only updates the singleton that the handlers already close over,
+ * avoiding the clone-and-rewire dance.
  */
 function showSameDeviceModal(
   deepLinkUri: string,
@@ -563,44 +585,52 @@ function showSameDeviceModal(
     return;
   }
 
-  modal.classList.replace("hidden", "flex");
+  // Update singleton before the modal becomes visible so the handlers
+  // always operate on the current transaction.
+  sameDeviceModal.deepLinkUri = deepLinkUri;
+  sameDeviceModal.transactionId = transactionId;
+  sameDeviceModal.logger = logger;
+  sameDeviceModal.onCancel = onCancel;
 
-  // Replace each interactive button with a fresh clone to drop stale listeners.
-  function rewire(id: string): HTMLElement | null {
-    const el = document.getElementById(id);
-    if (!el) return null;
-    const clone = el.cloneNode(true) as HTMLElement;
-    el.replaceWith(clone);
-    return clone;
+  if (!sameDeviceModal.listenersAttached) {
+    sameDeviceModal.listenersAttached = true;
+
+    document
+      .getElementById("cancel-same-device-btn")
+      ?.addEventListener("click", () => {
+        hideSameDeviceModal();
+        sameDeviceModal.logger?.log("User cancelled same-device flow");
+        sameDeviceModal.onCancel?.();
+      });
+
+    // Open the wallet deep link without navigating the current page.
+    // For custom URI schemes (av://, openid4vp://) window.location.href triggers
+    // the app on mobile without leaving the page. For https:// authorization-
+    // request URIs, window.open opens a new tab so the RP page stays alive.
+    document
+      .getElementById("open-wallet-btn")
+      ?.addEventListener("click", () => {
+        sameDeviceModal.logger?.log("Opening wallet app via deep link", {
+          deepLinkUri: sameDeviceModal.deepLinkUri,
+          transactionId: sameDeviceModal.transactionId,
+        });
+        if (
+          sameDeviceModal.deepLinkUri.startsWith("https://") ||
+          sameDeviceModal.deepLinkUri.startsWith("http://")
+        ) {
+          globalThis.open(
+            sameDeviceModal.deepLinkUri,
+            "_blank",
+            "noopener,noreferrer",
+          );
+        } else {
+          // Custom scheme (av://, openid4vp://) — triggers wallet app on mobile.
+          globalThis.location.href = sameDeviceModal.deepLinkUri;
+        }
+      });
   }
 
-  const cancelBtn = rewire("cancel-same-device-btn");
-  cancelBtn?.addEventListener("click", () => {
-    hideSameDeviceModal();
-    logger.log("User cancelled same-device flow");
-    onCancel();
-  });
-
-  // Open the wallet deep link without navigating the current page.
-  // For custom URI schemes (av://, openid4vp://) window.location.href triggers
-  // the app on mobile without leaving the page. For https:// authorization-
-  // request URIs, window.open opens a new tab so the RP page stays alive.
-  const openBtn = rewire("open-wallet-btn");
-  openBtn?.addEventListener("click", () => {
-    logger.log("Opening wallet app via deep link", {
-      deepLinkUri,
-      transactionId,
-    });
-    if (
-      deepLinkUri.startsWith("https://") ||
-      deepLinkUri.startsWith("http://")
-    ) {
-      globalThis.open(deepLinkUri, "_blank", "noopener,noreferrer");
-    } else {
-      // Custom scheme (av://, openid4vp://) — triggers wallet app on mobile.
-      globalThis.location.href = deepLinkUri;
-    }
-  });
+  modal.classList.replace("hidden", "flex");
 }
 
 /**

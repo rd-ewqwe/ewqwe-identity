@@ -116,8 +116,23 @@ export type ClientIdScheme =
 /** Authorization request format. */
 export type RequestFormat = "jar" | "plain";
 
-/** Response mode for wallet responses. */
-export type ResponseMode = "direct_post" | "direct_post.jwt";
+/**
+ * Response mode for wallet responses (OpenID4VP 1.0 §5.2, Appendix A.2).
+ *
+ * | Value            | Description                                                       |
+ * |------------------|-------------------------------------------------------------------|
+ * | `fragment`       | Default for `vp_token`; response in redirect URL fragment (same-device) |
+ * | `direct_post`    | Wallet POSTs response to `response_uri` (cross-device)            |
+ * | `direct_post.jwt`| Like `direct_post` but response is encrypted JWE (HAIP mandatory) |
+ * | `dc_api`         | Response via W3C Digital Credentials API, unencrypted             |
+ * | `dc_api.jwt`     | Response via W3C DC API, encrypted JWE (Appendix A §8.3)          |
+ */
+export type ResponseMode =
+  | "fragment"
+  | "direct_post"
+  | "direct_post.jwt"
+  | "dc_api"
+  | "dc_api.jwt";
 
 /**
  * Protocol profile configuration.
@@ -167,20 +182,105 @@ export interface CredentialTypeConfig {
 // ============================================================================
 
 /**
- * OpenID4VP Authorization Request parameters.
+ * OpenID4VP 1.0 Authorization Request parameters.
+ *
  * Built by the frontend and sent to the backend for transaction creation.
+ * The backend injects server-side fields (`response_uri`, `request_uri`, JAR
+ * signing, JWKS for encrypted responses) before forwarding to the wallet.
+ *
+ * **Key spec constraints (OpenID4VP 1.0 §5)**:
+ * - `dcql_query` MUST be present (either directly or via `scope`); it is the
+ *   only credential-query mechanism in OpenID4VP 1.0.  The legacy DIF
+ *   Presentation Exchange parameter `presentation_definition` **does not exist**
+ *   in OpenID4VP 1.0 and MUST NOT be sent.
+ * - `response_mode` is REQUIRED per §5.2; defaults to `fragment` when omitted.
+ * - When `response_mode` is `direct_post`/`direct_post.jwt`, use `response_uri`
+ *   (not `redirect_uri`) — the two MUST NOT coexist (§8.2).
+ * - For the W3C Digital Credentials API flow use `dc_api` / `dc_api.jwt`
+ *   (Appendix A.2); `state` is ignored by DC API.
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5
  */
 export interface OpenID4VPRequest {
+  /** REQUIRED. Client Identifier of the Verifier (§5.2). */
   client_id: string;
+  /**
+   * Client Identifier Prefix — tells the wallet how to validate the client_id
+   * (§5.9). The prefix is prepended to `client_id` with a `:` separator on
+   * the wire (e.g. `x509_san_dns:rp.example.com`).
+   */
   client_id_scheme?: ClientIdScheme;
+  /** REQUIRED. Must be `"vp_token"` for VP-only requests (§5.6). */
   response_type: "vp_token";
-  response_mode?: ResponseMode | "fragment";
+  /**
+   * REQUIRED. How the wallet returns the Authorization Response (§5.2).
+   * Defaults to `"fragment"` when absent.
+   */
+  response_mode?: ResponseMode;
+  /** REQUIRED. Fresh, random nonce binding the presentation to this request (§5.2). */
   nonce: string;
+  /**
+   * REQUIRED when no Holder Binding proof is requested (§5.3), recommended
+   * otherwise for session fixation protection (§14.2).
+   */
   state?: string;
+  /**
+   * Redirect URI for `fragment` / `query` response modes.
+   * MUST NOT be present when `response_mode` is `direct_post` or
+   * `direct_post.jwt` — use `response_uri` instead (§8.2).
+   */
   redirect_uri?: string;
-  presentation_definition?: PresentationDefinition;
+  /**
+   * DCQL credential query (§6, §5.1).
+   *
+   * This is the **only** credential-query parameter in OpenID4VP 1.0.
+   * Either `dcql_query` or a `scope` referencing a DCQL query MUST be
+   * present, but not both.
+   */
   dcql_query?: DCQLQuery;
+  /** Verifier metadata forwarded to the wallet (§5.1). */
   client_metadata?: SimpleClientMetadata;
+}
+
+/**
+ * OpenID4VP 1.0 Authorization Response (§8.1).
+ *
+ * Returned to the Verifier by the wallet (same-device: redirect fragment;
+ * cross-device: HTTP POST to `response_uri`).
+ *
+ * **`vp_token` structure with DCQL (§8.1)**:
+ * The value is a JSON-encoded object where each key is the `id` of a
+ * Credential Query from the DCQL request and the value is an array of
+ * base64url-encoded credential presentations:
+ * ```json
+ * { "my_mdl": ["<base64url-DeviceResponse>"] }
+ * ```
+ * It is received from the backend as a raw JSON string.
+ *
+ * **`presentation_submission`**: This field belongs to the DIF Presentation
+ * Exchange protocol (`presentation_definition`).  It does **not** appear in
+ * OpenID4VP 1.0 DCQL responses — the `vp_token` object structure itself maps
+ * presentations to credential queries (§8.1).  Kept here as an optional
+ * field only for backward-compatibility with wallets still on older drafts.
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.1
+ */
+export interface OpenID4VPResponse {
+  /**
+   * JSON-encoded `Record<credentialQueryId, presentation[]>` (§8.1).
+   * Received as a string from the backend; parse with `JSON.parse()` to
+   * obtain the credential ID → presentations mapping.
+   */
+  vp_token: string;
+  /**
+   * @deprecated Not part of OpenID4VP 1.0 DCQL responses.
+   * Only present for backward-compatibility with wallets using the legacy
+   * DIF Presentation Exchange format.  Will be absent in all spec-compliant
+   * responses.
+   */
+  presentation_submission?: PresentationSubmission | null;
+  /** Echoes the `state` from the Authorization Request (§8.2). */
+  state?: string;
 }
 
 // ============================================================================
@@ -336,11 +436,27 @@ export interface InitTransactionRequest {
   credential_type?: CredentialType;
 }
 
-/** OpenID4VP Authorization Response containing the VP token. */
-export interface OpenID4VPResponse {
-  vp_token: string;
-  presentation_submission?: PresentationSubmission | null;
-  state?: string;
+export interface InitTransactionResponse {
+  /** Unique transaction ID for polling status. */
+  transaction_id: string;
+
+  /** Constructed client_id. */
+  client_id: string;
+
+  /** Client ID scheme used. */
+  client_id_scheme: ClientIdScheme;
+
+  /** URI where wallet fetches the authorization request. */
+  request_uri: string;
+
+  /** Full authorization request URI for QR code / deep link. */
+  authorization_request_uri: string;
+
+  /** Seconds until transaction expires. */
+  expires_in: number;
+
+  /** Selected protocol profile. */
+  profile: ProfileId;
 }
 
 // ============================================================================

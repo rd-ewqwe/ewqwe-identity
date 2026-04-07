@@ -226,10 +226,9 @@ impl OpenID4VPService {
         Ok(InitTransactionResponse {
             transaction_id,
             client_id,
-            client_id_scheme: client_id_scheme.to_string(),
+            client_id_scheme,
             request_uri,
-            authorization_request_uri: authorization_request_uri.clone(),
-            deep_link_uri: authorization_request_uri,
+            authorization_request_uri,
             expires_in: self.ttl_ms / 1000,
             profile,
         })
@@ -552,7 +551,7 @@ mod tests {
 
         assert!(!response.transaction_id.is_empty());
         assert!(response.client_id.starts_with("redirect_uri:"));
-        assert_eq!(response.client_id_scheme, "redirect_uri");
+        assert_eq!(response.client_id_scheme, ClientIdScheme::RedirectUri);
         assert_eq!(response.profile, ProfileId::AnnexA);
         assert!(
             response
@@ -582,7 +581,7 @@ mod tests {
         let response = service.init_transaction(request).unwrap();
 
         assert!(response.client_id.starts_with("x509_san_dns:"));
-        assert_eq!(response.client_id_scheme, "x509_san_dns");
+        assert_eq!(response.client_id_scheme, ClientIdScheme::X509SanDns);
         assert_eq!(response.profile, ProfileId::Haip);
         assert!(
             response
