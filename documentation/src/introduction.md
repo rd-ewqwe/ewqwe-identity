@@ -1,11 +1,11 @@
 
-**EwQwE** (pronounced */juːˈkwiː/*  *you-kwee*) **Digital Identity** is a comprehensive software suite for implementing Digital Identity solutions, with specific focus on [European Digital Identity (EUDI)](https://digital-strategy.ec.europa.eu/en/policies/eudi-regulation) standards and protocols.
+**ewQwe** (pronounced */juːˈkwiː/*  *you-kwee*) **Digital Identity** is a comprehensive software suite for implementing Digital Identity solutions, with specific focus on [European Digital Identity (EUDI)](https://digital-strategy.ec.europa.eu/en/policies/eudi-regulation) standards and protocols.
 
 ## Primary Use Case: EU Age Verification
 
-The **EwQwE Credential Verifier Server** is a production-ready backend service designed specifically for websites and applications (Relying Parties) that need to perform [EU-compliant Age Verification](https://ageverification.dev/av-doc-technical-specification/docs/architecture-and-technical-specifications/#23-user-journey) following the [EU Age Verification Profile (Annex A)](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile).
+The **ewQwe Credential Verifier Server** is a production-ready backend service designed specifically for websites and applications (Relying Parties) that need to perform [EU-compliant Age Verification](https://ageverification.dev/av-doc-technical-specification/docs/architecture-and-technical-specifications/#23-user-journey) following the [EU Age Verification Profile (Annex A)](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile).
 
-**Why Use EwQwE Credential Verifier?**
+**Why Use ewQwe Credential Verifier?**
 
 - ✅ **Standards Compliant** - Implements W3C Digital Credentials API, OpenID4VP, and ISO/IEC 18013-5 (mDoc)
 - ✅ **Production Ready** - Built with Rust for security, performance, and reliability
@@ -20,7 +20,7 @@ While designed for EU Age Verification, the credential verifier supports **any c
 
 This documentation serves three main purposes:
 
-### 1. EwQwE Credential Verifier Installation and Configuration
+### 1. ewQwe Credential Verifier Installation and Configuration
 
 Comprehensive guides for deploying the credential verifier server in development and production environments:
 
@@ -31,7 +31,7 @@ Comprehensive guides for deploying the credential verifier server in development
 - API reference and verification workflow
 - Security considerations and production deployment checklist
 
-See the [EwQwE Credential Verification Server](./credential_verifier_server.md) chapter for complete details.
+See the [ewQwe Credential Verification Server](./credential_verifier_server.md) chapter for complete details.
 
 ### 2. Demo Wallet and Demo Web App for Integration Testing
 
@@ -117,4 +117,4 @@ This documentation uses terminology from European Digital Identity and credentia
 
 ## License and Usage
 
-The EwQwE Credential Verifier is provided under a Business Source License (BSL 1.1) with free testing and experimentation. The other components (Demo Wallet and Demo Webapp) are open source software under an MIT license. See individual component repositories for specific license details and usage terms.
+The ewQwe Credential Verifier is provided under a Business Source License (BSL 1.1) with free testing and experimentation. The other components (Demo Wallet and Demo Webapp) are open source software under an MIT license. See individual component repositories for specific license details and usage terms.

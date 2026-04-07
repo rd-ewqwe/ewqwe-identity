@@ -169,7 +169,7 @@ export class OpenID4VPService {
 
     // Build client metadata
     const clientMetadata: ClientMetadata = request.client_metadata || {
-      client_name: "EwQwE Age Verification Demo",
+      client_name: "ewQwe Age Verification Demo",
       logo_uri: `${this.config.publicUrl}/logo.png`,
       vp_formats: {
         mso_mdoc: {
@@ -251,7 +251,7 @@ export class OpenID4VPService {
     const clientMetadata: Record<string, any> = {
       client_name:
         transaction.clientMetadata?.client_name ||
-        "EwQwE Age Verification Demo",
+        "ewQwe Age Verification Demo",
       logo_uri:
         transaction.clientMetadata?.logo_uri ||
         `${this.config.publicUrl}/logo.png`,
@@ -446,7 +446,7 @@ export class OpenID4VPService {
 
     // Annex A: all parameters inline
     const clientMetadataForUrl = {
-      client_name: "EwQwE Age Verification Demo",
+      client_name: "ewQwe Age Verification Demo",
       logo_uri: `${this.config.publicUrl}/logo.png`,
       vp_formats_supported: {
         mso_mdoc: {

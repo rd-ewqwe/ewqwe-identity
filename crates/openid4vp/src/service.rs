@@ -276,7 +276,7 @@ impl OpenID4VPService {
                 .client_metadata
                 .as_ref()
                 .and_then(|m| m.client_name.as_deref())
-                .unwrap_or("EwQwE Age Verification Demo"),
+                .unwrap_or("ewQwe Age Verification Demo"),
             "logo_uri": transaction
                 .client_metadata
                 .as_ref()
@@ -477,7 +477,7 @@ impl OpenID4VPService {
         } else {
             // Annex A: all parameters inline
             let client_metadata = serde_json::json!({
-                "client_name": "EwQwE Age Verification Demo",
+                "client_name": "ewQwe Age Verification Demo",
                 "logo_uri": format!("{public_url}/logo.png"),
                 "vp_formats_supported": {
                     "mso_mdoc": {

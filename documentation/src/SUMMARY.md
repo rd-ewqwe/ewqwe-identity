@@ -3,7 +3,7 @@
 [Introduction](introduction.md)
 
 - [User Journey - Sequence Diagram](./user-journey.md)
-- [The EwQwE Credential Verifier](./credential_verifier_server.md)
+- [The ewQwe Credential Verifier](./credential_verifier_server.md)
 - [The Demo Architecture](./demo_architecture.md)
 - [Age Verification App on Android](./av_wallet_android_studio.md)
 - [EUDI Wallet on Android](./eudi_wallet_android_studio.md)

@@ -1,4 +1,4 @@
-# EwQwE Identity Documentation
+# ewQwe Identity Documentation
 
 This documentation is maintained using [mdBook](https://rust-lang.github.io/mdBook/index.html).
 

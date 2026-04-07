@@ -7,7 +7,7 @@ Browser-compatible TypeScript library with zero server-side dependencies. Implem
 This library is designed to:
 
 - **Implement the UI part of Relying Party webapps** - Handle credential requests, user interactions, and presentation flows in the browser
-- **Work in conjunction with the [EwQwE Credential Verifier](../../credential_verifier/)** - Frontend builds requests and sends VP Tokens to the backend verifier for cryptographic validation
+- **Work in conjunction with the [ewQwe Credential Verifier](../../credential_verifier/)** - Frontend builds requests and sends VP Tokens to the backend verifier for cryptographic validation
 
 > **Technical Note**: While we call it the "Credential Verifier," the service technically verifies **Verifiable Presentations** (VP Tokens) containing credentials. We use "Credential Verifier" for clarity—non-expert users immediately understand verifying credentials, whereas "Presentation Verifier" requires explaining the technical distinction.
 
@@ -103,7 +103,7 @@ export default defineConfig({
 
 ## Architecture
 
-This library is the **frontend component** of the EwQwE Digital Identity system. It works in conjunction with:
+This library is the **frontend component** of the ewQwe Digital Identity system. It works in conjunction with:
 
 1. **[@ewqwe/digital-identity-backend](../ewqwe-digital-identity-backend/)** - Server-side library that:
    - Handles OpenID4VP transaction management
@@ -111,7 +111,7 @@ This library is the **frontend component** of the EwQwE Digital Identity system.
    - Manages session state and wallet responses
    - Integrates with the credential verifier
 
-2. **[EwQwE Credential Verifier](../../credential_verifier/)** - Rust service that:
+2. **[ewQwe Credential Verifier](../../credential_verifier/)** - Rust service that:
    - Validates cryptographic signatures on VP Tokens
    - Verifies issuer certificates and trust chains
    - Returns signed attestations confirming verification
@@ -537,7 +537,7 @@ See [ISO/IEC 18013-5:2021](https://www.iso.org/standard/69084.html) for complete
 
 ## Contributing
 
-This library is part of the **EwQwE Digital Identity** system.
+This library is part of the **ewQwe Digital Identity** system.
 
 See the [main project README](../../README.md) for architecture and contribution guidelines.
 

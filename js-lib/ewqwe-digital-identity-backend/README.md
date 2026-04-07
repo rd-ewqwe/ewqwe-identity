@@ -12,7 +12,7 @@ This library is **transport-agnostic** — it accepts and returns plain data obj
 - ✅ **JAR Signing**: Signed JWT Authorization Requests (RFC 9101) with X.509 certificate chains
 - ✅ **JWE Decryption**: ECDH-ES+A256KW decryption for HAIP `direct_post.jwt` responses
 - ✅ **Transaction Management**: In-memory store with automatic cleanup
-- ✅ **Credential Verification Delegation**: Proxies VP Token validation to EwQwE Credential Verifier*
+- ✅ **Credential Verification Delegation**: Proxies VP Token validation to ewQwe Credential Verifier*
 - ✅ **DCQL Support**: Digital Credentials Query Language for flexible credential requests
 
 > **\*Technical Note**: The "Credential Verifier" technically verifies **Verifiable Presentations** (VP Tokens). We use "Credential Verifier" terminology for clarity, as the business purpose is verifying credential authenticity—a term non-expert users readily understand.
@@ -64,7 +64,7 @@ import { OpenID4VPService } from "@ewqwe/digital-identity-backend";
 
 const service = await OpenID4VPService.create({
   publicUrl: "https://rp.example.com",          // Your RP's public URL
-  credentialVerifierUrl: "https://127.0.0.1:9443", // EwQwE Credential Verifier
+  credentialVerifierUrl: "https://127.0.0.1:9443", // ewQwe Credential Verifier
   x509CertPath: "./certs/fullchain.pem",        // X.509 cert chain for JAR
   x509KeyPath: "./certs/privkey.pem",           // Private key for JAR signing
   caCertPath: "./certs/ca.pem",                 // CA cert for mTLS (optional)
@@ -326,7 +326,7 @@ flowchart TD
     
     Backend --> |4. Poll Status| Status["getTransactionStatus()<br/>• Check transaction state<br/>• Return verification result"]
     
-    Backend --> |5. Delegate Verification| Verifier[EwQwE Credential Verifier<br/>Rust/actix-web]
+    Backend --> |5. Delegate Verification| Verifier[ewQwe Credential Verifier<br/>Rust/actix-web]
     
     Verifier --> |Cryptographic Operations| Crypto["• VP Token validation (mDoc, SD-JWT)<br/>• ISO 18013-5 parsing<br/>• X.509 certificate validation<br/>• Signature verification (ECDSA, RSA)<br/>• Return signed attestation"]
     
@@ -390,7 +390,7 @@ flowchart TD
 
 ## Real-World Example
 
-Complete HTTP server implementation from the EwQwE webapp:
+Complete HTTP server implementation from the ewQwe webapp:
 
 ```typescript
 import {
@@ -613,8 +613,8 @@ MIT
 ## Related Projects
 
 - **@ewqwe/digital-identity** — Frontend library for credential requests (browser-side)
-- **EwQwE Credential Verifier** — Rust service for cryptographic VP Token validation
-- **EwQwE Webapp** — Reference implementation of a Relying Party
+- **ewQwe Credential Verifier** — Rust service for cryptographic VP Token validation
+- **ewQwe Webapp** — Reference implementation of a Relying Party
 
 ---
 

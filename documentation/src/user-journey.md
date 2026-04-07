@@ -7,7 +7,7 @@ Because real-world interoperability today is primarily based on **OpenID4VP** (w
 - **EU Age Verification Profile (Annex A)** using the **Age Verification App (AVI)** — simpler integration (`redirect_uri`, no signed JAR, `direct_post`).
 - **HAIP** using the **EUDI Wallet** — higher assurance integration (certificate-based `x509_*` client IDs, **signed JAR**, `direct_post.jwt`).
 
-Both paths ultimately converge on the same backend pattern: the RP forwards the received VP Token to the **EwQwE Credential Verifier**, which validates the proof and returns a **signed attestation** the RP can use for access control and session establishment.
+Both paths ultimately converge on the same backend pattern: the RP forwards the received VP Token to the **ewQwe Credential Verifier**, which validates the proof and returns a **signed attestation** the RP can use for access control and session establishment.
 
 ## W3C Digital Credentials API vs OpenID4VP
 
@@ -30,7 +30,7 @@ The European Digital Identity ecosystem defines **two separate profiles** for cr
 - The **High Assurance Interoperability Profile (HAIP)**, implemented by the **EUDI Wallet**, targets high-value credentials like Personal Identity Documents (PID) and mobile driving licenses (mDL), and requires a more complex OpenID4VP flow with certificate-based client IDs, signed JARs, and JWT-wrapped responses.
 
 | Aspect | Age Verification App (Annex A) | EUDI Wallet (HAIP) |
-|--------|-------------------------------|-------------------|
+| -------- | --------------------------------- | ------------------- |
 | **Profile** | EU Age Verification Profile | High Assurance Interoperability Profile |
 | **Use Case** | Age verification (websites, services) | High-value credentials (PID, mDL) |
 | **LoA** | Substantial | High |
@@ -47,7 +47,7 @@ The European Digital Identity ecosystem defines **two separate profiles** for cr
 The Annex A profile was designed to be simpler than HAIP because:
 
 | Feature | Annex A Rationale | HAIP Approach |
-|---------|-------------------|---------------|
+| --------- | ------------------- | --------------- |
 | **No JAR signing** | Reduces implementation complexity | Required for RP authentication |
 | **No trust list** | Trust lists for age verification don't exist yet | Relies on pre-established CA trust |
 | **Simple client_id** | `redirect_uri:` prefix + callback URL | Certificate-based identity |
@@ -62,7 +62,7 @@ All credential verification flows involve these main components:
 
 - **Relying Party (RP) Web App**: A web application requesting credential verification from users
 - **Wallet (AVI)**: The user's digital wallet storing credentials — either the Age Verification App (Annex A) or EUDI Wallet (HAIP)
-- **EwQwE Credential Verifier**: A trusted backend service that verifies credentials and issues signed attestations
+- **ewQwe Credential Verifier**: A trusted backend service that verifies credentials and issues signed attestations
 
 ## Flow 1: Age Verification App (Annex A Profile)
 
@@ -76,7 +76,7 @@ sequenceDiagram
     participant Browser as RP Webapp UI<br/>(Browser)
     participant AVI as Age Verification<br/>App (Wallet)
     participant Backend as RP Webapp<br/>Backend
-    participant Verifier as EwQwE<br/>Credential Verifier
+    participant Verifier as ewQwe<br/>Credential Verifier
 
     User->>Browser: 1. Click "Verify Age"
     
@@ -137,7 +137,7 @@ sequenceDiagram
     participant Browser as RP Webapp UI<br/>(Browser)
     participant EUDI as EUDI Wallet<br/>(HAIP)
     participant Backend as RP Webapp<br/>Backend
-    participant Verifier as EwQwE<br/>Credential Verifier
+    participant Verifier as ewQwe<br/>Credential Verifier
 
     User->>Browser: 1. Click "Verify Credentials"
     
@@ -209,7 +209,7 @@ When implementing a Relying Party, choose your approach based on which wallets y
 
 ## Verification Flow (Common to All)
 
-Regardless of which wallet and profile is used, the verification flow through the EwQwE Credential Verifier is the same:
+Regardless of which wallet and profile is used, the verification flow through the ewQwe Credential Verifier is the same:
 
 1. **RP Backend receives VP Token** (either plain or JWT-wrapped)
 2. **RP calls Credential Verifier** via HTTPS (optionally with mTLS)
@@ -221,7 +221,7 @@ Regardless of which wallet and profile is used, the verification flow through th
 4. **Verifier returns signed attestation** confirming successful verification
 5. **RP uses attestation** for session establishment or access control
 
-See [The EwQwE Credential Verifier](./credential_verifier_server.md) for detailed API documentation.
+See [The ewQwe Credential Verifier](./credential_verifier_server.md) for detailed API documentation.
 
 ## References
 

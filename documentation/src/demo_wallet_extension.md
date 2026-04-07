@@ -59,7 +59,7 @@ According to the [eIDAS 2.0 Regulation (EU) 2024/1183](https://eur-lex.europa.eu
 
  1. Exercise the full OpenID4VP credential presentation flow.
  2. Test DCQL query matching and credential selection.
- 3. Validate the **EwQwE Credential Verifier** backend attestation signing and verification.
+ 3. Validate the **ewQwe Credential Verifier** backend attestation signing and verification.
  4. Demonstrate browser extension-based wallet architecture (for educational purposes).
 
  **For production use**, you must integrate with an **EU-certified EUDI Wallet** that meets eIDAS 2.0 requirements. See the [EU Digital Identity Wallet Architecture and Reference Framework (ARF)](https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework) for certification requirements.
@@ -82,7 +82,7 @@ The Demo Wallet extension will be available in the **Google Chrome Web Store** f
 
 1. Open Google Chrome
 2. Navigate to the Chrome Web Store
-3. Search for "EwQwE Demo Wallet" or follow the direct link (to be provided)
+3. Search for "ewQwe Demo Wallet" or follow the direct link (to be provided)
 4. Click **Add to Chrome**
 5. Confirm by clicking **Add extension**
 6. The wallet icon should appear in your browser toolbar
@@ -372,7 +372,7 @@ The only credential-related API is `chrome.identity`, which handles OAuth2 flows
 ### Browser Support Matrix (February 2026)
 
 | Browser | Digital Credentials API | Extension as Provider | Native Provider Support |
-|---------|------------------------|----------------------|------------------------|
+| ------- | ----------------------- | --------------------- | ----------------------- |
 | Chrome 131+ | 🟡 Experimental (Origin Trial) | ❌ Not possible | 🟢 Android/ChromeOS only |
 | Firefox | ❌ Not implemented | ❌ Not possible | ❌ No support |
 | Safari | ❌ Not implemented | ❌ Not possible | ❌ No support |

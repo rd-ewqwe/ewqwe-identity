@@ -1,6 +1,6 @@
 # Digital Credentials: Browser Storage and Querying
 
-This document explains how digital credentials are stored and queried using the W3C Digital Credentials API, and how this applies to the EwQwE Identity project.
+This document explains how digital credentials are stored and queried using the W3C Digital Credentials API, and how this applies to the ewQwe Identity project.
 
 **Related Documentation**:
 
@@ -18,7 +18,7 @@ The W3C Digital Credentials API **does not store credentials in the browser**. I
 2. **User Agents (Browsers)** - Mediating the request and presenting a credential chooser
 3. **Holders (Wallets)** - Applications that store and manage digital credentials
 
-```
+```text
 ┌─────────────────┐     navigator.credentials.get()     ┌─────────────────┐
 │   Relying       │ ──────────────────────────────────> │     Browser     │
 │   Party (RP)    │                                     │   (User Agent)  │
@@ -103,7 +103,7 @@ const credential = await navigator.credentials.create({
 The W3C Digital Credentials API supports multiple presentation protocols. The protocol is specified in the `protocol` field of the `DigitalCredentialRequest`:
 
 | Protocol | Identifier | Description |
-|:---------|:-----------|:------------|
+| -------- | ---------- | ----------- |
 | OpenID4VP Unsigned | `openid4vp-v1-unsigned` | OpenID4VP 1.0 without signed requests |
 | OpenID4VP Signed | `openid4vp-v1-signed` | OpenID4VP 1.0 with signed requests |
 | OpenID4VP Multi-signed | `openid4vp-v1-multisigned` | OpenID4VP 1.0 with multiple signers |
@@ -508,7 +508,7 @@ export async function handlePresentationRequest(
 For demo purposes, credentials are stored in `localStorage`. This is **NOT secure** for production:
 
 | Storage | Security | Use Case |
-|:--------|:---------|:---------|
+| ------- | -------- | -------- |
 | `localStorage` | ❌ Accessible to JS | Demo/Testing only |
 | `sessionStorage` | ❌ Accessible to JS | Demo/Testing only |
 | `IndexedDB` | ❌ Accessible to JS | Demo/Testing only |

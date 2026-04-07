@@ -19,14 +19,14 @@ Open two terminal windows:
 **Terminal 1 - Web App API (port 8000):**
 
 ```bash
-cd web App
+cd webapp
 deno task api
 ```
 
 **Terminal 2 - Web App UI (port 5174):**
 
 ```bash
-cd web App
+cd webapp
 deno task vite
 ```
 
@@ -49,6 +49,14 @@ Then run the verifier with:
 ```bash
 cd credential_verifier
 cargo run --features openssl
+```
+
+### Editing and serving the documentation
+
+The documentation is located in the `documentation` directory, written in Markdown, and served with `mdbook`:
+
+```bash
+mdbook serve --open
 ```
 
 ## Architecture

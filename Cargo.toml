@@ -6,7 +6,7 @@ authors = ["Bruno Grieder <bruno.grieder@eqwwe.com>"]
 license = "BUSL-1.1" # "Business Source License 1.1" # "Business Source License 1.1"
 license-file = "LICENSE"
 repository = ""
-description = "EwQwE Identity"
+description = "ewQwe Identity"
 
 [workspace]
 members = ["credential_verifier", "crates/logging", "crates/openid4vp"]

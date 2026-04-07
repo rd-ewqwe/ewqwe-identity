@@ -51,7 +51,7 @@ flowchart TB
     APIServer --> TxStore
     Protocol -->|POST /api/verify| APIServer
     APIServer --> TLSClient
-    TLSClient -->|HTTPS| CredVerifier[EwQwE Credential Verifier]
+    TLSClient -->|HTTPS| CredVerifier[ewQwe Credential Verifier]
     
     style Frontend fill:#7c3aed
     style Backend fill:#6d28d9
@@ -63,7 +63,7 @@ flowchart TB
 The webapp supports five protocol modes:
 
 | Protocol | Description | Use Case |
-|----------|-------------|----------|
+| -------- | ----------- | -------- |
 | **W3C DC + fallback** | Tries W3C Digital Credentials API first, falls back to OpenID4VP cross-device | Default - best compatibility |
 | **W3C DC only** | Uses only the native browser API with wallet extension | Desktop with browser extension |
 | **OpenID4VP (Cross-Device)** | Cross-device flow with QR code scanning | Mobile wallets via QR code (EUDI Wallet, AV Apps) |
@@ -79,7 +79,7 @@ The webapp automatically selects the appropriate OpenID4VP profile based on the 
 Used for **Mobile Driver's License (mDL)** and **National ID (PID)**.
 
 | Parameter | Value | Description |
-|-----------|-------|-------------|
+| --------- | ----- | ----------- |
 | Client ID Scheme | `x509_san_dns` | X.509 certificate with SAN DNS entry |
 | Request Format | Signed JAR | JWT Authorization Request with `x5c` header |
 | Response Mode | `direct_post.jwt` | Encrypted/signed response |
@@ -93,7 +93,7 @@ Used for **Mobile Driver's License (mDL)** and **National ID (PID)**.
 Used for **Proof of Age** attestations.
 
 | Parameter | Value | Description |
-|-----------|-------|-------------|
+| --------- | ----- | ----------- |
 | Client ID Scheme | `redirect_uri` | Redirect URI as client identifier |
 | Request Format | Plain JSON | No JAR signing (redirect_uri cannot use signed requests) |
 | Response Mode | `direct_post` | Plain VP token response |
@@ -109,7 +109,7 @@ Used for **Proof of Age** attestations.
 The profile is determined automatically based on the credential type:
 
 | Credential Type | Profile | Target Wallet |
-|----------------|---------|---------------|
+| --------------- | ------- | ------------- |
 | Mobile Driver's License (mDL) | HAIP | EUDI Wallet |
 | National ID (PID) | HAIP | EUDI Wallet |
 | Proof of Age | Annex A | Age Verification App |
@@ -313,19 +313,6 @@ cd webapp
 
 The webapp requires two processes: the frontend (Vite dev server) and the backend API server.
 
-**Option A: Start Both Processes Together** (Recommended)
-
-```bash
-# From the webapp/ directory
-deno task dev
-```
-
-This command starts both the Vite frontend server (port 5174) and the Deno API backend server (port 5175) concurrently.
-
-**Option B: Start Processes Separately**
-
-If you prefer to run them in separate terminal windows for debugging:
-
 ```bash
 # Terminal 1: Start the backend API server
 cd webapp
@@ -377,7 +364,7 @@ This is particularly useful for:
 ### OpenID4VP Endpoints (Cross-Device Flow)
 
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+| -------- | ------ | ----------- |
 | `/api/openid4vp/init` | POST | Initialize a new transaction, returns QR code data and profile info |
 | `/api/openid4vp/request/{id}` | GET | Wallet fetches authorization request (signed JAR for HAIP, plain JSON for Annex A) |
 | `/api/openid4vp/direct_post` | POST | Wallet posts VP token (response_uri) |
@@ -413,14 +400,14 @@ interface InitTransactionResponse {
 ### Verification Endpoints
 
 | Endpoint | Method | Description |
-|----------|--------|-------------|
+| -------- | ------ | ----------- |
 | `/api/verify` | POST | Verify a VP token (proxies to Credential Verifier) |
 | `/api/health` | GET | Health check |
 
 ## Environment Variables
 
 | Variable | Default | Description |
-|----------|---------|-------------|
+| -------- | ------- | ----------- |
 | `PUBLIC_URL` | `http://localhost:5175` | Public URL for OpenID4VP callbacks (must be accessible from mobile) |
 | `CREDENTIAL_VERIFIER_URL` | `https://127.0.0.1:9443` | URL of the Credential Verifier server |
 | `CA_CERT_PATH` | `../credential_verifier/.../ewqwe.chain.pem` | CA certificate for TLS to Credential Verifier |

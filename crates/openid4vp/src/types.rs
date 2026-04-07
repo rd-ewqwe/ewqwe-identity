@@ -330,7 +330,7 @@ pub struct ClientMetadata {
 impl Default for ClientMetadata {
     fn default() -> Self {
         Self {
-            client_name: Some("EwQwE Age Verification Demo".to_string()),
+            client_name: Some("ewQwe Age Verification Demo".to_string()),
             logo_uri: None,
             vp_formats: Some(serde_json::json!({
                 "mso_mdoc": {

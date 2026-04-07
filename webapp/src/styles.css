@@ -2,6 +2,32 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --ewqwe-bg: #181f38;
+  --ewqwe-indigo: #7358cf;
+  --ewqwe-indigo-soft: rgba(115, 88, 207, 0.2);
+}
+
+.brand-page {
+  background: radial-gradient(circle at top, rgba(115, 88, 207, 0.26), transparent 48%),
+              linear-gradient(135deg, var(--ewqwe-bg), #1f2745 52%, #181f38);
+}
+
+.brand-header-logo {
+  width: min(420px, 82vw);
+  height: auto;
+  border-radius: 14px;
+  box-shadow: 0 0 0 1px var(--ewqwe-indigo-soft), 0 8px 32px rgba(0, 0, 0, 0.35);
+}
+
+.brand-title {
+  color: #f3f0ff;
+}
+
+.brand-subtitle {
+  color: #b5a6eb;
+}
+
 /* Custom animations */
 @keyframes fadeIn {
   from {
@@ -16,10 +42,10 @@
 
 @keyframes pulse-glow {
   0%, 100% {
-    box-shadow: 0 0 20px rgba(99, 102, 241, 0.4);
+    box-shadow: 0 0 20px rgba(115, 88, 207, 0.4);
   }
   50% {
-    box-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
+    box-shadow: 0 0 40px rgba(115, 88, 207, 0.8);
   }
 }
 

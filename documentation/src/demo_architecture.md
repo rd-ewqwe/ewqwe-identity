@@ -6,7 +6,7 @@ This demonstration system showcases a complete credential verification flow usin
 
 1. **Demo Wallet Browser Extension** - A browser extension that acts as the user's digital wallet, securely storing verifiable credentials (Proof of Age, Driver's License, National ID cards, etc.)
 2. **Sample Demo Webapp** - A reference implementation of a Relying Party (RP) web application that requests and verifies credentials from users
-3. **EwQwE Credential Verifier Server** - A production-ready backend service that performs cryptographic verification on behalf of RPs
+3. **ewQwe Credential Verifier Server** - A production-ready backend service that performs cryptographic verification on behalf of RPs
 
 The demo wallet and webapp work together to demonstrate the complete end-to-end flow of credential presentation and verification. The webapp serves as both a functional demonstration and a **starting point for Relying Parties** who want to implement credential verification in their own web applications.
 
@@ -39,7 +39,7 @@ flowchart TB
         API[API Server<br/>- /api/verify endpoint<br/>- TLS client config<br/>- Proxied via Vite]
     end
     
-    subgraph CredVerifier["EwQwE Credential Verifier"]
+    subgraph CredVerifier["ewQwe Credential Verifier"]
         Endpoints[REST API<br/>POST /api/verify<br/>GET /version]
         Attestation[Attestation Engine<br/>- Parse VP Token<br/>- Verify Signatures<br/>- Sign JWT Attestation]
         
@@ -104,7 +104,7 @@ flowchart TB
 
 | Component                  | Port  | Protocol | Description                                      |
 |----------------------------|-------|----------|--------------------------------------------------|
-| Webapp Frontend (Vite)     | 5174  | HTTP     | Demo RP web interface + proxy to backend API    |
+| Webapp Frontend (Vite)     | 5174  | HTTP     | Demo RP web interface + proxy to backend API     |
 | Webapp Backend (Deno)      | 5175  | HTTP     | API server (proxied via Vite)                    |
 | Credential Verifier (Rust) | 9443  | HTTPS    | Verification server with TLS                     |
 | Redis                      | 6379  | TCP      | Session storage for Credential Verifier          |
@@ -164,8 +164,6 @@ flowchart TB
 
 ## Startup Commands Summary
 
-## Startup Commands Summary
-
 For quick reference, here are the commands to start all components:
 
 ```bash
@@ -181,7 +179,7 @@ cd webapp
 deno task dev
 
 # Browser: Install/load Demo Wallet extension
-# - From Chrome Web Store: Search "EwQwE Demo Wallet"
+# - From Chrome Web Store: Search "ewQwe Demo Wallet"
 # - Or load unpacked from wallet-extension/dist/
 
 # Open: http://localhost:5174
