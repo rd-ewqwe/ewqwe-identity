@@ -300,6 +300,10 @@ pub struct JarPayload {
     /// Expiration time as Unix timestamp in **seconds**.
     #[serde(skip)]
     pub expires_at_secs: i64,
+    /// Optional transaction data entries (§8.4). Each element is a pre-encoded
+    /// base64url JSON string that will be included verbatim in the JAR.
+    #[serde(skip)]
+    pub transaction_data: Option<Vec<String>>,
 }
 
 /// Sign a JWT Authorization Request (JAR) per [RFC 9101].
@@ -315,7 +319,7 @@ pub struct JarPayload {
 pub fn sign_jar(payload: &JarPayload, jar_key: &JarKeyMaterial) -> OpenID4VPResult<String> {
     let now = chrono::Utc::now().timestamp();
 
-    let jwt_claims = serde_json::json!({
+    let mut jwt_claims = serde_json::json!({
         "iss": payload.client_id,
         "aud": "https://self-issued.me/v2",
         "iat": now,
@@ -330,6 +334,20 @@ pub fn sign_jar(payload: &JarPayload, jar_key: &JarKeyMaterial) -> OpenID4VPResu
         "dcql_query": payload.dcql_query,
         "client_metadata": payload.client_metadata,
     });
+
+    // §8.4: include transaction_data when present
+    if let Some(ref td) = payload.transaction_data {
+        if let Some(obj) = jwt_claims.as_object_mut() {
+            obj.insert(
+                "transaction_data".to_string(),
+                serde_json::Value::Array(
+                    td.iter()
+                        .map(|s| serde_json::Value::String(s.clone()))
+                        .collect(),
+                ),
+            );
+        }
+    }
 
     let header = serde_json::json!({
         "alg": "ES256",
@@ -974,6 +992,7 @@ mod tests {
             dcql_query: serde_json::json!({"credentials": []}),
             client_metadata: serde_json::json!({"client_name": "Test"}),
             expires_at_secs: chrono::Utc::now().timestamp() + 300,
+            transaction_data: None,
         };
 
         let jwt = sign_jar(&payload, &jar_key).unwrap();

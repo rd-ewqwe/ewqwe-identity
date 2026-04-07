@@ -34,8 +34,8 @@ export type {
   // Verification
   VerifyResponse,
   TransactionStatus,
-  DirectPostAuthorizationResponse,
   WalletAuthorizationError,
+  TransactionDataEntry,
   TransactionStatusResult,
   InitTransactionResponse,
   // W3C Digital Credentials API

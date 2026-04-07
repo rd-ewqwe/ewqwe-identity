@@ -18,7 +18,7 @@
 
 use actix_web::{HttpRequest, HttpResponse, web};
 use ewqwe_openid4vp::{
-    DirectPostAuthorizationResponse, InitTransactionRequest, OpenID4VPError, OpenID4VPService,
+    OpenID4VPResponse, InitTransactionRequest, OpenID4VPError, OpenID4VPService,
     WalletAuthorizationError,
 };
 use serde::Deserialize;
@@ -155,7 +155,7 @@ fn handle_form_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<()
             "Plain direct_post received"
         );
 
-        let wallet_data = DirectPostAuthorizationResponse {
+        let wallet_data = OpenID4VPResponse {
             vp_token,
             presentation_submission,
             state,
@@ -203,7 +203,7 @@ fn handle_json_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<()
         "JSON direct_post received"
     );
 
-    let wallet_data = DirectPostAuthorizationResponse {
+    let wallet_data = OpenID4VPResponse {
         vp_token: parsed.vp_token.unwrap_or_default(),
         presentation_submission: parsed.presentation_submission,
         state,

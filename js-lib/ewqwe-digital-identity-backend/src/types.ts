@@ -81,11 +81,12 @@ export interface ClientMetadata {
 /**
  * OpenID4VP Authorization Response received via `direct_post` or `direct_post.jwt` (§8.2).
  *
- * When `response_type=vp_token`, the VP Token is returned in the Authorization Response.
- * With `direct_post`, the Wallet HTTP-POSTs this structure to the Verifier's `response_uri`
- * encoded as `application/x-www-form-urlencoded`.
+ * Internal camelCase representation of the wallet's Authorization Response.
+ * Populated from the form-encoded body (plain `direct_post`) or from
+ * decrypted JWE payload (`direct_post.jwt` / HAIP).
+ * Serialised back to snake_case by the status endpoint for RP consumers.
  */
-export interface DirectPostAuthorizationResponse {
+export interface OpenID4VPResponse {
   vpToken: string;
   presentationSubmission?: string;
   state: string;
@@ -108,11 +109,18 @@ export interface OpenID4VPTransaction {
   responseUri: string;
   responseMode: "direct_post" | "direct_post.jwt";
   profile: ProfileId;
-  walletResponse?: DirectPostAuthorizationResponse;
+  walletResponse?: OpenID4VPResponse;
   walletError?: WalletAuthorizationError;
   verificationResult?: VerifyResponse;
   errorMessage?: string;
   clientMetadata?: ClientMetadata;
+  /**
+   * Transaction data entries (§8.4). Each element is a base64url-encoded JSON
+   * string describing a transaction the wallet is asked to authorise.
+   * When present, forwarded to the wallet in the Authorization Request and
+   * echoed back in the status result for RP hash verification.
+   */
+  transactionData?: string[];
 }
 
 // ============================================================================
@@ -128,6 +136,12 @@ export interface InitTransactionRequest {
   client_metadata?: ClientMetadata;
   profile?: ProfileId;
   credential_type?: string;
+  /**
+   * Transaction data entries (§8.4). Each element MUST be a base64url-encoded
+   * JSON string. The service forwards these verbatim in the Authorization Request
+   * and echoes them back in the status result.
+   */
+  transaction_data?: string[];
 }
 
 // ============================================================================

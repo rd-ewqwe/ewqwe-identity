@@ -239,7 +239,7 @@ Deno.test(
 );
 
 Deno.test(
-  "§8.5 — WalletAuthorizationError serialises to correct JSON (snake_case, optional omitted)",
+  "§8.5 — WalletAuthorizationError serializes to correct JSON (snake_case, optional omitted)",
   () => {
     const minimal: WalletAuthorizationError = { error: "access_denied" };
     const full: WalletAuthorizationError = {

@@ -32,8 +32,8 @@ import type {
   JweKeyMaterial,
   OpenID4VPConfig,
   OpenID4VPTransaction,
+  OpenID4VPResponse,
   VerifyRequest,
-  DirectPostAuthorizationResponse,
 } from "./types.ts";
 import type {
   InitTransactionResponse,
@@ -190,6 +190,7 @@ export class OpenID4VPService {
       responseMode,
       profile,
       clientMetadata,
+      transactionData: request.transaction_data,
     };
     this.transactions.set(transaction);
 
@@ -273,6 +274,7 @@ export class OpenID4VPService {
           dcqlQuery: transaction.dcqlQuery,
           clientMetadata,
           expiresAt: transaction.expiresAt,
+          transactionData: transaction.transactionData,
         },
         this.jarKey,
       );
@@ -289,6 +291,11 @@ export class OpenID4VPService {
         nonce: transaction.nonce,
         dcql_query: transaction.dcqlQuery,
         client_metadata: clientMetadata,
+        // §8.4: include transaction_data when present
+        ...(transaction.transactionData !== undefined &&
+        transaction.transactionData.length > 0
+          ? { transaction_data: transaction.transactionData }
+          : {}),
       };
       return {
         body: JSON.stringify(authRequest),
@@ -306,11 +313,11 @@ export class OpenID4VPService {
    * @param fallbackState State value from outside the JWE (some wallets duplicate it).
    */
   async handleWalletResponse(
-    data: DirectPostAuthorizationResponse | null,
+    data: OpenID4VPResponse | null,
     jweResponse?: string,
     fallbackState?: string,
   ): Promise<void> {
-    let walletData: DirectPostAuthorizationResponse;
+    let walletData: OpenID4VPResponse;
 
     if (jweResponse) {
       // HAIP: Decrypt JWE
@@ -354,9 +361,7 @@ export class OpenID4VPService {
 
     const transaction = this.transactions.findByState(state);
     if (!transaction) {
-      throw new BadRequestError(
-        `No transaction found for state: ${state}`,
-      );
+      throw new BadRequestError(`No transaction found for state: ${state}`);
     }
 
     transaction.walletError = error;
@@ -388,6 +393,7 @@ export class OpenID4VPService {
           state: transaction.walletResponse.state,
         },
         nonce: transaction.nonce,
+        transaction_data: transaction.transactionData,
       };
     }
 

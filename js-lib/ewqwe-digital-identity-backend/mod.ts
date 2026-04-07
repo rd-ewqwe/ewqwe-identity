@@ -37,7 +37,7 @@ export {
 export type {
   OpenID4VPConfig,
   ClientMetadata,
-  DirectPostAuthorizationResponse,
+  OpenID4VPResponse,
   OpenID4VPTransaction,
   InitTransactionRequest,
   AuthorizationRequestResult,

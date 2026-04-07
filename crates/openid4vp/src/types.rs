@@ -703,7 +703,7 @@ pub struct WalletAuthorizationError {
 /// With `direct_post`, the Wallet HTTP-POSTs this structure to the Verifier's `response_uri`
 /// encoded as `application/x-www-form-urlencoded`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DirectPostAuthorizationResponse {
+pub struct OpenID4VPResponse {
     /// JSON-encoded `Record<credentialQueryId, presentation[]>` per OpenID4VP
     /// 1.0 §8.1. Each key is the `id` from a DCQL Credential Query; each value
     /// is an array of base64url-encoded credential presentations.
@@ -894,6 +894,50 @@ impl Default for ClientMetadata {
     }
 }
 
+/// A decoded entry from the `transaction_data` Authorization Request parameter (§8.4).
+///
+/// The Authorization Request MAY include `transaction_data` — a non-empty array of
+/// base64url-encoded JSON objects, each describing a transaction the wallet is asked
+/// to authorise (e.g. a payment, consent, or contract signing).
+///
+/// The wallet MUST cryptographically bind these entries into its credential
+/// presentations:
+/// - **SD-JWT VC**: via `transaction_data_hashes` (and `transaction_data_hashes_alg`)
+///   in the Key Binding JWT (§B.3.3.1).
+/// - **mdoc**: via the `DeviceSigned` structure (§B.2.1).
+///
+/// The credential verifier echoes the raw `transaction_data` strings back to the
+/// RP (in [`TransactionStatusResult`]) so it can verify those hashes against the
+/// presented credential.
+///
+/// Reference: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.4>
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TransactionDataEntry {
+    /// Transaction data type identifier — identifies the schema of this entry
+    /// (REQUIRED per §8.4).
+    #[serde(rename = "type")]
+    pub data_type: String,
+
+    /// DCQL Credential Query IDs (from the `dcql_query`) that can be used to
+    /// authorise this transaction data entry (REQUIRED per §8.4).
+    pub credential_ids: Vec<String>,
+
+    /// Hash algorithm(s) the RP accepts for `transaction_data_hashes` in the
+    /// SD-JWT VC Key Binding JWT (§B.3.3.1, OPTIONAL).
+    ///
+    /// Values are string identifiers from the
+    /// [IANA Named Information Hash Algorithm registry](https://www.iana.org/assignments/named-information/named-information.xhtml)
+    /// (e.g. `"sha-256"`, `"sha-384"`).
+    /// When absent the wallet MUST use `"sha-256"` (the default).
+    /// Only meaningful for `dc+sd-jwt` credential formats.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_data_hashes_alg: Option<Vec<String>>,
+
+    /// Type-specific parameters (arbitrary extra fields defined by the `type` schema).
+    #[serde(flatten)]
+    pub extra: std::collections::HashMap<String, serde_json::Value>,
+}
+
 /// A complete OpenID4VP transaction, tracking lifecycle from initiation
 /// through wallet response to verification.
 #[derive(Debug, Clone)]
@@ -910,11 +954,16 @@ pub struct OpenID4VPTransaction {
     pub response_uri: String,
     pub response_mode: ResponseMode,
     pub profile: ProfileId,
-    pub wallet_response: Option<DirectPostAuthorizationResponse>,
+    pub wallet_response: Option<OpenID4VPResponse>,
     pub wallet_error: Option<WalletAuthorizationError>,
     pub verification_result: Option<serde_json::Value>,
     pub error_message: Option<String>,
     pub client_metadata: Option<ClientMetadata>,
+    /// Transaction data entries (§8.4). When present, forwarded to the wallet
+    /// in the Authorization Request so it can bind them into its credential
+    /// presentations. Echoed back in [`TransactionStatusResult`] for RP
+    /// hash verification.
+    pub transaction_data: Option<Vec<String>>,
 }
 
 // ============================================================================
@@ -954,6 +1003,13 @@ pub struct InitTransactionRequest {
     /// Credential type shorthand: `"mdl"`, `"national-id"`, `"proof-of-age"`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub credential_type: Option<String>,
+
+    /// Transaction data entries (§8.4). Each element is a base64url-encoded
+    /// JSON string describing a transaction the wallet is asked to authorise.
+    /// When present, these are forwarded verbatim in the Authorization Request
+    /// and echoed back in the status result for RP hash verification.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_data: Option<Vec<String>>,
 }
 
 /// Response from `POST /api/openid4vp/init`.
@@ -998,7 +1054,7 @@ pub struct TransactionStatusResult {
     /// The Authorization Response received from the wallet (OpenID4VP 1.0 §8.1 + §8.2).
     /// Only populated when `status == "received"`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub authorization_response: Option<DirectPostAuthorizationResponse>,
+    pub authorization_response: Option<OpenID4VPResponse>,
 
     /// The `nonce` from the original Authorization Request (§5.2).
     /// Needed by the frontend for VP Token replay protection (§14.1).
@@ -1013,6 +1069,12 @@ pub struct TransactionStatusResult {
 
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
+
+    /// The original `transaction_data` from the Authorization Request (§8.4).
+    /// Present when `status == "received"` so the RP can verify the hashes
+    /// that the wallet embedded in its credential presentations.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub transaction_data: Option<Vec<String>>,
 }
 
 /// Result of building an authorization request (JAR or plain JSON).

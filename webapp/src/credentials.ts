@@ -36,18 +36,18 @@ function uuidv4(): string {
  */
 function parsePresentationSubmission(
   value: unknown,
-): PresentationSubmission | null {
-  if (!value) return null;
+): PresentationSubmission | undefined {
+  if (!value) return undefined;
   if (typeof value === "object") return value as PresentationSubmission;
   if (typeof value === "string") {
     try {
       return JSON.parse(value) as PresentationSubmission;
     } catch {
       console.warn("Failed to parse presentation_submission:", value);
-      return null;
+      return undefined;
     }
   }
-  return null;
+  return undefined;
 }
 
 /**
@@ -230,11 +230,12 @@ async function requestViaOpenID4VPCrossDevice(
     // Close the modal
     qrModal.close();
 
-    // Convert to OpenID4VPResponse format
+    // Normalise presentation_submission before returning to callers
     return {
       vp_token: response.vp_token,
-      presentation_submission:
-        parsePresentationSubmission(response.presentation_submission) ?? null,
+      presentation_submission: parsePresentationSubmission(
+        response.presentation_submission,
+      ),
       state: response.state,
     };
   } catch (error) {
@@ -382,13 +383,6 @@ function showQRCodeModal(
   return { close: closeQRCodeModal, onCancel };
 }
 
-interface PollResponse {
-  vp_token: string;
-  presentation_submission?: string | PresentationSubmission;
-  state: string;
-  nonce: string;
-}
-
 /**
  * Poll the backend for wallet response
  */
@@ -397,7 +391,7 @@ function pollForWalletResponse(
   timeoutMs: number,
   logger: DebugLogger,
   onCancel: Promise<void>,
-): Promise<PollResponse | null> {
+): Promise<OpenID4VPResponse | null> {
   const pollInterval = 2000; // Poll every 2 seconds
   const startTime = Date.now();
 
@@ -440,7 +434,7 @@ function pollForWalletResponse(
             return;
           }
 
-          if (data.nonce == null) {
+          if (!data.nonce) {
             logger.error("Received 'received' status but missing nonce", data);
             reject(new Error("Invalid response from server: missing nonce"));
             return;
@@ -452,13 +446,8 @@ function pollForWalletResponse(
             return;
           }
 
-          resolve({
-            vp_token: data.authorization_response.vp_token,
-            presentation_submission:
-              data.authorization_response.presentation_submission,
-            state: data.authorization_response.state,
-            nonce: data.nonce,
-          });
+          // authorization_response is validated non-null at this point
+          resolve(data.authorization_response!);
           return;
         }
 
@@ -561,12 +550,12 @@ async function requestViaOpenID4VPSameDevice(
     }
 
     hideSameDeviceModal();
-    // Convert PollResponse to OpenID4VPResponse
+    // Normalise presentation_submission before returning to callers
     return {
       vp_token: pollResponse.vp_token,
-      presentation_submission:
-        parsePresentationSubmission(pollResponse.presentation_submission) ??
-        null,
+      presentation_submission: parsePresentationSubmission(
+        pollResponse.presentation_submission,
+      ),
       state: pollResponse.state,
     };
   } catch (error) {
@@ -698,7 +687,6 @@ function simulateCredentialResponse(
 
   const response: OpenID4VPResponse = {
     vp_token: btoa(JSON.stringify(vpToken)),
-    presentation_submission: null,
   };
 
   logger.log("Simulated response generated", response);

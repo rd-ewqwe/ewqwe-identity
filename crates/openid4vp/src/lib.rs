@@ -55,7 +55,7 @@ pub use service::{OpenID4VPService, OpenID4VPServiceConfig};
 pub use transaction::TransactionStore;
 pub use types::{
     AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery,
-    DirectPostAuthorizationResponse, InitTransactionRequest, InitTransactionResponse,
-    OpenID4VPTransaction, ProfileId, ResponseMode, TransactionStatus, TransactionStatusResult,
-    WalletAuthorizationError,
+    OpenID4VPResponse, InitTransactionRequest, InitTransactionResponse,
+    OpenID4VPTransaction, ProfileId, ResponseMode, TransactionDataEntry, TransactionStatus,
+    TransactionStatusResult, WalletAuthorizationError,
 };

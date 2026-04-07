@@ -152,6 +152,9 @@ export interface JarPayload {
   dcqlQuery: unknown;
   clientMetadata: unknown;
   expiresAt: number;
+  /** Optional transaction data entries (§8.4). Each element is a base64url-encoded
+   * JSON string. When present, included verbatim as `transaction_data` in the JAR. */
+  transactionData?: unknown[];
 }
 
 /**
@@ -165,7 +168,7 @@ export async function signJar(
   const now = Math.floor(Date.now() / 1000);
   const exp = Math.floor(payload.expiresAt / 1000);
 
-  const jwtPayload = {
+  const jwtPayload: jose.JWTPayload = {
     iss: payload.clientId,
     aud: "https://self-issued.me/v2",
     iat: now,
@@ -179,6 +182,11 @@ export async function signJar(
     nonce: payload.nonce,
     dcql_query: payload.dcqlQuery,
     client_metadata: payload.clientMetadata,
+    // §8.4: include transaction_data when present
+    ...(payload.transactionData !== undefined &&
+    payload.transactionData.length > 0
+      ? { transaction_data: payload.transactionData }
+      : {}),
   };
 
   return await new jose.SignJWT(jwtPayload as jose.JWTPayload)

@@ -181,6 +181,7 @@ mod tests {
             verification_result: None,
             error_message: None,
             client_metadata: None,
+            transaction_data: None,
         }
     }
 

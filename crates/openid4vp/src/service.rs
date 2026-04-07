@@ -26,7 +26,7 @@ use crate::{
     transaction::TransactionStore,
     types::{
         AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery,
-        DirectPostAuthorizationResponse, InitTransactionRequest, InitTransactionResponse,
+        OpenID4VPResponse, InitTransactionRequest, InitTransactionResponse,
         OpenID4VPTransaction, ProfileId, ResponseMode, TransactionStatus, TransactionStatusResult,
         WalletAuthorizationError,
     },
@@ -206,6 +206,7 @@ impl OpenID4VPService {
             verification_result: None,
             error_message: None,
             client_metadata: Some(client_metadata),
+            transaction_data: request.transaction_data.clone(),
         };
         self.transactions.set(transaction);
 
@@ -327,6 +328,7 @@ impl OpenID4VPService {
                 dcql_query: serde_json::to_value(&transaction.dcql_query).unwrap_or_default(),
                 client_metadata: metadata,
                 expires_at_secs: transaction.expires_at / 1000,
+                transaction_data: transaction.transaction_data.clone(),
             };
 
             let jwt = sign_jar(&jar_payload, &self.jar_key)?;
@@ -336,7 +338,7 @@ impl OpenID4VPService {
             })
         } else {
             // Annex A: Plain JSON authorization request
-            let auth_request = serde_json::json!({
+            let mut auth_request = serde_json::json!({
                 "client_id": transaction.client_id,
                 "client_id_scheme": transaction.client_id_scheme.to_string(),
                 "response_type": "vp_token",
@@ -347,6 +349,19 @@ impl OpenID4VPService {
                 "dcql_query": transaction.dcql_query,
                 "client_metadata": metadata,
             });
+            // §8.4: include transaction_data when present
+            if let Some(ref td) = transaction.transaction_data {
+                if let Some(obj) = auth_request.as_object_mut() {
+                    obj.insert(
+                        "transaction_data".to_string(),
+                        serde_json::Value::Array(
+                            td.iter()
+                                .map(|s| serde_json::Value::String(s.clone()))
+                                .collect(),
+                        ),
+                    );
+                }
+            }
             Ok(AuthorizationRequestResult {
                 body: serde_json::to_string(&auth_request)
                     .map_err(|e| OpenID4VPError::Internal(format!("JSON serialization: {e}")))?,
@@ -367,11 +382,11 @@ impl OpenID4VPService {
     /// * `fallback_state` — State value from outside the JWE (some wallets duplicate it)
     pub fn handle_wallet_response(
         &self,
-        data: Option<DirectPostAuthorizationResponse>,
+        data: Option<OpenID4VPResponse>,
         jwe_response: Option<&str>,
         fallback_state: Option<&str>,
     ) -> OpenID4VPResult<()> {
-        let wallet_data: DirectPostAuthorizationResponse = if let Some(jwe) = jwe_response {
+        let wallet_data: OpenID4VPResponse = if let Some(jwe) = jwe_response {
             // HAIP: Decrypt JWE
             let decrypted: DecryptedWalletResponse = decrypt_jwe_response(jwe, &self.jwe_key)?;
             let state = if decrypted.state.is_empty() {
@@ -379,7 +394,7 @@ impl OpenID4VPService {
             } else {
                 decrypted.state
             };
-            DirectPostAuthorizationResponse {
+            OpenID4VPResponse {
                 vp_token: decrypted.vp_token,
                 presentation_submission: decrypted.presentation_submission,
                 state,
@@ -457,6 +472,7 @@ impl OpenID4VPService {
                 nonce: None,
                 wallet_error: None,
                 error_message: None,
+                transaction_data: None,
             });
         }
 
@@ -469,6 +485,7 @@ impl OpenID4VPService {
                     nonce: Some(transaction.nonce.clone()),
                     wallet_error: None,
                     error_message: None,
+                    transaction_data: transaction.transaction_data.clone(),
                 });
             }
         }
@@ -481,6 +498,7 @@ impl OpenID4VPService {
                 nonce: None,
                 wallet_error: transaction.wallet_error.clone(),
                 error_message: transaction.error_message.clone(),
+                transaction_data: None,
             });
         }
 
@@ -492,6 +510,7 @@ impl OpenID4VPService {
             nonce: None,
             wallet_error: None,
             error_message: transaction.error_message.clone(),
+            transaction_data: None,
         })
     }
 
@@ -606,6 +625,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
+            transaction_data: None,
         };
 
         let response = service.init_transaction(request).unwrap();
@@ -637,6 +657,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::Haip),
             credential_type: None,
+            transaction_data: None,
         };
 
         let response = service.init_transaction(request).unwrap();
@@ -665,6 +686,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
+            transaction_data: None,
         };
 
         let init_resp = service.init_transaction(request).unwrap();
@@ -693,6 +715,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::Haip),
             credential_type: None,
+            transaction_data: None,
         };
 
         let init_resp = service.init_transaction(request).unwrap();
@@ -719,6 +742,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
+            transaction_data: None,
         };
 
         let init_resp = service.init_transaction(request).unwrap();
@@ -745,6 +769,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
+            transaction_data: None,
         };
 
         let init_resp = service.init_transaction(request).unwrap();
@@ -757,7 +782,7 @@ mod tests {
         let state = auth_json["state"].as_str().unwrap().to_string();
 
         // Simulate wallet direct_post response
-        let wallet_data = DirectPostAuthorizationResponse {
+        let wallet_data = OpenID4VPResponse {
             vp_token: "test-vp-token-content".to_string(),
             presentation_submission: Some("test-submission".to_string()),
             state,
@@ -789,7 +814,7 @@ mod tests {
         let config = test_config();
         let service = OpenID4VPService::create(config).unwrap();
 
-        let wallet_data = DirectPostAuthorizationResponse {
+        let wallet_data = OpenID4VPResponse {
             vp_token: "token".to_string(),
             presentation_submission: None,
             state: "unknown-state".to_string(),
@@ -846,6 +871,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
+            transaction_data: None,
         };
 
         let init_resp = service.init_transaction(request).unwrap();
@@ -856,7 +882,7 @@ mod tests {
         let state = auth_json["state"].as_str().unwrap().to_string();
 
         // §8.2 example: form-encoded `vp_token=<JWT>&state=<state>`
-        let wallet_data = DirectPostAuthorizationResponse {
+        let wallet_data = OpenID4VPResponse {
             vp_token: "{\"my_credential\":[\"eyJhbGciOiJFUzI1NiJ9.test.QMA\"]}".to_string(),
             presentation_submission: None,
             state: state.clone(),
@@ -894,6 +920,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
+            transaction_data: None,
         };
 
         let init_resp = service.init_transaction(request).unwrap();
@@ -936,6 +963,7 @@ mod tests {
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
+            transaction_data: None,
         };
 
         let init_resp = service.init_transaction(request).unwrap();
@@ -989,6 +1017,7 @@ mod tests {
                 client_metadata: None,
                 profile: Some(ProfileId::AnnexA),
                 credential_type: None,
+                transaction_data: None,
             };
 
             let init_resp = service.init_transaction(request).unwrap();
@@ -1037,6 +1066,202 @@ mod tests {
 
         let result = service.handle_wallet_error(wallet_error);
         assert!(result.is_err());
+
+        service.shutdown();
+    }
+
+    // ========================================================================
+    // §8.4 — Transaction Data
+    // ========================================================================
+
+    /// Base64url-encode a JSON transaction data entry (simulates the RP encoding).
+    fn encode_transaction_data_entry(entry: &serde_json::Value) -> String {
+        use base64::Engine as _;
+        base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .encode(serde_json::to_string(entry).unwrap().as_bytes())
+    }
+
+    /// §8.4: `transaction_data` supplied in `InitTransactionRequest` is stored in the
+    /// transaction and later echoed back via the status endpoint.
+    #[tokio::test]
+    async fn test_section_8_4_status_returns_transaction_data() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).unwrap();
+
+        let entry = serde_json::json!({
+            "type": "payment",
+            "credential_ids": ["my_credential"],
+            "amount": "100.00",
+            "currency": "EUR"
+        });
+        let encoded = encode_transaction_data_entry(&entry);
+        let transaction_data = vec![encoded.clone()];
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: Some("nonce-8-4".to_string()),
+            client_metadata: None,
+            profile: Some(ProfileId::AnnexA),
+            credential_type: None,
+            transaction_data: Some(transaction_data.clone()),
+        };
+
+        let init_resp = service.init_transaction(request).unwrap();
+
+        // Retrieve state from auth request for wallet simulation
+        let auth_req = service
+            .get_authorization_request(&init_resp.transaction_id)
+            .unwrap();
+        let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
+        let state = auth_json["state"].as_str().unwrap().to_string();
+
+        // Simulate wallet response
+        let wallet_data = OpenID4VPResponse {
+            vp_token: "vp-token-with-td-hash".to_string(),
+            presentation_submission: None,
+            state,
+        };
+        service
+            .handle_wallet_response(Some(wallet_data), None, None)
+            .unwrap();
+
+        // Status must echo back transaction_data
+        let status = service
+            .get_transaction_status(&init_resp.transaction_id)
+            .unwrap();
+        assert_eq!(status.status, TransactionStatus::Received);
+        assert!(
+            status.transaction_data.is_some(),
+            "transaction_data should be present in status"
+        );
+        let td = status.transaction_data.unwrap();
+        assert_eq!(td.len(), 1);
+        assert_eq!(td[0], encoded);
+
+        service.shutdown();
+    }
+
+    /// §8.4: Annex A plain JSON authorization request contains `transaction_data` array.
+    #[tokio::test]
+    async fn test_section_8_4_annex_a_auth_request_contains_transaction_data() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).unwrap();
+
+        let entry = serde_json::json!({
+            "type": "age_verification",
+            "credential_ids": ["age_cred"],
+            "minimum_age": 18
+        });
+        let encoded = encode_transaction_data_entry(&entry);
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: None,
+            client_metadata: None,
+            profile: Some(ProfileId::AnnexA),
+            credential_type: None,
+            transaction_data: Some(vec![encoded.clone()]),
+        };
+
+        let init_resp = service.init_transaction(request).unwrap();
+        let auth_req = service
+            .get_authorization_request(&init_resp.transaction_id)
+            .unwrap();
+
+        assert_eq!(auth_req.content_type, "application/json");
+        let parsed: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
+        assert!(
+            parsed["transaction_data"].is_array(),
+            "transaction_data must be an array in the auth request"
+        );
+        let td_arr = parsed["transaction_data"].as_array().unwrap();
+        assert_eq!(td_arr.len(), 1);
+        assert_eq!(td_arr[0].as_str().unwrap(), encoded);
+
+        service.shutdown();
+    }
+
+    /// §8.4: HAIP JAR JWT payload contains `transaction_data` array.
+    #[tokio::test]
+    async fn test_section_8_4_haip_jar_contains_transaction_data() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).unwrap();
+
+        let entry = serde_json::json!({
+            "type": "consent",
+            "credential_ids": ["consent_cred"],
+            "document_ref": "terms-v2"
+        });
+        let encoded = encode_transaction_data_entry(&entry);
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: None,
+            client_metadata: None,
+            profile: Some(ProfileId::Haip),
+            credential_type: None,
+            transaction_data: Some(vec![encoded.clone()]),
+        };
+
+        let init_resp = service.init_transaction(request).unwrap();
+        let auth_req = service
+            .get_authorization_request(&init_resp.transaction_id)
+            .unwrap();
+
+        assert_eq!(auth_req.content_type, "application/oauth-authz-req+jwt");
+        // Decode the JAR JWT payload (middle part)
+        let parts: Vec<&str> = auth_req.body.splitn(3, '.').collect();
+        assert_eq!(parts.len(), 3, "JAR must have 3 JWT parts");
+        use base64::Engine as _;
+        let payload_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(parts[1])
+            .unwrap();
+        let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).unwrap();
+
+        assert!(
+            payload["transaction_data"].is_array(),
+            "transaction_data must be in the JAR payload"
+        );
+        let td_arr = payload["transaction_data"].as_array().unwrap();
+        assert_eq!(td_arr.len(), 1);
+        assert_eq!(td_arr[0].as_str().unwrap(), encoded);
+
+        service.shutdown();
+    }
+
+    /// §8.4: When `transaction_data` is `None`, the auth request must NOT include the field.
+    #[tokio::test]
+    async fn test_section_8_4_absent_when_not_provided() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).unwrap();
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: None,
+            client_metadata: None,
+            profile: Some(ProfileId::AnnexA),
+            credential_type: None,
+            transaction_data: None,
+        };
+
+        let init_resp = service.init_transaction(request).unwrap();
+        let auth_req = service
+            .get_authorization_request(&init_resp.transaction_id)
+            .unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
+        assert!(
+            parsed.get("transaction_data").is_none(),
+            "transaction_data must be absent when not provided"
+        );
+
+        let status = service
+            .get_transaction_status(&init_resp.transaction_id)
+            .unwrap();
+        assert!(status.transaction_data.is_none());
 
         service.shutdown();
     }

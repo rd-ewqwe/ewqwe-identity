@@ -165,33 +165,32 @@ export interface OpenID4VPRequest {
 }
 
 /**
- * OpenID4VP 1.0 Authorization Response (§8.1).
+ * OpenID4VP 1.0 Authorization Response (§8.1 / §8.2).
  *
- * Returned to the Verifier by the wallet (same-device: redirect fragment;
- * cross-device: HTTP POST to `response_uri`).
+ * Represents the wallet's Authorization Response in all transport variants:
+ * - **`direct_post`** (cross-device): wallet HTTP-POSTs form data to `response_uri`.
+ * - **`fragment`** / **`dc_api`** (same-device / W3C DC API): response returned inline.
  *
  * **`vp_token` structure with DCQL (§8.1)**:
- * The value is a JSON-encoded object where each key is the `id` of a
- * Credential Query from the DCQL request and the value is an array of
+ * A JSON-encoded `Record<credentialQueryId, presentation[]>` — each key is the
+ * `id` of a Credential Query from the DCQL request and the value is an array of
  * base64url-encoded credential presentations:
  * ```json
  * { "my_mdl": ["<base64url-DeviceResponse>"] }
  * ```
- * It is received from the backend as a raw JSON string.
  *
- * **`presentation_submission`**: This field belongs to the DIF Presentation
- * Exchange protocol (`presentation_definition`).  It does **not** appear in
- * OpenID4VP 1.0 DCQL responses — the `vp_token` object structure itself maps
- * presentations to credential queries (§8.1).  Kept here as an optional
- * field only for backward-compatibility with wallets still on older drafts.
+ * **`presentation_submission`**: DIF Presentation Exchange field — **absent in
+ * OpenID4VP 1.0 DCQL responses**.  Kept for backward-compatibility with wallets
+ * still on older drafts.  May arrive as a raw JSON **string** (wire format from
+ * `direct_post`) or as a parsed {@link PresentationSubmission} object (after
+ * processing by the backend).
  *
  * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.1
  */
 export interface OpenID4VPResponse {
   /**
    * JSON-encoded `Record<credentialQueryId, presentation[]>` (§8.1).
-   * Received as a string from the backend; parse with `JSON.parse()` to
-   * obtain the credential ID → presentations mapping.
+   * Parse with `JSON.parse()` to obtain the credential ID → presentations mapping.
    */
   vp_token: string;
 
@@ -199,9 +198,9 @@ export interface OpenID4VPResponse {
    * @deprecated Not part of OpenID4VP 1.0 DCQL responses.
    * Only present for backward-compatibility with wallets using the legacy
    * DIF Presentation Exchange format.  Will be absent in all spec-compliant
-   * responses.
+   * responses.  May be a raw JSON string (wire) or a parsed object.
    */
-  presentation_submission?: PresentationSubmission | null;
+  presentation_submission?: string | PresentationSubmission;
 
   /** Echoes the `state` from the Authorization Request (§8.2). */
   state?: string;
@@ -505,30 +504,42 @@ export type TransactionStatus =
   | "expired";
 
 /**
- * OpenID4VP Authorization Response received from the wallet via `direct_post` (§8.2).
+ * A decoded entry from the `transaction_data` Authorization Request parameter (§8.4).
  *
- * Embedded in {@link TransactionStatusResult} when `status === "received"`.
- * Field names are snake_case to match the Rust API JSON serialisation.
+ * The Authorization Request MAY include `transaction_data` — a non-empty array of
+ * base64url-encoded JSON objects, each describing a transaction the wallet is asked
+ * to authorise (e.g. a payment, consent, or contract signing).
+ *
+ * The wallet MUST bind these into its credential presentations:
+ * - **SD-JWT VC**: via `transaction_data_hashes` in the Key Binding JWT (§B.3.3.1).
+ * - **mdoc**: via the `DeviceSigned` structure (§B.2.1).
+ *
+ * The credential verifier echoes the raw `transaction_data` strings back to the RP
+ * in {@link TransactionStatusResult} so it can verify the hashes.
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.4
  */
-export interface DirectPostAuthorizationResponse {
+export interface TransactionDataEntry {
+  /** Transaction data type identifier (REQUIRED per §8.4). */
+  type: string;
   /**
-   * JSON-encoded `Record<credentialQueryId, presentation[]>` per OpenID4VP 1.0 §8.1.
-   * Each key is the `id` from a DCQL Credential Query; each value is an array of
-   * base64url-encoded credential presentations.
+   * DCQL Credential Query IDs that can authorise this transaction data entry
+   * (REQUIRED per §8.4).
    */
-  vp_token: string;
-
+  credential_ids: string[];
   /**
-   * **Deprecated — absent in OpenID4VP 1.0 DCQL responses.**
+   * Hash algorithm(s) the RP accepts for `transaction_data_hashes` in the
+   * SD-JWT VC Key Binding JWT (§B.3.3.1, OPTIONAL).
    *
-   * DIF Presentation Exchange backward-compatibility field only. When present, this is a
-   * JSON object `{ id, definition_id, descriptor_map }` serialised as a string.
-   * Not returned in spec-compliant DCQL responses (§8.1).
+   * Values are string identifiers from the
+   * [IANA Named Information Hash Algorithm registry](https://www.iana.org/assignments/named-information/named-information.xhtml)
+   * (e.g. `"sha-256"`, `"sha-384"`).
+   * When absent the wallet MUST use `"sha-256"` (the default).
+   * Only meaningful for `dc+sd-jwt` credential formats.
    */
-  presentation_submission?: string;
-
-  /** The `state` parameter echoed back from the original Authorization Request (§5.3). */
-  state: string;
+  transaction_data_hashes_alg?: string[];
+  /** Type-specific parameters (arbitrary extra fields defined by the `type` schema). */
+  [key: string]: unknown;
 }
 
 /** Result of polling for transaction status. */
@@ -543,7 +554,7 @@ export interface TransactionStatusResult {
    * The Authorization Response received from the wallet (OpenID4VP 1.0 §8.1 + §8.2).
    * Only present when `status === "received"`.
    */
-  authorization_response?: DirectPostAuthorizationResponse;
+  authorization_response?: OpenID4VPResponse;
 
   /**
    * The `nonce` from the original Authorization Request (§5.2).
@@ -558,6 +569,15 @@ export interface TransactionStatusResult {
   wallet_error?: WalletAuthorizationError;
 
   error_message?: string;
+
+  /**
+   * The original `transaction_data` entries from the Authorization Request (§8.4).
+   * Present when `status === "received"` so the RP can verify the hashes that the
+   * wallet embedded in its credential presentations.
+   *
+   * Each element is a base64url-encoded JSON string (as sent in the auth request).
+   */
+  transaction_data?: string[];
 }
 
 // ============================================================================
