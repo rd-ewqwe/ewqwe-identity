@@ -251,11 +251,16 @@ impl OpenID4VPService {
             return Err(OpenID4VPError::Expired("Transaction expired".into()));
         }
 
-        // Build client_metadata with VP format capabilities
+        // Build client_metadata with VP format capabilities.
+        // `vp_formats` is typed as `VpFormats`; serialize to JSON for embedding in the request.
         let base_formats = transaction
             .client_metadata
             .as_ref()
-            .and_then(|m| m.vp_formats.clone())
+            .and_then(|m| {
+                m.vp_formats
+                    .as_ref()
+                    .map(|f| serde_json::to_value(f).unwrap_or_default())
+            })
             .unwrap_or_else(|| {
                 serde_json::json!({
                     "mso_mdoc": {
@@ -270,7 +275,7 @@ impl OpenID4VPService {
                 .client_metadata
                 .as_ref()
                 .and_then(|m| m.client_name.as_deref())
-                .unwrap_or("ewQwe Age Verification Demo"),
+                .unwrap_or("ewQwe Client"),
             "logo_uri": transaction
                 .client_metadata
                 .as_ref()

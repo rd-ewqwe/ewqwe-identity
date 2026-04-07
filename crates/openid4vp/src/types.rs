@@ -300,31 +300,159 @@ pub struct WalletDirectPostData {
     pub state: String,
 }
 
+// ============================================================================
+// VP Format Capabilities (vp_formats / vp_formats_supported)
+// ============================================================================
+
+/// Per-format parameters for **ISO/IEC 18013-5 mDoc** (`mso_mdoc`).
+///
+/// Algorithm identifiers are **COSE integer IDs** (RFC 8152, IANA COSE Algorithms):
+///
+/// | Value | Algorithm         |
+/// |-------|-------------------|
+/// | `-7`  | ES256 (P-256+SHA-256)  |
+/// | `-35` | ES384 (P-384+SHA-384)  |
+/// | `-36` | ES512 (P-521+SHA-512)  |
+/// | `-8`  | EdDSA              |
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.2.2>
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct MsoMdocVpFormat {
+    /// COSE algorithm IDs accepted for the IssuerAuth `COSE_Sign1` structure.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub issuerauth_alg_values: Option<Vec<i32>>,
+
+    /// COSE algorithm IDs accepted for DeviceSignature or DeviceMac.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub deviceauth_alg_values: Option<Vec<i32>>,
+}
+
+/// Per-format parameters for **IETF SD-JWT VC** (`dc+sd-jwt` / `vc+sd-jwt`).
+///
+/// Algorithm identifiers use **JOSE string names** (RFC 7518), and MUST be
+/// fully-specified algorithm identifiers per
+/// [draft-ietf-jose-fully-specified-algorithms].
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.3.4>
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct SdJwtVcVpFormat {
+    /// JOSE algorithm identifiers for the Issuer-signed SD-JWT (`alg` JOSE header).
+    #[serde(rename = "sd-jwt_alg_values", skip_serializing_if = "Option::is_none")]
+    pub sd_jwt_alg_values: Option<Vec<String>>,
+
+    /// JOSE algorithm identifiers for the Key Binding JWT (`alg` JOSE header).
+    #[serde(rename = "kb-jwt_alg_values", skip_serializing_if = "Option::is_none")]
+    pub kb_jwt_alg_values: Option<Vec<String>>,
+}
+
+/// Per-format parameters for **W3C VC signed as JWT** (`jwt_vc_json`).
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.1.3.1.3>
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct JwtVcJsonVpFormat {
+    /// JOSE algorithm identifiers for the Verifiable Credential / Presentation
+    /// (`alg` JWS header, RFC 7515).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub alg_values: Option<Vec<String>>,
+}
+
+/// Per-format parameters for **W3C VC with Linked Data Proofs** (`ldp_vc`).
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.1.3.2.3>
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct LdpVcVpFormat {
+    /// Data Integrity proof type identifiers (e.g. `"DataIntegrityProof"`,
+    /// `"Ed25519Signature2020"`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub proof_type_values: Option<Vec<String>>,
+
+    /// Cryptosuite identifiers when `proof_type_values` includes
+    /// `"DataIntegrityProof"` (e.g. `"ecdsa-rdfc-2019"`, `"bbs-2023"`).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub cryptosuite_values: Option<Vec<String>>,
+}
+
+/// VP format capabilities included in `client_metadata`.
+///
+/// Each field corresponds to a **Credential Format Identifier** defined in
+/// OpenID4VP 1.0 Appendix B. The server re-keys this object from `vp_formats`
+/// (request body field) to `vp_formats_supported` (wire field sent to the wallet).
+///
+/// Format identifiers are a fixed enumeration per OpenID4VP 1.0 §11.1:
+/// `mso_mdoc`, `dc+sd-jwt`, `vc+sd-jwt`, `jwt_vc_json`, `ldp_vc`.
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-11.1>
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct VpFormats {
+    /// ISO/IEC 18013-5 Mobile Documents (§B.2).
+    /// Algorithm IDs use COSE integers (RFC 8152).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub mso_mdoc: Option<MsoMdocVpFormat>,
+
+    /// IETF SD-JWT VC — current IANA-registered identifier, canonical since Nov 2024 (§B.3).
+    #[serde(rename = "dc+sd-jwt", skip_serializing_if = "Option::is_none")]
+    pub dc_sd_jwt: Option<SdJwtVcVpFormat>,
+
+    /// IETF SD-JWT VC — legacy identifier, superseded by `dc+sd-jwt` (§B.3).
+    /// Both SHOULD be accepted during the transitional period per
+    /// draft-ietf-oauth-sd-jwt-vc §3.2.1.
+    #[serde(rename = "vc+sd-jwt", skip_serializing_if = "Option::is_none")]
+    pub vc_sd_jwt: Option<SdJwtVcVpFormat>,
+
+    /// W3C VC signed as JWT, without JSON-LD (§B.1.3.1).
+    #[serde(rename = "jwt_vc_json", skip_serializing_if = "Option::is_none")]
+    pub jwt_vc_json: Option<JwtVcJsonVpFormat>,
+
+    /// W3C VC with Linked Data / Data Integrity Proofs (§B.1.3.2).
+    #[serde(rename = "ldp_vc", skip_serializing_if = "Option::is_none")]
+    pub ldp_vc: Option<LdpVcVpFormat>,
+}
+
+// ============================================================================
+// Client Metadata
+// ============================================================================
+
 /// Client metadata included in authorization requests.
 ///
-/// Extends the basic metadata with JWE encryption parameters
-/// and VP format capabilities needed for the HAIP profile.
+/// Only the fields the frontend can meaningfully supply are included here.
+/// Security-sensitive server-side fields are always injected by the server:
 ///
-/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html> §5
+/// | Wire field (sent to wallet)                   | Source           |
+/// |-----------------------------------------------|------------------|
+/// | `client_name`                                 | this struct      |
+/// | `logo_uri`                                    | this struct      |
+/// | `vp_formats_supported`                        | `vp_formats` below, re-keyed |
+/// | `jwks`                                        | server ephemeral key (HAIP only) |
+/// | `authorization_encrypted_response_alg`        | server — hardcoded `"ECDH-ES"` (HAIP only) |
+/// | `authorization_encrypted_response_enc`        | server — hardcoded `"A256GCM"` (HAIP only) |
+///
+/// ### Encryption note (HAIP, OpenID4VP §8.3 + HAIP §5)
+/// For the HAIP profile (`direct_post.jwt`), HAIP §5 mandates:
+/// - `alg`: **`ECDH-ES`** (direct key agreement, RFC 7518 §4.6) with P-256 keys — MUST be supported.
+/// - `enc`: any JWE content-encryption algorithm; default per OpenID4VP §8.3 is
+///   **`A128GCM`**. This server uses **`A256GCM`** for stronger 256-bit keys.
+///
+/// These are server-controlled (not caller-supplied) because the server generates
+/// the per-request ephemeral key pair and must be able to decrypt the wallet response.
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.9>
+/// See: <https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html#section-5>
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ClientMetadata {
+    /// Wallet-facing display name for the Relying Party (RFC 7591 `client_name`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_name: Option<String>,
+
+    /// Wallet-facing logo URI for the Relying Party (RFC 7591 `logo_uri`).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub logo_uri: Option<String>,
+
+    /// Credential format capabilities (OpenID4VP §11.1, Appendix B).
+    ///
+    /// Stored as `vp_formats` in the request body; re-keyed to
+    /// `vp_formats_supported` by the server when sending to the wallet.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub vp_formats: Option<serde_json::Value>,
-    /// Alias used in authorization requests.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vp_formats_supported: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub jwks: Option<serde_json::Value>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub authorization_encrypted_response_alg: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub authorization_encrypted_response_enc: Option<String>,
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub authorization_signed_response_alg: Option<String>,
+    pub vp_formats: Option<VpFormats>,
 }
 
 impl Default for ClientMetadata {
@@ -332,17 +460,14 @@ impl Default for ClientMetadata {
         Self {
             client_name: Some("ewQwe Age Verification Demo".to_string()),
             logo_uri: None,
-            vp_formats: Some(serde_json::json!({
-                "mso_mdoc": {
-                    "issuerauth_alg_values": [-7, -35, -36],
-                    "deviceauth_alg_values": [-7, -35, -36]
-                }
-            })),
-            vp_formats_supported: None,
-            jwks: None,
-            authorization_encrypted_response_alg: None,
-            authorization_encrypted_response_enc: None,
-            authorization_signed_response_alg: None,
+            // ES256=-7, ES384=-35, ES512=-36 (COSE algorithm integer IDs per RFC 8152)
+            vp_formats: Some(VpFormats {
+                mso_mdoc: Some(MsoMdocVpFormat {
+                    issuerauth_alg_values: Some(vec![-7, -35, -36]),
+                    deviceauth_alg_values: Some(vec![-7, -35, -36]),
+                }),
+                ..Default::default()
+            }),
         }
     }
 }

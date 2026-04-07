@@ -251,9 +251,13 @@ export function buildInitTransactionRequest(
     credential_type: credentialType,
     client_metadata: {
       client_name: "Digital Credentials Demo",
-      client_purpose: "Identity verification for demo purposes",
+      // COSE algorithm integer IDs (RFC 8152 / IANA COSE Algorithms):
+      // ES256=-7, ES384=-35, ES512=-36 — per OpenID4VP §B.2.2
       vp_formats: {
-        mso_mdoc: { alg: ["ES256", "ES384", "ES512", "EdDSA"] },
+        mso_mdoc: {
+          issuerauth_alg_values: [-7, -35, -36],
+          deviceauth_alg_values: [-7, -35, -36],
+        },
       },
     },
   };

@@ -177,15 +177,122 @@ export interface OpenID4VPRequest {
   client_metadata?: SimpleClientMetadata;
 }
 
+// ============================================================================
+// VP Format Capabilities (vp_formats / vp_formats_supported)
+// ============================================================================
+
+/**
+ * Per-format parameters for **ISO/IEC 18013-5 mDoc** (`mso_mdoc`).
+ *
+ * Algorithm identifiers are **COSE integer IDs** (RFC 8152 / IANA COSE Algorithms):
+ * - `-7`  → ES256 (ECDSA P-256 + SHA-256)  — HAIP mandatory
+ * - `-35` → ES384 (ECDSA P-384 + SHA-384)
+ * - `-36` → ES512 (ECDSA P-521 + SHA-512)
+ * - `-8`  → EdDSA
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.2.2
+ */
+export interface MsoMdocVpFormat {
+  /** COSE algorithm IDs accepted for the IssuerAuth `COSE_Sign1` structure. */
+  issuerauth_alg_values?: number[];
+  /** COSE algorithm IDs accepted for DeviceSignature or DeviceMac. */
+  deviceauth_alg_values?: number[];
+}
+
+/**
+ * Per-format parameters for **IETF SD-JWT VC** (`dc+sd-jwt` / `vc+sd-jwt`).
+ *
+ * Algorithm identifiers use JOSE string names and MUST be fully-specified
+ * per draft-ietf-jose-fully-specified-algorithms.
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.3.4
+ */
+export interface SdJwtVcVpFormat {
+  /** JOSE algorithm identifiers for the Issuer-signed SD-JWT (`alg` JOSE header). */
+  "sd-jwt_alg_values"?: string[];
+  /** JOSE algorithm identifiers for the Key Binding JWT (`alg` JOSE header). */
+  "kb-jwt_alg_values"?: string[];
+}
+
+/**
+ * Per-format parameters for **W3C VC signed as JWT** (`jwt_vc_json`).
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.1.3.1.3
+ */
+export interface JwtVcJsonVpFormat {
+  /** JOSE algorithm identifiers for the Verifiable Credential / Presentation
+   * (`alg` JWS header, RFC 7515). */
+  alg_values?: string[];
+}
+
+/**
+ * Per-format parameters for **W3C VC with Linked Data Proofs** (`ldp_vc`).
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B.1.3.2.3
+ */
+export interface LdpVcVpFormat {
+  /** Data Integrity proof type identifiers (e.g. `"DataIntegrityProof"`). */
+  proof_type_values?: string[];
+  /** Cryptosuite identifiers when proof type includes `"DataIntegrityProof"`
+   * (e.g. `"ecdsa-rdfc-2019"`, `"bbs-2023"`). */
+  cryptosuite_values?: string[];
+}
+
+/**
+ * VP format capabilities included in `client_metadata`.
+ *
+ * Each field corresponds to a **Credential Format Identifier** (a fixed enumeration
+ * per OpenID4VP 1.0 §11.1 and Appendix B).  The server re-keys this object from
+ * `vp_formats` (request body) to `vp_formats_supported` (wallet wire format).
+ *
+ * Format identifiers: `mso_mdoc`, `dc+sd-jwt`, `vc+sd-jwt`, `jwt_vc_json`, `ldp_vc`.
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-11.1
+ */
+export interface VpFormats {
+  /**
+   * ISO/IEC 18013-5 Mobile Documents (§B.2).
+   * Algorithm IDs use COSE integers (RFC 8152).
+   */
+  mso_mdoc?: MsoMdocVpFormat;
+  /**
+   * IETF SD-JWT VC — current IANA-registered identifier, canonical since Nov 2024 (§B.3).
+   * Algorithm IDs use JOSE strings.
+   */
+  "dc+sd-jwt"?: SdJwtVcVpFormat;
+  /**
+   * IETF SD-JWT VC — legacy identifier, superseded by `dc+sd-jwt` (§B.3).
+   * Both SHOULD be accepted during the transitional period per
+   * draft-ietf-oauth-sd-jwt-vc §3.2.1.
+   */
+  "vc+sd-jwt"?: SdJwtVcVpFormat;
+  /** W3C VC signed as JWT, without JSON-LD (§B.1.3.1). */
+  jwt_vc_json?: JwtVcJsonVpFormat;
+  /** W3C VC with Linked Data / Data Integrity Proofs (§B.1.3.2). */
+  ldp_vc?: LdpVcVpFormat;
+}
+
 /**
  * Simplified client metadata for frontend-initiated requests.
- * The backend augments this with JWE/JWKS params for HAIP.
+ *
+ * The backend augments this with JWE/JWKS params for HAIP:
+ * - `jwks`: ephemeral P-256 key for response encryption (generated per request)
+ * - `authorization_encrypted_response_alg`: `"ECDH-ES"` (fixed, HAIP §5 mandates P-256)
+ * - `authorization_encrypted_response_enc`: `"A256GCM"` (server default; OpenID4VP §8.3
+ *   default is `A128GCM` but the server uses `A256GCM` for stronger 256-bit encryption)
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.9
  */
 export interface SimpleClientMetadata {
+  /** Wallet-facing display name for the Relying Party (RFC 7591 `client_name`). */
   client_name?: string;
+  /** Wallet-facing logo URI for the Relying Party (RFC 7591 `logo_uri`). */
   logo_uri?: string;
-  client_purpose?: string;
-  vp_formats?: Record<string, { alg?: string[] }>;
+  /**
+   * Credential format capabilities (OpenID4VP §11.1, Appendix B).
+   * Re-keyed to `vp_formats_supported` by the server before sending to the wallet.
+   */
+  vp_formats?: VpFormats;
 }
 
 /**

@@ -31,6 +31,7 @@ export class RelyingPartyApp {
   initialize(): void {
     this.setupEventListeners();
     this.checkAPISupport();
+    this.updateProtocolDescription();
     this.renderClaims();
     this.updateProfileInfo();
 
@@ -82,9 +83,6 @@ export class RelyingPartyApp {
         this.updateProtocolDescription();
         this.updateInitTransactionRequest();
       });
-
-    // Initialize protocol description
-    this.updateProtocolDescription();
 
     // Request credentials button
     document
