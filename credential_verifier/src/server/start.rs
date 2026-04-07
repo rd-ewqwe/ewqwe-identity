@@ -1,7 +1,8 @@
 use crate::{
     AttResult, AttResultHelper,
+    journal::DynJournalStore,
     server::{
-        ServerParams, openid4vp_endpoints,
+        ServerParams, journal_endpoints, openid4vp_endpoints,
         verify_endpoint::{verify_credential_endpoint, version_endpoint},
     },
     tls::SslAuth,
@@ -61,6 +62,20 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             })?,
     );
 
+    // Initialise the verification journal store (when journaling is enabled).
+    let journal_store: Option<Arc<DynJournalStore>> = if params.journal_config.enabled {
+        let store = DynJournalStore::new(&params.journal_config)
+            .await
+            .map_err(|e| {
+                crate::AttError::Config(format!("Failed to initialise journal store: {e}"))
+            })?;
+        info!("Verification journal enabled (backend: {:?})", params.journal_config.backend);
+        Some(Arc::new(store))
+    } else {
+        info!("Verification journal disabled");
+        None
+    };
+
     // Clone attestation server params for HttpServer closure
     let server_params = params.clone();
 
@@ -72,11 +87,17 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         let app = App::new()
             .app_data(Data::new(server_params.clone())) // Share the attestation server parameters across the app.
             .app_data(PayloadConfig::new(1_000_000)) // Set the maximum size of the request payload.
-            .app_data(JsonConfig::default().limit(1_000_000)) // Set the maximum size of the JSON request payload.
-            .wrap(SslAuth);
+            .app_data(JsonConfig::default().limit(1_000_000)); // Set the maximum size of the JSON request payload.
 
         // Optionally share the OpenID4VP service
         let app = app.app_data(Data::new(openid4vp_service.clone()));
+
+        // Optionally share the journal store
+        let app = if let Some(store) = &journal_store {
+            app.app_data(Data::new(store.clone()))
+        } else {
+            app
+        };
 
         // The default scope serves from the root / the KMIP, permissions, and TEE endpoints
         let default_scope = web::scope("")
@@ -90,7 +111,11 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             .route("/version", web::get().to(version_endpoint));
 
         let openid4vp_scope = web::scope("/api")
-            .route("/verify", web::post().to(verify_credential_endpoint))
+            .service(
+                web::resource("/verify")
+                    .wrap(SslAuth)
+                    .route(web::post().to(verify_credential_endpoint)),
+            )
             .route(
                 "/openid4vp/init",
                 web::post().to(openid4vp_endpoints::init_transaction),
@@ -114,6 +139,22 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             .route(
                 "/openid4vp/.well-known/jwks.json",
                 web::get().to(openid4vp_endpoints::get_jwks),
+            )
+            // Journal endpoints — require mTLS (SslAuth applied to each resource).
+            .service(
+                web::resource("/journal/{username}/entries")
+                    .wrap(SslAuth)
+                    .route(web::get().to(journal_endpoints::list_journal_entries)),
+            )
+            .service(
+                web::resource("/journal/{username}/verify")
+                    .wrap(SslAuth)
+                    .route(web::get().to(journal_endpoints::verify_journal_chain)),
+            )
+            .service(
+                web::resource("/journal/{username}/download")
+                    .wrap(SslAuth)
+                    .route(web::get().to(journal_endpoints::download_journal)),
             );
 
         app.service(openid4vp_scope).service(default_scope)

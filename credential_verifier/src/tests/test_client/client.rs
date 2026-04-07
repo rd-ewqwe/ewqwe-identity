@@ -35,12 +35,16 @@
 use std::sync::Arc;
 
 use crate::{AttError, AttResult, tests::test_client::TestCookieStore};
-use reqwest::{Certificate, Client, Response};
+use reqwest::{Certificate, Client, Identity, Response};
 use serde::{Serialize, de::DeserializeOwned};
 use tracing::{debug, error, trace};
 
 const EC_CERTIFICATES_PATH: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certificates/ec");
+
+const USER1_P12_PATH: &str =
+    concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certificates/ec/ewqwe.user1.p12");
+const USER_P12_PASSWORD: &str = "secret";
 
 /// Test HTTP client with configurable authentication
 pub struct TestClient {
@@ -63,7 +67,58 @@ impl TestClient {
     /// A configured `TestClient` ready to make requests
     pub fn new(base_url: &str) -> AttResult<Self> {
         let cookie_store = Arc::new(TestCookieStore::new());
-        let client = Self::build_client(cookie_store.clone())?;
+        let client = Self::build_client(cookie_store.clone(), None)?;
+
+        Ok(Self {
+            client,
+            base_url: base_url.trim_end_matches('/').to_string(),
+            cookie_store,
+        })
+    }
+
+    /// Create a test client that authenticates with the bundled user1 client certificate.
+    pub fn new_with_user1_cert(base_url: &str) -> AttResult<Self> {
+        Self::new_with_pkcs12_identity(base_url, USER1_P12_PATH, USER_P12_PASSWORD)
+    }
+
+    /// Create a test client that authenticates with a specific client certificate/key pair.
+    pub fn new_with_client_certificate(
+        base_url: &str,
+        cert_path: &str,
+        key_path: &str,
+    ) -> AttResult<Self> {
+        let cookie_store = Arc::new(TestCookieStore::new());
+        let cert_pem = std::fs::read(cert_path)
+            .map_err(|e| AttError::Config(format!("Failed to read client certificate file: {e}")))?;
+        let key_pem = std::fs::read(key_path)
+            .map_err(|e| AttError::Config(format!("Failed to read client private key file: {e}")))?;
+        let identity = Identity::from_pkcs8_pem(&cert_pem, &key_pem).map_err(|e| {
+            AttError::Config(format!("Failed to parse client cert/key identity: {e}"))
+        })?;
+
+        let client = Self::build_client(cookie_store.clone(), Some(identity))?;
+
+        Ok(Self {
+            client,
+            base_url: base_url.trim_end_matches('/').to_string(),
+            cookie_store,
+        })
+    }
+
+    /// Create a test client from a PKCS#12 identity bundle.
+    pub fn new_with_pkcs12_identity(
+        base_url: &str,
+        p12_path: &str,
+        password: &str,
+    ) -> AttResult<Self> {
+        let cookie_store = Arc::new(TestCookieStore::new());
+
+        let p12_der = std::fs::read(p12_path)
+            .map_err(|e| AttError::Config(format!("Failed to read PKCS#12 file: {e}")))?;
+        let identity = Identity::from_pkcs12_der(&p12_der, password)
+            .map_err(|e| AttError::Config(format!("Failed to parse PKCS#12 identity: {e}")))?;
+
+        let client = Self::build_client(cookie_store.clone(), Some(identity))?;
 
         Ok(Self {
             client,
@@ -73,7 +128,10 @@ impl TestClient {
     }
 
     /// Build the reqwest client based on authentication configuration
-    fn build_client(cookie_store: Arc<TestCookieStore>) -> AttResult<Client> {
+    fn build_client(
+        cookie_store: Arc<TestCookieStore>,
+        identity: Option<Identity>,
+    ) -> AttResult<Client> {
         // Load the CA certificate for TLS verification
         let ca_cert_path = format!("{}/ewqwe.chain.pem", EC_CERTIFICATES_PATH);
         let ca_cert_pem = std::fs::read(&ca_cert_path)
@@ -82,9 +140,14 @@ impl TestClient {
             .map_err(|e| AttError::Config(format!("Failed to parse CA certificate: {}", e)))?;
         debug!("Loaded CA certificate from {}", ca_cert_path);
 
-        let builder = Client::builder()
+        let mut builder = Client::builder()
             .cookie_provider(cookie_store)
             .add_root_certificate(ca_cert);
+
+        if let Some(identity) = identity {
+            builder = builder.identity(identity);
+            debug!("Configured client certificate authentication");
+        }
 
         #[cfg(target_os = "macos")]
         // macOS's Security framework (used by native-tls) won't trust a

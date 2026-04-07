@@ -118,6 +118,75 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         ),
         attestation_issuer_certificate: None,
         attestation_issuer_key: None,
+        journal_config: Default::default(),
+    };
+
+    start_test_server(server_params).await
+}
+
+/// Starts a test server with the verification journal enabled (SQLite in-memory backend).
+///
+/// Use this helper in tests that exercise the `/api/journal/…` endpoints.
+pub async fn start_journal_test_server() -> AttResult<TestsContext> {
+    use crate::journal::{JournalBackend, JournalConfig};
+
+    let cargo_manifest_dir = PathBuf::from(
+        std::env::var("CARGO_MANIFEST_DIR")
+            .map_err(|_e| AttError::Test("Failed to find cargo manifest dir".to_owned()))?,
+    );
+    let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
+
+    let server_params = crate::ServerParams {
+        host_name: "127.0.0.1".to_string(),
+        host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
+        tls_params: crate::TlsParams {
+            server_certificate: certificates_dir
+                .join("ewqwe.server.cert.pem")
+                .to_string_lossy()
+                .to_string(),
+            server_private_key: certificates_dir
+                .join("ewqwe.server.key.pem")
+                .to_string_lossy()
+                .to_string(),
+            server_ca_chain: certificates_dir
+                .join("ewqwe.chain.pem")
+                .to_string_lossy()
+                .to_string(),
+            client_ca_cert_chain: Some(
+                certificates_dir
+                    .join("ewqwe.chain.pem")
+                    .to_string_lossy()
+                    .to_string(),
+            ),
+            tls_cipher_suites: None,
+        },
+        default_username: Some("default_user".to_string()),
+        openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig {
+            transaction_ttl_secs: Some(60),
+            transaction_store: Default::default(),
+            haip_config: Some(ewqwe_openid4vp::HaipConfig {
+                x509_cert_path: certificates_dir
+                    .join("ewqwe.server.fullchain.pem")
+                    .to_string_lossy()
+                    .to_string(),
+                x509_key_path: certificates_dir
+                    .join("ewqwe.server.key.pem")
+                    .to_string_lossy()
+                    .to_string(),
+            }),
+        },
+        trusted_issuer_certs_dir: Some(
+            cargo_manifest_dir
+                .join("src/tests/certificates/trusted_issuers")
+                .to_string_lossy()
+                .to_string(),
+        ),
+        attestation_issuer_certificate: None,
+        attestation_issuer_key: None,
+        journal_config: JournalConfig {
+            enabled: true,
+            backend: JournalBackend::SqliteMemory,
+        },
     };
 
     start_test_server(server_params).await

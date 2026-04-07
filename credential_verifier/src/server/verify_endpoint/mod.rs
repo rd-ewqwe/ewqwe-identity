@@ -12,10 +12,13 @@ mod sd_jwt;
 use crate::{
     AttError,
     attestation::{Attestation, AttestationSigner, JwtSigner, SigningAlgorithm},
+    journal::{DynJournalStore, append_verification},
     mdoc_decoder,
     server::{ServerParams, Version},
+    tls::AuthenticatedUser,
 };
-use actix_web::{HttpRequest, HttpResponse, web};
+use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
+use base64::Engine as _;
 use ewqwe_openid4vp::{OpenID4VPService, OpenID4VPTransaction};
 use openssl::x509::X509;
 use serde::{Deserialize, Serialize};
@@ -342,13 +345,27 @@ pub(crate) async fn version_endpoint(_req: HttpRequest) -> Result<HttpResponse, 
 /// For mDoc: the full COSE_Sign1 `IssuerAuth` and `DeviceSignature` are verified,
 /// including reconstruction of the OpenID4VP `SessionTranscript`.
 pub(crate) async fn verify_credential_endpoint(
-    _req: HttpRequest,
+    req: HttpRequest,
     body: web::Json<VerifyCredentialRequest>,
     service: web::Data<Arc<OpenID4VPService>>,
     server_params: web::Data<Arc<ServerParams>>,
+    journal: Option<web::Data<Arc<DynJournalStore>>>,
 ) -> Result<HttpResponse, AttError> {
+    let username = req
+        .extensions()
+        .get::<AuthenticatedUser>()
+        .map(|u| u.username.clone())
+        .ok_or_else(|| {
+            AttError::Authentication(
+                "mTLS authentication required: authenticated user not found".to_string(),
+            )
+        })?;
+
+    tracing::debug!("Authenticated user: {}", username);
+
     tracing::debug!(
         vp_token_len = body.vp_token.len(),
+        user = %username,
         state = ?body.state,
         client_id = ?body.client_id,
         "verify_credential request received"
@@ -368,12 +385,12 @@ pub(crate) async fn verify_credential_endpoint(
     };
     let server_nonce = transaction.as_ref().map(|tx| tx.nonce.clone());
 
-    if let (Some(tx), Some(client_id)) = (transaction.as_ref(), body.client_id.as_deref()) {
-        if tx.client_id != client_id {
-            return Err(AttError::BadRequest(
-                "client_id does not match the transaction-bound request".to_string(),
-            ));
-        }
+    if let (Some(tx), Some(client_id)) = (transaction.as_ref(), body.client_id.as_deref())
+        && tx.client_id != client_id
+    {
+        return Err(AttError::BadRequest(
+            "client_id does not match the transaction-bound request".to_string(),
+        ));
     }
 
     let (vp_token, credential_id) = parse_vp_token(&body.vp_token)?;
@@ -537,6 +554,34 @@ pub(crate) async fn verify_credential_endpoint(
         &server_params,
     )?;
     tracing::info!(doc_type = ?doc_type, client_id = ?body.client_id, "credential verified");
+
+    // Append to the verification journal if enabled.
+    if let Some(journal_store) = &journal {
+        let jti = extract_attestation_jti(&attestation);
+        let summary = serde_json::json!({
+            "success": true,
+            "doc_type": doc_type,
+            "namespace": namespace,
+            "signature_valid": true,
+            "not_expired": true,
+            "issuer_trusted": true,
+        });
+        if let Err(e) = append_verification(
+            journal_store.as_ref().as_ref(),
+            &username,
+            &attestation,
+            jti.as_deref(),
+            Some(effective_client_id),
+            Some(&doc_type),
+            Some(&namespace),
+            summary,
+        )
+        .await
+        {
+            tracing::error!(error = %e, "failed to append to verification journal");
+            return Err(AttError::from(e));
+        }
+    }
 
     Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
         success: true,
@@ -713,4 +758,17 @@ fn create_attestation(
 
     String::from_utf8(token_bytes)
         .map_err(|e| AttError::Generic(format!("Failed to encode attestation: {e}")))
+}
+
+/// Extract the `jti` claim from a compact JWT without full signature verification.
+///
+/// The `jti` is embedded in the JSON payload (second dot-separated segment).
+/// Returns `None` on any parse failure — the journal will simply record a null jti.
+fn extract_attestation_jti(compact_jwt: &str) -> Option<String> {
+    let payload_b64 = compact_jwt.splitn(3, '.').nth(1)?;
+    let decoded = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(payload_b64)
+        .ok()?;
+    let json: serde_json::Value = serde_json::from_slice(&decoded).ok()?;
+    json.get("jti")?.as_str().map(str::to_string)
 }

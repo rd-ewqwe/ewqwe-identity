@@ -85,28 +85,28 @@ Ready to get started? Follow these paths based on your role:
 
 This documentation uses terminology from European Digital Identity and credential verification standards:
 
-| Term               | Definition                                                      |
-| :----------------- | :-------------------------------------------------------------- |
-| **AP**             | Attestation Provider                                            |
-| **ARF**            | Architecture and Reference Framework                            |
-| **AV app**         | Age Verification App                                            |
-| **AVI**            | Age Verification App Instance (the user's digital wallet)       |
-| **AVAP**           | Age Verification App Provider                                   |
-| **CA**             | Certificate Authority                                           |
-| **DG CNECT**       | Directorate General Network, Content and Technology             |
-| **eIDAS**          | Electronic Identification, Authentication and Trust Services    |
-| **EU**             | European Union                                                  |
-| **EUDI**           | European Digital Identity                                       |
-| **EUDIW**          | European Digital Identity Wallet (also EUDI Wallet)             |
-| **LoA**            | Level of Assurance                                              |
-| **mDL**            | Mobile Driver's License (ISO/IEC 18013-5 format)                |
-| **mDoc**           | Mobile Document (CBOR-encoded credential format)                |
-| **PID**            | Person Identification Data (EU Digital Identity credential)     |
+| Term               | Definition                                                         |
+| :----------------- | :----------------------------------------------------------------- |
+| **AP**             | Attestation Provider                                               |
+| **ARF**            | Architecture and Reference Framework                               |
+| **AV app**         | Age Verification App                                               |
+| **AVI**            | Age Verification App Instance (the user's digital wallet)          |
+| **AVAP**           | Age Verification App Provider                                      |
+| **CA**             | Certificate Authority                                              |
+| **DG CNECT**       | Directorate General Network, Content and Technology                |
+| **eIDAS**          | Electronic Identification, Authentication and Trust Services       |
+| **EU**             | European Union                                                     |
+| **EUDI**           | European Digital Identity                                          |
+| **EUDIW**          | European Digital Identity Wallet (also EUDI Wallet)                |
+| **LoA**            | Level of Assurance                                                 |
+| **mDL**            | Mobile Driver's License (ISO/IEC 18013-5 format)                   |
+| **mDoc**           | Mobile Document (CBOR-encoded credential format)                   |
+| **PID**            | Person Identification Data (EU Digital Identity credential)        |
 | **RP**             | Relying Party (web application requesting credential verification) |
-| **U**              | User                                                            |
-| **VP**             | Verifiable Presentation (credential presented by wallet)        |
-| **WB**             | Web Browser (or web app)                                        |
-| **ZKP**            | Zero Knowledge Proof                                            |
+| **U**              | User                                                               |
+| **VP**             | Verifiable Presentation (credential presented by wallet)           |
+| **WB**             | Web Browser (or web app)                                           |
+| **ZKP**            | Zero Knowledge Proof                                               |
 
 ## Getting Help and Contributing
 

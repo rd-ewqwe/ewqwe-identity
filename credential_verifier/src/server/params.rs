@@ -1,4 +1,4 @@
-use crate::{AttError, AttResult, parameters::TlsParams};
+use crate::{AttError, AttResult, journal::JournalConfig, parameters::TlsParams};
 use serde::{Deserialize, Serialize};
 use std::{
     env, fs,
@@ -38,6 +38,14 @@ pub struct ServerParams {
     /// Defaults to `tls_params.server_private_key` if not set.
     #[serde(default)]
     pub attestation_issuer_key: Option<String>,
+
+    /// Verification journal configuration.
+    ///
+    /// When present and `enabled = true`, every successful attestation is
+    /// recorded in an append-only, hash-chained journal.
+    /// Omit or set `enabled = false` to disable journaling.
+    #[serde(default)]
+    pub journal_config: JournalConfig,
 }
 
 impl ServerParams {
@@ -167,6 +175,13 @@ impl ServerParams {
 
         if let Some(key_path) = &mut self.attestation_issuer_key {
             *key_path = resolve_path(base_dir, key_path);
+        }
+
+        // Resolve the SQLite file path in the journal config if present.
+        if let crate::journal::JournalBackend::SqliteFile { path } =
+            &mut self.journal_config.backend
+        {
+            *path = resolve_path(base_dir, path);
         }
     }
 }

@@ -12,7 +12,7 @@ The **mso_mdoc** format (Mobile Security Object / mDoc) is defined in ISO/IEC 18
 
 An mDoc presentation consists of a `DeviceResponse` CBOR structure:
 
-```
+```cbor
 DeviceResponse = {
   "version": "1.0",
   "documents": [ Document+ ],          ; one or more documents
@@ -30,7 +30,7 @@ Document = {
 
 `IssuerSigned` carries the issuer-authenticated data:
 
-```
+```cbor
 IssuerSigned = {
   "nameSpaces": IssuerNameSpaces,      ; disclosed claim values
   "issuerAuth": COSE_Sign1             ; the Mobile Security Object (MSO)
@@ -39,7 +39,7 @@ IssuerSigned = {
 
 The **MSO** is a signed CBOR data structure embedded as the payload of a `COSE_Sign1`. It contains:
 
-```
+```cbor
 MobileSecurityObject = {
   "version": "1.0",
   "digestAlgorithm": "SHA-256",
@@ -62,7 +62,7 @@ MobileSecurityObject = {
 
 Each claim is wrapped as an `IssuerSignedItemBytes`:
 
-```
+```cbor
 IssuerSignedItemBytes = #6.24(bstr .cbor IssuerSignedItem)
 
 IssuerSignedItem = {
@@ -75,7 +75,7 @@ IssuerSignedItem = {
 
 The digest in the MSO is:
 
-```
+```cbor
 digest = SHA-256( cbor(IssuerSignedItemBytes) )
        = SHA-256( cbor(Tag(24, bstr(cbor(IssuerSignedItem)))) )
 ```
@@ -86,7 +86,7 @@ digest = SHA-256( cbor(IssuerSignedItemBytes) )
 
 The MSO is signed as a `COSE_Sign1` with a detached (or embedded) payload:
 
-```
+```cbor
 COSE_Sign1 = [
   protected: bstr .cbor { 1: alg },   ; e.g. alg = -7 (ES256)
   unprotected: { 33: [x5chain certs] },
@@ -101,7 +101,7 @@ The issuer certificate chain is carried in the `x5chain` (header label 33) unpro
 
 `DeviceSigned` proves that the holder (device) is the legitimate subject of the credential — it is **holder binding**.
 
-```
+```cbor
 DeviceSigned = {
   "nameSpaces": DeviceNameSpacesBytes,  ; Tag(24, bstr .cbor DeviceNameSpaces)
   "deviceAuth": DeviceAuth
@@ -116,7 +116,7 @@ DeviceAuth = {
 
 The COSE_Sign1 device signature uses a **detached payload** called `DeviceAuthenticationBytes`:
 
-```
+```cbor
 DeviceAuthentication = [
   "DeviceAuthentication",
   SessionTranscript,          ; binds to the specific presentation session
@@ -133,7 +133,7 @@ The wallet signs over `DeviceAuthenticationBytes` (the `Tag(24, bstr(...))` wrap
 
 For OpenID4VP presentations, `SessionTranscript` is:
 
-```
+```cbor
 SessionTranscript = [
   null,            ; DeviceEngagementBytes (absent for OID4VP)
   null,            ; EReaderKeyBytes (absent for OID4VP)
@@ -161,11 +161,11 @@ The `jwkThumbprint` is present only when `response_mode=direct_post.jwt` (JARM e
 
 **SD-JWT VC** (Selective Disclosure JWT for Verifiable Credentials) is defined in [IETF SD-JWT VC](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc.html). It is used for the EU PID, mDL (HAIP profile), and many other credentials in the EUDI ecosystem.
 
-### Overall Structure
+### Structure
 
 An SD-JWT VC is composed of:
 
-```
+```text
 <Issuer-signed JWT>~<Disclosure_1>~<Disclosure_2>~...~<KB-JWT>
 ```
 
@@ -205,7 +205,7 @@ An SD-JWT VC is composed of:
 
 Each selectively-disclosed claim is represented as a Disclosure:
 
-```
+```spec
 Disclosure = BASE64URL( JSON([ salt, claim_name, claim_value ]) )
 
 Example (decoded):
@@ -214,7 +214,7 @@ Example (decoded):
 
 The digest embedded in the JWT is:
 
-```
+```spec
 digest = BASE64URL( SHA-256( ASCII(Disclosure) ) )
 ```
 
@@ -248,28 +248,28 @@ See also [OpenID4VP §5.3](https://openid.net/specs/openid-4-verifiable-presenta
 
 SD-JWT VCs use standard JSON Web Signatures (JWS, RFC 7515). Common algorithms:
 
-| Algorithm | Curve    | OID        |
-|-----------|----------|------------|
-| ES256     | P-256    | SHA-256    |
-| ES384     | P-384    | SHA-384    |
+| Algorithm | Curve    | OID                 |
+|-----------|----------|---------------------|
+| ES256     | P-256    | SHA-256             |
+| ES384     | P-384    | SHA-384             |
 | RS256     | RSA-2048 | PKCS#1 v1.5 SHA-256 |
-| PS256     | RSA-2048 | RSASSA-PSS SHA-256 |
+| PS256     | RSA-2048 | RSASSA-PSS SHA-256  |
 
 ---
 
 ## Comparison Table
 
-| Property                  | mso_mdoc                            | SD-JWT VC                            |
-|---------------------------|-------------------------------------|--------------------------------------|
-| Encoding                  | CBOR (binary)                       | JSON / Base64URL                     |
-| Container                 | `DeviceResponse`                    | `<jwt>~<disc>~...~<kb-jwt>`          |
-| Issuer signature          | `COSE_Sign1` (EC/RSA)               | JWS (EC/RSA)                         |
-| Selective disclosure      | Salted SHA-256 per `IssuerSignedItem` | Salted SHA-256 per Disclosure       |
-| Holder binding            | `DeviceSigned` (COSE_Sign1/Mac0)    | KB-JWT (JWS)                         |
-| Session binding           | `SessionTranscript` (in DeviceAuth) | `aud` + `nonce` in KB-JWT           |
-| Multi-document            | Yes (`documents` array)             | One credential per presentation      |
-| Binary-friendly           | Yes (native CBOR)                   | Base64URL encoding needed            |
-| Primary standard          | ISO/IEC 18013-5                     | IETF SD-JWT VC + OpenID4VP           |
+| Property                  | mso_mdoc                              | SD-JWT VC                            |
+|---------------------------|---------------------------------------|--------------------------------------|
+| Encoding                  | CBOR (binary)                         | JSON / Base64URL                     |
+| Container                 | `DeviceResponse`                      | `<jwt>~<disc>~...~<kb-jwt>`          |
+| Issuer signature          | `COSE_Sign1` (EC/RSA)                 | JWS (EC/RSA)                         |
+| Selective disclosure      | Salted SHA-256 per `IssuerSignedItem` | Salted SHA-256 per Disclosure        |
+| Holder binding            | `DeviceSigned` (COSE_Sign1/Mac0)      | KB-JWT (JWS)                         |
+| Session binding           | `SessionTranscript` (in DeviceAuth)   | `aud` + `nonce` in KB-JWT            |
+| Multi-document            | Yes (`documents` array)               | One credential per presentation      |
+| Binary-friendly           | Yes (native CBOR)                     | Base64URL encoding needed            |
+| Primary standard          | ISO/IEC 18013-5                       | IETF SD-JWT VC + OpenID4VP           |
 
 ---
 

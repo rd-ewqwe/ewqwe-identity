@@ -162,6 +162,11 @@ url     = "redis://127.0.0.1:6379"
 [openid4vp_config.haip_config]
 x509_cert_path = "certs/server.fullchain.pem"
 x509_key_path  = "certs/server.key.pem"
+
+[journal_config]
+enabled = true
+backend = "postgres"
+url     = "postgres://ewqwe:ewqwe@localhost/ewqwe"
 ```
 
 ### Test Certificates
@@ -234,22 +239,72 @@ Example log output:
 
 ### Standard TLS (Server Authentication)
 
-Requires `server_private_key`, `server_certificate`, and `server_ca_chain` in `[tls_params]`.
+Configure with `server_private_key`, `server_certificate`, and `server_ca_chain` in `[tls_params]`. The server presents certificates to clients and validates server certificate chain.
 
-### Mutual TLS (mTLS)
+### Mutual TLS (mTLS) - Client Certificate Authentication
 
-Add `client_ca_cert_chain` to `[tls_params]`. With mTLS:
+Configure with `client_ca_cert_chain` in `[tls_params]` to require client certificates.
 
-- Clients must present valid certificates signed by the client CA
-- The server rejects connections without a valid client certificate
+**How it works for `/api/verify`**:
+
+1. The TLS listener is configured to validate client certificates against the configured CA chain when a client certificate is presented.
+2. The `SslAuth` middleware runs in front of `POST /api/verify` and requires a client certificate for that endpoint.
+3. The server extracts the client certificate from the TLS connection.
+4. The Common Name (CN) field of the client certificate is extracted and used as the **username**.
+5. Wildcard usernames are rejected (`CN` values ending in `*` are denied).
+6. This username is used to:
+   - Identify the authenticated client
+   - Lookup user-specific journal entries (append-only audit logs)
+   - Perform per-user authorization checks
+
+**Configuration**:
+
+```toml
+[tls_params]
+server_private_key    = "certs/server.key.pem"
+server_certificate    = "certs/server.cert.pem"
+server_ca_chain       = "certs/ca.chain.pem"
+client_ca_cert_chain  = "certs/client-ca.pem"  # Required for mTLS
+```
+
+**Behavior for `POST /api/verify`**:
+
+- ✅ **Valid client certificate**: Request proceeds with `username` = certificate CN
+- ❌ **No client certificate**: Request rejected with `401 Unauthorized`
+- ❌ **Invalid certificate chain**: TLS handshake fails or request rejected
+- ❌ **Certificate not signed by client CA**: TLS handshake fails
+- ❌ **Wildcard CN (for example `CN=test*`)**: Request rejected with `401 Unauthorized`
+
+Other endpoints (such as `/version`) are not protected by `SslAuth` and therefore do not require a client certificate.
+
+**Client certificate requirements**:
+
+- Must be signed by a CA listed in `client_ca_cert_chain`
+- Must have a valid Common Name (CN) in the Subject field
+- Must be valid (not expired, not before current time)
+- CN format: Any UTF-8 string (recommended: `CN=client-name`)
+
+**Example client certificate**:
+
+```
+Subject: CN=ewqwe-client-01
+Issuer: C=EU, O=ewQwe, CN=ewQwe Client CA
+```
 
 ### Certificate Formats
 
 All certificates must be in **PEM format**:
 
-- **Private Keys**: PKCS#8 PEM encoding
-- **Certificates**: X.509 PEM encoding
+- **Private Keys**: PKCS#8 PEM encoding (`-----BEGIN PRIVATE KEY-----`)
+- **Certificates**: X.509 PEM encoding (`-----BEGIN CERTIFICATE-----`)
 - **CA Chains**: Concatenated PEM certificates (root and intermediates)
+
+**Test certificates** are available in:
+
+- **EC (P-256)**: `credential_verifier/src/tests/certificates/ec/`
+- **RSA (4096-bit)**: `credential_verifier/src/tests/certificates/rsa/`
+
+⚠️ **Never use test certificates in production environments.**
 
 ## API Endpoints
 
@@ -377,7 +432,130 @@ The type definitions for these mechanisms already exist in `crates/openid4vp/src
 
 **Note**: No central Age Verification issuer registry exists yet. The EU LOTL covers eIDAS services but not AV-specific credential issuers. The Age Verification Profile uses the `redirect_uri` `client_id` scheme precisely because no issuer trust framework is established yet.
 
-### Production Checklist
+## Verification Journal
+
+The credential verifier maintains an **append-only, hash-chained audit log** of every successful age verification event per user. The journal provides:
+
+- **Non-repudiation**: An immutable record of every credential the verifier accepted
+- **Tamper detection**: Any modification to any historical entry breaks the chain
+- **Per-user scoping**: Each client (identified by its mTLS certificate CN) has an independent chain
+- **mTLS-protected API**: Only the owner of a journal can read or download it
+
+### Hash-Chaining Formula
+
+```
+attestation_signature_hash = SHA-256(attestation_jwt_bytes)
+entry_hash = SHA-256(previous_hash_bytes || attestation_signature_hash_bytes)
+```
+
+For the genesis (first) entry, `previous_hash` is treated as an empty byte string.
+
+### Configuration
+
+Add a `[journal_config]` section to `credential-server.toml`:
+
+```toml
+# SQLite in-memory — no persistence, useful for development / smoke tests
+[journal_config]
+enabled = true
+backend = "sqlite_memory"
+
+# SQLite file — single-instance deployments with persistence across restarts
+# [journal_config]
+# enabled  = true
+# backend  = "sqlite_file"
+# path     = "/var/lib/ewqwe/journal.db"
+
+# PostgreSQL — recommended for multi-instance / HA deployments
+# [journal_config]
+# enabled  = true
+# backend  = "postgres"
+# url      = "postgres://ewqwe:ewqwe@localhost/ewqwe"
+```
+
+The journal is **disabled by default** (`enabled = false`) to preserve backward compatibility.
+
+### Journal HTTP API
+
+All journal endpoints are under `/api/journal/{username}/` and require mTLS authentication. A client may only access its **own** journal (the authenticated CN must match the `{username}` path parameter).
+
+#### List Entries
+
+```
+GET /api/journal/{username}/entries
+```
+
+| Query Param | Type         | Default | Description                           |
+| :---------- | :----------- | :------ | :------------------------------------ |
+| `limit`     | integer      | 20      | Maximum results (1–1000)              |
+| `before`    | RFC 3339     | —       | Only entries created before this time |
+| `after`     | RFC 3339     | —       | Only entries created after this time  |
+
+Returns a JSON array of journal entries (newest first):
+
+```json
+[
+  {
+    "id": "018f…",
+    "username": "alice@example.com",
+    "previous_hash": "3a7b…",
+    "entry_hash": "c2d9…",
+    "attestation_signature_hash": "e1f8…",
+    "attestation_jti": "550e8400-e29b-41d4-a716-446655440000",
+    "client_id": "redirect_uri:https://rp.example.com/cb",
+    "doc_type": "org.iso.18013.5.1.mDL",
+    "namespace": "org.iso.18013.5.1",
+    "verification_summary": { "age_over_18": true },
+    "created_at": "2025-03-20T14:32:01Z"
+  }
+]
+```
+
+#### Verify Chain Integrity
+
+```
+GET /api/journal/{username}/verify
+```
+
+Recomputes every `entry_hash` from genesis and checks the head pointer. Returns:
+
+```json
+{
+  "username": "alice@example.com",
+  "valid": true,
+  "entries_verified": 42,
+  "first_entry_hash": "0000…",
+  "last_entry_hash": "c2d9…",
+  "error": null
+}
+```
+
+If any entry has been tampered with, `valid` is `false` and `error` contains a description.
+
+#### Download Journal
+
+```
+GET /api/journal/{username}/download?before=&after=&limit=
+```
+
+Returns the same filtered entries as `list_entries` as a `Content-Disposition: attachment` JSON file named `journal_{username}.json`.
+
+### Backend Comparison
+
+| Backend         | Persistence | Multi-instance | Use case                       |
+| :-------------- | :---------- | :------------- | :----------------------------- |
+| `sqlite_memory` | ✗           | ✗              | Tests and development          |
+| `sqlite_file`   | ✓           | ✗              | Single-instance with audit log |
+| `postgres`      | ✓           | ✓              | HA / multi-instance production |
+
+### Concurrent Append Safety
+
+Journal appends use an **optimistic compare-and-swap (CAS)** strategy:
+
+- **SQLite**: A `tokio::sync::Mutex` serializes appends within the process + an exclusive transaction for atomic read-check-write.
+- **PostgreSQL**: `SELECT … FOR UPDATE` inside a DB transaction ensures atomicity across multiple server instances.
+
+If the head changes concurrently (e.g., another request completed first), the append retries up to 5 times. Exhausting retries returns an error to the caller (verification was still successful; the journal write failed).
 
 - [x] ~~Nonce replay prevention: server-stored nonce, not client-supplied~~
 - [x] ~~SD-JWT VC issuer JWT signature verification~~
@@ -387,10 +565,12 @@ The type definitions for these mechanisms already exist in `crates/openid4vp/src
 - [x] ~~mDoc IssuerSigned digest verification~~
 - [x] ~~mDoc DeviceSignature verification bound to OpenID4VPHandover~~
 - [x] ~~Consume verified transactions (single-use VP tokens)~~
+- [x] ~~mTLS client certificate authentication (CN as username)~~
+- [x] ~~Append-only journaling with hash chaining (SQLite / PostgreSQL backends)~~
+- [x] ~~Optimistic locking for journal integrity (Mutex + CAS / SELECT FOR UPDATE)~~
 - [ ] Replace test certificates with production certificates from trusted CA
 - [ ] Configure production Redis or PostgreSQL for HA transaction storage
-- [ ] Enable mTLS for client authentication
-- [ ] Implement `deviceAuth.deviceMac` verification when that proof mode is needed
+- [ ] Enable `deviceAuth.deviceMac` verification when that proof mode is needed
 - [ ] Integrate with dynamic trust sources (ETSI Trusted Lists, OpenID Federation)
 - [ ] Implement credential revocation checking (CRLs or OCSP)
 - [ ] Set up centralized logging/monitoring (ELK, Datadog, etc.)

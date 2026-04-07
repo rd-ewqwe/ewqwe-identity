@@ -114,7 +114,7 @@ In the DCAPI flow, the DeviceResponse is **not** returned in plaintext: it is em
 
 ---
 
-# Implementation examples
+## Implementation examples
 
 The examples below are intentionally explicit about the byte transformations (CBOR ↔ base64url) and the HPKE boundary.
 
@@ -271,7 +271,7 @@ A wallet implementation typically:
 
 ---
 
-# Interop checklist (things that commonly break)
+## Interop checklist (things that commonly break)
 
 - Base64url encoding must be **no padding**.
 - CBOR must preserve byte strings as byte strings (avoid accidental UTF-8 conversions).
@@ -279,14 +279,14 @@ A wallet implementation typically:
 - HPKE suite parameters (KEM/KDF/AEAD) must match across RP and wallet.
 - Bind `nonce` into the cryptographic context as required by your chosen profile.
 
-# Security guidance (Age Verification)
+## Security guidance (Age Verification)
 
 - Prefer an "over age" attestation over sending date of birth.
 - Treat `nonce` as single-use; reject reused nonces server-side.
 - Enforce HTTPS and validate RP origin and audience binding.
 - Store as little as possible; log only opaque transaction IDs.
 
-# References
+## References
 
 - EU Age Verification Profile – Annex A, A.5 and the Appendix "Metadata": <https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#ap-metadata>
 - HPKE (RFC 9180): <https://www.rfc-editor.org/rfc/rfc9180>

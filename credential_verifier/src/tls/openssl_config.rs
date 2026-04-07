@@ -6,15 +6,8 @@ use openssl::{
     ssl::{SslAcceptor, SslAcceptorBuilder, SslMethod, SslVerifyMode, SslVersion},
     x509::{X509, store::X509StoreBuilder},
 };
-use tracing::{info, trace};
-/// The extension struct holding the peer certificate during the connection.
-///
-/// This struct stores the peer certificate in the request context.
-#[derive(Debug, Clone)]
-pub struct PeerCertificate {
-    /// The peer certificate.
-    pub cert: X509,
-}
+use tracing::info;
+use tracing::trace;
 
 // TLS 1.3 cipher suites as defined in RFC 8446
 pub const TLS13_CIPHER_SUITES: &[&str] = &[
@@ -238,7 +231,7 @@ pub(crate) fn configure_client_cert_verification(
             "Failed to set verify cert store in SslAcceptorBuilder: {e}"
         ))
     })?;
-    // Request the client certificates only, do not require them
+    // Request and verify client certificates for mutual TLS
     builder.set_verify(SslVerifyMode::PEER);
 
     Ok(())

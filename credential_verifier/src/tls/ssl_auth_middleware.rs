@@ -7,7 +7,7 @@
 use actix_service::{Service, Transform};
 use actix_web::dev::Extensions;
 use actix_web::{
-    Error, HttpMessage,
+    Error, HttpMessage, HttpResponse,
     body::{BoxBody, EitherBody},
     dev::{ServiceRequest, ServiceResponse},
 };
@@ -25,7 +25,7 @@ use std::{
 };
 use tracing::{debug, error, trace};
 
-use crate::{AttError, AttResult};
+use crate::{AttError, AttResult, AuthenticatedUser};
 
 /// The extension struct holding the peer certificate during the connection.
 ///
@@ -65,15 +65,6 @@ pub fn extract_openssl_peer_certificate(cnx: &dyn Any, extensions: &mut Extensio
             cnx
         );
     }
-}
-
-/// Represents an authenticated user
-///
-/// This struct is stored in the request extensions after successful
-/// authentication and can be used by request handlers.
-pub struct AuthenticatedUser {
-    /// The authenticated username
-    pub username: String,
 }
 
 /// The middleware that checks the peer certificate and extracts the common name.
@@ -149,7 +140,12 @@ where
                     }
                     Err(e) => {
                         debug!("Client certificate authentication failed: {e:?}");
-                        // Let downstream services to decide how to handle unauthenticated requests
+                        // Return 401 Unauthorized for unauthenticated requests
+                        let response = req.into_response(
+                            HttpResponse::Unauthorized()
+                                .body(format!("Authentication failed: {}", e)),
+                        );
+                        return Ok(response.map_into_right_body());
                     }
                 }
             }
@@ -175,23 +171,26 @@ fn ssl_auth(req: &ServiceRequest) -> AttResult<AuthenticatedUser> {
         .entries_by_nid(Nid::COMMONNAME)
         .next()
     {
-        None => {
-            return Err(AttError::Authentication(
-                "Client certificate has no common name".to_owned(),
-            ));
-        }
+        None => Err(AttError::Authentication(
+            "Client certificate has no common name".to_owned(),
+        )),
         Some(cn) => match cn.data().as_utf8() {
-            Ok(cn) => {
-                trace!("Client certificate common name: {}", cn);
-                Ok(AuthenticatedUser {
-                    username: cn.to_string(),
-                })
+            Ok(cn_data) => {
+                let username = cn_data.to_string();
+                trace!("Client certificate common name: {}", username);
+
+                // Reject wildcard usernames (security: prevent certificate substitution attacks)
+                if username.ends_with('*') {
+                    return Err(AttError::Authentication(
+                        "Wildcard usernames are not permitted".to_owned(),
+                    ));
+                }
+
+                Ok(AuthenticatedUser { username })
             }
-            Err(e) => {
-                return Err(AttError::Authentication(format!(
-                    "Client certificate common name is not UTF-8: {e}"
-                )));
-            }
+            Err(e) => Err(AttError::Authentication(format!(
+                "Client certificate common name is not UTF-8: {e}"
+            ))),
         },
     }
 }
