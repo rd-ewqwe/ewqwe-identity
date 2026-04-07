@@ -71,8 +71,18 @@ Key parameters:
 ### Cargo Workspace Structure
 
 - **Root workspace** (`Cargo.toml`): Defines shared dependencies via `[workspace.dependencies]`
-- **Members**: `credential_verifier`, `crates/logging`, `crates/openid4vp`
+- **Members**: `credential_verifier`, `crates/logging`, `crates/openid4vp`, `crates/ewqwe-digital-identity`, `crates/ewqwe-digital-credential`
 - All members use `workspace = true` for version, edition, rust-version, authors, license
+
+### Credential Building Library (`crates/ewqwe-digital-credential`)
+
+- `ewqwe_digital_credential` crate provides all tooling to build and sign EU/EUDI credentials:
+  - **`CredentialIssuer`**: ephemeral two-level PKI (CA → issuer leaf + device key) for test and demo scenarios
+  - **SD-JWT VC**: EU Age Verification Profile (`eu.europa.ec.av.1`) and EUDI PID (`eu.europa.ec.eudi.pid.1`)
+  - **mDoc DeviceResponse**: ISO/IEC 18013-5, OpenID4VP `SessionTranscript`-bound `DeviceSignature`
+  - Feature `vendored` links OpenSSL statically (used in CI / dev-dependencies)
+- Originated from `credential_verifier/src/tests/credential_builder.rs` (now removed).
+- See [`crates/ewqwe-digital-credential/README.md`](crates/ewqwe-digital-credential/README.md) for full API docs.
 
 ### OpenID4VP Service Layer
 
@@ -362,6 +372,7 @@ let verified = verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigning
 | Test certificates (EC)  | [credential_verifier/src/tests/certificates/ec/](credential_verifier/src/tests/certificates/ec/)   |
 | Test certificates (RSA) | [credential_verifier/src/tests/certificates/rsa/](credential_verifier/src/tests/certificates/rsa/) |
 | DCQL query examples     | [documentation/dcql_age_verification.md](documentation/dcql_age_verification.md)                   |
+| Credential building     | [crates/ewqwe-digital-credential/](crates/ewqwe-digital-credential/)                               |
 | Wallet main logic       | [wallet-extension/src/wallet.ts](wallet-extension/src/wallet.ts)                                   |
 | RP credential handling  | [webapp/src/credentials.ts](webapp/src/credentials.ts)                                             |
 | ISO credential configs  | [webapp/src/config.ts](webapp/src/config.ts)                                                       |

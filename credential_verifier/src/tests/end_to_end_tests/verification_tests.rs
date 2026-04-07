@@ -12,18 +12,21 @@
 //! 3. **EUDI PID SD-JWT VC** (`eu.europa.ec.eudi.pid.1`)  
 //!    → `given_name`, `age_over_18` claims present in signed attestation.
 //!
+//! Credentials are built by the [`ewqwe_digital_credential`] crate, which
+//! provides the [`CredentialIssuer`] type used by all three tests.
+//!
 //! # Protocol flow per test
 //!
 //! ```text
 //! ┌─────────────────────────────────────────────────────────────────────┐
-//! │ 1.  Generate ephemeral CA + issuer + device key with EphemeralIssuer│
+//! │ 1.  Generate ephemeral CA + issuer + device key with CredentialIssuer│
 //! │ 2.  Write CA cert PEM to a unique per-test temp directory            │
 //! │ 3.  Start credential-verifier server with credential_issuer_ca_dir  │
 //! │     pointing to that temp directory (annex-a profile, mTLS on)      │
 //! │ 4.  POST /ewqwe_api/openid4vp/init  → transaction_id               │
 //! │ 5.  GET  /ewqwe_api/openid4vp/request/{id}                          │
 //! │          → parse state, nonce, client_id, response_uri              │
-//! │ 6.  Build and sign credential (SD-JWT or mDoc)                       │
+//! │ 6.  Build and sign credential (SD-JWT or mDoc) via CredentialIssuer │
 //! │ 7.  POST /ewqwe_api/verify with vp_token + state                    │
 //! │ 8.  Assert success = true, issuer_trusted = true                     │
 //! │     Assert expected claims present in the signed attestation JWT     │
@@ -46,12 +49,13 @@
 use std::{fs, path::PathBuf};
 
 use base64::Engine as _;
+use ewqwe_digital_credential::CredentialIssuer;
 use ewqwe_logging::log_init;
 use tracing::info;
 
 use crate::{
     AttError, AttResult,
-    tests::{credential_builder::EphemeralIssuer, make_test_server_params, start_test_server},
+    tests::{make_test_server_params, start_test_server},
 };
 
 // Path to EC test certificates (same constant used in ewqwe_client_tests.rs).
@@ -258,8 +262,8 @@ async fn e2e_full_verification_eu_age_profile_sd_jwt() -> AttResult<()> {
     log_init(Some("info,actix_server=warn,credential_verifier=debug"));
 
     // ── 1. Ephemeral credential authority ────────────────────────────────
-    let issuer = EphemeralIssuer::generate()
-        .map_err(|e| AttError::Test(format!("EphemeralIssuer::generate: {e}")))?;
+    let issuer = CredentialIssuer::generate()
+        .map_err(|e| AttError::Test(format!("CredentialIssuer::generate: {e}")))?;
 
     // ── 2. Write CA cert to a temp dir and start the server ──────────────
     let (temp_dir, ca_dir_str) = make_temp_ca_dir();
@@ -337,8 +341,8 @@ async fn e2e_full_verification_eudi_mdoc() -> AttResult<()> {
     log_init(Some("info,actix_server=warn,credential_verifier=debug"));
 
     // ── 1. Ephemeral credential authority ────────────────────────────────
-    let issuer = EphemeralIssuer::generate()
-        .map_err(|e| AttError::Test(format!("EphemeralIssuer::generate: {e}")))?;
+    let issuer = CredentialIssuer::generate()
+        .map_err(|e| AttError::Test(format!("CredentialIssuer::generate: {e}")))?;
 
     // ── 2. Write CA cert and start server ────────────────────────────────
     let (temp_dir, ca_dir_str) = make_temp_ca_dir();
@@ -428,8 +432,8 @@ async fn e2e_full_verification_eudi_sd_jwt() -> AttResult<()> {
     log_init(Some("info,actix_server=warn,credential_verifier=debug"));
 
     // ── 1. Ephemeral credential authority ────────────────────────────────
-    let issuer = EphemeralIssuer::generate()
-        .map_err(|e| AttError::Test(format!("EphemeralIssuer::generate: {e}")))?;
+    let issuer = CredentialIssuer::generate()
+        .map_err(|e| AttError::Test(format!("CredentialIssuer::generate: {e}")))?;
 
     // ── 2. Write CA cert and start server ────────────────────────────────
     let (temp_dir, ca_dir_str) = make_temp_ca_dir();

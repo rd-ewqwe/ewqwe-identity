@@ -103,6 +103,21 @@ Each table has two columns: test name and what it verifies.
 | `test_version_endpoint` | `/version` endpoint returns expected Cargo package version |
 | `test_issuer_certs_empty_dir_and_issuer_untrusted` | Server returns error (not success) when no trusted issuer CA certs are configured and a credential is submitted |
 
+## End-to-end full verification tests (ephemeral PKI)
+
+These tests exercise the **complete credential signing ↔ verification round-trip** using
+credentials built by the [`ewqwe_digital_credential`](../crates/ewqwe-digital-credential/)
+crate.  Each test generates a fresh ephemeral two-level PKI (CA → issuer leaf + device key),
+starts the credential-verifier with that CA as the sole trusted issuer, runs the full
+OpenID4VP flow (init → fetch auth request → post credential → assert attestation), and then
+verifies that the signed attestation JWT contains the expected credential claims.
+
+| Test Name | Verifies |
+|-----------|----------|
+| `e2e_full_verification_eu_age_profile_sd_jwt` | Full round-trip for an **EU Age Verification Profile SD-JWT VC** (`vct=eu.europa.ec.av.1`): ephemeral CA trusted, issuer JWT `x5c` chain validated, KB-JWT nonce-bound, `over_18=true` claim present in the signed attestation JWT |
+| `e2e_full_verification_eudi_mdoc` | Full round-trip for a **EUDI PID mDoc** (ISO 18013-5 `DeviceResponse`, `docType=eu.europa.ec.eudi.pid.1`): COSE_Sign1 `IssuerAuth` chain verified against ephemeral CA, MSO `valueDigests` integrity checked, `DeviceSignature` bound to `SessionTranscript` from OpenID4VP handover; `given_name` and `age_over_18` claims present in attestation |
+| `e2e_full_verification_eudi_sd_jwt` | Full round-trip for a **EUDI PID SD-JWT VC** (`vct=eu.europa.ec.eudi.pid.1`): same PKI trust chain and KB-JWT nonce binding as the EU Age test; `given_name` and `age_over_18` claims present in attestation |
+
 ## End-to-end tests via the `ewqwe_digital_identity` Rust client library
 
 These tests exercise the credential-verifier REST API through the

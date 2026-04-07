@@ -1,0 +1,28 @@
+[package]
+name = "ewqwe_digital_credential"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "EU Age Verification and EUDI credential building and signing — SD-JWT, mDoc (ISO 18013-5), ephemeral PKI"
+
+[lib]
+path = "src/lib.rs"
+
+[features]
+# Vendor OpenSSL statically (CI / cross-compilation).  Forwarded to the
+# openssl crate.  Disable if you provide your own OpenSSL at link time.
+vendored = ["openssl/vendored"]
+
+[dependencies]
+base64 = { workspace = true }
+chrono = { workspace = true }
+ciborium = { workspace = true }
+jsonwebtoken = { workspace = true }
+openssl = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+sha2 = { workspace = true }
+uuid = { workspace = true }
+thiserror = { workspace = true }
