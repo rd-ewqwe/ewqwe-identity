@@ -5,6 +5,9 @@ pub use test_server::{
     start_test_server,
 };
 
+#[cfg(test)]
+pub mod credential_builder;
+
 mod end_to_end_tests;
 mod journal_tests;
 mod tls_auth_tests;
