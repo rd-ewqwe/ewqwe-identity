@@ -1,7 +1,8 @@
 /// <reference lib="deno.ns" />
 
 // Import jose for JWT signing (JAR - JWT Secured Authorization Request)
-import * as jose from "https://deno.land/x/jose@v5.9.6/index.ts";
+import * as jose from "jose";
+// import * as jose from "https://deno.land/x/jose@v5.9.6/index.ts";
 
 /**
  * EU Age Verification Webapp - Backend Server

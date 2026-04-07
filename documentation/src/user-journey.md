@@ -1,10 +1,33 @@
-# User Journey - Sequence Diagram
+# User Journey
 
-This user journey demonstrates credential verification solutions following two distinct profiles defined for the European Digital Identity ecosystem. While both flows result in age verification, they differ significantly in their trust models, implementation complexity, and target use cases.
+This page describes the end-to-end **digital credential verification user journey** in the EU Digital Identity ecosystem, and how a Relying Party (RP) can request and validate a **verifiable presentation** from a user’s wallet.
+
+Because real-world interoperability today is primarily based on **OpenID4VP** (with the **W3C Digital Credentials API** as a browser-native option when available), the journey is presented in two concrete profiles:
+
+- **EU Age Verification Profile (Annex A)** using the **Age Verification App (AVI)** — simpler integration (`redirect_uri`, no signed JAR, `direct_post`).
+- **HAIP** using the **EUDI Wallet** — higher assurance integration (certificate-based `x509_*` client IDs, **signed JAR**, `direct_post.jwt`).
+
+Both paths ultimately converge on the same backend pattern: the RP forwards the received VP Token to the **EwQwE Credential Verifier**, which validates the proof and returns a **signed attestation** the RP can use for access control and session establishment.
+
+## W3C Digital Credentials API vs OpenID4VP
+
+The **W3C Digital Credentials API** is a browser-native way for a website (RP) to request a verifiable presentation from a user’s wallet. When it is available, it can provide the simplest user experience because the browser can directly invoke the wallet via `navigator.credentials.get()`. However, it is **still a draft** and is **not consistently supported across browsers and wallets** yet ([W3C Digital Credentials API, Editor’s Draft / TR](https://www.w3.org/TR/digital-credentials/)).
+
+In the **EU Digital Identity** ecosystem, real-world interoperability for presentations is currently based on **OpenID for Verifiable Presentations (OpenID4VP)**. Both the **EU Age Verification Profile (Annex A)** and **HAIP** are OpenID4VP-based profiles and define how wallets and relying parties exchange presentation requests and responses (including same-device redirects and cross-device direct-post) ([OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html), [EU Age Verification Profile — Annex A](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/)).
+
+### Recommended approach
+
+- **Prefer the W3C Digital Credentials API when available**: use the browser’s credentials interface (`navigator.credentials.get()`) for the smoothest, most “web-native” flow.
+- **Fallback to OpenID4VP when the W3C API is not available**: use the standardized OpenID4VP presentation flows (same-device deep link or cross-device QR code, with `direct_post` / `direct_post.jwt`) to stay compatible with EU wallet implementations.
+
+This “use the browser API when possible, otherwise use OpenID4VP” strategy matches the **EU Age Verification Profile (Annex A)** guidance for age-verification presentations and keeps the RP aligned with the European Digital Identity ecosystem as browser support for the W3C API matures (see [EU Age Verification Profile — Annex A](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/), and [OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)).
 
 ## Two Wallets, Two Profiles
 
 The European Digital Identity ecosystem defines **two separate profiles** for credential presentation, each with its own wallet implementation:
+
+- The **EU Age Verification Profile (Annex A)**, implemented by the **Age Verification App (AVI)**, focuses on age verification use cases and uses a simpler OpenID4VP flow with `redirect_uri` client IDs and no signed JAR.
+- The **High Assurance Interoperability Profile (HAIP)**, implemented by the **EUDI Wallet**, targets high-value credentials like Personal Identity Documents (PID) and mobile driving licenses (mDL), and requires a more complex OpenID4VP flow with certificate-based client IDs, signed JARs, and JWT-wrapped responses.
 
 | Aspect | Age Verification App (Annex A) | EUDI Wallet (HAIP) |
 |--------|-------------------------------|-------------------|
@@ -50,40 +73,46 @@ This flow implements the [EU Age Verification Profile (Annex A)](https://ageveri
 ```mermaid
 sequenceDiagram
     participant User
-    participant Browser as User's Browser
-    participant WebappUI as Relying Party (RP)<br/>Web Application
-    participant AVI as Age Verification<br/>App (Annex A)
-    participant Backend as RP Backend
+    participant Browser as RP Webapp UI<br/>(Browser)
+    participant AVI as Age Verification<br/>App (Wallet)
+    participant Backend as RP Webapp<br/>Backend
     participant Verifier as EwQwE<br/>Credential Verifier
 
-    User->>WebappUI: 1. Click "Verify Age"
+    User->>Browser: 1. Click "Verify Age"
     
-    Note over WebappUI: Build Annex A Authorization Request
-    WebappUI->>WebappUI: 2. Generate nonce, state
-    WebappUI->>WebappUI: 3. Build DCQL query for age_over_18
+    Note over Browser,Backend: Initialize Transaction
+    Browser->>Backend: 2. POST /api/openid4vp/init_transaction<br/>{credential_type, claims, profile:"annexa"}
+    Backend->>Backend: 3. Generate nonce, state, transaction_id
+    Backend->>Backend: 4. Build DCQL query for age_over_18
+    Backend->>Backend: 5. Create client_id=redirect_uri:...
+    Backend-->>Browser: 6. Return {authorization_request_uri}
     
-    Note over WebappUI,AVI: redirect_uri client_id scheme (no JAR signing)
-    WebappUI->>Browser: 4. Redirect to av://?<br/>client_id=redirect_uri:https://rp.example.com/cb<br/>&response_uri=https://rp.example.com/cb<br/>&response_mode=direct_post<br/>&dcql_query={...}<br/>&nonce=xyz
+    Note over Browser,AVI: Annex A Authorization Request (redirect_uri scheme, no JAR)
+    Browser->>AVI: 7. Redirect to av://?<br/>client_id=redirect_uri:https://.../direct_post<br/>&response_uri=https://.../direct_post<br/>&response_mode=direct_post<br/>&nonce=xyz&state=abc<br/>&dcql_query={...}<br/>&client_metadata={...}
     
-    Browser->>AVI: 5. Deep link opens AV App
-    AVI->>AVI: 6. Parse request (no signature verification needed)
-    AVI->>AVI: 7. Match credentials to DCQL query
-    AVI->>User: 8. Show consent screen
-    User->>AVI: 9. Approve presentation
+    AVI->>AVI: 8. Parse inline request (no signature verification)
+    AVI->>AVI: 9. Match credentials to DCQL query
+    AVI->>User: 10. Show consent screen
+    User->>AVI: 11. Approve presentation
     
-    Note over AVI,Backend: direct_post response mode (plain, not JWT-wrapped)
-    AVI->>Backend: 10. POST /cb<br/>vp_token={"credential_id":[mdoc]}&state=...
+    Note over AVI,Backend: Direct Post Response (plain VP Token)
+    AVI->>Backend: 12. POST /api/openid4vp/direct_post<br/>vp_token={"credential_id":[base64_mdoc]}<br/>state=abc
     
-    Note over Backend,Verifier: Verification Flow
-    Backend->>Verifier: 11. POST /verify (HTTPS + mTLS)
-    Verifier->>Verifier: 12. Verify VP token signature
-    Verifier->>Verifier: 13. Validate credential issuer
-    Verifier->>Verifier: 14. Extract age_over_18 claim
-    Verifier->>Verifier: 15. Create signed attestation (ES256)
-    Verifier-->>Backend: 16. Return {success, claims, attestation_jwt}
+    Note over Backend,Verifier: Credential Verification via mTLS
+    Backend->>Backend: 13. Extract vp_token from form body
+    Backend->>Verifier: 14. POST /api/verify (HTTPS + mTLS)<br/>{vp_token, presentation_submission, nonce}
+    Verifier->>Verifier: 15. Decode mDoc CBOR presentation
+    Verifier->>Verifier: 16. Verify COSE signature
+    Verifier->>Verifier: 17. Validate issuer certificate
+    Verifier->>Verifier: 18. Extract claims (age_over_18, ...)
+    Verifier->>Verifier: 19. Create signed attestation JWT (ES256)
+    Verifier-->>Backend: 20. 200 OK {success, claims, attestation_jwt}
     
-    Backend-->>Browser: 17. Redirect to success page
-    Browser->>User: 18. Display verification result
+    Backend->>Backend: 21. Store result in session
+    Backend-->>Browser: 22. Redirect 302 → /verification/result?state=abc
+    Browser->>Backend: 23. GET /verification/result?state=abc
+    Backend-->>Browser: 24. Return HTML with claims
+    Browser->>User: 25. Display verification result with claims
 ```
 
 ### Annex A Key Characteristics
@@ -105,45 +134,57 @@ This flow implements the **High Assurance Interoperability Profile (HAIP)**, whi
 ```mermaid
 sequenceDiagram
     participant User
-    participant Browser as User's Browser
-    participant WebappUI as Relying Party (RP)<br/>Web Application
+    participant Browser as RP Webapp UI<br/>(Browser)
     participant EUDI as EUDI Wallet<br/>(HAIP)
-    participant Backend as RP Backend
+    participant Backend as RP Webapp<br/>Backend
     participant Verifier as EwQwE<br/>Credential Verifier
 
-    User->>WebappUI: 1. Click "Verify Credentials"
+    User->>Browser: 1. Click "Verify Credentials"
     
-    Note over WebappUI: Build HAIP Authorization Request (JAR)
-    WebappUI->>WebappUI: 2. Generate nonce, state
-    WebappUI->>WebappUI: 3. Build DCQL query
-    WebappUI->>WebappUI: 4. Sign request as JWT<br/>with ES256, x5c header
+    Note over Browser,Backend: Initialize Transaction
+    Browser->>Backend: 2. POST /api/openid4vp/init_transaction<br/>{credential_type, claims, profile:"haip"}
+    Backend->>Backend: 3. Generate nonce, state, transaction_id
+    Backend->>Backend: 4. Build DCQL query
+    Backend->>Backend: 5. Create client_id=x509_san_dns:rp.example.com
+    Backend->>Backend: 6. Sign JAR with ES256 + x5c cert chain
+    Backend->>Backend: 7. Store signed JAR at /request/{transaction_id}
+    Backend-->>Browser: 8. Return {authorization_request_uri, request_uri}
     
-    Note over WebappUI,EUDI: x509_san_dns client_id scheme + signed JAR
-    WebappUI->>Browser: 5. Redirect to eudi-openid4vp://?<br/>client_id=x509_san_dns:rp.example.com<br/>&request={signed_jwt}<br/>&request_uri=https://rp.example.com/jar
+    Note over Browser,EUDI: HAIP Authorization Request (x509_san_dns + JAR)
+    Browser->>EUDI: 9. Redirect to eudi-openid4vp://?<br/>client_id=x509_san_dns:rp.example.com<br/>&request_uri=https://.../request/{id}
     
-    Browser->>EUDI: 6. Deep link opens EUDI Wallet
-    EUDI->>EUDI: 7. Fetch/parse JAR JWT
-    EUDI->>EUDI: 8. Extract x5c certificate chain
-    EUDI->>EUDI: 9. Verify chain against Reader Trust Store
-    EUDI->>EUDI: 10. Verify client_id matches cert SAN
-    EUDI->>EUDI: 11. Verify JWT signature with leaf cert
-    EUDI->>EUDI: 12. Match credentials to DCQL query
-    EUDI->>User: 13. Show consent screen with RP name from cert
-    User->>EUDI: 14. Approve presentation
+    EUDI->>Backend: 10. GET /api/openid4vp/request/{transaction_id}
+    Backend-->>EUDI: 11. Return signed JAR JWT
+    EUDI->>EUDI: 12. Extract x5c certificate chain from JWT header
+    EUDI->>EUDI: 13. Verify cert chain against Reader Trust Store
+    EUDI->>EUDI: 14. Verify client_id matches cert SAN
+    EUDI->>EUDI: 15. Verify JWT signature with leaf cert public key
+    EUDI->>EUDI: 16. Parse JAR payload (nonce, dcql_query, response_uri)
+    EUDI->>EUDI: 17. Match credentials to DCQL query
+    EUDI->>User: 18. Show consent screen (RP name from cert)
+    User->>EUDI: 19. Approve presentation
     
-    Note over EUDI,Backend: direct_post.jwt response mode (JWT-wrapped)
-    EUDI->>Backend: 15. POST /cb<br/>response={signed_jwt containing vp_token}
+    Note over EUDI,Backend: Direct Post JWT Response (JWE-encrypted VP Token)
+    EUDI->>EUDI: 20. Build VP Token as DCQL map
+    EUDI->>EUDI: 21. Encrypt VP Token as JWE (ECDH-ES + A256GCM)
+    EUDI->>Backend: 22. POST /api/openid4vp/direct_post<br/>response={jwe_encrypted_vp_token}<br/>state=abc
     
-    Note over Backend,Verifier: Verification Flow
-    Backend->>Backend: 16. Unwrap response JWT
-    Backend->>Verifier: 17. POST /verify (HTTPS + mTLS)
-    Verifier->>Verifier: 18. Verify VP token signature
-    Verifier->>Verifier: 19. Validate credential issuer
-    Verifier->>Verifier: 20. Create signed attestation (ES256)
-    Verifier-->>Backend: 21. Return {success, claims, attestation_jwt}
+    Note over Backend,Verifier: Credential Verification via mTLS
+    Backend->>Backend: 23. Decrypt JWE response using ECDH private key
+    Backend->>Backend: 24. Extract vp_token from decrypted payload
+    Backend->>Verifier: 25. POST /api/verify (HTTPS + mTLS)<br/>{vp_token, presentation_submission, nonce}
+    Verifier->>Verifier: 26. Decode mDoc CBOR presentation
+    Verifier->>Verifier: 27. Verify COSE signature
+    Verifier->>Verifier: 28. Validate issuer certificate
+    Verifier->>Verifier: 29. Extract claims (family_name, given_name, ...)
+    Verifier->>Verifier: 30. Create signed attestation JWT (ES256)
+    Verifier-->>Backend: 31. 200 OK {success, claims, attestation_jwt}
     
-    Backend-->>Browser: 22. Redirect to success page
-    Browser->>User: 23. Display verification result
+    Backend->>Backend: 32. Store result in session
+    Backend-->>Browser: 33. Redirect 302 → /verification/result?state=abc
+    Browser->>Backend: 34. GET /verification/result?state=abc
+    Backend-->>Browser: 35. Return HTML with claims
+    Browser->>User: 36. Display verification result with claims
 ```
 
 ### HAIP Key Characteristics
@@ -155,44 +196,6 @@ sequenceDiagram
 - **Root CA required**: The RP's root CA must be added to the wallet's Reader Trust Store
 - **`eudi-openid4vp://` deep link**: The EUDI Wallet registers this URL scheme
 
-## Flow 3: Browser Extension Wallet (Fallback)
-
-When no native wallet is available, the [Demo Wallet Browser Extension](./demo_wallet_extension.md) provides a fallback mechanism using `postMessage` communication.
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant WebappUI as Relying Party (RP)<br/>Web Application
-    participant Wallet as Demo Wallet<br/>(Browser Extension)
-    participant Backend as RP Backend
-    participant Verifier as EwQwE<br/>Credential Verifier
-
-    User->>WebappUI: 1. Click "Verify Credentials"
-    
-    Note over WebappUI,Wallet: Primary Method: W3C Digital Credentials API
-    WebappUI->>WebappUI: 2. Try navigator.credentials.get()<br/>{digital: {protocol: "openid4vp"}}
-    WebappUI->>WebappUI: ❌ NetworkError: No provider registered
-    
-    Note over WebappUI,Wallet: Fallback: OpenID4VP via postMessage<br/>(Annex A.5.2 - Required fallback)
-    WebappUI->>Wallet: 3. postMessage EU_AV_WALLET_REQUEST<br/>{protocol: "openid4vp", data: {...}}
-    Wallet->>Wallet: 4. Parse DCQL query
-    Wallet->>Wallet: 5. Match credentials from storage
-    Wallet->>WebappUI: 6. Show credential selector overlay
-    User->>Wallet: 7. User selects credential
-    Wallet->>Wallet: 8. Build OpenID4VP response<br/>{vp_token: {"cred_id": [mdoc]}}
-    Wallet->>WebappUI: 9. postMessage EU_AV_WALLET_RESPONSE<br/>{response: {vp_token, state}}
-    
-    Note over WebappUI,Verifier: Verification Flow
-    WebappUI->>Backend: 10. POST /api/verify<br/>{vp_token, nonce, client_id}
-    Backend->>Verifier: 11. POST /verify (HTTPS + mTLS)
-    Verifier->>Verifier: 12. Verify VP token
-    Verifier->>Verifier: 13. Validate credential signature
-    Verifier->>Verifier: 14. Create signed attestation (ES256)
-    Verifier-->>Backend: 15. Return {success, claims, attestation_jwt}
-    Backend-->>WebappUI: 16. Return verification result
-    WebappUI->>User: 17. Display verification result
-```
-
 ## Wallet Compatibility Matrix
 
 When implementing a Relying Party, choose your approach based on which wallets you need to support:
@@ -203,23 +206,6 @@ When implementing a Relying Party, choose your approach based on which wallets y
 | **EUDI Wallet only** | HAIP | `x509_san_dns` | Complex — requires JAR + trusted CA |
 | **Both wallets** | Dual-mode | Both | Implement both code paths |
 | **Browser extension (fallback)** | Annex A + postMessage | `redirect_uri` | Same as Annex A |
-
-## Implementation Strategy for Dual-Mode Support
-
-To support both the Age Verification App and EUDI Wallet, your RP should:
-
-1. **Detect the target wallet** (via user selection or device detection)
-2. **Build the appropriate request format**:
-   - Annex A: Plain query parameters with `client_id=redirect_uri:...`
-   - HAIP: Signed JAR with `client_id=x509_san_dns:...`
-3. **Use the correct deep link scheme**:
-   - Annex A: `av://` or `openid4vp://`
-   - HAIP: `eudi-openid4vp://`
-4. **Handle different response formats**:
-   - Annex A: Plain VP Token in POST body
-   - HAIP: JWT-wrapped VP Token
-
-See the [Demo Web Application](./demo_webapp.md) for a reference implementation.
 
 ## Verification Flow (Common to All)
 

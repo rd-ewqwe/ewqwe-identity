@@ -68,7 +68,7 @@ flowchart TD
 According to [OpenID for Verifiable Presentations 1.0, Section 5](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5), the Authorization Request to the `authorize` endpoint contains the following parameters:
 
 | Parameter | Required | Description | Age Verification Profile Notes |
-|-----------|----------|-------------|-------------------------------|
+| --------- | -------- | ----------- | ------------------------------ |
 | `response_type` | ✓ | MUST be `vp_token` for Verifiable Presentation requests | Fixed value: `vp_token` |
 | `client_id` | ✓ | Identifier of the Relying Party | MUST use format: `redirect_uri:<response_uri>` |
 | `nonce` | ✓ | Random value to bind the presentation to the session | MUST be cryptographically random and fresh per request |
