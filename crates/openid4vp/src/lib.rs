@@ -37,6 +37,7 @@ pub mod crypto;
 pub mod dcql;
 pub mod error;
 pub mod service;
+pub mod stores;
 pub mod transaction;
 pub mod types;
 
@@ -52,7 +53,9 @@ pub use dcql::{
 };
 pub use error::{OpenID4VPError, OpenID4VPResult};
 pub use service::{HaipConfig, OpenID4VPService, OpenID4VPServiceConfig};
-pub use transaction::TransactionStore;
+pub use transaction::{
+    DynTransactionStore, TransactionStore, TransactionStoreBackend, TransactionStoreParams,
+};
 pub use types::{
     AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery, InitTransactionRequest,
     InitTransactionResponse, OpenID4VPResponse, OpenID4VPTransaction, ProfileId, ResponseMode,

@@ -1,162 +1,270 @@
-//! In-memory transaction store with TTL-based cleanup.
+//! Transaction store — pluggable backend for OpenID4VP transaction lifecycle.
 //!
-//! Manages OpenID4VP transaction lifecycle: creation, lookup by ID or state,
-//! status updates, expiration, and periodic garbage collection.
+//! The [`TransactionStore`] trait defines the async contract for storing,
+//! retrieving and updating [`OpenID4VPTransaction`] values.  Concrete
+//! implementations live in [`crate::stores`]:
 //!
-//! For production use, this could be backed by Redis (already available
-//! in the credential verifier) or another persistent store.
+//! | Store                   | Backend                                          |
+//! |-------------------------|--------------------------------------------------|
+//! | `InMemoryTransactionStore` | In-process `HashMap` (default)               |
+//! | `SqliteTransactionStore`   | SQLite in-memory or file                     |
+//! | `PostgresTransactionStore` | PostgreSQL via `sqlx`                        |
+//! | `RedisTransactionStore`    | Redis (TTL-native expiry, no cleanup thread) |
+//!
+//! The enum [`DynTransactionStore`] wraps whichever backend is active and
+//! implements [`TransactionStore`] by dispatching to the inner value.  Use
+//! [`DynTransactionStore::new`] to build one from [`TransactionStoreParams`].
 
+use crate::error::OpenID4VPResult;
+use crate::stores::{
+    InMemoryTransactionStore, PostgresTransactionStore, RedisTransactionStore,
+    SqliteTransactionStore,
+};
 use crate::types::{OpenID4VPTransaction, TransactionStatus};
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use tracing::{debug, info};
+use async_trait::async_trait;
+use serde::{Deserialize, Serialize};
 
-/// Thread-safe transaction store with automatic TTL cleanup.
-#[derive(Clone)]
-pub struct TransactionStore {
-    inner: Arc<Mutex<HashMap<String, OpenID4VPTransaction>>>,
-    cleanup_handle: Arc<Mutex<Option<tokio::task::JoinHandle<()>>>>,
+// ============================================================================
+// Configuration
+// ============================================================================
+
+/// Which storage backend to use for OpenID4VP transactions.
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+#[serde(tag = "backend", rename_all = "snake_case")]
+pub enum TransactionStoreBackend {
+    /// SQLite — uses an in-memory database (default).  No file is created.
+    #[default]
+    SqliteMemory,
+
+    /// SQLite — persists to the given file path.
+    #[serde(rename = "sqlite_file")]
+    SqliteFile {
+        /// Filesystem path to the SQLite database file.
+        path: String,
+    },
+
+    /// PostgreSQL — connect via a `postgres://` connection URL.
+    Postgres {
+        /// `postgres://user:password@host/db` style URL.
+        url: String,
+    },
+
+    /// Redis — connect via a `redis://` connection URL.
+    /// Transactions are stored with a TTL so Redis handles expiry automatically.
+    Redis {
+        /// `redis://[password@]host[:port][/db]` style URL.
+        url: String,
+    },
 }
 
-impl TransactionStore {
-    /// Create a new empty transaction store.
-    pub fn new() -> Self {
-        Self {
-            inner: Arc::new(Mutex::new(HashMap::new())),
-            cleanup_handle: Arc::new(Mutex::new(None)),
-        }
-    }
+/// Configuration for the transaction store.
+///
+/// Embed this in [`crate::service::OpenID4VPServiceConfig`] under the TOML key
+/// `transaction_store`.
+///
+/// ```toml
+/// [openid4vp_config.transaction_store]
+/// backend = "sqlite_memory"   # default — no further keys required
+///
+/// # SQLite file:
+/// # backend = "sqlite_file"
+/// # path    = "/var/lib/ewqwe/transactions.db"
+///
+/// # PostgreSQL:
+/// # backend = "postgres"
+/// # url     = "postgres://user:pass@localhost/ewqwe"
+///
+/// # Redis (TTL-native expiry — no cleanup thread):
+/// # backend = "redis"
+/// # url     = "redis://127.0.0.1:6379"
+/// ```
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
+pub struct TransactionStoreParams {
+    #[serde(flatten)]
+    pub backend: TransactionStoreBackend,
+}
 
-    /// Start periodic cleanup of expired transactions.
-    ///
-    /// Spawns a background Tokio task that runs every `interval_sec` seconds.
-    pub fn start_cleanup(&self, interval_secs: u64) {
-        let store = self.inner.clone();
-        let handle = tokio::spawn(async move {
-            let mut interval =
-                tokio::time::interval(tokio::time::Duration::from_secs(interval_secs));
-            loop {
-                interval.tick().await;
-                let now = chrono::Utc::now().timestamp_millis();
-                let mut store = store.lock().expect("transaction store lock poisoned");
-                let expired: Vec<String> = store
-                    .iter()
-                    .filter(|(_, tx)| tx.expires_at < now)
-                    .map(|(id, _)| id.clone())
-                    .collect();
-                for id in &expired {
-                    store.remove(id);
-                    debug!(
-                        "Transaction {}... expired and removed",
-                        &id[..8.min(id.len())]
-                    );
-                }
-                if !expired.is_empty() {
-                    info!("Cleaned up {} expired transaction(s)", expired.len());
-                }
-            }
-        });
+// ============================================================================
+// Trait
+// ============================================================================
 
-        if let Ok(mut h) = self.cleanup_handle.lock() {
-            *h = Some(handle);
-        }
-    }
+/// Async interface for the transaction store.
+///
+/// All methods are `async` so that network-backed implementations (Postgres,
+/// Redis) do not need to block a thread.
+#[async_trait]
+pub trait TransactionStore: Send + Sync {
+    /// Persist a new (or updated) transaction.
+    async fn set(&self, transaction: OpenID4VPTransaction) -> OpenID4VPResult<()>;
 
-    /// Stop the background cleanup task.
-    pub fn stop_cleanup(&self) {
-        if let Ok(mut h) = self.cleanup_handle.lock() {
-            if let Some(handle) = h.take() {
-                handle.abort();
-            }
-        }
-    }
+    /// Retrieve a transaction by its primary ID.
+    async fn get(&self, id: &str) -> OpenID4VPResult<Option<OpenID4VPTransaction>>;
 
-    /// Store a new transaction.
-    pub fn set(&self, transaction: OpenID4VPTransaction) {
-        let id = transaction.id.clone();
-        let mut store = self.inner.lock().expect("transaction store lock poisoned");
-        store.insert(id, transaction);
-    }
+    /// Find a transaction whose `state` field matches `state`.
+    async fn find_by_state(&self, state: &str) -> OpenID4VPResult<Option<OpenID4VPTransaction>>;
 
-    /// Retrieve a transaction by ID. Returns `None` if not found.
-    pub fn get(&self, id: &str) -> Option<OpenID4VPTransaction> {
-        let store = self.inner.lock().expect("transaction store lock poisoned");
-        store.get(id).cloned()
-    }
+    /// Delete a transaction by ID.  Returns `true` if a row was removed.
+    async fn delete(&self, id: &str) -> OpenID4VPResult<bool>;
 
-    /// Get a mutable reference to a transaction for in-place updates.
-    ///
-    /// The closure `f` is called with a mutable reference to the transaction
-    /// while the store lock is held.
-    pub fn update<F, R>(&self, id: &str, f: F) -> Option<R>
+    /// Convenience — update the status of a transaction.
+    async fn update_status(&self, id: &str, status: TransactionStatus) -> OpenID4VPResult<()>;
+
+    /// Apply `f` to the transaction with the given ID and persist the result.
+    /// Returns `None` when the transaction does not exist.
+    async fn update<F>(&self, id: &str, f: F) -> OpenID4VPResult<Option<()>>
     where
-        F: FnOnce(&mut OpenID4VPTransaction) -> R,
-    {
-        let mut store = self.inner.lock().expect("transaction store lock poisoned");
-        store.get_mut(id).map(f)
-    }
+        F: FnOnce(&mut OpenID4VPTransaction) + Send;
 
-    /// Find a transaction by its `state` parameter.
-    pub fn find_by_state(&self, state: &str) -> Option<OpenID4VPTransaction> {
-        let store = self.inner.lock().expect("transaction store lock poisoned");
-        store.values().find(|tx| tx.state == state).cloned()
-    }
-
-    /// Update a transaction found by `state`, applying closure `f`.
-    pub fn update_by_state<F, R>(&self, state: &str, f: F) -> Option<R>
+    /// Apply `f` to the transaction whose `state` matches and persist the result.
+    /// Returns `None` when no matching transaction is found.
+    async fn update_by_state<F>(&self, state: &str, f: F) -> OpenID4VPResult<Option<()>>
     where
-        F: FnOnce(&mut OpenID4VPTransaction) -> R,
-    {
-        let mut store = self.inner.lock().expect("transaction store lock poisoned");
-        store.values_mut().find(|tx| tx.state == state).map(f)
-    }
+        F: FnOnce(&mut OpenID4VPTransaction) + Send;
 
-    /// Delete a transaction by ID. Returns `true` if it existed.
-    pub fn delete(&self, id: &str) -> bool {
-        let mut store = self.inner.lock().expect("transaction store lock poisoned");
-        store.remove(id).is_some()
-    }
+    /// Return `true` when the transaction has passed its `expires_at` timestamp
+    /// (or does not exist).  Expired transactions are removed from the store.
+    async fn is_expired(&self, id: &str) -> OpenID4VPResult<bool>;
+}
 
-    /// Update the status of a transaction.
-    pub fn update_status(&self, id: &str, status: TransactionStatus) {
-        self.update(id, |tx| {
-            tx.status = status;
-        });
-    }
+// ============================================================================
+// Dynamic dispatch wrapper
+// ============================================================================
 
-    /// Check if a transaction has expired. Removes it if so.
-    pub fn is_expired(&self, id: &str) -> bool {
-        let now = chrono::Utc::now().timestamp_millis();
-        let mut store = self.inner.lock().expect("transaction store lock poisoned");
-        if let Some(tx) = store.get(id) {
-            if tx.expires_at < now {
-                store.remove(id);
-                return true;
+/// Wraps any supported backend behind a single concrete type.
+///
+/// Build with [`DynTransactionStore::new`].
+pub enum DynTransactionStore {
+    Sqlite(SqliteTransactionStore),
+    Postgres(PostgresTransactionStore),
+    Redis(RedisTransactionStore),
+    InMemory(InMemoryTransactionStore),
+}
+
+impl DynTransactionStore {
+    /// Create a new store from the supplied parameters.
+    ///
+    /// Connects or migrates as needed.  Call this once during server startup.
+    pub async fn new(params: &TransactionStoreParams, ttl_secs: i64) -> OpenID4VPResult<Self> {
+        match &params.backend {
+            TransactionStoreBackend::SqliteMemory => {
+                let store = SqliteTransactionStore::new_memory(ttl_secs).await?;
+                Ok(Self::Sqlite(store))
             }
-            false
-        } else {
-            true // Not found = treated as expired
+            TransactionStoreBackend::SqliteFile { path } => {
+                let store = SqliteTransactionStore::new_file(path, ttl_secs).await?;
+                Ok(Self::Sqlite(store))
+            }
+            TransactionStoreBackend::Postgres { url } => {
+                let store = PostgresTransactionStore::new(url, ttl_secs).await?;
+                Ok(Self::Postgres(store))
+            }
+            TransactionStoreBackend::Redis { url } => {
+                let store = RedisTransactionStore::new(url, ttl_secs).await?;
+                Ok(Self::Redis(store))
+            }
+        }
+    }
+}
+
+// ---- Delegate trait impl to the active inner backend ----
+
+#[async_trait]
+impl TransactionStore for DynTransactionStore {
+    async fn set(&self, transaction: OpenID4VPTransaction) -> OpenID4VPResult<()> {
+        match self {
+            Self::Sqlite(s) => s.set(transaction).await,
+            Self::Postgres(s) => s.set(transaction).await,
+            Self::Redis(s) => s.set(transaction).await,
+            Self::InMemory(s) => s.set(transaction).await,
         }
     }
 
-    /// Get the number of active transactions.
-    #[cfg(test)]
-    pub fn len(&self) -> usize {
-        let store = self.inner.lock().expect("transaction store lock poisoned");
-        store.len()
+    async fn get(&self, id: &str) -> OpenID4VPResult<Option<OpenID4VPTransaction>> {
+        match self {
+            Self::Sqlite(s) => s.get(id).await,
+            Self::Postgres(s) => s.get(id).await,
+            Self::Redis(s) => s.get(id).await,
+            Self::InMemory(s) => s.get(id).await,
+        }
+    }
+
+    async fn find_by_state(&self, state: &str) -> OpenID4VPResult<Option<OpenID4VPTransaction>> {
+        match self {
+            Self::Sqlite(s) => s.find_by_state(state).await,
+            Self::Postgres(s) => s.find_by_state(state).await,
+            Self::Redis(s) => s.find_by_state(state).await,
+            Self::InMemory(s) => s.find_by_state(state).await,
+        }
+    }
+
+    async fn delete(&self, id: &str) -> OpenID4VPResult<bool> {
+        match self {
+            Self::Sqlite(s) => s.delete(id).await,
+            Self::Postgres(s) => s.delete(id).await,
+            Self::Redis(s) => s.delete(id).await,
+            Self::InMemory(s) => s.delete(id).await,
+        }
+    }
+
+    async fn update_status(&self, id: &str, status: TransactionStatus) -> OpenID4VPResult<()> {
+        match self {
+            Self::Sqlite(s) => s.update_status(id, status).await,
+            Self::Postgres(s) => s.update_status(id, status).await,
+            Self::Redis(s) => s.update_status(id, status).await,
+            Self::InMemory(s) => s.update_status(id, status).await,
+        }
+    }
+
+    async fn update<F>(&self, id: &str, f: F) -> OpenID4VPResult<Option<()>>
+    where
+        F: FnOnce(&mut OpenID4VPTransaction) + Send,
+    {
+        match self {
+            Self::Sqlite(s) => s.update(id, f).await,
+            Self::Postgres(s) => s.update(id, f).await,
+            Self::Redis(s) => s.update(id, f).await,
+            Self::InMemory(s) => s.update(id, f).await,
+        }
+    }
+
+    async fn update_by_state<F>(&self, state: &str, f: F) -> OpenID4VPResult<Option<()>>
+    where
+        F: FnOnce(&mut OpenID4VPTransaction) + Send,
+    {
+        match self {
+            Self::Sqlite(s) => s.update_by_state(state, f).await,
+            Self::Postgres(s) => s.update_by_state(state, f).await,
+            Self::Redis(s) => s.update_by_state(state, f).await,
+            Self::InMemory(s) => s.update_by_state(state, f).await,
+        }
+    }
+
+    async fn is_expired(&self, id: &str) -> OpenID4VPResult<bool> {
+        match self {
+            Self::Sqlite(s) => s.is_expired(id).await,
+            Self::Postgres(s) => s.is_expired(id).await,
+            Self::Redis(s) => s.is_expired(id).await,
+            Self::InMemory(s) => s.is_expired(id).await,
+        }
     }
 }
 
-impl Default for TransactionStore {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+// ============================================================================
+// Tests
+// ============================================================================
 
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::stores::InMemoryTransactionStore;
     use crate::types::{ClientIdScheme, DCQLQuery, ProfileId, ResponseMode, TransactionStatus};
+
+    /// Build a fresh isolated in-memory store for each test.
+    /// Using InMemoryTransactionStore directly avoids SQLite shared-cache
+    /// state leaking between concurrently-running tests.
+    fn make_store() -> DynTransactionStore {
+        DynTransactionStore::InMemory(InMemoryTransactionStore::new(300))
+    }
 
     fn make_test_transaction(id: &str, state: &str, ttl_ms: i64) -> OpenID4VPTransaction {
         let now = chrono::Utc::now().timestamp_millis();
@@ -185,77 +293,105 @@ mod tests {
         }
     }
 
-    #[test]
-    fn test_set_and_get() {
-        let store = TransactionStore::new();
+    #[tokio::test]
+    async fn test_set_and_get() {
+        let store = make_store();
         let tx = make_test_transaction("tx-1", "state-1", 60_000);
-        store.set(tx);
+        store.set(tx).await.unwrap();
 
-        let retrieved = store.get("tx-1").unwrap();
+        let retrieved = store.get("tx-1").await.unwrap().unwrap();
         assert_eq!(retrieved.state, "state-1");
         assert_eq!(retrieved.status, TransactionStatus::Pending);
     }
 
-    #[test]
-    fn test_find_by_state() {
-        let store = TransactionStore::new();
-        store.set(make_test_transaction("tx-1", "state-abc", 60_000));
-        store.set(make_test_transaction("tx-2", "state-def", 60_000));
+    #[tokio::test]
+    async fn test_find_by_state() {
+        let store = make_store();
+        store
+            .set(make_test_transaction("tx-1", "state-abc", 60_000))
+            .await
+            .unwrap();
+        store
+            .set(make_test_transaction("tx-2", "state-def", 60_000))
+            .await
+            .unwrap();
 
-        let found = store.find_by_state("state-abc").unwrap();
+        let found = store.find_by_state("state-abc").await.unwrap().unwrap();
         assert_eq!(found.id, "tx-1");
 
-        assert!(store.find_by_state("state-missing").is_none());
+        assert!(
+            store
+                .find_by_state("state-missing")
+                .await
+                .unwrap()
+                .is_none()
+        );
     }
 
-    #[test]
-    fn test_update() {
-        let store = TransactionStore::new();
-        store.set(make_test_transaction("tx-1", "state-1", 60_000));
+    #[tokio::test]
+    async fn test_update() {
+        let store = make_store();
+        store
+            .set(make_test_transaction("tx-1", "state-1", 60_000))
+            .await
+            .unwrap();
 
-        store.update("tx-1", |tx| {
-            tx.status = TransactionStatus::Received;
-        });
+        store
+            .update("tx-1", |tx| tx.status = TransactionStatus::Received)
+            .await
+            .unwrap();
 
-        let tx = store.get("tx-1").unwrap();
+        let tx = store.get("tx-1").await.unwrap().unwrap();
         assert_eq!(tx.status, TransactionStatus::Received);
     }
 
-    #[test]
-    fn test_update_status() {
-        let store = TransactionStore::new();
-        store.set(make_test_transaction("tx-1", "state-1", 60_000));
+    #[tokio::test]
+    async fn test_update_status() {
+        let store = make_store();
+        store
+            .set(make_test_transaction("tx-1", "state-1", 60_000))
+            .await
+            .unwrap();
 
-        store.update_status("tx-1", TransactionStatus::Verified);
+        store
+            .update_status("tx-1", TransactionStatus::Verified)
+            .await
+            .unwrap();
 
-        let tx = store.get("tx-1").unwrap();
+        let tx = store.get("tx-1").await.unwrap().unwrap();
         assert_eq!(tx.status, TransactionStatus::Verified);
     }
 
-    #[test]
-    fn test_is_expired() {
-        let store = TransactionStore::new();
-        // Already expired (negative TTL)
-        store.set(make_test_transaction("tx-expired", "state-1", -1000));
-        // Not expired
-        store.set(make_test_transaction("tx-valid", "state-2", 60_000));
+    #[tokio::test]
+    async fn test_is_expired() {
+        let store = make_store();
+        store
+            .set(make_test_transaction("tx-expired", "state-1", -1_000))
+            .await
+            .unwrap();
+        store
+            .set(make_test_transaction("tx-valid", "state-2", 60_000))
+            .await
+            .unwrap();
 
-        assert!(store.is_expired("tx-expired"));
-        assert!(!store.is_expired("tx-valid"));
-        assert!(store.is_expired("tx-nonexistent"));
+        assert!(store.is_expired("tx-expired").await.unwrap());
+        assert!(!store.is_expired("tx-valid").await.unwrap());
+        assert!(store.is_expired("tx-nonexistent").await.unwrap());
 
-        // Expired transaction should be removed
-        assert!(store.get("tx-expired").is_none());
+        // Expired transaction should have been removed.
+        assert!(store.get("tx-expired").await.unwrap().is_none());
     }
 
-    #[test]
-    fn test_delete() {
-        let store = TransactionStore::new();
-        store.set(make_test_transaction("tx-1", "state-1", 60_000));
-        assert_eq!(store.len(), 1);
+    #[tokio::test]
+    async fn test_delete() {
+        let store = make_store();
+        store
+            .set(make_test_transaction("tx-1", "state-1", 60_000))
+            .await
+            .unwrap();
 
-        assert!(store.delete("tx-1"));
-        assert_eq!(store.len(), 0);
-        assert!(!store.delete("tx-1")); // Already deleted
+        assert!(store.delete("tx-1").await.unwrap());
+        assert!(!store.delete("tx-1").await.unwrap()); // already deleted
+        assert!(store.get("tx-1").await.unwrap().is_none());
     }
 }

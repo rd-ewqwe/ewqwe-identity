@@ -11,18 +11,22 @@ description = "OpenID4VP Relying Party backend — transaction lifecycle, JAR si
 [lib]
 path = "src/lib.rs"
 
+
 [dependencies]
-base64 = "0.22"
-qrcode = { workspace = true }
+async-trait = { workspace = true }
+base64 = { workspace = true }
 chrono = { workspace = true }
 openssl = { workspace = true, features = ["vendored"] }
+qrcode = { workspace = true }
+redis = { workspace = true, features = ["aio", "tokio-comp"] }
 serde = { workspace = true }
 serde_json = { workspace = true }
+sqlx = { workspace = true, features = ["sqlite", "postgres"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync", "time"] }
 tracing = { workspace = true }
 url = { workspace = true }
-urlencoding = "2"
+urlencoding = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]

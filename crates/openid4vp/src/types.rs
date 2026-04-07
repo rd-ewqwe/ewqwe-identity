@@ -940,7 +940,7 @@ pub struct TransactionDataEntry {
 
 /// A complete OpenID4VP transaction, tracking lifecycle from initiation
 /// through wallet response to verification.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct OpenID4VPTransaction {
     pub id: String,
     pub state: String,

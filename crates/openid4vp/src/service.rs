@@ -23,7 +23,7 @@ use crate::{
     },
     dcql::get_default_age_verification_dcql,
     error::{OpenID4VPError, OpenID4VPResult},
-    transaction::TransactionStore,
+    transaction::{DynTransactionStore, TransactionStore, TransactionStoreParams},
     types::{
         AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery,
         InitTransactionRequest, InitTransactionResponse, OpenID4VPResponse, OpenID4VPTransaction,
@@ -62,6 +62,11 @@ pub struct OpenID4VPServiceConfig {
 
     /// HAIP profile requires a certificate for JAR signing.
     pub haip_config: Option<HaipConfig>,
+
+    /// Transaction store backend configuration.
+    /// Defaults to SQLite in-memory when omitted.
+    #[serde(default)]
+    pub transaction_store: TransactionStoreParams,
 }
 
 // ============================================================================
@@ -71,7 +76,8 @@ pub struct OpenID4VPServiceConfig {
 /// OpenID4VP Relying Party service.
 ///
 /// Orchestrates the full OpenID4VP transaction lifecycle. Create with
-/// [`OpenID4VPService::create`], which loads keys and starts background cleanup.
+/// [`OpenID4VPService::create`], which loads keys and initialises the
+/// configured transaction store.
 ///
 /// # Thread Safety
 ///
@@ -85,8 +91,8 @@ pub struct OpenID4VPService {
     /// Key material for JWE encryption (HAIP profile). If `None`, JWE encryption is disabled.
     jwe_key: Option<JweKeyMaterial>,
 
-    /// In-memory store for active transactions. In production, consider a persistent store.
-    transactions: TransactionStore,
+    /// Pluggable transaction store (SQLite / Postgres / Redis / in-memory).
+    transactions: DynTransactionStore,
 
     /// Time-to-live for transactions in seconds. Used for cleanup and expiration logic.
     ttl_secs: i64,
@@ -96,9 +102,9 @@ impl OpenID4VPService {
     /// Create and initialize an OpenID4VP service instance.
     ///
     /// Loads JAR signing key + certificate chain from PEM files, generates
-    /// an ECDH encryption key pair for JWE, and starts background transaction
-    /// cleanup.
-    pub fn create(config: OpenID4VPServiceConfig) -> OpenID4VPResult<Self> {
+    /// an ECDH encryption key pair for JWE, and connects to (or initialises)
+    /// the configured transaction store.
+    pub async fn create(config: OpenID4VPServiceConfig) -> OpenID4VPResult<Self> {
         let (jar_key, jwe_key) = if let Some(haip_config) = &config.haip_config {
             tracing::info!("HAIP profile enabled — JAR signing configured");
             let cert_pem = std::fs::read_to_string(&haip_config.x509_cert_path).map_err(|e| {
@@ -126,8 +132,11 @@ impl OpenID4VPService {
             .transaction_ttl_secs
             .unwrap_or(DEFAULT_TRANSACTION_TTL_SEC);
 
-        let transactions = TransactionStore::new();
-        transactions.start_cleanup(ttl_secs as u64);
+        let transactions = DynTransactionStore::new(&config.transaction_store, ttl_secs)
+            .await
+            .map_err(|e| {
+                OpenID4VPError::Config(format!("Failed to initialise transaction store: {e}"))
+            })?;
 
         tracing::info!(
             san = %jar_key.as_ref().map(|k| &k.san_dns_name).unwrap_or(&"N/A".to_string()),
@@ -143,9 +152,8 @@ impl OpenID4VPService {
         })
     }
 
-    /// Shut down the service (stop background cleanup).
+    /// Shut down the service.
     pub fn shutdown(&self) {
-        self.transactions.stop_cleanup();
         tracing::info!("OpenID4VP service shut down");
     }
 
@@ -161,7 +169,7 @@ impl OpenID4VPService {
     /// The `public_url` in the request tells the service which URL the wallet
     /// should use for `response_uri` and `request_uri` (since the RP proxies
     /// wallet traffic to this service).
-    pub fn init_transaction(
+    pub async fn init_transaction(
         &self,
         request: InitTransactionRequest,
     ) -> OpenID4VPResult<InitTransactionResponse> {
@@ -246,7 +254,7 @@ impl OpenID4VPService {
             client_metadata: Some(client_metadata),
             transaction_data: request.transaction_data.clone(),
         };
-        self.transactions.set(transaction);
+        self.transactions.set(transaction).await?;
 
         // Build authorization request URI
         let authorization_request_uri = self.build_authorization_request_uri(
@@ -301,18 +309,19 @@ impl OpenID4VPService {
     /// Build the authorization request that the wallet fetches via `request_uri`.
     ///
     /// Returns a signed JAR (HAIP) or plain JSON (Annex A).
-    pub fn get_authorization_request(
+    pub async fn get_authorization_request(
         &self,
         transaction_id: &str,
     ) -> OpenID4VPResult<AuthorizationRequestResult> {
+        if self.transactions.is_expired(transaction_id).await? {
+            return Err(OpenID4VPError::Expired("Transaction expired".into()));
+        }
+
         let transaction = self
             .transactions
             .get(transaction_id)
+            .await?
             .ok_or_else(|| OpenID4VPError::NotFound("Transaction not found".into()))?;
-
-        if self.transactions.is_expired(transaction_id) {
-            return Err(OpenID4VPError::Expired("Transaction expired".into()));
-        }
 
         let jar_key = self.jar_key.as_ref().ok_or_else(|| {
             OpenID4VPError::Config(
@@ -430,7 +439,7 @@ impl OpenID4VPService {
     /// * `data` — Pre-parsed wallet data (plain `direct_post` mode)
     /// * `jwe_response` — JWE compact serialization (`direct_post.jwt` mode)
     /// * `fallback_state` — State value from outside the JWE (some wallets duplicate it)
-    pub fn handle_wallet_response(
+    pub async fn handle_wallet_response(
         &self,
         data: Option<OpenID4VPResponse>,
         jwe_response: Option<&str>,
@@ -463,10 +472,13 @@ impl OpenID4VPService {
         };
 
         // Find transaction by state and update it
-        let found = self.transactions.update_by_state(&wallet_data.state, |tx| {
-            tx.wallet_response = Some(wallet_data.clone());
-            tx.status = TransactionStatus::Received;
-        });
+        let found = self
+            .transactions
+            .update_by_state(&wallet_data.state, |tx| {
+                tx.wallet_response = Some(wallet_data.clone());
+                tx.status = TransactionStatus::Received;
+            })
+            .await?;
 
         if found.is_none() {
             return Err(OpenID4VPError::BadRequest(format!(
@@ -485,13 +497,19 @@ impl OpenID4VPService {
     /// `error=<code>&error_description=<text>&state=<state>` instead of a VP Token.
     /// The transaction is updated to `Error` status and the error details are stored
     /// so the frontend can retrieve them via the status endpoint.
-    pub fn handle_wallet_error(&self, error: WalletAuthorizationError) -> OpenID4VPResult<()> {
+    pub async fn handle_wallet_error(
+        &self,
+        error: WalletAuthorizationError,
+    ) -> OpenID4VPResult<()> {
         let state = error.state.clone().unwrap_or_default();
 
-        let found = self.transactions.update_by_state(&state, |tx| {
-            tx.wallet_error = Some(error.clone());
-            tx.status = TransactionStatus::Error;
-        });
+        let found = self
+            .transactions
+            .update_by_state(&state, |tx| {
+                tx.wallet_error = Some(error.clone());
+                tx.status = TransactionStatus::Error;
+            })
+            .await?;
 
         if found.is_none() {
             return Err(OpenID4VPError::BadRequest(format!(
@@ -510,16 +528,11 @@ impl OpenID4VPService {
     /// Get the current status of a transaction.
     ///
     /// If the wallet has responded, includes the VP token for the frontend to verify.
-    pub fn get_transaction_status(
+    pub async fn get_transaction_status(
         &self,
         transaction_id: &str,
     ) -> OpenID4VPResult<TransactionStatusResult> {
-        let transaction = self
-            .transactions
-            .get(transaction_id)
-            .ok_or_else(|| OpenID4VPError::NotFound("Transaction not found".into()))?;
-
-        if self.transactions.is_expired(transaction_id) {
+        if self.transactions.is_expired(transaction_id).await? {
             return Ok(TransactionStatusResult {
                 status: TransactionStatus::Expired,
                 expires_in: None,
@@ -530,6 +543,12 @@ impl OpenID4VPService {
                 transaction_data: None,
             });
         }
+
+        let transaction = self
+            .transactions
+            .get(transaction_id)
+            .await?
+            .ok_or_else(|| OpenID4VPError::NotFound("Transaction not found".into()))?;
 
         if transaction.status == TransactionStatus::Received {
             if let Some(ref wr) = transaction.wallet_response {
@@ -664,20 +683,21 @@ mod tests {
                 x509_cert_path: format!("{cert_dir}/ewqwe.server.fullchain.pem"),
                 x509_key_path: format!("{cert_dir}/ewqwe.server.key.pem"),
             }),
+            transaction_store: Default::default(), // SQLite in-memory
         }
     }
 
     #[tokio::test]
     async fn test_service_create() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
         service.shutdown();
     }
 
     #[tokio::test]
     async fn test_init_transaction_annex_a() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -689,7 +709,7 @@ mod tests {
             transaction_data: None,
         };
 
-        let response = service.init_transaction(request).unwrap();
+        let response = service.init_transaction(request).await.unwrap();
 
         assert!(!response.transaction_id.is_empty());
         assert!(response.client_id.starts_with("redirect_uri:"));
@@ -709,7 +729,7 @@ mod tests {
     #[tokio::test]
     async fn test_init_transaction_haip() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -721,7 +741,7 @@ mod tests {
             transaction_data: None,
         };
 
-        let response = service.init_transaction(request).unwrap();
+        let response = service.init_transaction(request).await.unwrap();
 
         assert!(response.client_id.starts_with("x509_san_dns:"));
         assert_eq!(response.client_id_scheme, ClientIdScheme::X509SanDns);
@@ -738,7 +758,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_authorization_request_annex_a() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -750,9 +770,10 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
 
         assert_eq!(auth_req.content_type, "application/json");
@@ -767,7 +788,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_authorization_request_haip() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -779,9 +800,10 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
 
         assert_eq!(auth_req.content_type, "application/oauth-authz-req+jwt");
@@ -794,7 +816,7 @@ mod tests {
     #[tokio::test]
     async fn test_transaction_status_pending() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -806,9 +828,10 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let status = service
             .get_transaction_status(&init_resp.transaction_id)
+            .await
             .unwrap();
 
         assert_eq!(status.status, TransactionStatus::Pending);
@@ -821,7 +844,7 @@ mod tests {
     #[tokio::test]
     async fn test_handle_wallet_response_plain() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -833,11 +856,12 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
 
         // Extract the state from the authorization request
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
         let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
         let state = auth_json["state"].as_str().unwrap().to_string();
@@ -851,11 +875,13 @@ mod tests {
 
         service
             .handle_wallet_response(Some(wallet_data), None, None)
+            .await
             .unwrap();
 
         // Check status is now "received"
         let status = service
             .get_transaction_status(&init_resp.transaction_id)
+            .await
             .unwrap();
         assert_eq!(status.status, TransactionStatus::Received);
         assert_eq!(
@@ -873,7 +899,7 @@ mod tests {
     #[tokio::test]
     async fn test_handle_wallet_response_unknown_state() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let wallet_data = OpenID4VPResponse {
             vp_token: "token".to_string(),
@@ -881,7 +907,9 @@ mod tests {
             state: "unknown-state".to_string(),
         };
 
-        let result = service.handle_wallet_response(Some(wallet_data), None, None);
+        let result = service
+            .handle_wallet_response(Some(wallet_data), None, None)
+            .await;
         assert!(result.is_err());
 
         service.shutdown();
@@ -890,10 +918,12 @@ mod tests {
     #[tokio::test]
     async fn test_get_transaction_status_not_found() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
-        let result = service.get_transaction_status("nonexistent-id");
-        assert!(result.is_err());
+        // A nonexistent transaction ID is treated as expired (not an error).
+        let result = service.get_transaction_status("nonexistent-id").await;
+        assert!(result.is_ok());
+        assert_eq!(result.unwrap().status, TransactionStatus::Expired);
 
         service.shutdown();
     }
@@ -901,7 +931,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_public_jwk_set() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let jwks = service.get_public_jwk_set().expect("a JWKS should exist");
         assert!(jwks["keys"].is_array());
@@ -923,7 +953,7 @@ mod tests {
     #[tokio::test]
     async fn test_section_8_2_success_direct_post() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -935,9 +965,10 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
         let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
         let state = auth_json["state"].as_str().unwrap().to_string();
@@ -950,10 +981,12 @@ mod tests {
         };
         service
             .handle_wallet_response(Some(wallet_data), None, None)
+            .await
             .unwrap();
 
         let status = service
             .get_transaction_status(&init_resp.transaction_id)
+            .await
             .unwrap();
         assert_eq!(status.status, TransactionStatus::Received);
         assert!(status.authorization_response.is_some());
@@ -972,7 +1005,7 @@ mod tests {
     #[tokio::test]
     async fn test_section_8_5_access_denied() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -984,9 +1017,10 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
         let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
         let state = auth_json["state"].as_str().unwrap().to_string();
@@ -996,10 +1030,14 @@ mod tests {
             error_description: None,
             state: Some(state),
         };
-        service.handle_wallet_error(wallet_error.clone()).unwrap();
+        service
+            .handle_wallet_error(wallet_error.clone())
+            .await
+            .unwrap();
 
         let status = service
             .get_transaction_status(&init_resp.transaction_id)
+            .await
             .unwrap();
         assert_eq!(status.status, TransactionStatus::Error);
         assert!(status.authorization_response.is_none());
@@ -1015,7 +1053,7 @@ mod tests {
     #[tokio::test]
     async fn test_section_8_5_invalid_request_with_description() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -1027,9 +1065,10 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
         let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
         let state = auth_json["state"].as_str().unwrap().to_string();
@@ -1039,10 +1078,11 @@ mod tests {
             error_description: Some("unsupported client_id_prefix".to_string()),
             state: Some(state),
         };
-        service.handle_wallet_error(wallet_error).unwrap();
+        service.handle_wallet_error(wallet_error).await.unwrap();
 
         let status = service
             .get_transaction_status(&init_resp.transaction_id)
+            .await
             .unwrap();
         assert_eq!(status.status, TransactionStatus::Error);
         let we = status.wallet_error.unwrap();
@@ -1069,7 +1109,7 @@ mod tests {
 
         for error_code in &error_codes {
             let config = test_config();
-            let service = OpenID4VPService::create(config).unwrap();
+            let service = OpenID4VPService::create(config).await.unwrap();
 
             let request = InitTransactionRequest {
                 public_url: "https://rp.example.com".to_string(),
@@ -1081,9 +1121,10 @@ mod tests {
                 transaction_data: None,
             };
 
-            let init_resp = service.init_transaction(request).unwrap();
+            let init_resp = service.init_transaction(request).await.unwrap();
             let auth_req = service
                 .get_authorization_request(&init_resp.transaction_id)
+                .await
                 .unwrap();
             let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
             let state = auth_json["state"].as_str().unwrap().to_string();
@@ -1093,10 +1134,14 @@ mod tests {
                 error_description: Some(format!("test: {error_code}")),
                 state: Some(state),
             };
-            service.handle_wallet_error(wallet_error.clone()).unwrap();
+            service
+                .handle_wallet_error(wallet_error.clone())
+                .await
+                .unwrap();
 
             let status = service
                 .get_transaction_status(&init_resp.transaction_id)
+                .await
                 .unwrap();
             assert_eq!(
                 status.status,
@@ -1117,7 +1162,7 @@ mod tests {
     #[tokio::test]
     async fn test_section_8_5_unknown_state() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let wallet_error = WalletAuthorizationError {
             error: "access_denied".to_string(),
@@ -1125,7 +1170,7 @@ mod tests {
             state: Some("unknown-state-xyz".to_string()),
         };
 
-        let result = service.handle_wallet_error(wallet_error);
+        let result = service.handle_wallet_error(wallet_error).await;
         assert!(result.is_err());
 
         service.shutdown();
@@ -1147,7 +1192,7 @@ mod tests {
     #[tokio::test]
     async fn test_section_8_4_status_returns_transaction_data() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let entry = serde_json::json!({
             "type": "payment",
@@ -1168,11 +1213,12 @@ mod tests {
             transaction_data: Some(transaction_data.clone()),
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
 
         // Retrieve state from auth request for wallet simulation
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
         let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
         let state = auth_json["state"].as_str().unwrap().to_string();
@@ -1185,11 +1231,13 @@ mod tests {
         };
         service
             .handle_wallet_response(Some(wallet_data), None, None)
+            .await
             .unwrap();
 
         // Status must echo back transaction_data
         let status = service
             .get_transaction_status(&init_resp.transaction_id)
+            .await
             .unwrap();
         assert_eq!(status.status, TransactionStatus::Received);
         assert!(
@@ -1207,7 +1255,7 @@ mod tests {
     #[tokio::test]
     async fn test_section_8_4_annex_a_auth_request_contains_transaction_data() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let entry = serde_json::json!({
             "type": "age_verification",
@@ -1226,9 +1274,10 @@ mod tests {
             transaction_data: Some(vec![encoded.clone()]),
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
 
         assert_eq!(auth_req.content_type, "application/json");
@@ -1248,7 +1297,7 @@ mod tests {
     #[tokio::test]
     async fn test_section_8_4_haip_jar_contains_transaction_data() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let entry = serde_json::json!({
             "type": "consent",
@@ -1267,9 +1316,10 @@ mod tests {
             transaction_data: Some(vec![encoded.clone()]),
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
 
         assert_eq!(auth_req.content_type, "application/oauth-authz-req+jwt");
@@ -1297,7 +1347,7 @@ mod tests {
     #[tokio::test]
     async fn test_section_8_4_absent_when_not_provided() {
         let config = test_config();
-        let service = OpenID4VPService::create(config).unwrap();
+        let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
@@ -1309,9 +1359,10 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).unwrap();
+        let init_resp = service.init_transaction(request).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
+            .await
             .unwrap();
         let parsed: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
         assert!(
@@ -1321,6 +1372,7 @@ mod tests {
 
         let status = service
             .get_transaction_status(&init_resp.transaction_id)
+            .await
             .unwrap();
         assert!(status.transaction_data.is_none());
 
