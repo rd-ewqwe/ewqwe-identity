@@ -59,7 +59,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
 
     let server_params = AttServerParams {
         host_name: "localhost".to_string(),
-        host_port: 49998,
+        host_port: 59900,
         tls_params: TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")

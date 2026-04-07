@@ -44,8 +44,6 @@ pub async fn start_att_server(
             .context("failed to send server handle")?;
     }
 
-    info!("Starting the HTTPS Attestation Provider server...");
-
     // Run the server and return the result
     server
         .await

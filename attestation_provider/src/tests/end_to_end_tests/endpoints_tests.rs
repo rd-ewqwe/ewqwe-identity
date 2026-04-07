@@ -17,8 +17,8 @@ async fn test_version_endpoint() -> AttResult<()> {
     let version: Version = client.get("/version").await?;
     assert_eq!(version.version, env!("CARGO_PKG_VERSION"));
 
-    ctx.stop_server().await?;
-    info!("Test server stopped.");
+    info!("Success: version endpoint returned: {:?}", version);
 
+    ctx.stop_server().await?;
     Ok(())
 }

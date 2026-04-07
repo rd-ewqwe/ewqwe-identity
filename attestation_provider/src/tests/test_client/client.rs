@@ -39,7 +39,7 @@ use cookie_store::{Cookie, CookieDomain};
 use reqwest::{Certificate, Client, Response};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
-use tracing::{debug, error, info, trace};
+use tracing::{debug, error, trace};
 use url::Url;
 
 const EC_CERTIFICATES_PATH: &str =
@@ -83,13 +83,13 @@ impl TestClient {
             .map_err(|e| AttError::Config(format!("Failed to read CA certificate: {}", e)))?;
         let ca_cert = Certificate::from_pem(&ca_cert_pem)
             .map_err(|e| AttError::Config(format!("Failed to parse CA certificate: {}", e)))?;
-        info!("Loaded CA certificate from {}", ca_cert_path);
+        debug!("Loaded CA certificate from {}", ca_cert_path);
 
         let builder = Client::builder()
             .cookie_provider(cookie_store)
             .add_root_certificate(ca_cert)
             .danger_accept_invalid_certs(false);
-        info!("Configured client with custom server CA certificate");
+        debug!("Configured client with custom server CA certificate");
 
         let client = builder
             .build()
