@@ -2,7 +2,7 @@
 //!
 //! Supports RS256 (RSA) and ES256 (ECDSA P-256) algorithms.
 
-use crate::{AttResult, AttResultHelper, attestation::AttestationClaims};
+use crate::{AttResult, AttResultHelper, attestation::Attestation};
 use jsonwebtoken::{Algorithm, EncodingKey, Header};
 
 /// Supported signing algorithms for JWT attestations.
@@ -115,7 +115,7 @@ impl JwtSigner {
     /// # Errors
     ///
     /// Returns an error if signing fails.
-    pub fn sign_to_string(&self, claims: &AttestationClaims) -> AttResult<String> {
+    pub fn sign_to_string(&self, claims: &Attestation) -> AttResult<String> {
         let mut header = Header::new(self.algorithm.as_jwt_algorithm());
         header.kid = self.key_id.clone();
 
@@ -125,7 +125,7 @@ impl JwtSigner {
 }
 
 impl super::AttestationSigner for JwtSigner {
-    fn sign(&self, claims: &AttestationClaims) -> AttResult<Vec<u8>> {
+    fn sign(&self, claims: &Attestation) -> AttResult<Vec<u8>> {
         let jwt = self.sign_to_string(claims)?;
         Ok(jwt.into_bytes())
     }
@@ -157,14 +157,14 @@ mod jwt_tests {
         let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, TEST_EC_PRIVATE_KEY)
             .expect("failed to create ES256 signer");
 
-        let claims = AttestationClaims::new(
+        let claims = Attestation::new(
             "verifier.example.com",
             "rp.example.com",
             "session-123",
             true,
         )
         .with_age_over(18)
-        .with_namespace("eu.europa.ec.av.1");
+        .with_av_namespace("eu.europa.ec.av.1");
 
         let token = signer.sign_to_string(&claims).expect("failed to sign");
 
@@ -181,7 +181,7 @@ mod jwt_tests {
         let decoding_key =
             DecodingKey::from_ec_pem(&public_key).expect("failed to create decoding key");
 
-        let decoded = jsonwebtoken::decode::<AttestationClaims>(&token, &decoding_key, &validation)
+        let decoded = jsonwebtoken::decode::<Attestation>(&token, &decoding_key, &validation)
             .expect("failed to decode token");
 
         assert!(decoded.claims.age_verified);
@@ -197,7 +197,7 @@ mod jwt_tests {
         let signer = JwtSigner::from_pem(SigningAlgorithm::RS256, TEST_RSA_PRIVATE_KEY)
             .expect("failed to create RS256 signer");
 
-        let claims = AttestationClaims::new(
+        let claims = Attestation::new(
             "verifier.example.com",
             "rp.example.com",
             "session-123",
@@ -219,7 +219,7 @@ mod jwt_tests {
         let decoding_key =
             DecodingKey::from_rsa_pem(&public_key).expect("failed to create decoding key");
 
-        let decoded = jsonwebtoken::decode::<AttestationClaims>(&token, &decoding_key, &validation)
+        let decoded = jsonwebtoken::decode::<Attestation>(&token, &decoding_key, &validation)
             .expect("failed to decode token");
 
         assert!(!decoded.claims.age_verified);
@@ -231,7 +231,7 @@ mod jwt_tests {
             .expect("failed to create signer")
             .with_key_id("key-2024-01");
 
-        let claims = AttestationClaims::new("issuer", "audience", "sub", true);
+        let claims = Attestation::new("issuer", "audience", "sub", true);
         let token = signer.sign_to_string(&claims).expect("failed to sign");
 
         // Decode header to verify key ID

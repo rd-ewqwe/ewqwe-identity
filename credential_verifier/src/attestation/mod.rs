@@ -17,17 +17,17 @@
 //!
 //! ```rust,ignore
 //! use credential_verifier::attestation::{
-//!     AttestationClaims, JwtSigner, SigningAlgorithm, AttestationSigner
+//!     Attestation, JwtSigner, SigningAlgorithm, AttestationSigner
 //! };
 //!
-//! let claims = AttestationClaims::new(
+//! let claims = Attestation::new(
 //!     "verifier.example.com",
 //!     "rp.example.com",
 //!     "session-123",
 //!     true, // age requirement met
 //! );
 //!
-//! let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, &private_key_pem)?;
+//! let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, &private_key_pem)?
 //! let token = signer.sign(&claims)?;
 //! ```
 
@@ -37,7 +37,7 @@ mod jwt_signer;
 #[cfg(test)]
 mod tests;
 
-pub use claims::AttestationClaims;
+pub use claims::Attestation;
 pub use cose_signer::{CoseSigner, CoseSigningAlgorithm, verify_cose_attestation};
 pub use jwt_signer::{JwtSigner, SigningAlgorithm};
 
@@ -48,7 +48,7 @@ pub trait AttestationSigner {
     /// # Errors
     ///
     /// Returns an error if signing fails.
-    fn sign(&self, claims: &AttestationClaims) -> crate::AttResult<Vec<u8>>;
+    fn sign(&self, claims: &Attestation) -> crate::AttResult<Vec<u8>>;
 
     /// Returns the algorithm identifier used by this signer.
     fn algorithm(&self) -> &str;

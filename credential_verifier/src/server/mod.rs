@@ -1,8 +1,8 @@
 mod start;
 pub use start::start_server;
 
-pub(crate) mod endpoints;
 pub(crate) mod openid4vp_endpoints;
+pub(crate) mod verify_endpoint;
 
 mod params;
 pub use params::ServerParams;

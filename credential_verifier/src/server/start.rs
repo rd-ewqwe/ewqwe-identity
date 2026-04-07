@@ -1,9 +1,8 @@
 use crate::{
     AttResult, AttResultHelper,
     server::{
-        ServerParams,
-        endpoints::{verify_credential_endpoint, version_endpoint},
-        openid4vp_endpoints,
+        ServerParams, openid4vp_endpoints,
+        verify_endpoint::{verify_credential_endpoint, version_endpoint},
     },
 };
 use actix_cors::Cors;

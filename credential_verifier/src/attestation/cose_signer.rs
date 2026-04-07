@@ -3,7 +3,7 @@
 //! Implements COSE_Sign1 structure as per RFC 8152, supporting ES256 and RS256 algorithms.
 //! This is the CBOR-based counterpart to JWT attestations.
 
-use crate::{AttResult, AttResultHelper, attestation::AttestationClaims};
+use crate::{AttResult, AttResultHelper, attestation::Attestation};
 use coset::{
     CborSerializable, CoseSign1, CoseSign1Builder, HeaderBuilder, iana::Algorithm as CoseAlgorithm,
 };
@@ -116,7 +116,7 @@ impl CoseSigner {
     /// # Errors
     ///
     /// Returns an error if signing fails.
-    pub fn sign_to_bytes(&self, claims: &AttestationClaims) -> AttResult<Vec<u8>> {
+    pub fn sign_to_bytes(&self, claims: &Attestation) -> AttResult<Vec<u8>> {
         // Serialize claims to CBOR
         let mut payload = Vec::new();
         ciborium::into_writer(claims, &mut payload)
@@ -218,7 +218,7 @@ impl CoseSigner {
 }
 
 impl super::AttestationSigner for CoseSigner {
-    fn sign(&self, claims: &AttestationClaims) -> AttResult<Vec<u8>> {
+    fn sign(&self, claims: &Attestation) -> AttResult<Vec<u8>> {
         self.sign_to_bytes(claims)
     }
 
@@ -236,7 +236,7 @@ impl super::AttestationSigner for CoseSigner {
 ///
 /// # Returns
 ///
-/// The verified `AttestationClaims` if verification succeeds.
+/// The verified [`Attestation`] if verification succeeds.
 ///
 /// # Errors
 ///
@@ -245,7 +245,7 @@ pub fn verify_cose_attestation(
     cose_bytes: &[u8],
     public_key_pem: &[u8],
     algorithm: CoseSigningAlgorithm,
-) -> AttResult<AttestationClaims> {
+) -> AttResult<Attestation> {
     // Parse COSE_Sign1
     let cose_sign1 = CoseSign1::from_slice(cose_bytes).map_err(|e| {
         crate::AttError::Generic(format!("failed to parse COSE_Sign1 structure: {e:?}"))
@@ -278,7 +278,7 @@ pub fn verify_cose_attestation(
     }
 
     // Deserialize claims from payload
-    let claims: AttestationClaims = ciborium::from_reader(payload.as_slice())
+    let claims: Attestation = ciborium::from_reader(payload.as_slice())
         .context("failed to deserialize claims from CBOR")?;
 
     Ok(claims)
@@ -359,14 +359,14 @@ mod cose_tests {
         let signer = CoseSigner::from_pem(CoseSigningAlgorithm::ES256, TEST_EC_PRIVATE_KEY)
             .expect("failed to create ES256 signer");
 
-        let claims = AttestationClaims::new(
+        let claims = Attestation::new(
             "verifier.example.com",
             "rp.example.com",
             "session-123",
             true,
         )
         .with_age_over(18)
-        .with_namespace("eu.europa.ec.av.1");
+        .with_av_namespace("eu.europa.ec.av.1");
 
         let cose_bytes = signer.sign_to_bytes(&claims).expect("failed to sign");
 
@@ -393,7 +393,7 @@ mod cose_tests {
         let signer = CoseSigner::from_pem(CoseSigningAlgorithm::RS256, TEST_RSA_PRIVATE_KEY)
             .expect("failed to create RS256 signer");
 
-        let claims = AttestationClaims::new(
+        let claims = Attestation::new(
             "verifier.example.com",
             "rp.example.com",
             "session-456",
@@ -417,7 +417,7 @@ mod cose_tests {
             .expect("failed to create signer")
             .with_key_id(b"key-2024-01");
 
-        let claims = AttestationClaims::new("issuer", "audience", "sub", true);
+        let claims = Attestation::new("issuer", "audience", "sub", true);
         let cose_bytes = signer.sign_to_bytes(&claims).expect("failed to sign");
 
         // Parse and check the key ID is in the protected header

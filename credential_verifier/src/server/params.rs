@@ -25,6 +25,17 @@ pub struct ServerParams {
     /// Defaults to `issuer_certificates/` in the same directory as the config file.
     #[serde(default)]
     pub trusted_issuer_certs_dir: Option<String>,
+
+    /// Issuer identifier used in the `iss` claim of signed attestation JWTs.
+    /// Defaults to `"credential-verifier"` if not set.
+    #[serde(default)]
+    pub attestation_issuer_iss: Option<String>,
+
+    /// Path to the PEM private key used to sign attestation JWTs.
+    /// Resolved relative to the config file directory.
+    /// Defaults to `tls_params.server_private_key` if not set.
+    #[serde(default)]
+    pub attestation_issuer_key: Option<String>,
 }
 
 impl ServerParams {
@@ -147,6 +158,10 @@ impl ServerParams {
             .as_deref()
             .unwrap_or(default_dir);
         self.trusted_issuer_certs_dir = Some(resolve_path(base_dir, dir));
+
+        if let Some(key_path) = &mut self.attestation_issuer_key {
+            *key_path = resolve_path(base_dir, key_path);
+        }
     }
 }
 
@@ -155,6 +170,21 @@ impl ServerParams {
         self.trusted_issuer_certs_dir
             .as_deref()
             .unwrap_or("issuer_certificates")
+    }
+
+    /// Issuer identifier for the `iss` claim in signed attestation JWTs.
+    pub fn attestation_issuer_iss(&self) -> &str {
+        self.attestation_issuer_iss
+            .as_deref()
+            .unwrap_or("credential-verifier")
+    }
+
+    /// Path to the PEM private key for signing attestation JWTs.
+    /// Falls back to [`TlsParams::server_private_key`] when not configured.
+    pub fn attestation_issuer_key_path(&self) -> &str {
+        self.attestation_issuer_key
+            .as_deref()
+            .unwrap_or(self.tls_params.server_private_key.as_str())
     }
 }
 

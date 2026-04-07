@@ -4,8 +4,7 @@
 //! using both JWT and COSE formats.
 
 use super::{
-    AttestationClaims, AttestationSigner, CoseSigner, CoseSigningAlgorithm, JwtSigner,
-    SigningAlgorithm,
+    Attestation, AttestationSigner, CoseSigner, CoseSigningAlgorithm, JwtSigner, SigningAlgorithm,
 };
 
 // Test certificates
@@ -24,7 +23,7 @@ fn test_signer_trait_implementations() {
     let cose_rs256 = CoseSigner::from_pem(CoseSigningAlgorithm::RS256, RSA_PRIVATE_KEY)
         .expect("failed to create COSE RS256 signer");
 
-    let claims = AttestationClaims::new("issuer", "audience", "subject", true);
+    let claims = Attestation::new("issuer", "audience", "subject", true);
 
     // All signers should successfully produce output
     let signers: Vec<&dyn AttestationSigner> =
@@ -40,9 +39,9 @@ fn test_signer_trait_implementations() {
 /// Test attestation claims with all optional fields.
 #[test]
 fn test_full_claims() {
-    let claims = AttestationClaims::new("verifier.ewqwe.com", "rp.example.com", "txn-abc123", true)
+    let claims = Attestation::new("verifier.ewqwe.com", "rp.example.com", "txn-abc123", true)
         .with_age_over(21)
-        .with_namespace("eu.europa.ec.av.1")
+        .with_av_namespace("eu.europa.ec.av.1")
         .with_nonce("unique-nonce-from-request");
 
     let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, EC_PRIVATE_KEY)
@@ -71,8 +70,8 @@ fn test_full_claims() {
 /// Test that different sessions produce different JTIs.
 #[test]
 fn test_unique_jti() {
-    let claims1 = AttestationClaims::new("issuer", "audience", "session1", true);
-    let claims2 = AttestationClaims::new("issuer", "audience", "session2", true);
+    let claims1 = Attestation::new("issuer", "audience", "session1", true);
+    let claims2 = Attestation::new("issuer", "audience", "session2", true);
 
     assert_ne!(claims1.jti, claims2.jti);
 }

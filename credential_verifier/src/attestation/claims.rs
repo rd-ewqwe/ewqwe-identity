@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 /// This structure follows JWT registered claim conventions while adding
 /// custom claims specific to the EU Age Verification profile.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct AttestationClaims {
+pub struct Attestation {
     // ============== JWT Registered Claims ==============
     /// Issuer - the credential verifier's identifier (e.g., domain name)
     pub iss: String,
@@ -49,9 +49,27 @@ pub struct AttestationClaims {
     /// Nonce from the original OpenID4VP request (for binding)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
+
+    // ============== Credential Metadata ==============
+    /// The credential document type (e.g. "org.iso.18013.5.1.mDL", "vc+sd-jwt vct")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub doc_type: Option<String>,
+
+    /// The credential namespace (e.g. "org.iso.18013.5.1")
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub namespace: Option<String>,
+
+    // ============== Verified Credential Attributes ==============
+    /// The verified attribute claims from the presented credential, flattened
+    /// into the attestation JWT. Contains the full set of attributes exactly as
+    /// extracted from the credential (identity fields, age flags, etc.) so the
+    /// relying party receives both the typed attestation result above and the
+    /// raw verified attributes in one tamper-evident token.
+    #[serde(flatten)]
+    pub credential_claims: serde_json::Map<String, serde_json::Value>,
 }
 
-impl AttestationClaims {
+impl Attestation {
     /// Default attestation validity duration (5 minutes).
     pub const DEFAULT_VALIDITY_SECONDS: i64 = 300;
 
@@ -66,7 +84,7 @@ impl AttestationClaims {
     ///
     /// # Returns
     ///
-    /// New `AttestationClaims` with current timestamps and default validity.
+    /// New [`Attestation`] with current timestamps and default validity.
     #[must_use]
     pub fn new(issuer: &str, audience: &str, session_id: &str, age_verified: bool) -> Self {
         let now = Utc::now();
@@ -107,6 +125,9 @@ impl AttestationClaims {
             age_over: None,
             av_namespace: None,
             nonce: None,
+            doc_type: None,
+            namespace: None,
+            credential_claims: serde_json::Map::new(),
         }
     }
 
@@ -117,10 +138,24 @@ impl AttestationClaims {
         self
     }
 
-    /// Sets the namespace used for verification.
+    /// Sets the EU Age Verification profile namespace (e.g. "eu.europa.ec.av.1").
+    #[must_use]
+    pub fn with_av_namespace(mut self, namespace: &str) -> Self {
+        self.av_namespace = Some(namespace.to_owned());
+        self
+    }
+
+    /// Sets the credential document type (e.g. "org.iso.18013.5.1.mDL").
+    #[must_use]
+    pub fn with_doc_type(mut self, doc_type: &str) -> Self {
+        self.doc_type = Some(doc_type.to_owned());
+        self
+    }
+
+    /// Sets the credential namespace (e.g. "org.iso.18013.5.1").
     #[must_use]
     pub fn with_namespace(mut self, namespace: &str) -> Self {
-        self.av_namespace = Some(namespace.to_owned());
+        self.namespace = Some(namespace.to_owned());
         self
     }
 
@@ -128,6 +163,19 @@ impl AttestationClaims {
     #[must_use]
     pub fn with_nonce(mut self, nonce: &str) -> Self {
         self.nonce = Some(nonce.to_owned());
+        self
+    }
+
+    /// Attaches all verified attribute claims from the presented credential.
+    ///
+    /// These are flattened into the attestation JWT alongside the typed EU AV
+    /// fields, giving the relying party the full set of verified attributes.
+    #[must_use]
+    pub fn with_credential_claims(
+        mut self,
+        claims: serde_json::Map<String, serde_json::Value>,
+    ) -> Self {
+        self.credential_claims = claims;
         self
     }
 
@@ -145,7 +193,7 @@ mod claim_tests {
 
     #[test]
     fn test_new_claims() {
-        let claims = AttestationClaims::new(
+        let claims = Attestation::new(
             "verifier.example.com",
             "rp.example.com",
             "session-123",
@@ -161,13 +209,17 @@ mod claim_tests {
 
     #[test]
     fn test_builder_pattern() {
-        let claims = AttestationClaims::new("verifier", "rp", "session", true)
+        let claims = Attestation::new("verifier", "rp", "session", true)
             .with_age_over(18)
-            .with_namespace("eu.europa.ec.av.1")
-            .with_nonce("random-nonce-value");
+            .with_av_namespace("eu.europa.ec.av.1")
+            .with_nonce("random-nonce-value")
+            .with_doc_type("org.iso.18013.5.1.mDL")
+            .with_namespace("org.iso.18013.5.1");
 
         assert_eq!(claims.age_over, Some(18));
         assert_eq!(claims.av_namespace, Some("eu.europa.ec.av.1".to_owned()));
         assert_eq!(claims.nonce, Some("random-nonce-value".to_owned()));
+        assert_eq!(claims.doc_type, Some("org.iso.18013.5.1.mDL".to_owned()));
+        assert_eq!(claims.namespace, Some("org.iso.18013.5.1".to_owned()));
     }
 }
