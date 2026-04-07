@@ -10,10 +10,10 @@ For age verification, we primarily request the `age_over_18` claim from the EU A
 
 ## Namespaces
 
-| Namespace | Description |
-|-----------|-------------|
+| Namespace           | Description                                  |
+|---------------------|----------------------------------------------|
 | `eu.europa.ec.av.1` | EU Age Verification namespace (Proof of Age) |
-| `org.iso.18013.5.1` | ISO mDL namespace (Mobile Driver License) |
+| `org.iso.18013.5.1` | ISO mDL namespace (Mobile Driver License).   |
 
 ## Age Verification DCQL Query
 
