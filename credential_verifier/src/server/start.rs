@@ -3,13 +3,15 @@ use crate::{
     journal::{DynJournalStore, JournalStore},
     parameters::ServerParams,
     server::{
-        EnsureAuth, journal_endpoints::{self, JournalEntryView}, openid4vp_endpoints,
+        EnsureAuth,
+        journal_endpoints::{self, JournalEntryView},
+        openid4vp_endpoints,
         qr_verifier::QrCredentialVerifierImpl,
         verify_endpoint::{self, verify_credential_endpoint, version_endpoint},
     },
     tls::SslAuth,
 };
-use actix_cors::Cors;
+use actix_files;
 use actix_identity::IdentityMiddleware;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
 use actix_web::{
@@ -258,16 +260,9 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             app
         };
 
-        // The default scope serves from the root / the KMIP, permissions, and TEE endpoints
-        let default_scope = web::scope("")
-            .wrap(
-                Cors::default()
-                    .allow_any_origin()
-                    .allowed_methods(vec!["GET", "POST", "OPTIONS"])
-                    .allowed_headers(vec!["Content-Type", "Authorization"])
-                    .max_age(3600),
-            )
-            .route("/version", web::get().to(version_endpoint));
+        // /version is registered as an explicit resource before actix_files so
+        // it is never shadowed by the catch-all Files service.
+        let version_route = web::resource("/version").route(web::get().to(version_endpoint));
 
         let openid4vp_scope = web::scope("/ewqwe_api")
             // ----- Wallet-facing endpoints — no client cert required -----
@@ -332,34 +327,49 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
                     .route(web::get().to(journal_endpoints::download_journal)),
             );
 
-        // Register openid4vp_scope first (most specific prefix /ewqwe_api).
-        // verifier_app_scope must come before default_scope: default_scope uses an
-        // empty prefix ("") which actix-web matches for *every* path; if it is
-        // registered first, requests to /verifier_app/* are absorbed by default_scope
-        // and never reach the verifier_app scope.
-        let app = app.service(openid4vp_scope);
+        // Register openid4vp_scope first (most specific prefix /ewqwe_api),
+        // then the verifier_app API scope, then the explicit /version resource,
+        // and finally actix_files (catch-all /). Registration order dictates
+        // priority — more specific services must come first.
+        let app = app.service(openid4vp_scope).service(version_route);
 
         let app = if let Some(ref session_key) = verifier_app_session_key {
-            let verifier_app_scope = web::scope("/verifier_app")
+            let api_scope = web::scope("/api/v1")
                 .wrap(IdentityMiddleware::default())
                 .wrap(
                     SessionMiddleware::builder(CookieSessionStore::default(), session_key.clone())
-                        // Use a unique name to prevent conflicts with any other "id" cookie
-                        // that may be stored at Path=/ from a previous run or other middleware.
+                        // Use a unique name to prevent conflicts with any other "id" cookie.
                         .cookie_name("verifier_app_session".to_string())
-                        // Scope the cookie to this sub-path so it is only sent to
-                        // /verifier_app/* requests and is never confused with cookies
-                        // from other scopes.
-                        .cookie_path("/verifier_app".to_string())
+                        // Cookie is scoped to "/" so it is sent on every request to
+                        // the server (required now that the SPA lives at root).
+                        .cookie_path("/".to_string())
                         .build(),
                 )
                 .configure(ewqwe_verifier_app::configure_routes);
-            app.service(verifier_app_scope)
+
+            let mut app = app.service(api_scope);
+
+            // Serve the Vite-built SPA from the configured dist directory. Must
+            // come after all API scopes and the /version resource so it acts as a
+            // true catch-all only when nothing more specific matches.
+            if let Some(ref dist_path) = server_params.verifier_app_config.ui_dist_path {
+                if std::path::Path::new(dist_path).exists() {
+                    app = app
+                        .service(actix_files::Files::new("/", dist_path).index_file("index.html"));
+                } else {
+                    tracing::warn!(
+                        path = %dist_path,
+                        "Verifier App ui_dist_path not found — SPA will not be served"
+                    );
+                }
+            }
+
+            app
         } else {
             app
         };
 
-        app.service(default_scope)
+        app
     })
     .keep_alive(actix_web::http::KeepAlive::Timeout(
         std::time::Duration::from_secs(120),

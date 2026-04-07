@@ -34,16 +34,13 @@ use std::sync::Arc;
 #[derive(Debug, Serialize)]
 pub struct JournalEntryView {
     pub created_at: DateTime<Utc>,
-    /// Relying-party `client_id` that initiated the verification.
-    pub verifier: Option<String>,
-    pub doc_type: Option<String>,
-    pub namespace: Option<String>,
-    /// Email of the QR App user who was verified (when triggered via the embedded app).
+    /// Email of the QR App user who performed the verification.
     pub qrcode_app_user_email: Option<String>,
     /// Whether the age verification was successful.
     pub success: bool,
-    /// Full claim details from the attestation (safe to display).
-    pub verification_summary: serde_json::Value,
+    /// Flattened credential claims (e.g. `age_over_18`, `family_name`).
+    /// mDoc namespace wrappers are removed so all claims appear at the top level.
+    pub claims: serde_json::Value,
 }
 
 impl From<JournalEntry> for JournalEntryView {
@@ -53,15 +50,46 @@ impl From<JournalEntry> for JournalEntryView {
             .get("success")
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
+
+        // Extract the raw credential claims stored under "credential_claims",
+        // then flatten one level if the top-level values are objects (mDoc
+        // namespace pattern, e.g. `{"eu.europa.ec.av.1": {"age_over_18": true}}`).
+        let raw = e
+            .verification_summary
+            .get("credential_claims")
+            .cloned()
+            .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
+
+        let claims = flatten_credential_claims(raw);
+
         JournalEntryView {
             created_at: e.created_at,
-            verifier: e.client_id,
-            doc_type: e.doc_type,
-            namespace: e.namespace,
             qrcode_app_user_email: e.qrcode_app_user_email,
             success,
-            verification_summary: e.verification_summary,
+            claims,
         }
+    }
+}
+
+/// Flatten one level of namespace wrappers from mDoc claims.
+///
+/// If **all** top-level values are JSON objects (mDoc pattern), their children
+/// are merged into a single flat map.  Flat SD-JWT claims are returned as-is.
+fn flatten_credential_claims(raw: serde_json::Value) -> serde_json::Value {
+    let Some(obj) = raw.as_object() else {
+        return serde_json::Value::Object(serde_json::Map::new());
+    };
+    let all_nested = !obj.is_empty() && obj.values().all(|v| v.is_object());
+    if all_nested {
+        let mut flat = serde_json::Map::new();
+        for inner in obj.values() {
+            if let Some(inner_obj) = inner.as_object() {
+                flat.extend(inner_obj.iter().map(|(k, v)| (k.clone(), v.clone())));
+            }
+        }
+        serde_json::Value::Object(flat)
+    } else {
+        raw
     }
 }
 

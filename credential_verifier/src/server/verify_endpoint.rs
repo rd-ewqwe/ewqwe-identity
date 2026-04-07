@@ -650,11 +650,7 @@ pub(crate) async fn verify_credential_endpoint(
         let jti = extract_attestation_jti(&attestation);
         let summary = serde_json::json!({
             "success": true,
-            "doc_type": doc_type,
-            "namespace": namespace,
-            "signature_valid": true,
-            "not_expired": true,
-            "issuer_trusted": true,
+            "credential_claims": &claims,
         });
         if let Err(e) = append_verification(
             journal_store.as_ref().as_ref(),
@@ -986,12 +982,7 @@ pub(crate) async fn verify_vp_token_for_qr(
     if let Some(journal_store) = journal {
         let summary = serde_json::json!({
             "success": true,
-            "doc_type": doc_type,
-            "namespace": namespace,
-            "signature_valid": verification_result.signature_valid,
-            "not_expired": verification_result.not_expired,
-            "issuer_trusted": verification_result.issuer_trusted,
-            "source": "qr_verifier_app",
+            "credential_claims": &claims,
         });
         // No attestation JWT in the QR flow — pass empty string; the hash is still recorded.
         if let Err(e) = crate::journal::append_verification(
