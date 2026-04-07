@@ -13,6 +13,7 @@ import type {
   ProfileId,
   TransactionStatus,
   VerifyResponse,
+  WalletAuthorizationError,
 } from "@ewqwe/digital-identity";
 
 // ============================================================================
@@ -77,8 +78,14 @@ export interface ClientMetadata {
 // Transaction
 // ============================================================================
 
-/** Data received from a wallet via direct_post or direct_post.jwt. */
-export interface WalletDirectPostData {
+/**
+ * OpenID4VP Authorization Response received via `direct_post` or `direct_post.jwt` (§8.2).
+ *
+ * When `response_type=vp_token`, the VP Token is returned in the Authorization Response.
+ * With `direct_post`, the Wallet HTTP-POSTs this structure to the Verifier's `response_uri`
+ * encoded as `application/x-www-form-urlencoded`.
+ */
+export interface DirectPostAuthorizationResponse {
   vpToken: string;
   presentationSubmission?: string;
   state: string;
@@ -101,7 +108,8 @@ export interface OpenID4VPTransaction {
   responseUri: string;
   responseMode: "direct_post" | "direct_post.jwt";
   profile: ProfileId;
-  walletResponse?: WalletDirectPostData;
+  walletResponse?: DirectPostAuthorizationResponse;
+  walletError?: WalletAuthorizationError;
   verificationResult?: VerifyResponse;
   errorMessage?: string;
   clientMetadata?: ClientMetadata;

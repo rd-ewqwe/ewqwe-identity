@@ -670,9 +670,40 @@ pub enum TransactionStatus {
     Expired,
 }
 
-/// Data received from a wallet via `direct_post` or `direct_post.jwt`.
+/// Error response sent by the Wallet to the Verifier's `response_uri` (§8.5).
+///
+/// Instead of a VP Token the Wallet can send an error code when it cannot or will
+/// not fulfil the Authorization Request.  The Verifier MUST respond HTTP 200 + `{}`
+/// regardless (§8.2).
+///
+/// Error codes (§8.5):
+/// - `invalid_request` — malformed / unsupported request parameters
+/// - `access_denied` — no matching credentials, user denied consent, or auth failed
+/// - `vp_formats_not_supported` — no supported VP format found
+/// - `invalid_request_uri_method` — unsupported `request_uri_method` value
+/// - `invalid_transaction_data` — `transaction_data` claim could not be processed
+/// - `wallet_unavailable` — wallet cannot be invoked (§15.9.1)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct WalletAuthorizationError {
+    /// Error code from §8.5 (e.g. `"access_denied"`).
+    pub error: String,
+
+    /// Human-readable error description (optional).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub error_description: Option<String>,
+
+    /// The `state` value from the Authorization Request echoed back by the wallet.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
+}
+
+/// OpenID4VP Authorization Response received via `direct_post` or `direct_post.jwt` (§8.2).
+///
+/// When `response_type=vp_token`, the VP Token is returned in the Authorization Response.
+/// With `direct_post`, the Wallet HTTP-POSTs this structure to the Verifier's `response_uri`
+/// encoded as `application/x-www-form-urlencoded`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct WalletDirectPostData {
+pub struct DirectPostAuthorizationResponse {
     /// JSON-encoded `Record<credentialQueryId, presentation[]>` per OpenID4VP
     /// 1.0 §8.1. Each key is the `id` from a DCQL Credential Query; each value
     /// is an array of base64url-encoded credential presentations.
@@ -879,7 +910,8 @@ pub struct OpenID4VPTransaction {
     pub response_uri: String,
     pub response_mode: ResponseMode,
     pub profile: ProfileId,
-    pub wallet_response: Option<WalletDirectPostData>,
+    pub wallet_response: Option<DirectPostAuthorizationResponse>,
+    pub wallet_error: Option<WalletAuthorizationError>,
     pub verification_result: Option<serde_json::Value>,
     pub error_message: Option<String>,
     pub client_metadata: Option<ClientMetadata>,
@@ -958,22 +990,27 @@ pub struct InitTransactionResponse {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TransactionStatusResult {
     pub status: TransactionStatus,
+
+    /// Seconds until the transaction expires. Present when `status == "pending"`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub expires_in: Option<i64>,
-    /// JSON-encoded `Record<credentialQueryId, presentation[]>` (OpenID4VP 1.0 §8.1).
+
+    /// The Authorization Response received from the wallet (OpenID4VP 1.0 §8.1 + §8.2).
+    /// Only populated when `status == "received"`.
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub vp_token: Option<String>,
-    /// **Deprecated — absent in OpenID4VP 1.0 DCQL responses.**
-    ///
-    /// Only populated for backward-compatibility with wallets still using DIF
-    /// Presentation Exchange (`presentation_definition`). Not present in any
-    /// spec-compliant DCQL response (§8.1).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub presentation_submission: Option<String>,
+    pub authorization_response: Option<DirectPostAuthorizationResponse>,
+
+    /// The `nonce` from the original Authorization Request (§5.2).
+    /// Needed by the frontend for VP Token replay protection (§14.1).
+    /// Only populated when `status == "received"`.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
+
+    /// Error response sent by the Wallet (§8.5). Present when `status == "error"`
+    /// and the error originated from the wallet (not an internal server error).
     #[serde(skip_serializing_if = "Option::is_none")]
-    pub state: Option<String>,
+    pub wallet_error: Option<WalletAuthorizationError>,
+
     #[serde(skip_serializing_if = "Option::is_none")]
     pub error_message: Option<String>,
 }

@@ -20,6 +20,7 @@ export type {
   ProtocolProfile,
   TransactionStatus,
   TransactionStatusResult,
+  WalletAuthorizationError,
   InitTransactionResponse,
   VerifyResponse,
 } from "@ewqwe/digital-identity";
@@ -36,7 +37,7 @@ export {
 export type {
   OpenID4VPConfig,
   ClientMetadata,
-  WalletDirectPostData,
+  DirectPostAuthorizationResponse,
   OpenID4VPTransaction,
   InitTransactionRequest,
   AuthorizationRequestResult,

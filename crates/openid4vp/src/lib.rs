@@ -42,19 +42,20 @@ pub mod types;
 
 // Re-export key types for convenience.
 pub use config::{determine_profile, get_credential_type, get_profile};
+pub use crypto::{
+    DecryptedWalletResponse, JarKeyMaterial, JarPayload, JweKeyMaterial, build_public_jwk_set,
+    decrypt_jwe_response, initialize_jar_key, initialize_jwe_key, sign_jar,
+};
 pub use dcql::{
     build_age_verification_query, build_age_verification_query_with_fallback,
     convert_presentation_definition_to_dcql, generate_nonce, get_default_age_verification_dcql,
-};
-pub use crypto::{
-    build_public_jwk_set, decrypt_jwe_response, initialize_jar_key, initialize_jwe_key, sign_jar,
-    DecryptedWalletResponse, JarKeyMaterial, JarPayload, JweKeyMaterial,
 };
 pub use error::{OpenID4VPError, OpenID4VPResult};
 pub use service::{OpenID4VPService, OpenID4VPServiceConfig};
 pub use transaction::TransactionStore;
 pub use types::{
-    AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery, InitTransactionRequest,
-    InitTransactionResponse, OpenID4VPTransaction, ProfileId, ResponseMode, TransactionStatus,
-    TransactionStatusResult, WalletDirectPostData,
+    AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery,
+    DirectPostAuthorizationResponse, InitTransactionRequest, InitTransactionResponse,
+    OpenID4VPTransaction, ProfileId, ResponseMode, TransactionStatus, TransactionStatusResult,
+    WalletAuthorizationError,
 };

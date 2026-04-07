@@ -4,7 +4,9 @@ import type {
   OpenID4VPRequest,
   OpenID4VPResponse,
   PresentationSubmission,
+  TransactionStatusResult,
   VerifyResponse,
+  WalletAuthorizationError,
 } from "@ewqwe/digital-identity";
 import type { DebugLogger } from "./debug.ts";
 
@@ -218,15 +220,15 @@ async function requestViaOpenID4VPCrossDevice(
       qrModal.onCancel,
     );
 
-    // Close the modal
-    qrModal.close();
-
     if (!response) {
       logger.log("OpenID4VP request cancelled or timed out");
-      return null;
+      throw new Error("OpenID4VP request cancelled or timed out");
     }
 
     logger.success("Received VP token from wallet via OpenID4VP", response);
+
+    // Close the modal
+    qrModal.close();
 
     // Convert to OpenID4VPResponse format
     return {
@@ -382,7 +384,7 @@ function showQRCodeModal(
 
 interface PollResponse {
   vp_token: string;
-  presentation_submission: unknown;
+  presentation_submission?: string | PresentationSubmission;
   state: string;
   nonce: string;
 }
@@ -401,13 +403,13 @@ function pollForWalletResponse(
 
   logger.log(`Polling for wallet response (timeout: ${timeoutMs / 1000}s)`);
 
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     let cancelled = false;
 
     // Handle cancel
     onCancel.then(() => {
       cancelled = true;
-      resolve(null);
+      reject(new Error("Polling cancelled by user"));
     });
 
     const poll = async () => {
@@ -418,20 +420,43 @@ function pollForWalletResponse(
       // Check timeout
       if (Date.now() - startTime > timeoutMs) {
         logger.log("Polling timed out");
-        resolve(null);
+        reject(new Error("Polling timed out"));
         return;
       }
 
       try {
         const response = await fetch(`/api/openid4vp/status/${transactionId}`);
-        const data = await response.json();
+        const data: TransactionStatusResult = await response.json();
 
         if (data.status === "received") {
           logger.log("Wallet response received");
+
+          if (!data.authorization_response?.vp_token) {
+            logger.error(
+              "Received 'received' status but no vp_token in response",
+              data,
+            );
+            reject(new Error("Invalid response from server: missing vp_token"));
+            return;
+          }
+
+          if (data.nonce == null) {
+            logger.error("Received 'received' status but missing nonce", data);
+            reject(new Error("Invalid response from server: missing nonce"));
+            return;
+          }
+
+          if (!data.authorization_response?.state) {
+            logger.error("Received 'received' status but missing state", data);
+            reject(new Error("Invalid response from server: missing state"));
+            return;
+          }
+
           resolve({
-            vp_token: data.vp_token,
-            presentation_submission: data.presentation_submission,
-            state: data.state,
+            vp_token: data.authorization_response.vp_token,
+            presentation_submission:
+              data.authorization_response.presentation_submission,
+            state: data.authorization_response.state,
             nonce: data.nonce,
           });
           return;
@@ -439,7 +464,17 @@ function pollForWalletResponse(
 
         if (data.status === "expired" || data.status === "error") {
           logger.error("Transaction failed", data);
-          resolve(null);
+          if (data.status === "error" && data.wallet_error) {
+            const we: WalletAuthorizationError = data.wallet_error;
+            const desc = we.error_description
+              ? `: ${we.error_description}`
+              : "";
+            reject(
+              new Error(`Wallet error (§8.5) — ${we.error}${desc}`),
+            );
+          } else {
+            reject(new Error("Transaction failed"));
+          }
           return;
         }
 
@@ -469,8 +504,6 @@ async function requestViaOpenID4VPSameDevice(
   request: InitTransactionRequest,
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
-  logger.log("OpenID4VP same-device flow requested");
-
   // Step 1: Initialize the transaction on the backend
   logger.log("Initializing OpenID4VP transaction for same-device flow...");
 
@@ -523,12 +556,13 @@ async function requestViaOpenID4VPSameDevice(
       logger,
       cancelPromise,
     );
-    hideSameDeviceModal();
 
     if (!pollResponse) {
-      return null;
+      logger.log("OpenID4VP same-device flow cancelled or timed out");
+      throw new Error("OpenID4VP same-device flow cancelled or timed out");
     }
 
+    hideSameDeviceModal();
     // Convert PollResponse to OpenID4VPResponse
     return {
       vp_token: pollResponse.vp_token,

@@ -26,8 +26,9 @@ use crate::{
     transaction::TransactionStore,
     types::{
         AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery,
-        InitTransactionRequest, InitTransactionResponse, OpenID4VPTransaction, ProfileId,
-        ResponseMode, TransactionStatus, TransactionStatusResult, WalletDirectPostData,
+        DirectPostAuthorizationResponse, InitTransactionRequest, InitTransactionResponse,
+        OpenID4VPTransaction, ProfileId, ResponseMode, TransactionStatus, TransactionStatusResult,
+        WalletAuthorizationError,
     },
 };
 
@@ -201,6 +202,7 @@ impl OpenID4VPService {
             response_mode,
             profile,
             wallet_response: None,
+            wallet_error: None,
             verification_result: None,
             error_message: None,
             client_metadata: Some(client_metadata),
@@ -365,11 +367,11 @@ impl OpenID4VPService {
     /// * `fallback_state` — State value from outside the JWE (some wallets duplicate it)
     pub fn handle_wallet_response(
         &self,
-        data: Option<WalletDirectPostData>,
+        data: Option<DirectPostAuthorizationResponse>,
         jwe_response: Option<&str>,
         fallback_state: Option<&str>,
     ) -> OpenID4VPResult<()> {
-        let wallet_data: WalletDirectPostData = if let Some(jwe) = jwe_response {
+        let wallet_data: DirectPostAuthorizationResponse = if let Some(jwe) = jwe_response {
             // HAIP: Decrypt JWE
             let decrypted: DecryptedWalletResponse = decrypt_jwe_response(jwe, &self.jwe_key)?;
             let state = if decrypted.state.is_empty() {
@@ -377,7 +379,7 @@ impl OpenID4VPService {
             } else {
                 decrypted.state
             };
-            WalletDirectPostData {
+            DirectPostAuthorizationResponse {
                 vp_token: decrypted.vp_token,
                 presentation_submission: decrypted.presentation_submission,
                 state,
@@ -407,6 +409,34 @@ impl OpenID4VPService {
         Ok(())
     }
 
+    /// Handle a wallet error response sent to `direct_post` (§8.5).
+    ///
+    /// When the wallet cannot or will not fulfil the Authorization Request it sends
+    /// `error=<code>&error_description=<text>&state=<state>` instead of a VP Token.
+    /// The transaction is updated to `Error` status and the error details are stored
+    /// so the frontend can retrieve them via the status endpoint.
+    pub fn handle_wallet_error(&self, error: WalletAuthorizationError) -> OpenID4VPResult<()> {
+        let state = error.state.clone().unwrap_or_default();
+
+        let found = self.transactions.update_by_state(&state, |tx| {
+            tx.wallet_error = Some(error.clone());
+            tx.status = TransactionStatus::Error;
+        });
+
+        if found.is_none() {
+            return Err(OpenID4VPError::BadRequest(format!(
+                "No transaction found for state: {state}"
+            )));
+        }
+
+        tracing::warn!(
+            state = %state,
+            error_code = %error.error,
+            "Transaction status → error (wallet error response §8.5)"
+        );
+        Ok(())
+    }
+
     /// Get the current status of a transaction.
     ///
     /// If the wallet has responded, includes the VP token for the frontend to verify.
@@ -423,10 +453,9 @@ impl OpenID4VPService {
             return Ok(TransactionStatusResult {
                 status: TransactionStatus::Expired,
                 expires_in: None,
-                vp_token: None,
-                presentation_submission: None,
+                authorization_response: None,
                 nonce: None,
-                state: None,
+                wallet_error: None,
                 error_message: None,
             });
         }
@@ -436,23 +465,32 @@ impl OpenID4VPService {
                 return Ok(TransactionStatusResult {
                     status: TransactionStatus::Received,
                     expires_in: None,
-                    vp_token: Some(wr.vp_token.clone()),
-                    presentation_submission: wr.presentation_submission.clone(),
+                    authorization_response: Some(wr.clone()),
                     nonce: Some(transaction.nonce.clone()),
-                    state: Some(transaction.state.clone()),
+                    wallet_error: None,
                     error_message: None,
                 });
             }
+        }
+
+        if transaction.status == TransactionStatus::Error {
+            return Ok(TransactionStatusResult {
+                status: TransactionStatus::Error,
+                expires_in: None,
+                authorization_response: None,
+                nonce: None,
+                wallet_error: transaction.wallet_error.clone(),
+                error_message: transaction.error_message.clone(),
+            });
         }
 
         let now = chrono::Utc::now().timestamp_millis();
         Ok(TransactionStatusResult {
             status: transaction.status,
             expires_in: Some((transaction.expires_at - now) / 1000),
-            vp_token: None,
-            presentation_submission: None,
+            authorization_response: None,
             nonce: None,
-            state: None,
+            wallet_error: None,
             error_message: transaction.error_message.clone(),
         })
     }
@@ -690,7 +728,7 @@ mod tests {
 
         assert_eq!(status.status, TransactionStatus::Pending);
         assert!(status.expires_in.unwrap() > 0);
-        assert!(status.vp_token.is_none());
+        assert!(status.authorization_response.is_none());
 
         service.shutdown();
     }
@@ -719,7 +757,7 @@ mod tests {
         let state = auth_json["state"].as_str().unwrap().to_string();
 
         // Simulate wallet direct_post response
-        let wallet_data = WalletDirectPostData {
+        let wallet_data = DirectPostAuthorizationResponse {
             vp_token: "test-vp-token-content".to_string(),
             presentation_submission: Some("test-submission".to_string()),
             state,
@@ -734,7 +772,13 @@ mod tests {
             .get_transaction_status(&init_resp.transaction_id)
             .unwrap();
         assert_eq!(status.status, TransactionStatus::Received);
-        assert_eq!(status.vp_token.as_deref(), Some("test-vp-token-content"));
+        assert_eq!(
+            status
+                .authorization_response
+                .as_ref()
+                .map(|r| r.vp_token.as_str()),
+            Some("test-vp-token-content")
+        );
         assert_eq!(status.nonce.as_deref(), Some("test-nonce"));
 
         service.shutdown();
@@ -745,7 +789,7 @@ mod tests {
         let config = test_config();
         let service = OpenID4VPService::create(config).unwrap();
 
-        let wallet_data = WalletDirectPostData {
+        let wallet_data = DirectPostAuthorizationResponse {
             vp_token: "token".to_string(),
             presentation_submission: None,
             state: "unknown-state".to_string(),
@@ -779,6 +823,220 @@ mod tests {
         assert_eq!(keys.len(), 1);
         assert_eq!(keys[0]["kty"], "EC");
         assert_eq!(keys[0]["alg"], "ES256");
+
+        service.shutdown();
+    }
+
+    // ========================================================================
+    // §8.2 — Authorization Response via direct_post (success path)
+    // ========================================================================
+
+    /// §8.2 example: Wallet POSTs `vp_token=...&state=...` to the response_uri.
+    /// The service must store the response and transition to `Received`.
+    /// (Mirrors `test_handle_wallet_response_plain` — kept as spec-anchored reference.)
+    #[tokio::test]
+    async fn test_section_8_2_success_direct_post() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).unwrap();
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: Some("test-nonce-8-2".to_string()),
+            client_metadata: None,
+            profile: Some(ProfileId::AnnexA),
+            credential_type: None,
+        };
+
+        let init_resp = service.init_transaction(request).unwrap();
+        let auth_req = service
+            .get_authorization_request(&init_resp.transaction_id)
+            .unwrap();
+        let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
+        let state = auth_json["state"].as_str().unwrap().to_string();
+
+        // §8.2 example: form-encoded `vp_token=<JWT>&state=<state>`
+        let wallet_data = DirectPostAuthorizationResponse {
+            vp_token: "{\"my_credential\":[\"eyJhbGciOiJFUzI1NiJ9.test.QMA\"]}".to_string(),
+            presentation_submission: None,
+            state: state.clone(),
+        };
+        service
+            .handle_wallet_response(Some(wallet_data), None, None)
+            .unwrap();
+
+        let status = service
+            .get_transaction_status(&init_resp.transaction_id)
+            .unwrap();
+        assert_eq!(status.status, TransactionStatus::Received);
+        assert!(status.authorization_response.is_some());
+        assert!(status.wallet_error.is_none());
+        assert_eq!(status.nonce.as_deref(), Some("test-nonce-8-2"));
+
+        service.shutdown();
+    }
+
+    // ========================================================================
+    // §8.5 — Authorization Error Response from Wallet
+    // ========================================================================
+
+    /// §8.5 example: `error=access_denied&state=<state>`.
+    /// Wallet denied consent — transaction must transition to `Error`.
+    #[tokio::test]
+    async fn test_section_8_5_access_denied() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).unwrap();
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: None,
+            client_metadata: None,
+            profile: Some(ProfileId::AnnexA),
+            credential_type: None,
+        };
+
+        let init_resp = service.init_transaction(request).unwrap();
+        let auth_req = service
+            .get_authorization_request(&init_resp.transaction_id)
+            .unwrap();
+        let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
+        let state = auth_json["state"].as_str().unwrap().to_string();
+
+        let wallet_error = WalletAuthorizationError {
+            error: "access_denied".to_string(),
+            error_description: None,
+            state: Some(state),
+        };
+        service.handle_wallet_error(wallet_error.clone()).unwrap();
+
+        let status = service
+            .get_transaction_status(&init_resp.transaction_id)
+            .unwrap();
+        assert_eq!(status.status, TransactionStatus::Error);
+        assert!(status.authorization_response.is_none());
+        let we = status.wallet_error.unwrap();
+        assert_eq!(we.error, "access_denied");
+        assert!(we.error_description.is_none());
+
+        service.shutdown();
+    }
+
+    /// §8.5 example: `error=invalid_request&error_description=unsupported%20client_id_prefix&state=<state>`.
+    /// Wallet rejected the request — transaction must transition to `Error` with description.
+    #[tokio::test]
+    async fn test_section_8_5_invalid_request_with_description() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).unwrap();
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: None,
+            client_metadata: None,
+            profile: Some(ProfileId::AnnexA),
+            credential_type: None,
+        };
+
+        let init_resp = service.init_transaction(request).unwrap();
+        let auth_req = service
+            .get_authorization_request(&init_resp.transaction_id)
+            .unwrap();
+        let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
+        let state = auth_json["state"].as_str().unwrap().to_string();
+
+        let wallet_error = WalletAuthorizationError {
+            error: "invalid_request".to_string(),
+            error_description: Some("unsupported client_id_prefix".to_string()),
+            state: Some(state),
+        };
+        service.handle_wallet_error(wallet_error).unwrap();
+
+        let status = service
+            .get_transaction_status(&init_resp.transaction_id)
+            .unwrap();
+        assert_eq!(status.status, TransactionStatus::Error);
+        let we = status.wallet_error.unwrap();
+        assert_eq!(we.error, "invalid_request");
+        assert_eq!(
+            we.error_description.as_deref(),
+            Some("unsupported client_id_prefix")
+        );
+
+        service.shutdown();
+    }
+
+    /// §8.5: All six error codes must be accepted and stored correctly.
+    #[tokio::test]
+    async fn test_section_8_5_all_error_codes() {
+        let error_codes = [
+            "invalid_request",
+            "access_denied",
+            "vp_formats_not_supported",
+            "invalid_request_uri_method",
+            "invalid_transaction_data",
+            "wallet_unavailable",
+        ];
+
+        for error_code in &error_codes {
+            let config = test_config();
+            let service = OpenID4VPService::create(config).unwrap();
+
+            let request = InitTransactionRequest {
+                public_url: "https://rp.example.com".to_string(),
+                dcql_query: None,
+                nonce: None,
+                client_metadata: None,
+                profile: Some(ProfileId::AnnexA),
+                credential_type: None,
+            };
+
+            let init_resp = service.init_transaction(request).unwrap();
+            let auth_req = service
+                .get_authorization_request(&init_resp.transaction_id)
+                .unwrap();
+            let auth_json: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
+            let state = auth_json["state"].as_str().unwrap().to_string();
+
+            let wallet_error = WalletAuthorizationError {
+                error: error_code.to_string(),
+                error_description: Some(format!("test: {error_code}")),
+                state: Some(state),
+            };
+            service.handle_wallet_error(wallet_error.clone()).unwrap();
+
+            let status = service
+                .get_transaction_status(&init_resp.transaction_id)
+                .unwrap();
+            assert_eq!(
+                status.status,
+                TransactionStatus::Error,
+                "error_code={error_code}"
+            );
+            assert_eq!(
+                status.wallet_error.unwrap().error,
+                *error_code,
+                "error_code={error_code}"
+            );
+
+            service.shutdown();
+        }
+    }
+
+    /// §8.5: `handle_wallet_error` with an unknown / expired state must return an error.
+    #[tokio::test]
+    async fn test_section_8_5_unknown_state() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).unwrap();
+
+        let wallet_error = WalletAuthorizationError {
+            error: "access_denied".to_string(),
+            error_description: None,
+            state: Some("unknown-state-xyz".to_string()),
+        };
+
+        let result = service.handle_wallet_error(wallet_error);
+        assert!(result.is_err());
 
         service.shutdown();
     }

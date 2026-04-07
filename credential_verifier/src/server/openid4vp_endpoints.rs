@@ -18,7 +18,8 @@
 
 use actix_web::{HttpRequest, HttpResponse, web};
 use ewqwe_openid4vp::{
-    InitTransactionRequest, OpenID4VPError, OpenID4VPService, WalletDirectPostData,
+    DirectPostAuthorizationResponse, InitTransactionRequest, OpenID4VPError, OpenID4VPService,
+    WalletAuthorizationError,
 };
 use serde::Deserialize;
 use std::sync::Arc;
@@ -104,19 +105,17 @@ pub async fn handle_direct_post(
     match result {
         Ok(()) => {
             info!("Wallet response stored successfully");
-            HttpResponse::Ok().json(serde_json::json!({"status": "ok"}))
+            // §8.2: Verifier MUST respond HTTP 200 + Content-Type: application/json + `{}`
+            // (or {"redirect_uri":"..."} for same-device redirects — not used here).
+            HttpResponse::Ok().json(serde_json::json!({}))
         }
         Err(e) => openid4vp_error_response(e),
     }
 }
 
 /// Parse and handle form-encoded direct_post data.
-fn handle_form_direct_post(
-    service: &OpenID4VPService,
-    body: &[u8],
-) -> Result<(), OpenID4VPError> {
-    let params: Vec<(String, String)> =
-        url::form_urlencoded::parse(body).into_owned().collect();
+fn handle_form_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<(), OpenID4VPError> {
+    let params: Vec<(String, String)> = url::form_urlencoded::parse(body).into_owned().collect();
 
     let get_param = |name: &str| -> Option<String> {
         params
@@ -127,12 +126,25 @@ fn handle_form_direct_post(
 
     // Check for JWE response (HAIP profile: direct_post.jwt)
     if let Some(jwe_response) = get_param("response") {
-        info!(
-            jwe_len = jwe_response.len(),
-            "JWE response received"
-        );
+        info!(jwe_len = jwe_response.len(), "JWE response received");
         let fallback_state = get_param("state");
         service.handle_wallet_response(None, Some(&jwe_response), fallback_state.as_deref())
+    } else if let Some(error_code) = get_param("error") {
+        // §8.5: Wallet sent an error response instead of a VP Token
+        let error_description = get_param("error_description");
+        let state = get_param("state");
+        warn!(
+            error_code = %error_code,
+            error_description = ?error_description,
+            state = ?state,
+            "Wallet error response (§8.5)"
+        );
+        let wallet_error = WalletAuthorizationError {
+            error: error_code,
+            error_description,
+            state,
+        };
+        service.handle_wallet_error(wallet_error)
     } else {
         // Plain form data (Annex A profile: direct_post)
         let vp_token = get_param("vp_token").unwrap_or_default();
@@ -143,7 +155,7 @@ fn handle_form_direct_post(
             "Plain direct_post received"
         );
 
-        let wallet_data = WalletDirectPostData {
+        let wallet_data = DirectPostAuthorizationResponse {
             vp_token,
             presentation_submission,
             state,
@@ -153,20 +165,37 @@ fn handle_form_direct_post(
 }
 
 /// Parse and handle JSON direct_post data.
-fn handle_json_direct_post(
-    service: &OpenID4VPService,
-    body: &[u8],
-) -> Result<(), OpenID4VPError> {
+fn handle_json_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<(), OpenID4VPError> {
     #[derive(Deserialize)]
     struct JsonDirectPost {
         vp_token: Option<String>,
         presentation_submission: Option<String>,
         state: Option<String>,
+        // §8.5: Wallet error response fields
+        error: Option<String>,
+        error_description: Option<String>,
     }
 
     let parsed: JsonDirectPost = serde_json::from_slice(body).map_err(|e| {
         OpenID4VPError::BadRequest(format!("Invalid JSON in direct_post body: {e}"))
     })?;
+
+    // §8.5: Wallet error response takes priority over vp_token
+    if let Some(error_code) = parsed.error {
+        let state = parsed.state;
+        warn!(
+            error_code = %error_code,
+            error_description = ?parsed.error_description,
+            state = ?state,
+            "Wallet error response §8.5 (JSON)"
+        );
+        let wallet_error = WalletAuthorizationError {
+            error: error_code,
+            error_description: parsed.error_description,
+            state,
+        };
+        return service.handle_wallet_error(wallet_error);
+    }
 
     let state = parsed.state.unwrap_or_default();
     info!(
@@ -174,7 +203,7 @@ fn handle_json_direct_post(
         "JSON direct_post received"
     );
 
-    let wallet_data = WalletDirectPostData {
+    let wallet_data = DirectPostAuthorizationResponse {
         vp_token: parsed.vp_token.unwrap_or_default(),
         presentation_submission: parsed.presentation_submission,
         state,

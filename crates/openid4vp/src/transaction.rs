@@ -177,6 +177,7 @@ mod tests {
             response_mode: ResponseMode::DirectPost,
             profile: ProfileId::AnnexA,
             wallet_response: None,
+            wallet_error: None,
             verification_result: None,
             error_message: None,
             client_metadata: None,

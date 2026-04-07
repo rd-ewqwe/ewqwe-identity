@@ -200,9 +200,15 @@ Poll transaction status. Returns current state and verification result when read
 ```typescript
 interface TransactionStatusResult {
   status: "pending" | "received" | "verified" | "failed" | "expired";
-  verification_result?: VerifyResponse;
+  expires_in?: number;        // seconds until expiry; present when status === "pending"
+  // Present when status === "received" — the Authorization Response sent by the wallet
+  authorization_response?: {
+    vp_token: string;                    // JSON-encoded Record<credentialQueryId, presentation[]>
+    presentation_submission?: string;    // DIF PE backward-compat; absent in DCQL responses
+    state: string;                       // echoed from original Authorization Request
+  };
+  nonce?: string;             // original request nonce; present when status === "received"
   error_message?: string;
-  expires_at: number;
 }
 ```
 
@@ -219,14 +225,14 @@ interface AuthorizationRequestResult {
 }
 ```
 
-##### `handleWalletResponse(plainData?: WalletDirectPostData, jweResponse?: string, fallbackState?: string): Promise<void>`
+##### `handleWalletResponse(plainData?: DirectPostAuthorizationResponse, jweResponse?: string, fallbackState?: string): Promise<void>`
 
 Process wallet response. Decrypts JWE (HAIP) or parses plain data (Annex A), then delegates verification to credential verifier.
 
 **Parameters:**
 
 ```typescript
-interface WalletDirectPostData {
+interface DirectPostAuthorizationResponse {
   vpToken: string;
   presentationSubmission?: string;
   state: string;

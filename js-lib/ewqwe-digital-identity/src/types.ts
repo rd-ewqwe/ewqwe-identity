@@ -473,6 +473,29 @@ export interface VerifyResponse {
 // Transaction Status (Frontend polling)
 // ============================================================================
 
+/**
+ * Error response sent by the Wallet to the Verifier's `response_uri` (§8.5).
+ *
+ * Instead of a VP Token the Wallet sends this when it cannot or will not fulfil
+ * the Authorization Request. Field names are snake_case to match Rust API JSON.
+ *
+ * Error codes:
+ * - `invalid_request` — malformed / unsupported request parameters
+ * - `access_denied` — no matching credentials, user denied consent, or auth failed
+ * - `vp_formats_not_supported` — no supported VP format found
+ * - `invalid_request_uri_method` — unsupported `request_uri_method` value
+ * - `invalid_transaction_data` — `transaction_data` claim issue
+ * - `wallet_unavailable` — wallet cannot be invoked (§15.9.1)
+ */
+export interface WalletAuthorizationError {
+  /** Error code from §8.5 (e.g. `"access_denied"`). */
+  error: string;
+  /** Human-readable error description (optional). */
+  error_description?: string;
+  /** The `state` parameter echoed back from the Authorization Request. */
+  state?: string;
+}
+
 /** Transaction status values. */
 export type TransactionStatus =
   | "pending"
@@ -481,28 +504,60 @@ export type TransactionStatus =
   | "error"
   | "expired";
 
-/** Result of polling for transaction status. */
-export interface TransactionStatusResult {
-  status: TransactionStatus;
-  expires_in?: number;
-  vp_token?: string;
+/**
+ * OpenID4VP Authorization Response received from the wallet via `direct_post` (§8.2).
+ *
+ * Embedded in {@link TransactionStatusResult} when `status === "received"`.
+ * Field names are snake_case to match the Rust API JSON serialisation.
+ */
+export interface DirectPostAuthorizationResponse {
+  /**
+   * JSON-encoded `Record<credentialQueryId, presentation[]>` per OpenID4VP 1.0 §8.1.
+   * Each key is the `id` from a DCQL Credential Query; each value is an array of
+   * base64url-encoded credential presentations.
+   */
+  vp_token: string;
+
+  /**
+   * **Deprecated — absent in OpenID4VP 1.0 DCQL responses.**
+   *
+   * DIF Presentation Exchange backward-compatibility field only. When present, this is a
+   * JSON object `{ id, definition_id, descriptor_map }` serialised as a string.
+   * Not returned in spec-compliant DCQL responses (§8.1).
+   */
   presentation_submission?: string;
-  nonce?: string;
-  state?: string;
+
+  /** The `state` parameter echoed back from the original Authorization Request (§5.3). */
+  state: string;
 }
 
-/** Response from initializing a new OpenID4VP transaction. */
-export interface InitTransactionResponse {
-  transaction_id: string;
-  client_id: string;
-  client_id_scheme: ClientIdScheme;
-  request_uri: string;
-  authorization_request_uri: string;
-  deep_link_uri: string;
-  expires_in: number;
-  profile: ProfileId;
-  /** QR code data URL (`data:image/svg+xml;base64,...`), cross-device only. */
-  qr_code_data_url?: string;
+/** Result of polling for transaction status. */
+export interface TransactionStatusResult {
+  /** Current transaction status. */
+  status: TransactionStatus;
+
+  /** Seconds until the transaction expires. Present when `status === "pending"`. */
+  expires_in?: number;
+
+  /**
+   * The Authorization Response received from the wallet (OpenID4VP 1.0 §8.1 + §8.2).
+   * Only present when `status === "received"`.
+   */
+  authorization_response?: DirectPostAuthorizationResponse;
+
+  /**
+   * The `nonce` from the original Authorization Request (§5.2).
+   * Present when `status === "received"`, needed for VP Token replay validation (§14.1).
+   */
+  nonce?: string;
+
+  /**
+   * Error response sent by the Wallet (§8.5). Present when `status === "error"`
+   * and the error originated from the wallet (not an internal server error).
+   */
+  wallet_error?: WalletAuthorizationError;
+
+  error_message?: string;
 }
 
 // ============================================================================

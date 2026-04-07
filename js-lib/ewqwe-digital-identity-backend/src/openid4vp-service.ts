@@ -17,6 +17,7 @@
 import type {
   DCQLQuery,
   TransactionStatusResult,
+  WalletAuthorizationError,
 } from "@ewqwe/digital-identity";
 import {
   determineProfile,
@@ -32,7 +33,7 @@ import type {
   OpenID4VPConfig,
   OpenID4VPTransaction,
   VerifyRequest,
-  WalletDirectPostData,
+  DirectPostAuthorizationResponse,
 } from "./types.ts";
 import type {
   InitTransactionResponse,
@@ -305,11 +306,11 @@ export class OpenID4VPService {
    * @param fallbackState State value from outside the JWE (some wallets duplicate it).
    */
   async handleWalletResponse(
-    data: WalletDirectPostData | null,
+    data: DirectPostAuthorizationResponse | null,
     jweResponse?: string,
     fallbackState?: string,
   ): Promise<void> {
-    let walletData: WalletDirectPostData;
+    let walletData: DirectPostAuthorizationResponse;
 
     if (jweResponse) {
       // HAIP: Decrypt JWE
@@ -341,6 +342,31 @@ export class OpenID4VPService {
   }
 
   /**
+   * Handle a wallet error response sent to `direct_post` (§8.5).
+   *
+   * When the wallet cannot fulfil the Authorization Request it sends
+   * `error=<code>&error_description=<text>&state=<state>` instead of a VP Token.
+   * The transaction is updated to `"error"` status and the error details are stored
+   * so the frontend can retrieve them via the status endpoint.
+   */
+  handleWalletError(error: WalletAuthorizationError): void {
+    const state = error.state ?? "";
+
+    const transaction = this.transactions.findByState(state);
+    if (!transaction) {
+      throw new BadRequestError(
+        `No transaction found for state: ${state}`,
+      );
+    }
+
+    transaction.walletError = error;
+    transaction.status = "error";
+    console.warn(
+      `[OpenID4VP] Transaction ${transaction.id.slice(0, 8)}... status → error (wallet §8.5: ${error.error})`,
+    );
+  }
+
+  /**
    * Get the current status of a transaction.
    * If the wallet has responded, includes the VP token for the frontend to verify.
    */
@@ -355,11 +381,20 @@ export class OpenID4VPService {
     if (transaction.status === "received" && transaction.walletResponse) {
       return {
         status: "received",
-        vp_token: transaction.walletResponse.vpToken,
-        presentation_submission:
-          transaction.walletResponse.presentationSubmission,
+        authorization_response: {
+          vp_token: transaction.walletResponse.vpToken,
+          presentation_submission:
+            transaction.walletResponse.presentationSubmission,
+          state: transaction.walletResponse.state,
+        },
         nonce: transaction.nonce,
-        state: transaction.state,
+      };
+    }
+
+    if (transaction.status === "error") {
+      return {
+        status: "error",
+        wallet_error: transaction.walletError,
       };
     }
 
