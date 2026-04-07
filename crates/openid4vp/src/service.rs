@@ -35,6 +35,32 @@ use crate::{
 use crate::config::determine_profile;
 use serde::{Deserialize, Serialize};
 
+fn compute_jwk_thumbprint_bytes(jwk: &serde_json::Value) -> Option<Vec<u8>> {
+    let obj = jwk.as_object()?;
+    let canonical = match obj.get("kty")?.as_str()? {
+        "EC" => serde_json::json!({
+            "crv": obj.get("crv")?.as_str()?,
+            "kty": "EC",
+            "x": obj.get("x")?.as_str()?,
+            "y": obj.get("y")?.as_str()?,
+        }),
+        "RSA" => serde_json::json!({
+            "e": obj.get("e")?.as_str()?,
+            "kty": "RSA",
+            "n": obj.get("n")?.as_str()?,
+        }),
+        "OKP" => serde_json::json!({
+            "crv": obj.get("crv")?.as_str()?,
+            "kty": "OKP",
+            "x": obj.get("x")?.as_str()?,
+        }),
+        _ => return None,
+    };
+
+    let canonical_json = serde_json::to_string(&canonical).ok()?;
+    Some(openssl::sha::sha256(canonical_json.as_bytes()).to_vec())
+}
+
 const DEFAULT_TRANSACTION_TTL_SEC: i64 = 5 * 60; // 5 minutes
 const JAR_KEY_ID: &str = "ewqwe-jar-key-1";
 const JWE_KEY_ID: &str = "ewqwe-enc-key-1";
@@ -176,7 +202,9 @@ impl OpenID4VPService {
         let profile = determine_profile(request.credential_type.as_deref(), request.profile);
 
         let transaction_id = uuid::Uuid::new_v4().to_string();
-        let state = uuid::Uuid::new_v4().to_string();
+        let state = request
+            .state
+            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
         let nonce = request
             .nonce
             .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
@@ -588,6 +616,46 @@ impl OpenID4VPService {
         })
     }
 
+    /// Look up the server-stored nonce for a transaction identified by its
+    /// OpenID4VP `state` parameter.
+    ///
+    /// Returns `Ok(Some(nonce))` when a matching transaction exists,
+    /// `Ok(None)` when no transaction is found for the given state.
+    pub async fn get_nonce_by_state(&self, state: &str) -> OpenID4VPResult<Option<String>> {
+        Ok(self
+            .transactions
+            .find_by_state(state)
+            .await?
+            .map(|tx| tx.nonce))
+    }
+
+    /// Look up the full stored transaction identified by its OpenID4VP `state`.
+    pub async fn get_transaction_by_state(
+        &self,
+        state: &str,
+    ) -> OpenID4VPResult<Option<OpenID4VPTransaction>> {
+        self.transactions.find_by_state(state).await
+    }
+
+    /// Delete the stored transaction identified by its OpenID4VP `state`.
+    ///
+    /// Returns `Ok(true)` when a transaction existed and was removed.
+    pub async fn consume_transaction_by_state(&self, state: &str) -> OpenID4VPResult<bool> {
+        let Some(transaction) = self.transactions.find_by_state(state).await? else {
+            return Ok(false);
+        };
+
+        self.transactions.delete(&transaction.id).await
+    }
+
+    /// Returns the RFC 7638 SHA-256 JWK thumbprint bytes for the response
+    /// encryption key used by `direct_post.jwt` / `dc_api.jwt` flows.
+    pub fn get_response_jwk_thumbprint(&self) -> Option<Vec<u8>> {
+        self.jwe_key
+            .as_ref()
+            .and_then(|key| compute_jwk_thumbprint_bytes(&key.public_jwk))
+    }
+
     // ========================================================================
     // Public JWKS
     // ========================================================================
@@ -703,6 +771,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("test-nonce-123".to_string()),
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -735,6 +804,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::Haip),
             credential_type: None,
@@ -764,6 +834,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -794,6 +865,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::Haip),
             credential_type: None,
@@ -822,6 +894,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -850,6 +923,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("test-nonce".to_string()),
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -959,6 +1033,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("test-nonce-8-2".to_string()),
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -1011,6 +1086,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -1059,6 +1135,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -1115,6 +1192,7 @@ mod tests {
                 public_url: "https://rp.example.com".to_string(),
                 dcql_query: None,
                 nonce: None,
+                state: None,
                 client_metadata: None,
                 profile: Some(ProfileId::AnnexA),
                 credential_type: None,
@@ -1207,6 +1285,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("nonce-8-4".to_string()),
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -1268,6 +1347,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -1310,6 +1390,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::Haip),
             credential_type: None,
@@ -1353,6 +1434,7 @@ mod tests {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
+            state: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
             credential_type: None,
@@ -1375,6 +1457,84 @@ mod tests {
             .await
             .unwrap();
         assert!(status.transaction_data.is_none());
+
+        service.shutdown();
+    }
+
+    #[tokio::test]
+    async fn test_init_transaction_preserves_client_supplied_state() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).await.unwrap();
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: Some("nonce-from-client".to_string()),
+            state: Some("client-state-123".to_string()),
+            client_metadata: None,
+            profile: Some(ProfileId::AnnexA),
+            credential_type: None,
+            transaction_data: None,
+        };
+
+        let init_resp = service.init_transaction(request).await.unwrap();
+        let auth_req = service
+            .get_authorization_request(&init_resp.transaction_id)
+            .await
+            .unwrap();
+        let parsed: serde_json::Value = serde_json::from_str(&auth_req.body).unwrap();
+
+        assert_eq!(parsed["state"], "client-state-123");
+        assert_eq!(
+            service
+                .get_nonce_by_state("client-state-123")
+                .await
+                .unwrap(),
+            Some("nonce-from-client".to_string())
+        );
+
+        service.shutdown();
+    }
+
+    #[tokio::test]
+    async fn test_consume_transaction_by_state_removes_transaction() {
+        let config = test_config();
+        let service = OpenID4VPService::create(config).await.unwrap();
+
+        let request = InitTransactionRequest {
+            public_url: "https://rp.example.com".to_string(),
+            dcql_query: None,
+            nonce: None,
+            state: Some("consume-me-state".to_string()),
+            client_metadata: None,
+            profile: Some(ProfileId::AnnexA),
+            credential_type: None,
+            transaction_data: None,
+        };
+
+        let init_resp = service.init_transaction(request).await.unwrap();
+
+        assert!(
+            service
+                .consume_transaction_by_state("consume-me-state")
+                .await
+                .unwrap()
+        );
+        assert!(
+            service
+                .get_transaction_by_state("consume-me-state")
+                .await
+                .unwrap()
+                .is_none()
+        );
+        assert_eq!(
+            service
+                .get_transaction_status(&init_resp.transaction_id)
+                .await
+                .unwrap()
+                .status,
+            TransactionStatus::Expired
+        );
 
         service.shutdown();
     }

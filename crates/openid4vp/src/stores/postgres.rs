@@ -32,7 +32,7 @@ impl PostgresTransactionStore {
                 expires_at  BIGINT      NOT NULL,
                 data        JSONB       NOT NULL
             );
-            CREATE INDEX IF NOT EXISTS idx_openid4vp_transactions_state
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_openid4vp_transactions_state_unique
                 ON openid4vp_transactions (state);"#,
         )
         .execute(&self.pool)

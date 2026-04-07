@@ -65,15 +65,21 @@ flowchart TB
 
 The server performs the following verification steps:
 
-1. **Parse VP Token**: Deserialize the JSON-encoded credential presentation
-2. **Cryptographic Verification**: Validate digital signatures (COSE for mDocs, JWS for JWTs)
-3. **Issuer Trust**: Verify the credential issuer against a trusted registry
-4. **Expiration Check**: Ensure the credential is still valid
-5. **Nonce Validation**: Verify the nonce matches the original request (prevents replay attacks)
-6. **Claim Extraction**: Extract relevant claims from verified credentials
-7. **Attestation Signing**: Generate a signed JWT attestation confirming verification
+1. **Parse VP Token**: Deserialize the credential presentation (DCQL-wrapped mDoc CBOR, SD-JWT VC compact serialisation, or direct JSON)
+2. **Claim Extraction**: Extract selectively-disclosed claims from SD-JWT disclosures or mDoc namespaced elements
+3. **Expiration Check**: Verify `exp` timestamp in SD-JWT payload
+4. **Nonce Binding**: The `state` from the request is used to look up the server-stored `OpenID4VPTransaction` nonce, which is compared against the nonce embedded in the KB-JWT of the SD-JWT VC presentation — this prevents replay attacks since the nonce never travels in the request body
+5. **Cryptographic Signature Verification** (SD-JWT VC):
+   - **Issuer JWT signature**: The `x5c` header provides the leaf certificate; its public key verifies the issuer JWT via `jsonwebtoken`. Supports ES256, ES384, RS256, RS384, RS512.
+   - **Issuer trust**: The leaf certificate is validated against the trusted issuer CA certificates configured in `ServerParams::trusted_issuer_certs` using OpenSSL X.509 chain verification.
+   - **KB-JWT holder signature**: The holder's public key is extracted from the `cnf.jwk` claim in the issuer payload. EC (P-256/P-384/P-521), RSA, and EdDSA key types are supported.
+6. **Attestation Signing**: Generate an ES256-signed JWT attestation confirming verification
 
-> **Current Status**: Steps 2-3 are simulated in the current implementation. Production versions will implement full cryptographic verification against trusted issuer registries.
+> **Remaining limitations:**
+>
+> - **mDoc signatures**: MSO COSE_Sign1 signature verification for mDoc presentations is not yet implemented.
+> - **SD-JWT without x5c**: If the issuer JWT has no `x5c` header, the issuer public key cannot be obtained and signature verification is skipped.
+> - **Trusted-issuer CA list**: Currently configured as a static set of PEM files in `credential-server.toml`. Production deployments should integrate with dynamic trust sources (ETSI Trusted Lists, OpenID Federation, or X.509 AKI per OpenID4VP §6.1.1).
 
 ## Installation and Configuration
 
@@ -264,13 +270,14 @@ Verifies a Verifiable Presentation (VP) token from a user's wallet and returns a
 {
   "vp_token": "{\"proof_of_age\":[\"base64url_mdoc_presentation\"]}",
   "presentation_submission": null,
-  "nonce": "random-nonce-from-request",
   "state": "session-state",
   "client_id": "https://example.com"
 }
 ```
 
 > **Note**: `presentation_submission` is **optional** and typically `null` when the wallet uses DCQL queries (OpenID4VP Section 8.1). With DCQL, the `vp_token` is a JSON object where keys are credential IDs from the query.
+>
+> The `state` field is **required** for transaction binding: the server looks up the original `OpenID4VPTransaction` by state and compares the stored transaction context against the presentation proof. For SD-JWT VC that means comparing the stored nonce against the KB-JWT nonce. For `mso_mdoc` that means rebuilding the OpenID4VP handover from the stored `client_id`, `nonce`, and `response_uri` before verifying `deviceAuth.deviceSignature`.
 
 **Response** (Success):
 
@@ -331,23 +338,83 @@ Returns the server version information. Requires valid session authentication.
 
 ### Current Implementation Status
 
-⚠️ The current implementation is a **demonstration/prototype** with simulated verification steps. Before production use:
+#### 1. Nonce Replay Prevention ✅
 
-1. **Implement Real Signature Verification**: Replace simulated checks with actual COSE/JWS cryptographic validation
-2. **Trusted Issuer Registry**: Integrate with a production issuer trust list
-3. **Revocation Checking**: Add support for credential revocation lists (CRLs) or OCSP
-4. **Rate Limiting**: Implement request rate limiting to prevent abuse
-5. **Secret Management**: Use proper secret management (HashiCorp Vault, AWS Secrets Manager, etc.) for private keys
-6. **Audit Logging**: Ensure all verification events are logged immutably for compliance
+The nonce used for replay prevention is looked up **server-side** from the `OpenID4VPTransaction` store. The `verify_credential_endpoint` receives the `state` field from the request, loads the stored transaction, and compares the stored nonce against the holder-binding proof in the presentation. The nonce is never taken from the HTTP request body.
+
+The `state` value itself follows the OAuth/OpenID4VP model: it is an opaque client-maintained correlation value. In this repository the wallet-facing client is the delegated verifier service behind `/api/openid4vp/init`, so it may generate the `state` itself. If the RP wants to own `state`, it can now supply one in `InitTransactionRequest` and the service preserves it verbatim.
+
+**Flow**:
+
+1. `init_transaction()` stores a fresh nonce in the `OpenID4VPTransaction`
+2. The wallet binds this nonce into the holder-binding proof of the presentation
+3. `verify_credential_endpoint` looks up the transaction by `state` and retrieves the stored nonce plus the original OpenID4VP request context
+4. The verifier compares that stored context against the presentation proof — mismatch leads to verification failure
+5. After a successful verification, the transaction is consumed so the VP token is single-use
+
+#### 2. Cryptographic Signature Verification
+
+| Signature | Algorithm | Key Source | Crate | Status |
+|-----------|-----------|------------|-------|--------|
+| SD-JWT VC issuer JWT | ES256/ES384/RS256/RS384/RS512 | `x5c` leaf certificate | `jsonwebtoken` v9 | ✅ Implemented |
+| KB-JWT holder binding | ES256/RS256/EdDSA | `cnf.jwk` claim in issuer payload | `jsonwebtoken` v9 | ✅ Implemented |
+| mDoc IssuerAuth / DeviceSignature | ES256 / ES384 / ES512 | X.509 chain in `issuerAuth`, device key in MSO `deviceKeyInfo.deviceKey` | `coset` + `openssl` | ✅ Implemented |
+
+**SD-JWT VC**: The JWT header `x5c` provides the leaf certificate. Its public key is extracted via `openssl` and used with `jsonwebtoken::decode()` for signature verification. The `cnf.jwk` claim in the issuer payload provides the holder's public key for KB-JWT verification. EC, RSA, and EdDSA key types are supported.
+
+**mDoc**: The verifier now performs the full wallet-facing checks needed for `mso_mdoc` presentations in this flow:
+
+- verifies the `issuerAuth` `COSE_Sign1` signature
+- validates the `issuerAuth` X.509 chain against `trusted_issuer_certs`
+- parses the MobileSecurityObject and validates `valueDigests` against each disclosed `IssuerSignedItem`
+- reconstructs the OpenID4VP `SessionTranscript` / `OpenID4VPHandover` from `client_id`, `nonce`, `response_uri`, and the response-encryption JWK thumbprint when `direct_post.jwt` is used
+- verifies `deviceAuth.deviceSignature` with the device public key from `deviceKeyInfo.deviceKey`
+
+Current limitation: `deviceAuth.deviceMac` is still rejected; the verifier currently supports `deviceSignature`-based holder binding.
+
+#### 3. Trusted-Issuer List
+
+The `trusted_issuer_certs` configuration parameter in `credential-server.toml` specifies PEM files for trusted issuer CA certificates. The leaf certificate from the SD-JWT `x5c` header is validated against this list using OpenSSL X.509 chain verification.
+
+Currently configured with two test issuer CAs from the Android wallet test suites:
+
+- `av_issuer_ca01.pem` — Age Verification Issuer CA 01 (CN=Age Verification Issuer CA 01, C=AV)
+- `pidissuerca02_eu.pem` — PID Issuer CA 02 (CN=PID Issuer CA 02, O=EUDI Wallet Reference Implementation, C=EU)
+
+OpenID4VP 1.0 section 6.1.1 defines three trust mechanisms:
+
+| Mechanism | Type | Description |
+|-----------|------|-------------|
+| `aki` | X.509 Authority Key Identifier | Match issuer cert chain against known AKIs |
+| `etsi_tl` | ETSI Trusted List (TS 119 612) | EU Member State official trust lists (LOTL) |
+| `openid_federation` | OpenID Federation Entity | Federation-based trust chains |
+
+The type definitions for these mechanisms already exist in `crates/openid4vp/src/types.rs` (`TrustedAuthority`, `TrustedAuthorityType`).
+
+**No central Age Verification issuer registry exists yet.** The EU LOTL covers eIDAS services but not AV-specific credential issuers. The Age Verification Profile uses the `redirect_uri` client_id scheme precisely because no issuer trust framework is established yet.
+
+For production, integrate with dynamic trust sources (ETSI Trusted Lists, OpenID Federation) rather than relying solely on the static certificate list.
 
 ### Production Checklist
 
+- [x] ~~Fix nonce replay: use server-stored nonce, not client-supplied~~
+- [x] ~~Implement SD-JWT VC issuer JWT signature verification~~
+- [x] ~~Implement KB-JWT holder signature verification~~
+- [x] ~~Add trusted-issuer CA certificate configuration~~
+- [x] ~~Implement mDoc IssuerAuth signature verification~~
+- [x] ~~Implement mDoc DeviceSignature verification bound to OpenID4VPHandover~~
+- [x] ~~Consume verified transactions so the verifier endpoint is one-shot~~
 - [ ] Replace test certificates with production certificates from trusted CA
 - [ ] Configure production Redis with authentication and TLS
 - [ ] Enable mTLS for client authentication
-- [ ] Implement real cryptographic verification
+- [ ] Implement `deviceAuth.deviceMac` verification when that proof mode is needed
+- [ ] Handle SD-JWT VCs without `x5c` header (e.g. issuer key lookup by `kid`)
+- [ ] Integrate with dynamic trust sources (ETSI Trusted Lists, OpenID Federation)
+- [ ] Implement credential revocation checking (CRLs or OCSP)
 - [ ] Set up centralized logging/monitoring (ELK, Datadog, etc.)
 - [ ] Configure firewall rules to restrict access
+- [ ] Implement rate limiting to prevent abuse
+- [ ] Use proper secret management (HashiCorp Vault, etc.) for private keys
 - [ ] Regular security audits and dependency updates
 - [ ] Disaster recovery and backup procedures
 -

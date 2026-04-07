@@ -18,7 +18,7 @@ When the native API is unavailable, the Relying Party **MUST** fall back to Open
 
 ```mermaid
 flowchart TD
-  A[RP detects W3C Digital Credentials API unavailable] --> B[RP generates fresh random nonce and optional state]
+  A[RP detects W3C Digital Credentials API unavailable] --> B[RP generates fresh random nonce and chooses optional client-managed state]
   B --> C[RP builds av:// URL with required parameters and DCQL query]
   C --> D{Invocation method?}
   D -->|Same device| E[RP navigates to av:// URL or opens link]
@@ -31,7 +31,7 @@ flowchart TD
   I -->|Approved| K[Wallet builds VP token with requested claims and nonce]
   K --> L[Wallet POSTs response to response_uri with vp_token and state]
   L --> M[RP receives POST request]
-  M --> N[RP validates VP token: signature, nonce, validity]
+  M --> N[RP validates VP token: signature, holder binding, nonce, validity]
   N --> O{Validation successful?}
   O -->|No| P[RP returns error response]
   O -->|Yes| Q[RP extracts age verification claim]
@@ -76,7 +76,7 @@ According to [OpenID for Verifiable Presentations 1.0, Section 5](https://openid
 | `response_uri` | conditional | Endpoint where the wallet POSTs the response | REQUIRED when `response_mode=direct_post` |
 | `presentation_definition` | conditional* | [DIF Presentation Exchange](https://identity.foundation/presentation-exchange/) query | Age Verification Profile uses `dcql_query` instead (see below) |
 | `dcql_query` | conditional* | [Digital Credentials Query Language](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6) query | REQUIRED for Age Verification Profile (DCQL supersedes Presentation Exchange) |
-| `state` | optional | Opaque value to maintain state between request and callback | RECOMMENDED for session correlation |
+| `state` | optional | Opaque value to maintain state between request and callback | If used, it is chosen by the client that owns the request/response correlation state |
 | `scope` | optional | OpenID Connect scopes | Not used in Age Verification Profile |
 | `redirect_uri` | optional | Fallback redirect after response delivery | Not used with `direct_post` |
 
@@ -194,11 +194,12 @@ The following requirements are **mandatory** when using OpenID4VP for age verifi
 - The request MUST use the Digital Credentials Query Language (DCQL) as defined in OpenID4VP Section 6.
 - See the [DCQL Age Verification](./dcql_age_verification.md) chapter for concrete query examples.
 
-### 8) `state` parameter is optional
+### 8) `state` parameter is optional but client-maintained
 
-- The RP MAY include a `state` parameter per OpenID4VP Section 4.1.1.
-- This helps the RP correlate responses with requests.
-- However, it is not mandatory for the Age Verification Profile.
+- The RP MAY include a `state` parameter per RFC 6749 / OpenID4VP.
+- If present, it is an opaque client-maintained correlation value, not a wallet-generated field.
+- In a delegated architecture, the component that owns the wallet-facing `response_uri` may generate and store this value on behalf of the RP.
+- The verifier in this repository accepts caller-supplied `state` on `/api/openid4vp/init` and otherwise generates a fresh request-id for the delegated flow.
 
 ### 9) Client authentication is not required
 
@@ -211,7 +212,7 @@ The following requirements are **mandatory** when using OpenID4VP for age verifi
 ### TypeScript/JavaScript example (RP side)
 
 ```typescript
-// 1) Generate nonce and state
+// 1) Generate nonce and, if your RP owns request correlation, state
 const nonce = crypto.randomUUID(); // or a cryptographic random string
 const state = crypto.randomUUID(); // optional but recommended for correlation
 
@@ -317,11 +318,18 @@ app.post("/api/openid4vp/callback", async (req, res) => {
     return res.status(400).json({ error: "invalid_vp_token" });
   }
 
-  // 3) Validate the nonce
-  const expectedNonce = retrieveNonceForSession(state); // from server-side session
-  if (vpPayload.nonce !== expectedNonce) {
-    return res.status(400).json({ error: "invalid_nonce" });
+  // 3) Load the original transaction by state and validate holder binding
+  const tx = loadTransactionByState(state);
+  if (!tx) {
+    return res.status(400).json({ error: "invalid_state" });
   }
+
+  // For SD-JWT VC, compare the transaction nonce with the KB-JWT nonce.
+  // For mso_mdoc, reconstruct the SessionTranscript / OpenID4VPHandover and
+  // verify deviceAuth.deviceSignature against tx.client_id, tx.nonce, and tx.response_uri.
+
+  // 4) Consume the transaction after successful verification
+  consumeTransaction(state);
 
   // 4) Extract the age verification claim
   const ageOver18 = extractClaim(vpPayload, "eu.europa.ec.av.1", "age_over_18");
@@ -453,11 +461,12 @@ app.post("/api/openid4vp/callback", async (req, res) => {
 - [ ] `response_mode=direct_post` is set.
 - [ ] `client_id` uses the `redirect_uri:` prefix.
 - [ ] `nonce` is fresh, random, and stored server-side.
+- [ ] `state`, when used, is owned by the client or delegated response handler that correlates the callback.
 - [ ] `dcql_query` is valid JSON and follows the DCQL schema.
 - [ ] `response_uri` is HTTPS and handles POST requests.
 - [ ] Wallet POSTs `vp_token` + optional `state` (no `presentation_submission` with DCQL).
 - [ ] RP parses DCQL `vp_token` format: `{"credential_id": ["presentation"]}`.
-- [ ] RP validates `nonce`, `aud`, signature, and claim values.
+- [ ] RP validates `nonce`, audience / handover binding, signature, and claim values.
 - [ ] RP returns a redirect URI or success indicator to the wallet.
 
 ## Comparison with W3C Digital Credentials API

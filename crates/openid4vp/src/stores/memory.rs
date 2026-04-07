@@ -7,7 +7,7 @@ use async_trait::async_trait;
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 
-use crate::error::OpenID4VPResult;
+use crate::error::{OpenID4VPError, OpenID4VPResult};
 use crate::transaction::TransactionStore;
 use crate::types::{OpenID4VPTransaction, TransactionStatus};
 
@@ -28,10 +28,19 @@ impl InMemoryTransactionStore {
 #[async_trait]
 impl TransactionStore for InMemoryTransactionStore {
     async fn set(&self, transaction: OpenID4VPTransaction) -> OpenID4VPResult<()> {
-        self.inner
-            .write()
-            .await
-            .insert(transaction.id.clone(), transaction);
+        let mut map = self.inner.write().await;
+
+        if map
+            .values()
+            .any(|existing| existing.id != transaction.id && existing.state == transaction.state)
+        {
+            return Err(OpenID4VPError::Internal(format!(
+                "duplicate state detected for transaction store: {}",
+                transaction.state
+            )));
+        }
+
+        map.insert(transaction.id.clone(), transaction);
         Ok(())
     }
 

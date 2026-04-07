@@ -509,14 +509,7 @@ export class RelyingPartyApp {
       // Render claims
       const claimsHtml = result.claims
         ? Object.entries(result.claims)
-            .map(
-              ([key, value]) => `
-              <div class="flex justify-between items-center py-2 border-b border-white/10">
-                <span class="text-gray-400">${this.formatClaimName(key)}</span>
-                <span class="font-medium">${this.formatClaimValue(value)}</span>
-              </div>
-            `,
-            )
+            .map(([key, value]) => this.renderClaimRow(key, value))
             .join("")
         : "";
 
@@ -594,6 +587,41 @@ export class RelyingPartyApp {
         },
       },
     );
+  }
+
+  /**
+   * Image claim keys whose values are raw binary encoded as base64.
+   */
+  private static readonly IMAGE_CLAIMS = new Set([
+    "portrait",
+    "signature",
+    "signature_usual_mark",
+  ]);
+
+  /**
+   * Render a single claim row. Image claims (portrait, signature) show an <img> instead of text.
+   */
+  private renderClaimRow(key: string, value: unknown): string {
+    const label = this.formatClaimName(key);
+    if (
+      RelyingPartyApp.IMAGE_CLAIMS.has(key) &&
+      typeof value === "string" &&
+      value.length > 0
+    ) {
+      // Value is standard base64 JPEG (from the mDL portrait byte string)
+      return `
+        <div class="flex justify-between items-center py-2 border-b border-white/10">
+          <span class="text-gray-400">${label}</span>
+          <img src="data:image/jpeg;base64,${value}" alt="${label}" class="h-20 w-16 object-cover rounded" />
+        </div>
+      `;
+    }
+    return `
+      <div class="flex justify-between items-center py-2 border-b border-white/10">
+        <span class="text-gray-400">${label}</span>
+        <span class="font-medium">${this.formatClaimValue(value)}</span>
+      </div>
+    `;
   }
 
   /**

@@ -83,7 +83,7 @@ sequenceDiagram
 
     Note over RP,CV: Transaction Initialization
     RP->>CV: POST /api/openid4vp/init<br/>{profile: "annex-a", dcql_query}
-    CV->>CV: Generate transaction_id, nonce, state<br/>Build DCQL Credential Query<br/>(format: mso_mdoc, doctype: eu.europa.ec.av.1)
+    CV->>CV: Generate transaction_id and nonce<br/>Reuse caller-supplied state or generate request-id state<br/>Build DCQL Credential Query<br/>(format: mso_mdoc, doctype: eu.europa.ec.av.1)
     CV-->>RP: {transaction_id,<br/>authorization_request_uri}
 
     Note over RP,AVI: Authorization Request (OpenID4VP §5)
@@ -108,8 +108,8 @@ sequenceDiagram
     CV-->>RP: {status: "received",<br/>authorization_response, nonce}
 
     Note over RP,CV: Credential Verification
-    RP->>CV: POST /api/verify {vp_token, nonce}
-    CV->>CV: Decode CBOR DeviceResponse (ISO 18013-5)<br/>Verify IssuerAuth (COSE_Sign1)<br/>Validate Issuer certificate chain<br/>Extract claims (age_over_18)
+    RP->>CV: POST /api/verify {vp_token, state, client_id}
+    CV->>CV: Decode CBOR DeviceResponse (ISO 18013-5)<br/>Verify IssuerAuth (COSE_Sign1)<br/>Validate Issuer certificate chain<br/>Verify DeviceSignature against OpenID4VPHandover<br/>Consume transaction and extract claims
     CV->>CV: Sign Attestation (JWT, ES256)
     CV-->>RP: {success, claims, attestation_jwt}
 
@@ -145,7 +145,7 @@ sequenceDiagram
 
     Note over RP,CV: Transaction Initialization
     RP->>CV: POST /api/openid4vp/init<br/>{profile: "haip", dcql_query}
-    CV->>CV: Generate transaction_id, nonce, state<br/>Build DCQL Credential Query<br/>(format: mso_mdoc, doctype: ...)<br/>Generate ephemeral ECDH key pair for JWE
+    CV->>CV: Generate transaction_id and nonce<br/>Reuse caller-supplied state or generate request-id state<br/>Build DCQL Credential Query<br/>(format: mso_mdoc, doctype: ...)<br/>Generate ephemeral ECDH key pair for JWE
     CV-->>RP: {transaction_id,<br/>authorization_request_uri}
 
     Note over RP,EUDI: Authorization Request (OpenID4VP §5)
@@ -179,8 +179,8 @@ sequenceDiagram
     CV-->>RP: {status: "received",<br/>authorization_response, nonce}
 
     Note over RP,CV: Credential Verification
-    RP->>CV: POST /api/verify {vp_token, nonce}
-    CV->>CV: Decode CBOR DeviceResponse (ISO 18013-5)<br/>Verify IssuerAuth (COSE_Sign1)<br/>Validate Issuer certificate chain<br/>Extract namespaced claims
+    RP->>CV: POST /api/verify {vp_token, state, client_id}
+    CV->>CV: Decode CBOR DeviceResponse (ISO 18013-5)<br/>Verify IssuerAuth (COSE_Sign1)<br/>Validate Issuer certificate chain<br/>Verify DeviceSignature against OpenID4VPHandover<br/>Consume transaction and extract namespaced claims
     CV->>CV: Sign Attestation (JWT, ES256)
     CV-->>RP: {success, claims, attestation_jwt}
 
@@ -240,7 +240,7 @@ sequenceDiagram
     CV-->>RP: {status: "received",<br/>authorization_response, nonce}
 
     Note over RP,CV: Credential Verification
-    RP->>CV: POST /api/verify {vp_token, nonce}
+    RP->>CV: POST /api/verify {vp_token, state, client_id}
     CV->>CV: Decode Issuer-signed JWT<br/>Verify SD-JWT Disclosures (SD-JWT VC §6)<br/>Verify Key Binding JWT (if present)<br/>Extract selectively disclosed claims
     CV->>CV: Sign Attestation (JWT, ES256)
     CV-->>RP: {success, claims, attestation_jwt}
@@ -277,11 +277,11 @@ When implementing a Relying Party, choose your approach based on which wallets y
 Regardless of which Wallet and profile is used, the verification flow through the ewQwe Credential Verifier is the same:
 
 1. **RP Webapp receives the Authorization Response** (VP Token) via transaction status polling
-2. **RP Webapp calls the Credential Verifier's** `/api/verify` **endpoint** with the VP Token and nonce
+2. **RP Webapp calls the Credential Verifier's** `/api/verify` **endpoint** with the VP Token, `state`, and `client_id`
 3. **Credential Verifier validates** the Verifiable Presentation:
-   - **mso_mdoc**: Decodes CBOR DeviceResponse, verifies IssuerAuth (COSE_Sign1), validates Issuer certificate chain, extracts namespaced claims
+    - **mso_mdoc**: Decodes CBOR DeviceResponse, verifies IssuerAuth (COSE_Sign1), validates the issuer certificate chain, validates MobileSecurityObject digests, reconstructs the OpenID4VP handover, and verifies `deviceAuth.deviceSignature`
    - **dc+sd-jwt**: Decodes Issuer-signed JWT, verifies Disclosures, verifies Key Binding JWT, extracts selectively disclosed claims
-4. **Credential Verifier returns a signed Attestation JWT** (ES256) confirming successful verification, along with the extracted claims
+4. **Credential Verifier consumes the stored transaction and returns a signed Attestation JWT** (ES256) confirming successful verification, along with the extracted claims
 5. **RP Webapp uses the Attestation** for session establishment or access control
 
 See [The ewQwe Credential Verifier](./credential_verifier_server.md) for detailed API documentation.

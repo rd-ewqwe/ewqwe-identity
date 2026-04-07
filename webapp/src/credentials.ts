@@ -734,14 +734,13 @@ export async function sendToBackend(
   const body = {
     vp_token: response.vp_token,
     presentation_submission: response.presentation_submission ?? null,
-    nonce: originalRequest?.nonce,
     state: response.state,
+    client_id: originalRequest?.client_id,
   };
 
   logger.log(`Sending to backend: POST ${backendUrl}`, {
     vp_token_length: body.vp_token?.length,
     has_presentation_submission: body.presentation_submission !== null,
-    nonce: body.nonce,
     state: body.state,
   });
 

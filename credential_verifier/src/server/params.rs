@@ -18,6 +18,11 @@ pub struct ServerParams {
     pub tls_params: TlsParams,
     pub default_username: Option<String>,
     pub openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig,
+    /// PEM file paths for trusted credential-issuer CA certificates.
+    /// Credentials whose issuer JWT `x5c` chain or mDoc `issuerAuth` chain
+    /// terminates at one of these CAs are considered trustworthy.
+    #[serde(default)]
+    pub trusted_issuer_certs: Vec<String>,
 }
 
 impl ServerParams {
@@ -132,6 +137,11 @@ impl ServerParams {
             haip_config.x509_cert_path = resolve_path(base_dir, &haip_config.x509_cert_path);
             haip_config.x509_key_path = resolve_path(base_dir, &haip_config.x509_key_path);
         }
+
+        // Resolve trusted issuer certificate paths
+        for cert_path in &mut self.trusted_issuer_certs {
+            *cert_path = resolve_path(base_dir, cert_path);
+        }
     }
 }
 
@@ -174,6 +184,11 @@ client_ca_cert_chain = "certs/client-ca.pem"
 [openid4vp_config]
 transaction_ttl_secs = 300
 
+trusted_issuer_certs = [
+    "issuers/ca-01.pem",
+    "issuers/ca-02.pem",
+]
+
 [openid4vp_config.haip_config]
 x509_cert_path = "certs/server.fullchain.pem"
 x509_key_path = "certs/server.key.pem"
@@ -204,6 +219,13 @@ x509_key_path = "certs/server.key.pem"
                     .as_str(),
             ),
             temp_dir.join("certs/server.fullchain.pem")
+        );
+        assert_eq!(
+            params.trusted_issuer_certs,
+            vec![
+                temp_dir.join("issuers/ca-01.pem").display().to_string(),
+                temp_dir.join("issuers/ca-02.pem").display().to_string(),
+            ]
         );
 
         fs::remove_dir_all(&temp_dir).expect("failed to remove temp config directory");

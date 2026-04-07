@@ -992,6 +992,13 @@ pub struct InitTransactionRequest {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
 
+    /// Optional OAuth/OpenID4VP state value maintained by the client.
+    ///
+    /// When omitted, the delegated verifier service generates a fresh request-id
+    /// and uses it as the wallet-facing `state` value.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub state: Option<String>,
+
     /// RP metadata for wallet display.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub client_metadata: Option<ClientMetadata>,

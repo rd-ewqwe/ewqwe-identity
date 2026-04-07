@@ -59,7 +59,7 @@ impl SqliteTransactionStore {
                 expires_at  INTEGER NOT NULL,
                 data        TEXT    NOT NULL
             );
-            CREATE INDEX IF NOT EXISTS idx_transactions_state
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_transactions_state_unique
                 ON transactions (state);"#,
         )
         .execute(&self.pool)

@@ -24,7 +24,10 @@ impl RedisTransactionStore {
             .query_async::<()>(&mut conn)
             .await
             .map_err(|e| OpenID4VPError::Config(format!("Redis PING failed: {e}")))?;
-        Ok(Self { client, _ttl_secs: ttl_secs })
+        Ok(Self {
+            client,
+            _ttl_secs: ttl_secs,
+        })
     }
 
     async fn conn(&self) -> OpenID4VPResult<redis::aio::MultiplexedConnection> {
@@ -61,10 +64,34 @@ impl TransactionStore for RedisTransactionStore {
         let data = Self::serialize(&transaction)?;
         let mut conn = self.conn().await?;
 
+        let existing_tx = self.get(&transaction.id).await?;
+        let existing_state_owner: Option<String> = conn
+            .get(Self::state_key(&transaction.state))
+            .await
+            .map_err(|e| OpenID4VPError::Internal(format!("Redis GET state key: {e}")))?;
+
+        if let Some(existing_id) = existing_state_owner {
+            if existing_id != transaction.id {
+                return Err(OpenID4VPError::Internal(format!(
+                    "duplicate state detected for transaction store: {}",
+                    transaction.state
+                )));
+            }
+        }
+
         // Derive TTL from the absolute expires_at timestamp so that refreshed
         // transactions always honour the original expiry.
         let now = chrono::Utc::now().timestamp_millis();
         let remaining_secs = ((transaction.expires_at - now) / 1000).max(1) as u64;
+
+        if let Some(existing) = &existing_tx {
+            if existing.state != transaction.state {
+                let _: i64 = conn
+                    .del(Self::state_key(&existing.state))
+                    .await
+                    .map_err(|e| OpenID4VPError::Internal(format!("Redis DEL state index: {e}")))?;
+            }
+        }
 
         conn.set_ex::<_, _, ()>(Self::id_key(&transaction.id), &data, remaining_secs)
             .await

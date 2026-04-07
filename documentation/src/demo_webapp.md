@@ -348,6 +348,7 @@ interface InitTransactionRequest {
   presentation_definition?: object;  // Credential request (converted to DCQL)
   dcql_query?: object;               // DCQL query (preferred)
   nonce?: string;                    // Optional, generated if not provided
+    state?: string;                    // Optional client-managed correlation value
   credential_type?: string;          // "mdl" | "national-id" | "proof-of-age"
   profile?: "haip" | "annex-a";      // Explicit profile override
 }

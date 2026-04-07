@@ -92,6 +92,11 @@ pub struct TransactionStoreParams {
 ///
 /// All methods are `async` so that network-backed implementations (Postgres,
 /// Redis) do not need to block a thread.
+///
+/// The `state` field is treated as a unique lookup key for the OpenID4VP
+/// authorization response lifecycle. Implementations must not allow two
+/// distinct transactions to exist with the same `state`, otherwise
+/// `find_by_state` and `update_by_state` become ambiguous.
 #[async_trait]
 pub trait TransactionStore: Send + Sync {
     /// Persist a new (or updated) transaction.
@@ -326,6 +331,22 @@ mod tests {
                 .unwrap()
                 .is_none()
         );
+    }
+
+    #[tokio::test]
+    async fn test_reject_duplicate_state_for_different_transaction() {
+        let store = make_store();
+        store
+            .set(make_test_transaction("tx-1", "state-dup", 60_000))
+            .await
+            .unwrap();
+
+        let err = store
+            .set(make_test_transaction("tx-2", "state-dup", 60_000))
+            .await
+            .unwrap_err();
+
+        assert!(err.to_string().contains("duplicate state"));
     }
 
     #[tokio::test]

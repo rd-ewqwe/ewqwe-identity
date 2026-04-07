@@ -129,7 +129,7 @@ export class OpenID4VPService {
     const profile = determineProfile(request.credential_type, request.profile);
 
     const transactionId = crypto.randomUUID();
-    const state = crypto.randomUUID();
+    const state = request.state || crypto.randomUUID();
     const nonce = request.nonce || crypto.randomUUID();
     const now = Date.now();
     const expiresAt = now + this.ttlMs;

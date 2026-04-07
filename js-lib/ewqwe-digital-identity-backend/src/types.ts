@@ -133,6 +133,7 @@ export interface InitTransactionRequest {
   /** Legacy presentation_definition (will be converted to DCQL) */
   presentation_definition?: unknown;
   nonce?: string;
+  state?: string;
   client_metadata?: ClientMetadata;
   profile?: ProfileId;
   credential_type?: string;
@@ -173,7 +174,6 @@ export interface VerifyRequest {
       path: string;
     }>;
   } | null;
-  nonce?: string;
   state?: string;
   client_id?: string;
 }
