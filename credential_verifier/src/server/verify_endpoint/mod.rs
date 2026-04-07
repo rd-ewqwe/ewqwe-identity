@@ -98,8 +98,79 @@ pub struct VerificationDetails {
     pub issuer_trusted: bool,
 }
 
+#[derive(Debug, Clone, Deserialize)]
+pub(crate) struct IssuerCertsQuery {
+    #[serde(default)]
+    cert_pem: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct IssuerCertInfo {
+    subject: String,
+    issuer: String,
+    not_before: String,
+    not_after: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    cert_pem: Option<String>,
+}
+
+#[derive(Debug, Clone, Serialize)]
+struct IssuerCertsResponse {
+    loaded: bool,
+    count: usize,
+    certs: Vec<IssuerCertInfo>,
+}
+
+pub(crate) async fn issuer_certs_endpoint(
+    trusted_cas: web::Data<Arc<Vec<X509>>>,
+    query: web::Query<IssuerCertsQuery>,
+) -> Result<HttpResponse, AttError> {
+    let include_pem = query.cert_pem;
+
+    let certs: Vec<IssuerCertInfo> = trusted_cas
+        .iter()
+        .map(|cert| {
+            let subject = cert
+                .subject_name()
+                .entries_by_nid(openssl::nid::Nid::COMMONNAME)
+                .next()
+                .and_then(|e| e.data().as_utf8().ok())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "<unknown>".to_string());
+            let issuer = cert
+                .issuer_name()
+                .entries_by_nid(openssl::nid::Nid::COMMONNAME)
+                .next()
+                .and_then(|e| e.data().as_utf8().ok())
+                .map(|s| s.to_string())
+                .unwrap_or_else(|| "<unknown>".to_string());
+
+            let cert_pem = if include_pem {
+                let pem_bytes = cert.to_pem().unwrap_or_default();
+                Some(String::from_utf8(pem_bytes).unwrap_or_else(|_| "<invalid-pem>".to_string()))
+            } else {
+                None
+            };
+
+            IssuerCertInfo {
+                subject,
+                issuer,
+                not_before: cert.not_before().to_string(),
+                not_after: cert.not_after().to_string(),
+                cert_pem,
+            }
+        })
+        .collect();
+
+    Ok(HttpResponse::Ok().json(IssuerCertsResponse {
+        loaded: true,
+        count: certs.len(),
+        certs,
+    }))
+}
+
 // ============================================================================
-// Internal types
+// Internal helpers
 // ============================================================================
 
 /// Parsed VP token — can be direct format or DCQL-wrapped.
@@ -143,58 +214,60 @@ struct VerificationResult {
 }
 
 // ============================================================================
-// Shared utility: trusted issuer certificate loading
+// Shared utility: credential issuer CA loading
 // ============================================================================
 
-/// Load trusted issuer CA certificates from all `*.pem` files in a directory.
+/// Load credential issuer CA certificates from all `*.pem` files in a directory.
 ///
-/// Called by both [`sd_jwt`] and [`mdoc`] sub-modules via `super::`.
-/// Returns an empty vector (with a log message) on missing or unreadable directory.
-pub(super) fn load_trusted_issuer_certs(dir: &str) -> Vec<X509> {
+/// Called once on startup (from `start.rs`) and cached for the server lifetime.
+pub(crate) fn load_credential_issuer_cas(dir: &str) -> Result<Vec<X509>, AttError> {
     let dir_path = std::path::Path::new(dir);
     if !dir_path.is_dir() {
-        tracing::debug!(
-            dir,
-            "trusted issuer certificates directory not found, no CAs loaded"
-        );
-        return Vec::new();
+        return Err(AttError::Config(format!(
+            "Credential issuer CA directory not found: {}",
+            dir_path.display()
+        )));
     }
-    let entries = match std::fs::read_dir(dir_path) {
-        Ok(e) => e,
-        Err(e) => {
-            tracing::warn!(dir, error = %e, "failed to read trusted issuer certificates directory");
-            return Vec::new();
-        }
-    };
+
+    let entries = std::fs::read_dir(dir_path).map_err(|e| {
+        AttError::Config(format!(
+            "Failed to read credential issuer CA directory {}: {e}",
+            dir_path.display()
+        ))
+    })?;
+
     let mut certs = Vec::new();
-    for entry in entries.flatten() {
+    for entry in entries {
+        let entry = entry.map_err(|e| {
+            AttError::Config(format!(
+                "Failed to read directory entry {}: {e}",
+                dir_path.display()
+            ))
+        })?;
+
         let entry_path = entry.path();
         if entry_path.extension().and_then(|e| e.to_str()) != Some("pem") {
             continue;
         }
         let path_str = entry_path.display().to_string();
-        match std::fs::read(&entry_path) {
-            Ok(pem) => match X509::stack_from_pem(&pem) {
-                Ok(parsed) => {
-                    for cert in parsed {
-                        tracing::debug!(
-                            path = %path_str,
-                            subject = ?cert.subject_name(),
-                            "loaded trusted issuer CA"
-                        );
-                        certs.push(cert);
-                    }
-                }
-                Err(e) => {
-                    tracing::warn!(path = %path_str, error = %e, "failed to parse trusted issuer cert");
-                }
-            },
-            Err(e) => {
-                tracing::warn!(path = %path_str, error = %e, "failed to read trusted issuer cert");
-            }
+
+        let pem = std::fs::read(&entry_path).map_err(|e| {
+            AttError::Config(format!("Failed to read certificate file {}: {e}", path_str))
+        })?;
+
+        let parsed = X509::stack_from_pem(&pem)
+            .map_err(|e| AttError::Config(format!("Failed to parse PEM in {}: {e}", path_str)))?;
+
+        for cert in parsed {
+            tracing::debug!(
+                path = %path_str,
+                subject = ?cert.subject_name(),
+                "loaded credential issuer CA"
+            );
+            certs.push(cert);
         }
     }
-    certs
+    Ok(certs)
 }
 
 // ============================================================================
@@ -349,6 +422,7 @@ pub(crate) async fn verify_credential_endpoint(
     body: web::Json<VerifyCredentialRequest>,
     service: web::Data<Arc<OpenID4VPService>>,
     server_params: web::Data<Arc<ServerParams>>,
+    trusted_cas: web::Data<Arc<Vec<X509>>>,
     journal: Option<web::Data<Arc<DynJournalStore>>>,
 ) -> Result<HttpResponse, AttError> {
     let username = req
@@ -423,7 +497,7 @@ pub(crate) async fn verify_credential_endpoint(
             raw_mdoc,
             tx,
             response_jwk_thumbprint.as_deref(),
-            server_params.trusted_issuer_certs_dir(),
+            trusted_cas.as_ref().as_slice(),
         )
         .map_err(|e| {
             tracing::error!(error = %e, "mDoc presentation verification failed");
@@ -457,7 +531,7 @@ pub(crate) async fn verify_credential_endpoint(
         )
     } else {
         let sig_result = if let Some(raw) = vp_token.raw_sd_jwt.as_deref() {
-            sd_jwt::verify_sd_jwt_signatures(raw, server_params.trusted_issuer_certs_dir())
+            sd_jwt::verify_sd_jwt_signatures(raw, trusted_cas.as_ref().as_slice())
         } else {
             sd_jwt::SigVerificationResult::skipped("presentation format not recognized")
         };

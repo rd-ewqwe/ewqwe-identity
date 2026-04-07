@@ -38,13 +38,16 @@ pub struct ServerParams {
     #[serde(default)]
     pub disabled_authentication_user: Option<String>,
 
-    /// Directory containing trusted credential-issuer CA certificates (PEM files).
-    /// All `*.pem` files in this directory are loaded as trusted CA certificates.
-    /// Credentials whose issuer JWT `x5c` chain or mDoc `issuerAuth` chain
+    /// Directory containing CA certificates used to verify credential issuers.
+    /// All `*.pem` files in this directory are loaded as trusted CA anchors.
+    /// Credentials whose issuer JWT `x5c` chain (SD-JWT) or mDoc `issuerAuth` chain
     /// terminates at a CA in this directory are considered trustworthy.
     /// Defaults to `issuer_certificates/` in the same directory as the config file.
-    #[serde(default)]
-    pub trusted_issuer_certs_dir: Option<String>,
+    ///
+    /// NOTE: This directory is loaded at startup and cached. Restart the server
+    /// to apply changes after adding/removing certs.
+    #[serde(default, alias = "trusted_issuer_certs_dir")]
+    pub credential_issuer_ca_dir: Option<String>,
 
     /// Path to the PEM certificate whose public key is used to verify signed
     /// attestation JWTs.  The `iss` claim is set to the CN of the certificate's
@@ -200,13 +203,13 @@ impl ServerParams {
             haip_config.x509_key_path = resolve_path(base_dir, &haip_config.x509_key_path);
         }
 
-        // Resolve trusted issuer certificates directory (default: issuer_certificates/)
+        // Resolve credential issuer CA directory (default: issuer_certificates/)
         let default_dir = "issuer_certificates";
         let dir = self
-            .trusted_issuer_certs_dir
+            .credential_issuer_ca_dir
             .as_deref()
             .unwrap_or(default_dir);
-        self.trusted_issuer_certs_dir = Some(resolve_path(base_dir, dir));
+        self.credential_issuer_ca_dir = Some(resolve_path(base_dir, dir));
 
         if let Some(cert_path) = &mut self.attestation_issuer_certificate {
             *cert_path = resolve_path(base_dir, cert_path);
@@ -226,8 +229,8 @@ impl ServerParams {
 }
 
 impl ServerParams {
-    pub fn trusted_issuer_certs_dir(&self) -> &str {
-        self.trusted_issuer_certs_dir
+    pub fn credential_issuer_ca_dir(&self) -> &str {
+        self.credential_issuer_ca_dir
             .as_deref()
             .unwrap_or("issuer_certificates")
     }
@@ -382,7 +385,7 @@ x509_key_path = "certs/server.key.pem"
             temp_dir.join("certs/server.fullchain.pem")
         );
         assert_eq!(
-            params.trusted_issuer_certs_dir(),
+            params.credential_issuer_ca_dir(),
             temp_dir.join("issuer_certificates").display().to_string()
         );
 
@@ -498,7 +501,7 @@ transaction_ttl_secs = 300
             },
             disable_authentication: false,
             disabled_authentication_user: None,
-            trusted_issuer_certs_dir: None,
+            credential_issuer_ca_dir: None,
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
@@ -529,7 +532,7 @@ transaction_ttl_secs = 300
             },
             disable_authentication: false,
             disabled_authentication_user: None,
-            trusted_issuer_certs_dir: None,
+            credential_issuer_ca_dir: None,
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),

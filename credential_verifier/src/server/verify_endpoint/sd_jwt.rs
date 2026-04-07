@@ -213,7 +213,7 @@ pub(super) fn decode_sd_jwt_presentation(raw: &str) -> Result<DecodedSdJwt, SdJw
 ///    payload verifies the KB-JWT signature.
 pub(super) fn verify_sd_jwt_signatures(
     raw: &str,
-    trusted_certs_dir: &str,
+    trusted_cas: &[openssl::x509::X509],
 ) -> SigVerificationResult {
     let mut errors: Vec<String> = Vec::new();
 
@@ -242,9 +242,8 @@ pub(super) fn verify_sd_jwt_signatures(
         "issuer JWT header"
     );
 
-    let trusted_cas = super::load_trusted_issuer_certs(trusted_certs_dir);
     let (issuer_decoding_key, issuer_trusted) = match &header.x5c {
-        Some(x5c) if !x5c.is_empty() => match extract_key_from_x5c(x5c, &trusted_cas, alg) {
+        Some(x5c) if !x5c.is_empty() => match extract_key_from_x5c(x5c, trusted_cas, alg) {
             Ok((key, trusted)) => (key, trusted),
             Err(e) => {
                 errors.push(format!("x5c key extraction failed: {e}"));

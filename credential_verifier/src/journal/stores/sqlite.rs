@@ -49,7 +49,9 @@ impl SqliteJournalStore {
             .max_connections(1)
             .connect_with(options)
             .await
-            .map_err(|e| JournalError::Config(format!("Cannot open SQLite in-memory journal: {e}")))?;
+            .map_err(|e| {
+                JournalError::Config(format!("Cannot open SQLite in-memory journal: {e}"))
+            })?;
 
         let store = Self {
             pool,
@@ -68,9 +70,9 @@ impl SqliteJournalStore {
             .map_err(|e| JournalError::Config(format!("SQLite URL parse: {e}")))?
             .create_if_missing(true);
 
-        let pool = sqlx::SqlitePool::connect_with(options)
-            .await
-            .map_err(|e| JournalError::Config(format!("Cannot open SQLite journal at {path}: {e}")))?;
+        let pool = sqlx::SqlitePool::connect_with(options).await.map_err(|e| {
+            JournalError::Config(format!("Cannot open SQLite journal at {path}: {e}"))
+        })?;
 
         let store = Self {
             pool,
@@ -324,11 +326,9 @@ impl JournalStore for SqliteJournalStore {
         };
 
         rows.into_iter()
-            .map(
-                |(id, username, prev, eh, ash, jti, cid, dt, ns, vs, ca)| {
-                    Self::parse_row(id, username, prev, eh, ash, jti, cid, dt, ns, vs, ca)
-                },
-            )
+            .map(|(id, username, prev, eh, ash, jti, cid, dt, ns, vs, ca)| {
+                Self::parse_row(id, username, prev, eh, ash, jti, cid, dt, ns, vs, ca)
+            })
             .collect()
     }
 

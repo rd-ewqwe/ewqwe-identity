@@ -105,16 +105,18 @@ The server uses a pluggable transaction store to manage OpenID4VP sessions. Conf
 
 For resilient multi-instance deployments, use Redis or PostgreSQL so that any server node can look up a session created by another node.
 
-### Trusted Issuer CA Certificates
+### Credential Issuer CA Certificates
 
-Place all trusted issuer CA PEM files in a single directory and point `trusted_issuer_certs_dir` at it. All `*.pem` files in the directory are loaded at startup as trusted CA certificates.
+Place all credential issuer CA PEM files in a single directory and point `credential_issuer_ca_dir` at it. All `*.pem` files in the directory are loaded once at startup as trusted CA anchors; the directory is not reloaded automatically while the server is running.
 
 ```toml
 # credential-server.toml
-trusted_issuer_certs_dir = "issuer_certificates"   # relative to config file
+credential_issuer_ca_dir = "issuer_certificates"   # relative to config file
 ```
 
-If `trusted_issuer_certs_dir` is omitted, the server looks for a directory named `issuer_certificates/` next to the configuration file. If that directory does not exist, no issuer CAs are trusted and all presentations will have `issuer_trusted = false`.
+The old field name `trusted_issuer_certs_dir` is still accepted for compatibility.
+
+If `credential_issuer_ca_dir` is omitted, the server looks for a directory named `issuer_certificates/` next to the configuration file. If that directory does not exist, no issuer CAs are trusted and all presentations will have `issuer_trusted = false`.
 
 ### TLS Configuration
 

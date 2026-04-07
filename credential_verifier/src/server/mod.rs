@@ -1,10 +1,10 @@
 mod start;
 pub use start::start_server;
 
+mod ensure_auth_middleware;
 pub(crate) mod journal_endpoints;
 pub(crate) mod openid4vp_endpoints;
 pub(crate) mod verify_endpoint;
-mod ensure_auth_middleware;
 pub use ensure_auth_middleware::EnsureAuth;
 
 mod params;
@@ -17,7 +17,9 @@ impl actix_web::ResponseError for AttError {
     fn error_response(&self) -> actix_web::HttpResponse {
         match self {
             Self::BadRequest(_) => actix_web::HttpResponse::BadRequest().json(format!("{self}")),
-            Self::Authentication(_) => actix_web::HttpResponse::Unauthorized().json(format!("{self}")),
+            Self::Authentication(_) => {
+                actix_web::HttpResponse::Unauthorized().json(format!("{self}"))
+            }
             _ => actix_web::HttpResponse::InternalServerError().json(format!("{self}")),
         }
     }

@@ -42,8 +42,10 @@ use tracing::{debug, error, trace};
 const EC_CERTIFICATES_PATH: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certificates/ec");
 
-const USER1_P12_PATH: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certificates/ec/ewqwe.user1.p12");
+const USER1_P12_PATH: &str = concat!(
+    env!("CARGO_MANIFEST_DIR"),
+    "/src/tests/certificates/ec/ewqwe.user1.p12"
+);
 const USER_P12_PASSWORD: &str = "secret";
 
 /// Test HTTP client with configurable authentication
@@ -88,10 +90,12 @@ impl TestClient {
         key_path: &str,
     ) -> AttResult<Self> {
         let cookie_store = Arc::new(TestCookieStore::new());
-        let cert_pem = std::fs::read(cert_path)
-            .map_err(|e| AttError::Config(format!("Failed to read client certificate file: {e}")))?;
-        let key_pem = std::fs::read(key_path)
-            .map_err(|e| AttError::Config(format!("Failed to read client private key file: {e}")))?;
+        let cert_pem = std::fs::read(cert_path).map_err(|e| {
+            AttError::Config(format!("Failed to read client certificate file: {e}"))
+        })?;
+        let key_pem = std::fs::read(key_path).map_err(|e| {
+            AttError::Config(format!("Failed to read client private key file: {e}"))
+        })?;
         let identity = Identity::from_pkcs8_pem(&cert_pem, &key_pem).map_err(|e| {
             AttError::Config(format!("Failed to parse client cert/key identity: {e}"))
         })?;

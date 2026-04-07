@@ -1,6 +1,9 @@
 use crate::{
     AttResult,
-    tests::{make_test_server_params, start_test_server, start_default_test_server, test_client::TestClient},
+    tests::{
+        make_test_server_params, start_default_test_server, start_test_server,
+        test_client::TestClient,
+    },
 };
 use serde_json::json;
 

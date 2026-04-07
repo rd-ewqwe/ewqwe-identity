@@ -7,7 +7,7 @@ Each table has two columns: test name and what it verifies.
 
 | Test Name | Verifies |
 |-----------|----------|
-| `loads_toml_and_resolves_relative_paths_from_config_directory` | `ServerParams::load_from_file` path resolution and default trusted issuer directory handling |
+| `loads_toml_and_resolves_relative_paths_from_config_directory` | `ServerParams::load_from_file` path resolution and default credential issuer CA directory handling |
 | `server_params_enable_disable_authentication_defaults` | `disable_authentication` default false and `disabled_authentication_user()` returns `test` if unset |
 | `loads_toml_with_tracing_config` | `ServerParams::load_from_file` loads `tracing_config.rust_log` from TOML |
 | `loads_toml_without_tracing_config_uses_default` | Default tracing config is applied when TOML excludes `tracing_config` |

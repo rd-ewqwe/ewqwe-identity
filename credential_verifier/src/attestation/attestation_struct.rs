@@ -39,6 +39,10 @@ pub struct Attestation {
     /// JWT ID - unique identifier for this attestation
     pub jti: String,
 
+    /// Whether the full cryptographic and policy verification pipeline succeeded.
+    /// `true` means success; `false` means verification failed.
+    pub verified: bool,
+
     /// Nonce from the original OpenID4VP request (for replay prevention)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
@@ -101,6 +105,7 @@ impl Attestation {
             iat: issued_at.timestamp(),
             nbf: not_before.timestamp(),
             jti: uuid::Uuid::new_v4().to_string(),
+            verified: true,
             nonce: None,
             doc_type: None,
             namespace: None,

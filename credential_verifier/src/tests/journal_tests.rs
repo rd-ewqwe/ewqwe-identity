@@ -7,7 +7,10 @@ use crate::{
         DynJournalStore, JournalBackend, JournalConfig, JournalError, JournalQuery, JournalStore,
         append_verification, compute_attestation_signature_hash, compute_entry_hash,
     },
-    tests::{make_test_server_params, start_journal_test_server, start_test_server, test_client::TestClient},
+    tests::{
+        make_test_server_params, start_journal_test_server, start_test_server,
+        test_client::TestClient,
+    },
 };
 use serde_json::json;
 
@@ -49,7 +52,10 @@ fn test_genesis_entry_hash_uses_empty_previous() {
     let attestation_hash = compute_attestation_signature_hash("some-attestation");
     let h_none = compute_entry_hash(None, &attestation_hash);
     let h_empty = compute_entry_hash(Some(""), &attestation_hash);
-    assert_eq!(h_none, h_empty, "None previous and empty string should produce same hash");
+    assert_eq!(
+        h_none, h_empty,
+        "None previous and empty string should produce same hash"
+    );
 }
 
 #[test]
@@ -121,7 +127,10 @@ async fn test_append_single_entry() {
     assert_eq!(entries.len(), 1);
     assert_eq!(entries[0].username, username);
     assert_eq!(entries[0].attestation_jti.as_deref(), Some("jti-001"));
-    assert!(entries[0].previous_hash.is_none(), "Genesis entry has no previous hash");
+    assert!(
+        entries[0].previous_hash.is_none(),
+        "Genesis entry has no previous hash"
+    );
 }
 
 #[tokio::test]
@@ -159,7 +168,11 @@ async fn test_append_multiple_entries_forms_chain() {
     // Entries are returned newest-first; verify the chain still forms correctly
     // by using verify_chain.
     let result = store.verify_chain(username).await.unwrap();
-    assert!(result.valid, "Chain should be valid after sequential appends: {:?}", result.error);
+    assert!(
+        result.valid,
+        "Chain should be valid after sequential appends: {:?}",
+        result.error
+    );
     assert_eq!(result.entries_verified, 5);
 }
 
@@ -225,14 +238,21 @@ async fn test_stale_head_returns_error() {
 
     // Verify the head was not corrupted.
     let head_after = store.get_head(username).await.unwrap().unwrap();
-    assert_eq!(head, head_after, "Head should be unchanged after failed CAS");
+    assert_eq!(
+        head, head_after,
+        "Head should be unchanged after failed CAS"
+    );
 }
 
 #[tokio::test]
 async fn test_multiple_usernames_independent_chains() {
     let store = make_store().await;
 
-    for user in &["user_a@example.com", "user_b@example.com", "user_c@example.com"] {
+    for user in &[
+        "user_a@example.com",
+        "user_b@example.com",
+        "user_c@example.com",
+    ] {
         for i in 0..3u32 {
             append_verification(
                 &store,
@@ -249,7 +269,11 @@ async fn test_multiple_usernames_independent_chains() {
         }
     }
 
-    for user in &["user_a@example.com", "user_b@example.com", "user_c@example.com"] {
+    for user in &[
+        "user_a@example.com",
+        "user_b@example.com",
+        "user_c@example.com",
+    ] {
         let result = store.verify_chain(user).await.unwrap();
         assert!(result.valid, "Chain for {user} should be valid");
         assert_eq!(result.entries_verified, 3);
@@ -413,14 +437,15 @@ async fn test_journal_entries_endpoint_requires_tls() -> AttResult<()> {
 }
 
 #[actix_web::test]
-async fn test_journal_entries_endpoint_allows_disable_authentication_without_cert() -> AttResult<()> {
-    let server_params = make_test_server_params(true, "test");
+async fn test_journal_entries_endpoint_allows_disable_authentication_without_cert() -> AttResult<()>
+{
+    let mut server_params = make_test_server_params(true, "test");
+    // Journal must be enabled so that the journal handler has its Data<DynJournalStore>.
+    server_params.journal_config.enabled = true;
     let ctx = start_test_server(server_params).await?;
     let client = TestClient::new(&ctx.base_url())?;
 
-    let response = client
-        .get_raw("/ewqwe_api/journal/test/entries")
-        .await?;
+    let response = client.get_raw("/ewqwe_api/journal/test/entries").await?;
 
     // Since there are no journal entries yet, state may be 200 empty list.
     assert_eq!(response.status(), reqwest::StatusCode::OK);

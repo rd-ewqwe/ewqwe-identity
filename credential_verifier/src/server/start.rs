@@ -3,7 +3,7 @@ use crate::{
     journal::DynJournalStore,
     server::{
         EnsureAuth, ServerParams, journal_endpoints, openid4vp_endpoints,
-        verify_endpoint::{verify_credential_endpoint, version_endpoint},
+        verify_endpoint::{self, verify_credential_endpoint, version_endpoint},
     },
     tls::SslAuth,
 };
@@ -20,6 +20,7 @@ use std::{
 };
 use tracing::info;
 
+use crate::server::verify_endpoint::load_credential_issuer_cas;
 use crate::tls::{create_openssl_acceptor, extract_openssl_peer_certificate};
 
 /// Inner function to start the attestation server asynchronously.
@@ -79,6 +80,15 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         None
     };
 
+    // Load and cache credential issuer CAs for verifying incoming credentials.
+    let trusted_cas_vec = load_credential_issuer_cas(params.credential_issuer_ca_dir())?;
+    let trusted_cas: Arc<Vec<openssl::x509::X509>> = Arc::new(trusted_cas_vec);
+    info!(
+        dir = %params.credential_issuer_ca_dir(),
+        count = trusted_cas.len(),
+        "Loaded credential issuer CAs at startup; restart required to reload"
+    );
+
     // Clone attestation server params for HttpServer closure
     let server_params = params.clone();
     let ensure_auth = EnsureAuth::new(
@@ -99,6 +109,9 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         // Optionally share the OpenID4VP service
         let app = app.app_data(Data::new(openid4vp_service.clone()));
 
+        // Share cached credential issuer CAs for verification.
+        let app = app.app_data(Data::new(trusted_cas.clone()));
+
         // Optionally share the journal store
         let app = if let Some(store) = &journal_store {
             app.app_data(Data::new(store.clone()))
@@ -118,9 +131,13 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             .route("/version", web::get().to(version_endpoint));
 
         let openid4vp_scope = web::scope("/ewqwe_api")
-            .wrap(SslAuth)
             .wrap(ensure_auth.clone())
+            .wrap(SslAuth)
             .service(web::resource("/verify").route(web::post().to(verify_credential_endpoint)))
+            .route(
+                "/.well-known/issuer_certs",
+                web::get().to(verify_endpoint::issuer_certs_endpoint),
+            )
             .route(
                 "/openid4vp/init",
                 web::post().to(openid4vp_endpoints::init_transaction),

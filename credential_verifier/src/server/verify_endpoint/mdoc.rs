@@ -49,7 +49,7 @@ pub(super) fn verify_mdoc_presentation(
     encoded: &str,
     transaction: &OpenID4VPTransaction,
     response_jwk_thumbprint: Option<&[u8]>,
-    trusted_certs_dir: &str,
+    trusted_cas: &[X509],
 ) -> Result<MdocVerificationResult, AttError> {
     let decoded = mdoc_decoder::decode_mdoc_presentation(encoded)
         .map_err(|e| AttError::BadRequest(format!("mDoc CBOR decode failed: {e}")))?;
@@ -84,8 +84,7 @@ pub(super) fn verify_mdoc_presentation(
             .ok_or_else(|| AttError::BadRequest("issuerSigned missing issuerAuth".to_string()))?,
     )?;
     let issuer_chain = extract_x5chain_from_cose(&issuer_auth)?;
-    let (issuer_key, issuer_trusted) =
-        verify_cose_certificate_chain(&issuer_chain, trusted_certs_dir)?;
+    let (issuer_key, issuer_trusted) = verify_cose_certificate_chain(&issuer_chain, trusted_cas)?;
     verify_cose_sign1_embedded(&issuer_auth, &issuer_key)?;
 
     let mso = parse_mobile_security_object(
@@ -314,7 +313,7 @@ fn extract_x5chain_from_cose(cose: &CoseSign1) -> Result<Vec<Vec<u8>>, AttError>
 
 fn verify_cose_certificate_chain(
     cert_chain: &[Vec<u8>],
-    trusted_certs_dir: &str,
+    trusted_cas: &[X509],
 ) -> Result<(PKey<Public>, bool), AttError> {
     let leaf = cert_chain.first().ok_or_else(|| {
         AttError::BadRequest("issuerAuth x5chain does not contain a leaf certificate".to_string())
@@ -322,7 +321,6 @@ fn verify_cose_certificate_chain(
     let leaf = X509::from_der(leaf)
         .map_err(|e| AttError::BadRequest(format!("failed to parse issuer leaf cert: {e}")))?;
 
-    let trusted_cas = super::load_trusted_issuer_certs(trusted_certs_dir);
     let mut store_builder = openssl::x509::store::X509StoreBuilder::new().map_err(|e| {
         AttError::Generic(format!("failed to create X509 trust store builder: {e}"))
     })?;
@@ -331,7 +329,7 @@ fn verify_cose_certificate_chain(
         .map_err(|e| AttError::Generic(format!("failed to set X509 verify flags: {e}")))?;
     for ca in trusted_cas {
         store_builder
-            .add_cert(ca)
+            .add_cert(ca.clone())
             .map_err(|e| AttError::Generic(format!("failed to add trusted issuer CA: {e}")))?;
     }
 
