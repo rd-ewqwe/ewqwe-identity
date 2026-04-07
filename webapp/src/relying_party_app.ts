@@ -329,7 +329,7 @@ export class RelyingPartyApp {
     const checks = [
       {
         name: "Digital Credentials API",
-        supported: typeof globalThis.DigitalCredential !== "undefined",
+        supported: "DigitalCredential" in globalThis, // typeof globalThis.DigitalCredential !== "undefined",
         icon: "🔐",
         infoUrl: "https://www.w3.org/TR/digital-credentials/",
       },

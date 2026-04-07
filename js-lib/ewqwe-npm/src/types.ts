@@ -609,3 +609,26 @@ export interface DigitalCredential {
   protocol: string;
   data: OpenID4VPResponse;
 }
+
+/**
+ * Error response sent by the Wallet to the Verifier's `response_uri` (§8.5).
+ *
+ * Instead of a VP Token the Wallet sends this when it cannot or will not fulfil
+ * the Authorization Request. Field names are snake_case to match Rust API JSON.
+ *
+ * Error codes:
+ * - `invalid_request` — malformed / unsupported request parameters
+ * - `access_denied` — no matching credentials, user denied consent, or auth failed
+ * - `vp_formats_not_supported` — no supported VP format found
+ * - `invalid_request_uri_method` — unsupported `request_uri_method` value
+ * - `invalid_transaction_data` — `transaction_data` claim issue
+ * - `wallet_unavailable` — wallet cannot be invoked (§15.9.1)
+ */
+export interface WalletAuthorizationError {
+  /** Error code from §8.5 (e.g. `"access_denied"`). */
+  error: string;
+  /** Human-readable error description (optional). */
+  error_description?: string;
+  /** The `state` parameter echoed back from the Authorization Request. */
+  state?: string;
+}

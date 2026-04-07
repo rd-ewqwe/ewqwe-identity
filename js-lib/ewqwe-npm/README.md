@@ -30,11 +30,11 @@ const nonce = generateNonce();
 
 ## Features
 
-- **DCQL Query Builders**: Build Digital Credentials Query Language queries for OpenID4VP
-- **Credential Types**: Pre-configured credential types (mDL, PID, Proof of Age, etc.)
-- **Protocol Profiles**: HAIP and Annex A profile support
-- **Attestation Verification**: JWT signature verification using the Web Crypto API in browsers and Node.js
-- **Type Definitions**: Full TypeScript support with comprehensive type safety
+- **DCQL Query Builders**: Build Digital Credentials Query Language queries for OpenID4VP.
+- **Credential Types**: Pre-configured credential types (mDL, PID, Proof of Age, etc.) with associated claims.
+- **Protocol Profiles**: HAIP and Annex A profile support.
+- **Attestation Verification**: JWT signature verification using the Web Crypto API in browsers and Node.js.
+- **Type Definitions**: Full TypeScript support with comprehensive type safety.
 
 ## Quick Start
 
