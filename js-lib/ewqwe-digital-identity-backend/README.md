@@ -277,7 +277,7 @@ Used for **EUDI Wallets** and high-assurance scenarios.
 | `client_id_scheme`       | `x509_san_dns`                                 |
 | `client_id`              | `x509_san_dns:rp.example.com`                  |
 | `response_mode`          | `direct_post.jwt`                              |
-| `authorization_request`  | Signed JWT (JAR) with X.509 cert chain        |
+| `authorization_request`  | Signed JWT (JAR) with X.509 cert chain         |
 | `wallet_response`        | JWE-encrypted (ECDH-ES+A256KW)                 |
 | `url_scheme`             | `eudi-openid4vp://`                            |
 

@@ -469,9 +469,7 @@ function pollForWalletResponse(
             const desc = we.error_description
               ? `: ${we.error_description}`
               : "";
-            reject(
-              new Error(`Wallet error (§8.5) — ${we.error}${desc}`),
-            );
+            reject(new Error(`Wallet error (§8.5) — ${we.error}${desc}`));
           } else {
             reject(new Error("Transaction failed"));
           }

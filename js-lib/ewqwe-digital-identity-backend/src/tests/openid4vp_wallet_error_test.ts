@@ -104,141 +104,160 @@ function getStatusForTransaction(
 // §8.2 — Success path: vp_token + state → status "received"
 // ---------------------------------------------------------------------------
 
-Deno.test("§8.2 — direct_post success: transaction transitions to 'received' with vp_token", () => {
-  const store = new TransactionStore();
-  const tx = makeTransaction("tx-1", "state-abc");
-  store.set(tx);
+Deno.test(
+  "§8.2 — direct_post success: transaction transitions to 'received' with vp_token",
+  () => {
+    const store = new TransactionStore();
+    const tx = makeTransaction("tx-1", "state-abc");
+    store.set(tx);
 
-  // Simulate wallet POSTing `vp_token=...&state=state-abc`
-  const transaction = store.findByState("state-abc")!;
-  assertExists(transaction);
-  transaction.walletResponse = {
-    vpToken: '{"my_credential":["eyJhbGciOiJFUzI1NiJ9.payload.sig"]}',
-    state: "state-abc",
-  };
-  transaction.status = "received";
+    // Simulate wallet POSTing `vp_token=...&state=state-abc`
+    const transaction = store.findByState("state-abc")!;
+    assertExists(transaction);
+    transaction.walletResponse = {
+      vpToken: '{"my_credential":["eyJhbGciOiJFUzI1NiJ9.payload.sig"]}',
+      state: "state-abc",
+    };
+    transaction.status = "received";
 
-  const status = getStatusForTransaction(store, "tx-1");
-  assertEquals(status.status, "received");
-  assertExists(status.authorization_response?.vp_token);
-  assertEquals(status.wallet_error, undefined);
-  assertEquals(status.nonce, "test-nonce");
-});
+    const status = getStatusForTransaction(store, "tx-1");
+    assertEquals(status.status, "received");
+    assertExists(status.authorization_response?.vp_token);
+    assertEquals(status.wallet_error, undefined);
+    assertEquals(status.nonce, "test-nonce");
+  },
+);
 
-Deno.test("§8.2 — Verifier response to wallet must be empty JSON object ({})", () => {
-  // This documents the spec requirement: after storing the wallet response,
-  // the HTTP layer MUST return `{}` not `{"status": "ok"}`.
-  // The actual HTTP response is constructed in openid4vp_endpoints.rs.
-  // This test verifies the expected JSON value.
-  const expectedVerifierResponse = {};
-  assertEquals(JSON.stringify(expectedVerifierResponse), "{}");
-});
+Deno.test(
+  "§8.2 — Verifier response to wallet must be empty JSON object ({})",
+  () => {
+    // This documents the spec requirement: after storing the wallet response,
+    // the HTTP layer MUST return `{}` not `{"status": "ok"}`.
+    // The actual HTTP response is constructed in openid4vp_endpoints.rs.
+    // This test verifies the expected JSON value.
+    const expectedVerifierResponse = {};
+    assertEquals(JSON.stringify(expectedVerifierResponse), "{}");
+  },
+);
 
 // ---------------------------------------------------------------------------
 // §8.5 — Authorization Error Response from Wallet
 // ---------------------------------------------------------------------------
 
-Deno.test("§8.5 — access_denied: transaction transitions to 'error' with wallet_error", () => {
-  const store = new TransactionStore();
-  store.set(makeTransaction("tx-2", "state-def"));
+Deno.test(
+  "§8.5 — access_denied: transaction transitions to 'error' with wallet_error",
+  () => {
+    const store = new TransactionStore();
+    store.set(makeTransaction("tx-2", "state-def"));
 
-  simulateHandleWalletError(store, {
-    error: "access_denied",
-    state: "state-def",
-  });
-
-  const result = getStatusForTransaction(store, "tx-2");
-  assertEquals(result.status, "error");
-  assertExists(result.wallet_error);
-  assertEquals(result.wallet_error!.error, "access_denied");
-  assertEquals(result.wallet_error!.error_description, undefined);
-  assertEquals(result.wallet_error!.state, "state-def");
-});
-
-Deno.test("§8.5 — invalid_request: error_description is stored and returned", () => {
-  const store = new TransactionStore();
-  store.set(makeTransaction("tx-3", "state-ghi"));
-
-  // §8.2 example: error=invalid_request&error_description=unsupported%20client_id_prefix&state=...
-  simulateHandleWalletError(store, {
-    error: "invalid_request",
-    error_description: "unsupported client_id_prefix",
-    state: "state-ghi",
-  });
-
-  const result = getStatusForTransaction(store, "tx-3");
-  assertEquals(result.status, "error");
-  assertEquals(result.wallet_error!.error, "invalid_request");
-  assertEquals(
-    result.wallet_error!.error_description,
-    "unsupported client_id_prefix",
-  );
-});
-
-Deno.test("§8.5 — wallet_error without state is handled (unknown state → throws)", () => {
-  const store = new TransactionStore();
-  store.set(makeTransaction("tx-4", "state-jkl"));
-
-  let threw = false;
-  try {
     simulateHandleWalletError(store, {
       error: "access_denied",
-      state: "unknown-state-xyz",
+      state: "state-def",
     });
-  } catch (e) {
-    threw = true;
-    assertEquals((e as Error).message.includes("No transaction found"), true);
-  }
-  assertEquals(threw, true, "Expected an error for unknown state");
-});
 
-Deno.test("§8.5 — all six error codes are accepted and stored correctly", () => {
-  const errorCodes: string[] = [
-    "invalid_request",
-    "access_denied",
-    "vp_formats_not_supported",
-    "invalid_request_uri_method",
-    "invalid_transaction_data",
-    "wallet_unavailable",
-  ];
+    const result = getStatusForTransaction(store, "tx-2");
+    assertEquals(result.status, "error");
+    assertExists(result.wallet_error);
+    assertEquals(result.wallet_error!.error, "access_denied");
+    assertEquals(result.wallet_error!.error_description, undefined);
+    assertEquals(result.wallet_error!.state, "state-def");
+  },
+);
 
-  for (const [idx, errorCode] of errorCodes.entries()) {
-    const txId = `tx-ec-${idx}`;
-    const state = `state-ec-${idx}`;
+Deno.test(
+  "§8.5 — invalid_request: error_description is stored and returned",
+  () => {
     const store = new TransactionStore();
-    store.set(makeTransaction(txId, state));
+    store.set(makeTransaction("tx-3", "state-ghi"));
 
-    simulateHandleWalletError(store, { error: errorCode, state });
+    // §8.2 example: error=invalid_request&error_description=unsupported%20client_id_prefix&state=...
+    simulateHandleWalletError(store, {
+      error: "invalid_request",
+      error_description: "unsupported client_id_prefix",
+      state: "state-ghi",
+    });
 
-    const result = getStatusForTransaction(store, txId);
-    assertEquals(result.status, "error", `error_code=${errorCode}`);
+    const result = getStatusForTransaction(store, "tx-3");
+    assertEquals(result.status, "error");
+    assertEquals(result.wallet_error!.error, "invalid_request");
     assertEquals(
-      result.wallet_error!.error,
-      errorCode,
-      `error_code=${errorCode}`,
+      result.wallet_error!.error_description,
+      "unsupported client_id_prefix",
     );
-  }
-});
+  },
+);
 
-Deno.test("§8.5 — WalletAuthorizationError serialises to correct JSON (snake_case, optional omitted)", () => {
-  const minimal: WalletAuthorizationError = { error: "access_denied" };
-  const full: WalletAuthorizationError = {
-    error: "invalid_request",
-    error_description: "unsupported client_id_prefix",
-    state: "eyJhb...6-sVA",
-  };
+Deno.test(
+  "§8.5 — wallet_error without state is handled (unknown state → throws)",
+  () => {
+    const store = new TransactionStore();
+    store.set(makeTransaction("tx-4", "state-jkl"));
 
-  // Minimal — no optional fields
-  const minJson = JSON.parse(JSON.stringify(minimal));
-  assertEquals(minJson.error, "access_denied");
-  assertEquals("error_description" in minJson, false);
-  assertEquals("state" in minJson, false);
+    let threw = false;
+    try {
+      simulateHandleWalletError(store, {
+        error: "access_denied",
+        state: "unknown-state-xyz",
+      });
+    } catch (e) {
+      threw = true;
+      assertEquals((e as Error).message.includes("No transaction found"), true);
+    }
+    assertEquals(threw, true, "Expected an error for unknown state");
+  },
+);
 
-  // Full — all fields
-  const fullJson = JSON.parse(JSON.stringify(full));
-  assertEquals(fullJson.error, "invalid_request");
-  assertEquals(fullJson.error_description, "unsupported client_id_prefix");
-  assertEquals(fullJson.state, "eyJhb...6-sVA");
-});
+Deno.test(
+  "§8.5 — all six error codes are accepted and stored correctly",
+  () => {
+    const errorCodes: string[] = [
+      "invalid_request",
+      "access_denied",
+      "vp_formats_not_supported",
+      "invalid_request_uri_method",
+      "invalid_transaction_data",
+      "wallet_unavailable",
+    ];
 
+    for (const [idx, errorCode] of errorCodes.entries()) {
+      const txId = `tx-ec-${idx}`;
+      const state = `state-ec-${idx}`;
+      const store = new TransactionStore();
+      store.set(makeTransaction(txId, state));
 
+      simulateHandleWalletError(store, { error: errorCode, state });
+
+      const result = getStatusForTransaction(store, txId);
+      assertEquals(result.status, "error", `error_code=${errorCode}`);
+      assertEquals(
+        result.wallet_error!.error,
+        errorCode,
+        `error_code=${errorCode}`,
+      );
+    }
+  },
+);
+
+Deno.test(
+  "§8.5 — WalletAuthorizationError serialises to correct JSON (snake_case, optional omitted)",
+  () => {
+    const minimal: WalletAuthorizationError = { error: "access_denied" };
+    const full: WalletAuthorizationError = {
+      error: "invalid_request",
+      error_description: "unsupported client_id_prefix",
+      state: "eyJhb...6-sVA",
+    };
+
+    // Minimal — no optional fields
+    const minJson = JSON.parse(JSON.stringify(minimal));
+    assertEquals(minJson.error, "access_denied");
+    assertEquals("error_description" in minJson, false);
+    assertEquals("state" in minJson, false);
+
+    // Full — all fields
+    const fullJson = JSON.parse(JSON.stringify(full));
+    assertEquals(fullJson.error, "invalid_request");
+    assertEquals(fullJson.error_description, "unsupported client_id_prefix");
+    assertEquals(fullJson.state, "eyJhb...6-sVA");
+  },
+);
