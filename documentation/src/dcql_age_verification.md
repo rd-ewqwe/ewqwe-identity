@@ -2,18 +2,27 @@
 
 This document defines the Digital Credentials Query Language (DCQL) queries used in the EU Age Verification system, implementing the [EU Age Verification Profile](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile).
 
+**Related Documentation**:
+
+- For complete credential attribute specifications and authoritative references, see [Credential Type Specifications](./credential_type_specifications.md)
+- For how these queries are used in the demo webapp and wallet communication, see [Webapp -> Wallet Communication Protocol](./webapp_wallet_communication.md)
+
 ## Overview
 
 DCQL (Digital Credentials Query Language) is defined in [OpenID4VP Section 6](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6). It allows Relying Parties to specify which credentials and claims they require from the Wallet.
 
 For age verification, we primarily request the `age_over_18` claim from the EU Age Verification namespace.
 
-## Namespaces
+## Credential Namespaces
 
-| Namespace           | Description                                  |
-|---------------------|----------------------------------------------|
-| `eu.europa.ec.av.1` | EU Age Verification namespace (Proof of Age) |
-| `org.iso.18013.5.1` | ISO mDL namespace (Mobile Driver License).   |
+DCQL queries reference credential attributes using namespace paths. The primary namespaces for age verification are:
+
+| Namespace           | Description                                  | Specification |
+|---------------------|----------------------------------------------|---------------|
+| `eu.europa.ec.av.1` | EU Age Verification namespace (Proof of Age) | [EU Age Verification Profile](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile) |
+| `org.iso.18013.5.1` | ISO mDL namespace (Mobile Driver License)    | [ISO/IEC 18013-5:2021](https://www.iso.org/standard/69084.html) |
+
+For complete attribute listings and encoding formats, see [Credential Type Specifications](./credential_type_specifications.md).
 
 ## Age Verification DCQL Query
 
@@ -168,6 +177,7 @@ GET /authorize?
 ```
 
 Decoded `dcql_query`:
+
 ```json
 {
   "credentials": [
@@ -201,6 +211,7 @@ GET /authorize?
 ```
 
 Key differences from same-device:
+
 - `response_mode=direct_post` instead of `fragment`
 - `response_uri` instead of `redirect_uri`
 - `state` parameter for session correlation

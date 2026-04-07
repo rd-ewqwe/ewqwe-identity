@@ -1,6 +1,12 @@
 # Digital Credentials: Browser Storage and Querying
 
-This document explains how digital credentials are stored and queried using the W3C Digital Credentials API, and how this applies to the ewqwe-auth project.
+This document explains how digital credentials are stored and queried using the W3C Digital Credentials API, and how this applies to the EwQwE Identity project.
+
+**Related Documentation**:
+
+- For the complete communication protocol between webapp and wallet in this demo, see [Webapp -> Wallet Communication Protocol](./webapp_wallet_communication.md)
+- For DCQL query examples, see [DCQL Age Verification](./dcql_age_verification.md)
+- For credential attribute specifications, see [Credential Type Specifications](./credential_type_specifications.md)
 
 ---
 
@@ -94,7 +100,7 @@ const credential = await navigator.credentials.create({
 
 ### Supported Protocols
 
-The W3C spec defines these presentation protocols:
+The W3C Digital Credentials API supports multiple presentation protocols. The protocol is specified in the `protocol` field of the `DigitalCredentialRequest`:
 
 | Protocol | Identifier | Description |
 |:---------|:-----------|:------------|

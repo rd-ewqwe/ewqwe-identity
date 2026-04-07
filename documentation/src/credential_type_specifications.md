@@ -20,6 +20,11 @@ These specifications define attributes using:
 
 The encoding is specified in prose and tables rather than JSON Schema.
 
+**Related Documentation**:
+
+- For DCQL queries to request these credentials, see [DCQL Age Verification](./dcql_age_verification.md)
+- For sample credential data, see [Digital Credential Browser Storage](./digital_credentials_browser_storage.md)
+
 ---
 
 ## Authoritative Sources

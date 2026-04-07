@@ -1,4 +1,4 @@
-# Demo Wallet - RP Webapp Communication Protocol
+# The Webapp -> Wallet Communication Protocol
 
 ## Overview
 
@@ -237,61 +237,24 @@ sequenceDiagram
 
 ## OpenID4VP Request Format
 
-The OpenID4VP request structure is identical whether sent via the native API or postMessage:
+The OpenID4VP request structure is identical whether sent via the native API or postMessage. It follows the [OpenID4VP 1.0 specification](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html).
 
-```typescript
-interface OpenID4VPRequest {
-  // Client identification
-  client_id: string;                // RP identifier (e.g., "http://localhost:5174")
-  client_id_scheme: string;         // "redirect_uri" | "x509_san_dns" | "verifier_attestation"
-  
-  // Response configuration
-  response_type: "vp_token";        // Always "vp_token" for VP requests
-  response_mode: string;            // "direct_post" | "fragment" | "query"
-  
-  // Security
-  nonce: string;                    // Replay protection (bound to VP)
-  state?: string;                   // Optional correlation value
-  
-  // Credential requirements
-  presentation_definition: {
-    id: string;
-    name?: string;
-    purpose?: string;
-    input_descriptors: InputDescriptor[];
-  };
-  
-  // RP metadata
-  client_metadata?: {
-    client_name?: string;
-    client_purpose?: string;
-    vp_formats?: Record<string, { alg: string[] }>;
-  };
-}
+**Key Request Parameters**:
 
-interface InputDescriptor {
-  id: string;                       // Unique identifier
-  name?: string;
-  purpose?: string;
-  format: {                         // Acceptable credential formats
-    mso_mdoc?: { alg: string[] };
-    jwt_vp?: { alg: string[] };
-  };
-  constraints: {
-    limit_disclosure?: "required";  // Only disclose requested claims
-    fields: ConstraintField[];
-  };
-}
+| Parameter | Type | Required | Description |
+|-----------|------|----------|-------------|
+| `client_id` | string | ✓ | RP identifier (e.g., `"http://localhost:5174"`) |
+| `client_id_scheme` | string | ✓ | How to validate client_id: `"redirect_uri"` \| `"x509_san_dns"` \| `"verifier_attestation"` |
+| `response_type` | string | ✓ | Always `"vp_token"` for credential presentations |
+| `response_mode` | string | ✓ | `"direct_post"` \| `"fragment"` \| `"query"` |
+| `nonce` | string | ✓ | Replay protection (cryptographically random) |
+| `state` | string | | Optional correlation value |
+| `presentation_definition` | object | ✓ | Defines required credentials and claims (DCQL format) |
+| `client_metadata` | object | | RP metadata (name, purpose, supported formats) |
 
-interface ConstraintField {
-  path: string[];                   // JSONPath to claim: ["$['namespace']['claim']"]
-  id?: string;
-  name?: string;
-  intent_to_retain?: boolean;       // Will RP store this claim?
-}
-```
+The `presentation_definition` uses **Digital Credentials Query Language (DCQL)** to specify which credentials and claims are requested. For detailed DCQL query examples and syntax, see [DCQL Age Verification](./dcql_age_verification.md).
 
-**Example Request** (Proof of Age):
+**Minimal Example**:
 
 ```typescript
 const request: OpenID4VPRequest = {
@@ -299,40 +262,20 @@ const request: OpenID4VPRequest = {
   client_id_scheme: "redirect_uri",
   response_type: "vp_token",
   response_mode: "direct_post",
-  nonce: "f5059300-5812-4e21-a679-f0668f0ff795",
-  state: "abc123",
+  nonce: crypto.randomUUID(),
   
   presentation_definition: {
     id: "proof-of-age-request",
-    name: "Proof of Age Verification",
+    name: "Age Verification",
     purpose: "Verify you are 18 or older",
     input_descriptors: [{
       id: "proof_of_age",
-      name: "Proof of Age (EU AV)",
-      purpose: "Age verification for access control",
-      format: {
-        mso_mdoc: {
-          alg: ["ES256", "ES384", "ES512", "EdDSA"]
-        }
-      },
+      format: { mso_mdoc: { alg: ["ES256"] } },
       constraints: {
         limit_disclosure: "required",
-        fields: [{
-          path: ["$['eu.europa.ec.av.1']['age_over_18']"],
-          id: "age_over_18",
-          name: "Age Over 18",
-          intent_to_retain: false
-        }]
+        fields: [{ path: ["$['eu.europa.ec.av.1']['age_over_18']"] }]
       }
     }]
-  },
-  
-  client_metadata: {
-    client_name: "Digital Credentials Demo",
-    client_purpose: "Identity verification for demo purposes",
-    vp_formats: {
-      mso_mdoc: { alg: ["ES256", "ES384", "ES512", "EdDSA"] }
-    }
   }
 };
 ```
@@ -399,9 +342,11 @@ interface DescriptorMapEntry {
 }
 ```
 
+**Note**: In production implementations following ISO/IEC 18013-5, the `vp_token` contains base64url-encoded CBOR DeviceResponse structures. This demo uses simplified JSON for clarity. See [Digital Credential Browser Storage](./digital_credentials_browser_storage.md) for sample credential data structures.
+
 ## Supported Credential Types
 
-The demo wallet supports multiple credential formats per ISO/IEC 18013-5 and EU specifications:
+The demo wallet supports multiple credential formats following international and EU standards:
 
 | Credential Type | docType | Namespace | Standard |
 |-----------------|---------|-----------|----------|
@@ -409,28 +354,9 @@ The demo wallet supports multiple credential formats per ISO/IEC 18013-5 and EU 
 | **Mobile Driver's License** | `org.iso.18013.5.1.mDL` | `org.iso.18013.5.1` | ISO/IEC 18013-5:2021 |
 | **EU Personal ID** | `eu.europa.ec.eudi.pid.1` | `eu.europa.ec.eudi.pid.1` | EU Digital Identity Wallet ARF |
 
-### Proof of Age Claims
+For complete attribute specifications, encoding formats, and authoritative references, see [Credential Type Specifications](./credential_type_specifications.md).
 
-| Claim | Type | Description |
-|-------|------|-------------|
-| `age_over_18` | boolean | Subject is 18 years or older |
-| `age_over_21` | boolean | Subject is 21 years or older |
-
-### Mobile Driver's License Claims
-
-| Claim | Type | Description |
-|-------|------|-------------|
-| `family_name` | string | Family name (surname) |
-| `given_name` | string | Given name(s) |
-| `birth_date` | string | Date of birth (full-date format) |
-| `age_over_18` | boolean | Subject is 18 or older |
-| `age_over_21` | boolean | Subject is 21 or older |
-| `document_number` | string | License number |
-| `issuing_authority` | string | Authority that issued the license |
-| `issuing_country` | string | ISO 3166-1 alpha-2 country code |
-| `portrait` | bytes | Photo of the license holder |
-
-See [Credential Type Specifications](./credential_type_specifications.md) for complete claim listings.
+For DCQL query examples to request these credentials, see [DCQL Age Verification](./dcql_age_verification.md).
 
 ## Security Considerations
 
@@ -538,51 +464,31 @@ Our implementation respects this hierarchy by attempting the native API first, t
 
 ## Message Flow Diagram
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                            BROWSER CONTEXT                              │
-│                                                                         │
-│  ┌────────────────────────────────────────────────────────────────┐    │
-│  │ Relying Party Web App                                          │    │
-│  │ http://localhost:5174                                          │    │
-│  │                                                                │    │
-│  │ 1. Build OpenID4VP request with DCQL query                     │    │
-│  │ 2. Try navigator.credentials.get() [fails]                     │    │
-│  │ 3. window.postMessage(EU_AV_WALLET_REQUEST, request)           │────┼──┐
-│  │                                                                │    │  │
-│  │ 8. Receive window.postMessage(EU_AV_WALLET_RESPONSE)    ◄──────────┼──┤
-│  │ 9. Send response to backend for verification                   │    │  │
-│  └────────────────────────────────────────────────────────────────┘    │  │
-│                                                                         │  │
-│  ┌────────────────────────────────────────────────────────────────┐    │  │
-│  │ Demo Wallet Browser Extension - Content Script                 │    │  │
-│  │ (Injected into every page)                                     │    │  │
-│  │                                                                │    │  │
-│  │ 4. Listen for message event            ◄───────────────────────────┘  │
-│  │ 5. chrome.runtime.sendMessage(DC_API_REQUEST) ─────────┐       │    │  │
-│  │                                                        │       │    │  │
-│  │ 7. Build VP response                   ◄──────────┐   │       │    │  │
-│  │ 8. window.postMessage(EU_AV_WALLET_RESPONSE) ──────────────────────┘  │
-│  └────────────────────────────────────────────────────────────────┘    │  │
-│                                                        │                   │
-│  ┌────────────────────────────────────────────────────┼───────────────┐   │
-│  │ Extension Background Service Worker                │               │   │
-│  │                                                    │               │   │
-│  │ 5. Receive message                    ◄────────────┘               │   │
-│  │ 6. Parse DCQL, match credentials                                  │   │
-│  │ 6. Return matching credentials to content script ──────┐           │   │
-│  └────────────────────────────────────────────────────────┼───────────┘   │
-│                                                           │               │
-└───────────────────────────────────────────────────────────┼───────────────┘
-                                                            │
-                                                            ▼
-                                    ┌─────────────────────────────────┐
-                                    │ chrome.storage.local            │
-                                    │ (Stored Credentials)            │
-                                    │ - 2x mDL (DE, FR)               │
-                                    │ - 2x PID (NL, ES)               │
-                                    │ - 2x Proof of Age               │
-                                    └─────────────────────────────────┘
+```mermaid
+sequenceDiagram
+  participant RP as Relying Party Web App<br/>(http://localhost:5174)
+  participant CS as Content Script<br/>(Demo Wallet Extension)
+  participant BG as Background Worker<br/>(Demo Wallet Extension)
+  participant Storage as chrome.storage.local<br/>(Stored Credentials)
+
+  Note over RP: 1. Build OpenID4VP request<br/>with DCQL query
+  RP->>RP: 2. Try navigator.credentials.get()<br/>[NetworkError: No provider]
+  
+  RP->>CS: 3. window.postMessage<br/>(EU_AV_WALLET_REQUEST, request)
+  
+  Note over CS: 4. Listen for message event
+  CS->>BG: 5. chrome.runtime.sendMessage<br/>(DC_API_REQUEST)
+  
+  BG->>Storage: 6. Query stored credentials
+  Storage-->>BG: Return all credentials
+  
+  Note over BG: 6. Parse DCQL query<br/>Match credentials
+  BG-->>CS: 6. Return matching credentials
+  
+  Note over CS: 7. Build VP response<br/>(vp_token + presentation_submission)
+  CS->>RP: 8. window.postMessage<br/>(EU_AV_WALLET_RESPONSE)
+  
+  Note over RP: 9. Send VP token to backend<br/>for verification
 ```
 
 ## Security Considerations
