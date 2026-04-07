@@ -84,12 +84,15 @@ impl TestClient {
 
         let builder = Client::builder()
             .cookie_provider(cookie_store)
-            .add_root_certificate(ca_cert)
-            // macOS's Security framework (used by native-tls) won't trust a
-            // programmatically-added root cert that isn't in the system keychain.
-            // This is a test-only client against local test certificates, so
-            // skipping hostname/cert verification is acceptable here.
-            .danger_accept_invalid_certs(true);
+            .add_root_certificate(ca_cert);
+
+        #[cfg(target_os = "macos")]
+        // macOS's Security framework (used by native-tls) won't trust a
+        // programmatically-added root cert that isn't in the system keychain.
+        // This is a test-only client against local test certificates, so
+        // skipping hostname/cert verification is acceptable here.
+        let builder = builder.danger_accept_invalid_certs(true);
+
         debug!(
             "Configured client with custom server CA certificate (TLS cert validation disabled for tests)"
         );

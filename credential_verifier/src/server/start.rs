@@ -23,7 +23,7 @@ use tracing::info;
 use crate::tls::openssl_config::{create_openssl_acceptor, extract_openssl_peer_certificate};
 
 /// Inner function to start the attestation server asynchronously.
-pub async fn start_att_server(
+pub async fn start_server(
     server_params: Arc<ServerParams>,
     server_handle_tx: Option<mpsc::Sender<ServerHandle>>,
 ) -> AttResult<()> {
@@ -87,34 +87,36 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
                     .allowed_headers(vec!["Content-Type", "Authorization"])
                     .max_age(3600),
             )
-            .route("/version", web::get().to(version_endpoint))
-            .route("/api/verify", web::post().to(verify_credential_endpoint))
+            .route("/version", web::get().to(version_endpoint));
+
+        let openid4vp_scope = web::scope("/api")
+            .route("/verify", web::post().to(verify_credential_endpoint))
             .route(
-                "/api/openid4vp/init",
+                "/openid4vp/init",
                 web::post().to(openid4vp_endpoints::init_transaction),
             )
             .route(
-                "/api/openid4vp/status/{id}",
+                "/openid4vp/status/{id}",
                 web::get().to(openid4vp_endpoints::get_transaction_status),
             )
             .route(
-                "/api/openid4vp/direct_post",
+                "/openid4vp/direct_post",
                 web::post().to(openid4vp_endpoints::handle_direct_post),
             )
             .route(
-                "/api/openid4vp/request/{id}",
+                "/openid4vp/request/{id}",
                 web::get().to(openid4vp_endpoints::get_authorization_request),
             )
             .route(
-                "/api/openid4vp/request/{id}",
+                "/openid4vp/request/{id}",
                 web::post().to(openid4vp_endpoints::get_authorization_request),
             )
             .route(
-                "/api/openid4vp/.well-known/jwks.json",
+                "/openid4vp/.well-known/jwks.json",
                 web::get().to(openid4vp_endpoints::get_jwks),
             );
 
-        app.service(default_scope)
+        app.service(openid4vp_scope).service(default_scope)
     })
     .keep_alive(actix_web::http::KeepAlive::Timeout(
         std::time::Duration::from_secs(120),

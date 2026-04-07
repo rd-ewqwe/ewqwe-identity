@@ -1,5 +1,5 @@
 use crate::{
-    AttError, AttResult, ServerParams, TlsParams, server::start_att_server, tests::TestsContext,
+    AttError, AttResult, ServerParams, TlsParams, server::start_server, tests::TestsContext,
 };
 use actix_web::dev::ServerHandle;
 use ewqwe_openid4vp::{HaipConfig, OpenID4VPServiceConfig};
@@ -30,7 +30,7 @@ pub async fn start_test_server(server_params: ServerParams) -> AttResult<TestsCo
             })?;
 
         runtime
-            .block_on(start_att_server(params, Some(tx)))
+            .block_on(start_server(params, Some(tx)))
             .map_err(|e| {
                 error!("Error starting the attestation provider server: {e:?}");
                 AttError::Test(e.to_string())

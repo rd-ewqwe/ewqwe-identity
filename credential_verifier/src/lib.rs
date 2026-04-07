@@ -6,7 +6,7 @@ pub mod attestation;
 pub mod mdoc_decoder;
 
 mod server;
-pub use server::{ServerParams, start_att_server};
+pub use server::{ServerParams, start_server};
 
 mod error;
 pub use error::{AttError, AttResult, AttResultHelper};

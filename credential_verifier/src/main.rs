@@ -13,7 +13,7 @@
 //! cargo run --features openssl
 //! ```
 
-use credential_verifier::{ServerParams, start_att_server};
+use credential_verifier::{ServerParams, start_server};
 use ewqwe_logging::{TracingConfig, tracing_init};
 use std::{path::PathBuf, sync::Arc};
 
@@ -45,7 +45,7 @@ async fn main() -> std::io::Result<()> {
     let server_params = Arc::new(server_params);
 
     // Start the server
-    match start_att_server(server_params, None).await {
+    match start_server(server_params, None).await {
         Ok(()) => {
             tracing::info!("Server shut down gracefully");
             Ok(())

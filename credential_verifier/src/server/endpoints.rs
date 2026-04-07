@@ -232,12 +232,7 @@ fn decode_sd_jwt_presentation(raw: &str) -> Result<VpToken, SdJwtDecodeError> {
         }
     }
 
-    tracing::info!(
-        "SD-JWT VC decoded: vct={}, issuer={}, claims={}",
-        vct,
-        issuer,
-        claims.len()
-    );
+    tracing::debug!(vct = %vct, %issuer, claims_count = claims.len(), "SD-JWT VC decoded");
 
     Ok(VpToken {
         doc_type: Some(vct.clone()),
@@ -254,12 +249,13 @@ fn decode_sd_jwt_presentation(raw: &str) -> Result<VpToken, SdJwtDecodeError> {
 fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttError> {
     // First, try parsing as DCQL format (object with credential IDs as keys)
     if let Ok(dcql_token) = serde_json::from_str::<DcqlVpToken>(vp_token_str) {
-        tracing::info!("VP Token appears to be DCQL format");
-
         // Get the first credential from the DCQL response
         if let Some((credential_id, presentations)) = dcql_token.iter().next() {
-            tracing::info!("  Credential ID: {}", credential_id);
-            tracing::info!("  Presentations count: {}", presentations.len());
+            tracing::debug!(
+                credential_id,
+                presentations_count = presentations.len(),
+                "DCQL VP token"
+            );
 
             if let Some(presentation) = presentations.first() {
                 // The presentation might be:
@@ -269,10 +265,7 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                 if let Some(encoded_str) = presentation.as_str() {
                     // (a) Detect SD-JWT VC: the compact format contains '~' separators.
                     if encoded_str.contains('~') {
-                        tracing::info!(
-                            "  Presentation is SD-JWT VC compact serialization (length: {})",
-                            encoded_str.len()
-                        );
+                        tracing::debug!(len = encoded_str.len(), "presentation is SD-JWT VC");
                         match decode_sd_jwt_presentation(encoded_str) {
                             Ok(vp_token) => {
                                 return Ok((vp_token, Some(credential_id.clone())));
@@ -287,19 +280,15 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                     }
 
                     // (b) Try base64-encoded mDoc CBOR
-                    tracing::info!(
-                        "  Presentation is base64-encoded mDoc (length: {})",
-                        encoded_str.len()
+                    tracing::debug!(
+                        len = encoded_str.len(),
+                        "presentation is base64-encoded mDoc"
                     );
 
                     let decode_error_msg;
                     match mdoc_decoder::decode_mdoc_presentation(encoded_str) {
                         Ok(decoded) => {
-                            tracing::info!(
-                                "  mDoc decoded successfully: docType={}, namespaces={}",
-                                decoded.doc_type,
-                                decoded.namespaces.len()
-                            );
+                            tracing::debug!(doc_type = %decoded.doc_type, namespaces = decoded.namespaces.len(), "mDoc decoded");
 
                             // Capture the first namespace key before we consume the map
                             let first_ns = decoded
@@ -336,7 +325,7 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                             return Ok((vp_token, Some(credential_id.clone())));
                         }
                         Err(e) => {
-                            tracing::warn!("  mDoc CBOR decode failed: {}", e);
+                            tracing::warn!(error = %e, "mDoc CBOR decode failed");
                             decode_error_msg = e.to_string();
                         }
                     }
@@ -383,7 +372,7 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                     return Ok((vp_token, Some(credential_id.clone())));
                 } else if presentation.is_object() {
                     // It's already a JSON object - try to parse as VpToken
-                    tracing::info!("  Presentation is JSON object");
+                    tracing::debug!("presentation is JSON object");
                     let vp_token: VpToken =
                         serde_json::from_value(presentation.clone()).map_err(|e| {
                             AttError::BadRequest(format!("Failed to parse DCQL presentation: {e}"))
@@ -398,7 +387,7 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
     }
 
     // Fall back to direct VpToken format
-    tracing::info!("VP Token appears to be direct format");
+    tracing::debug!("VP token is direct JSON format");
     let vp_token: VpToken = serde_json::from_str(vp_token_str)
         .map_err(|e| AttError::BadRequest(format!("Invalid VP token format: {e}")))?;
     Ok((vp_token, None))
@@ -412,64 +401,54 @@ pub(crate) async fn version_endpoint(_req: HttpRequest) -> Result<HttpResponse, 
     Ok(HttpResponse::Ok().json(version))
 }
 
-/// Verify a credential presentation from a wallet
+/// Verify a credential presentation from a wallet and return a signed attestation.
 ///
-/// This endpoint receives a VP token from the webapp (which received it from the wallet),
-/// verifies the credential, and returns a signed attestation if valid.
+/// Accepts a VP token in DCQL format (mDoc CBOR DeviceResponse or SD-JWT VC compact
+/// serialisation) or direct JSON. Extracts the credential claims, checks expiry and
+/// issuer presence, then returns an ES256-signed attestation JWT on success.
 ///
-/// In this demo implementation, we perform simulated verification.
-/// In production, this would:
-/// 1. Verify the mDoc/JWT cryptographic signature
-/// 2. Check the issuer against a trusted list
-/// 3. Validate the credential hasn't expired
-/// 4. Verify the nonce matches the original request
+/// Not yet implemented:
+/// - Cryptographic verification of the credential's MSO / SD-JWT VC signature
+/// - Trusted-issuer list check
+/// - Nonce binding verification
 pub(crate) async fn verify_credential_endpoint(
     _req: HttpRequest,
     body: web::Json<VerifyCredentialRequest>,
 ) -> Result<HttpResponse, AttError> {
-    tracing::info!("============================================");
-    tracing::info!("=== CREDENTIAL VERIFIER: REQUEST RECEIVED ===");
-    tracing::info!("============================================");
-    tracing::info!("VP Token length: {}", body.vp_token.len());
-    tracing::info!(
-        "VP Token preview: {}...",
-        &body.vp_token.chars().take(100).collect::<String>()
+    tracing::debug!(
+        vp_token_len = body.vp_token.len(),
+        nonce = ?body.nonce,
+        client_id = ?body.client_id,
+        "verify_credential request received"
     );
-    tracing::info!("Nonce: {:?}", body.nonce);
-    tracing::info!("Client ID: {:?}", body.client_id);
 
     // Parse the VP token (handles both direct and DCQL formats)
     let (vp_token, credential_id) = parse_vp_token(&body.vp_token)?;
 
-    tracing::info!("VP Token parsed successfully");
-    if let Some(ref cred_id) = credential_id {
-        tracing::info!("  DCQL credential_id: {}", cred_id);
-    }
-    tracing::info!("  doc_type: {:?}", vp_token.doc_type);
-    tracing::info!("  namespace: {:?}", vp_token.namespace);
-    tracing::info!("  issuer: {:?}", vp_token.issuer);
+    tracing::debug!(
+        credential_id = ?credential_id,
+        doc_type = ?vp_token.doc_type,
+        namespace = ?vp_token.namespace,
+        issuer = ?vp_token.issuer,
+        "VP token parsed"
+    );
 
     // Extract claims from the VP token
     let claims = extract_claims(&vp_token);
-    tracing::info!("Extracted claims: {}", claims);
 
     let doc_type = vp_token.doc_type.clone();
     let namespace = vp_token.namespace.clone();
 
-    // Perform verification (simulated for demo)
-    // In production, this would verify cryptographic signatures
-    tracing::info!("Performing verification...");
     let verification_result = verify_vp_token(&vp_token, body.nonce.as_deref());
-    tracing::info!(
-        "Verification result: valid={}, sig={}, expired={}, trusted={}",
-        verification_result.is_valid,
-        verification_result.signature_valid,
-        verification_result.not_expired,
-        verification_result.issuer_trusted
+    tracing::debug!(
+        is_valid = verification_result.is_valid,
+        not_expired = verification_result.not_expired,
+        issuer_trusted = verification_result.issuer_trusted,
+        "verification result"
     );
 
     if !verification_result.is_valid {
-        tracing::warn!("Verification FAILED: {:?}", verification_result.errors);
+        tracing::warn!(errors = ?verification_result.errors, "credential verification failed");
         return Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
             success: false,
             message: "Credential verification failed".to_string(),
@@ -487,20 +466,12 @@ pub(crate) async fn verify_credential_endpoint(
         }));
     }
 
-    // Create and sign an attestation
-    tracing::info!("Creating signed attestation...");
     let attestation = create_attestation(
         body.client_id.as_deref().unwrap_or("unknown-rp"),
         body.nonce.as_deref(),
         &claims,
     )?;
-    tracing::info!(
-        "Attestation created successfully, length: {}",
-        attestation.len()
-    );
-
-    tracing::info!("=== CREDENTIAL VERIFIER: RETURNING SUCCESS ===");
-    tracing::info!("============================================");
+    tracing::info!(doc_type = ?doc_type, client_id = ?body.client_id, "credential verified");
 
     Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
         success: true,
@@ -545,7 +516,10 @@ struct VerificationResult {
     errors: Vec<String>,
 }
 
-/// Verify the VP token (simulated for demo)
+/// Verify the VP token.
+///
+/// Checks credential expiry and issuer presence. Cryptographic signature
+/// verification and nonce binding are not yet implemented.
 fn verify_vp_token(vp_token: &VpToken, _nonce: Option<&str>) -> VerificationResult {
     let mut errors = Vec::new();
 
@@ -569,14 +543,13 @@ fn verify_vp_token(vp_token: &VpToken, _nonce: Option<&str>) -> VerificationResu
         true
     };
 
-    // Check issuer (simulated - in production would check against trusted issuers)
+    // TODO: verify issuer against a trusted-issuers list
     let issuer_trusted = vp_token.issuer.is_some();
     if !issuer_trusted {
         errors.push("No issuer specified in credential".to_string());
     }
 
-    // Signature verification is simulated
-    // In production, this would verify the mDoc MSO signature or JWT signature
+    // TODO: verify the mDoc MSO signature or SD-JWT VC signature
     let signature_valid = true;
 
     let is_valid = signature_valid && not_expired && issuer_trusted;
@@ -626,8 +599,7 @@ fn create_attestation(
         attestation_claims = attestation_claims.with_nonce(n);
     }
 
-    // For demo, we use a hardcoded key - in production this would be loaded from config
-    // We'll use ES256 with a generated key for now
+    // TODO: load the signing key from server configuration
     let demo_private_key = include_str!("../tests/certificates/ec/ewqwe.server.key.pem");
 
     let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, demo_private_key.as_bytes())

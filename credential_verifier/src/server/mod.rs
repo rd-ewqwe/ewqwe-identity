@@ -1,5 +1,5 @@
-mod att_server;
-pub use att_server::start_att_server;
+mod start;
+pub use start::start_server;
 
 pub(crate) mod endpoints;
 pub(crate) mod openid4vp_endpoints;
