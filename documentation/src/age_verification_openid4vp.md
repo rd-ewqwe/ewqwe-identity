@@ -84,12 +84,44 @@ According to [OpenID for Verifiable Presentations 1.0, Section 5](https://openid
 
 ### Client ID schemes (OpenID4VP Section 5.3)
 
-The `client_id` parameter uses a **scheme prefix** to indicate how the RP is identified:
+The `client_id` parameter uses a **scheme prefix** to indicate how the RP is identified. Different profiles mandate different schemes:
 
-- `redirect_uri:<URI>` – RP identified by the `response_uri` (REQUIRED for Age Verification)
-- `x509_san_dns:<DNS>` – RP identified by X.509 certificate SAN DNS name
-- `x509_san_uri:<URI>` – RP identified by X.509 certificate SAN URI
-- `verifier_attestation:<JWT>` – RP identified by a signed verifier attestation
+| Scheme | Format | JAR Required | Trust Mechanism | Profile |
+|--------|--------|--------------|-----------------|---------|
+| `redirect_uri:` | `redirect_uri:<response_uri>` | **No** (unsigned request) | TLS + Web PKI | **Annex A (Age Verification)** |
+| `x509_san_dns:` | `x509_san_dns:<DNS>` | Yes (signed JAR with `x5c`) | X.509 certificate SAN DNS | HAIP (EUDI Wallet) |
+| `x509_hash:` | `x509_hash:<hash>` | Yes (signed JAR with `x5c`) | X.509 certificate hash | HAIP (EUDI Wallet) |
+| `verifier_attestation:` | `verifier_attestation:<client_id>` | Yes (signed JAR with `jwt` header) | JWT from Trusted Attestation Issuer | HAIP (optional) |
+| `pre-registered` | `<client_id>` (no prefix) | Optional | Pre-configured in wallet | Custom deployments |
+
+#### `redirect_uri` scheme (Annex A - Age Verification)
+
+- The client_id equals the response_uri: `client_id=redirect_uri:https://rp.example.com/callback`
+- Request is sent **unsigned** (no JAR, no `x5c`, no cryptographic verification)
+- Trust is based on TLS and the Web PKI
+- Simplest implementation, suitable for LoA Substantial
+
+#### `x509_san_dns` scheme (HAIP - EUDI Wallet)
+
+- The client_id is a DNS name matching a SAN in the X.509 certificate: `client_id=x509_san_dns:rp.example.com`
+- Request **MUST be signed** as a JWT-secured Authorization Request (JAR, RFC 9101)
+- The `x5c` JOSE header contains the certificate chain
+- The wallet validates the certificate against its **Reader Trust Store**
+- Requires the RP's root CA to be trusted by the wallet
+
+#### `verifier_attestation` scheme (HAIP - optional)
+
+- The client_id is an identifier attested by a trusted issuer: `client_id=verifier_attestation:my-verifier`
+- Request **MUST be signed** as JAR with a `jwt` JOSE header containing the attestation
+- The attestation JWT is signed by a **Trusted Attestation Issuer**
+- The wallet validates the attestation JWT against trusted issuer public keys
+- **Trusted Issuers**: These are entities pre-configured in the wallet that are authorized to issue verifier attestations. In the EU context, this would typically be:
+  - National trust list operators
+  - EU-level trust services
+  - Designated attestation providers listed in official registries
+  - **Currently, no public list of trusted attestation issuers exists for general use**
+
+> **Important**: The `verifier_attestation` scheme requires an established trust framework with designated attestation issuers. Since no such framework currently exists for general Age Verification, Annex A mandates the simpler `redirect_uri` scheme instead.
 
 ### Response modes (OpenID4VP Section 5.2)
 
@@ -431,6 +463,126 @@ app.post("/api/openid4vp/callback", async (req, res) => {
 | **Request format** | Base64url CBOR (ISO 18013-7) | Query parameters + DCQL JSON |
 | **Response format** | Base64url CBOR (HPKE encrypted) | JWT or CBOR (no encryption required) |
 | **Primary use case** | Same-device, browser-native | Cross-device, mobile wallets |
+
+## EU Age Verification Profile (Annex A) Requirements Summary
+
+The [EU Age Verification Profile Annex A, Section A.5](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/) defines the **normative requirements** for OpenID4VP when used as a fallback mechanism for age verification.
+
+### Mandatory Requirements
+
+| Requirement | Value | Rationale |
+|-------------|-------|-----------|
+| URL scheme | `av://` | Custom scheme to invoke the Age Verification App |
+| Response type | `vp_token` | Standard OpenID4VP response for presentations |
+| Response mode | `direct_post` | Enables cross-device flows; wallet POSTs directly to RP |
+| Client ID scheme | **`redirect_uri`** | Simplest scheme; no JAR, no trust lists required |
+| Request format | By value (no JAR) | No signed request objects required |
+| Query format | DCQL | Digital Credentials Query Language (OpenID4VP Section 6) |
+| Nonce | Required | Binds presentation to transaction, prevents replay |
+| Client authentication | **Not required** | Out of scope for Age Verification Profile |
+
+### Explicitly Out of Scope
+
+The following are **explicitly excluded** from the Age Verification Profile:
+
+- **JAR (JWT-secured Authorization Request)** - Signed requests are not required
+- **Encrypted responses** (`direct_post.jwt`) - TLS is sufficient
+- **Trust lists of RPs** - No pre-registration or attestation required
+- **x509_san_dns / verifier_attestation schemes** - These depend on trust lists
+
+### Design Rationale (from Annex A.9)
+
+> *"The effectiveness of `x509_san_dns` and `verifier_attestation` schemes depends on the existence of a trust list of RPs. For this reason, the Age Verification solution uses the simpler `redirect_uri` scheme. An alternative could be the use of `x509_san_dns` together with the Web PKI, however, any malicious entity can obtain a valid Web PKI certificate."*
+
+This means the Age Verification Profile relies on **TLS and the Web PKI** for transport security, without additional cryptographic verification of the verifier's identity.
+
+## Comparison with HAIP (High Assurance Interoperability Profile)
+
+The EUDI Wallet implements **HAIP** (High Assurance Interoperability Profile), which has stricter requirements than the Age Verification Profile. Understanding these differences is critical when choosing which wallet to target.
+
+| Feature | Age Verification Profile (Annex A) | HAIP (EUDI Wallet) |
+|---------|-----------------------------------|-------------------|
+| **Target LoA** | Substantial | High |
+| **Client ID scheme** | `redirect_uri` | `x509_san_dns`, `x509_hash`, `verifier_attestation` |
+| **Signed request (JAR)** | Not required | **Required** (RFC 9101) |
+| **Response mode** | `direct_post` | `direct_post.jwt` (encrypted) |
+| **Trust mechanism** | TLS + Web PKI | Reader Trust Store + certificate validation |
+| **Reader authentication** | Not required | Certificate chain validation |
+| **Trust list of RPs** | Not used | Required for verifier_attestation |
+| **Threat model** | Does not include malicious CAs | Assumes potential CA compromise |
+
+### Key Implications for Relying Parties
+
+1. **Age Verification App (Annex A compliant)**
+   - Use `client_id=redirect_uri:https://your-rp.com/callback`
+   - Send unsigned requests directly in the `av://` URL
+   - No certificate or JAR required
+
+2. **EUDI Wallet (HAIP compliant)**
+   - Use `client_id=x509_san_dns:your-rp.com`
+   - Sign the request as a JAR with `x5c` header containing your certificate chain
+   - Your root CA must be in the wallet's Reader Trust Store
+
+### Wallet Compatibility Matrix
+
+| Wallet | `redirect_uri` | `x509_san_dns` | `x509_hash` | `verifier_attestation` |
+|--------|----------------|----------------|-------------|------------------------|
+| **Age Verification App** (ageverification.dev) | ✅ Expected | ? | ? | ? |
+| **EUDI Wallet** (eu-digital-identity-wallet) | ❌ Not supported | ✅ | ✅ | ❌ Not configured |
+| **Demo webapp (this project)** | ✅ Planned | ✅ Implemented | ❌ | ❌ |
+
+> **Note**: The EUDI Wallet pre-built APKs from GitHub only support `x509_san_dns` and `x509_hash`. The `redirect_uri` scheme is **not supported** without modifying the wallet source code.
+
+### Two Wallets, Two Profiles
+
+There are **two separate wallet projects** for different use cases:
+
+1. **EUDI Wallet** ([eu-digital-identity-wallet/eudi-app-android-wallet-ui](https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui))
+   - Implements HAIP for EU Digital Identity
+   - Supports PID, mDL, and other credentials
+   - Uses `x509_san_dns` / `x509_hash` schemes
+   - Pre-built APKs available on GitHub Releases
+
+2. **Age Verification App** ([ageverification.dev](https://ageverification.dev/av-app-android-wallet-ui/))
+   - Forked from EUDI Wallet, customized for Age Verification
+   - Only stores Proof of Age attestations
+   - Expected to support `redirect_uri` scheme per Annex A
+   - Uses `av://` URL scheme for invocation
+   - Separate issuer/verifier infrastructure at ageverification.dev
+
+> **Important**: The APK at `https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/releases` is the **EUDI Wallet**, not the Age Verification App. It does **not** implement Annex A's `redirect_uri` scheme and will reject such requests.
+
+## Implementation Strategy for the Demo Webapp
+
+Based on the above analysis, the demo webapp should implement **both profiles** to support different wallets:
+
+### For Proof of Age (Annex A Profile)
+
+```typescript
+// Use redirect_uri scheme - no JAR, no certificate
+const clientId = `redirect_uri:${responseUri}`;
+const avUrl = `av://authorize?response_type=vp_token&response_mode=direct_post&client_id=${encodeURIComponent(clientId)}&response_uri=${encodeURIComponent(responseUri)}&nonce=${nonce}&dcql_query=${dcqlQuery}`;
+```
+
+### For mDL / National ID (HAIP Profile)
+
+```typescript
+// Use x509_san_dns scheme - signed JAR with x5c header
+const clientId = `x509_san_dns:${hostname}`;
+// Build and sign JAR JWT with x5c header containing certificate chain
+const jar = await signJAR(claims, privateKey, certificateChain);
+const requestUri = await storeJAR(jar); // or embed by value
+```
+
+### Dual-Mode Support
+
+The webapp should detect which credential type is being requested and use the appropriate scheme:
+
+| Credential Type | DocType | Client ID Scheme | Target Wallet |
+|-----------------|---------|------------------|---------------|
+| Proof of Age | `eu.europa.ec.av.1` | `redirect_uri` | Age Verification App |
+| Mobile Driving Licence | `org.iso.18013.5.1.mDL` | `x509_san_dns` | EUDI Wallet |
+| National ID (PID) | `eu.europa.ec.eudi.pid.1` | `x509_san_dns` | EUDI Wallet |
 
 ## References
 

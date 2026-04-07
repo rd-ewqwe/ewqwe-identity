@@ -26,25 +26,128 @@ const PUBLIC_URL =
   Deno.env.get("PUBLIC_URL") || `http://localhost:${SERVER_PORT}`;
 
 // ============================================================================
-// JAR Signing Key (for JWT Secured Authorization Requests)
+// X.509 Certificate & JAR Signing Key (for JWT Secured Authorization Requests)
 // ============================================================================
 
-// Generate an ephemeral EC key pair for signing JARs
-// In production, this should be loaded from secure storage and have a stable key ID
+// Path to the X.509 certificate chain and private key for JAR signing
+// These must have a SAN DNS entry matching the server hostname (e.g., hq.ewqwe.com)
+const X509_CERT_PATH =
+  Deno.env.get("X509_CERT_PATH") || "../ewqwe.com/fullchain1.pem";
+const X509_KEY_PATH =
+  Deno.env.get("X509_KEY_PATH") || "../ewqwe.com/privkey1.pem";
+
+// JAR signing state
 let jarSigningKey: jose.KeyLike;
 let jarSigningKeyJwk: jose.JWK;
+// x5c: base64-encoded (NOT base64url) DER certificates for the JWT header
+let jarX5cChain: string[];
+// The SAN DNS name extracted from the leaf certificate
+let jarSanDnsName: string;
 const JAR_KEY_ID = "ewqwe-jar-key-1";
 
+/**
+ * Parse PEM-encoded certificate chain into individual base64-encoded DER certificates
+ * suitable for use in the JWT x5c header (RFC 7515 §4.1.6).
+ */
+function parsePemCertChain(pemChain: string): string[] {
+  const certs: string[] = [];
+  const regex =
+    /-----BEGIN CERTIFICATE-----\s*([\s\S]*?)\s*-----END CERTIFICATE-----/g;
+  let match;
+  while ((match = regex.exec(pemChain)) !== null) {
+    // Remove all whitespace/newlines from the base64 content
+    certs.push(match[1].replace(/\s+/g, ""));
+  }
+  return certs;
+}
+
+/**
+ * Extract the SAN DNS name from a base64-encoded DER certificate.
+ * Uses a simple ASN.1 parsing approach: decode the base64, search for the
+ * DNS name in the Subject Alternative Name extension.
+ */
+function extractSanDnsFromCert(base64Der: string): string | null {
+  // Decode base64 to binary
+  const der = Uint8Array.from(atob(base64Der), (c) => c.charCodeAt(0));
+  // Search for the SAN OID (2.5.29.17 = 55 1d 11) in the DER bytes
+  // then extract UTF-8 strings that follow context tag [2] (dNSName)
+  for (let i = 0; i < der.length - 4; i++) {
+    if (der[i] === 0x55 && der[i + 1] === 0x1d && der[i + 2] === 0x11) {
+      // Found SAN OID, now search for context-specific tag [2] (dNSName)
+      for (let j = i + 3; j < der.length - 2; j++) {
+        if (der[j] === 0x82) {
+          // tag [2] = dNSName
+          const len = der[j + 1];
+          if (len > 0 && j + 2 + len <= der.length) {
+            const name = new TextDecoder().decode(
+              der.slice(j + 2, j + 2 + len),
+            );
+            // Validate it looks like a DNS name
+            if (/^[a-zA-Z0-9.-]+$/.test(name)) {
+              return name;
+            }
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 async function initializeJarSigningKey() {
-  const { privateKey } = await jose.generateKeyPair("ES256", {
-    extractable: true,
-  });
-  jarSigningKey = privateKey;
-  jarSigningKeyJwk = await jose.exportJWK(privateKey);
+  // Load X.509 certificate chain
+  const certPem = await Deno.readTextFile(X509_CERT_PATH);
+  jarX5cChain = parsePemCertChain(certPem);
+  if (jarX5cChain.length === 0) {
+    throw new Error(`No certificates found in ${X509_CERT_PATH}`);
+  }
+  console.log(
+    `[JAR] Loaded ${jarX5cChain.length} certificate(s) from ${X509_CERT_PATH}`,
+  );
+
+  // Extract SAN DNS name from the leaf certificate
+  const sanDns = extractSanDnsFromCert(jarX5cChain[0]);
+  if (!sanDns) {
+    throw new Error(
+      `Could not extract SAN DNS name from leaf certificate in ${X509_CERT_PATH}`,
+    );
+  }
+  jarSanDnsName = sanDns;
+  console.log(`[JAR] Certificate SAN DNS: ${jarSanDnsName}`);
+
+  // Load private key (extractable so we can also export the public JWK)
+  const keyPem = await Deno.readTextFile(X509_KEY_PATH);
+  // Import as a raw CryptoKey with extractable=true, then wrap for jose
+  const ecKey = await crypto.subtle.importKey(
+    "pkcs8",
+    pemToArrayBuffer(keyPem),
+    { name: "ECDSA", namedCurve: "P-256" },
+    true, // extractable
+    ["sign"],
+  );
+  jarSigningKey = ecKey as unknown as jose.KeyLike;
+  jarSigningKeyJwk = await jose.exportJWK(ecKey);
   jarSigningKeyJwk.kid = JAR_KEY_ID;
   jarSigningKeyJwk.use = "sig";
   jarSigningKeyJwk.alg = "ES256";
-  console.log(`[JAR] Generated ephemeral signing key: ${JAR_KEY_ID}`);
+  console.log(`[JAR] Loaded private key from ${X509_KEY_PATH}`);
+  console.log(`[JAR] Client ID will be: x509_san_dns:${jarSanDnsName}`);
+}
+
+/**
+ * Convert a PEM-encoded key to an ArrayBuffer (DER).
+ */
+function pemToArrayBuffer(pem: string): ArrayBuffer {
+  const base64 = pem
+    .replace(/-----BEGIN [A-Z ]+-----/g, "")
+    .replace(/-----END [A-Z ]+-----/g, "")
+    .replace(/\s+/g, "");
+  const binary = atob(base64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) {
+    bytes[i] = binary.charCodeAt(i);
+  }
+  return bytes.buffer;
 }
 
 // Initialize the signing key at startup
@@ -137,7 +240,14 @@ interface ClientMetadata {
   client_name?: string;
   logo_uri?: string;
   vp_formats?: {
-    mso_mdoc?: { alg: string[] };
+    mso_mdoc?: {
+      // Legacy format with string algorithm names
+      alg?: string[];
+      // COSE format with algorithm IDs (preferred for EUDI Wallet)
+      // ES256=-7, ES384=-35, ES512=-36
+      issuerauth_alg_values?: number[];
+      deviceauth_alg_values?: number[];
+    };
     "dc+sd-jwt"?: {
       "sd-jwt_alg_values"?: string[];
       "kb-jwt_alg_values"?: string[];
@@ -483,9 +593,11 @@ async function handleInitOpenID4VPTransaction(
     // Build the request_uri where wallet will fetch the full authorization request (JAR)
     const requestUri = `${PUBLIC_URL}/api/openid4vp/request/${transactionId}`;
 
-    // Client ID - using pre-registered scheme for simplicity
-    // In production, use x509_san_dns with proper certificates
-    const clientId = `pre-registered:ewqwe-age-verification`;
+    // Client ID using x509_san_dns scheme
+    // The SAN DNS name from the leaf certificate is used as the client identifier.
+    // The EUDI Wallet will verify that the JAR is signed with a certificate
+    // whose SAN DNS entry matches this client_id.
+    const clientId = `x509_san_dns:${jarSanDnsName}`;
 
     // Convert presentation_definition to DCQL query if needed, or use dcql_query directly
     let dcqlQuery: DCQLQuery;
@@ -501,21 +613,19 @@ async function handleInitOpenID4VPTransaction(
       dcqlQuery = getDefaultAgeVerificationDCQL();
     }
 
-    // Build client metadata with public key for JAR verification
-    const publicKey = await jose.exportJWK(
-      await jose.importJWK({ ...jarSigningKeyJwk, d: undefined }, "ES256"),
-    );
-    publicKey.kid = JAR_KEY_ID;
-    publicKey.use = "sig";
-    publicKey.alg = "ES256";
-
+    // Build client metadata
+    // For x509_san_dns, the wallet extracts the signing key from the x5c header,
+    // so we don't need to include jwks in client_metadata.
     const clientMetadata: ClientMetadata = body.client_metadata || {
       client_name: "EwQwE Age Verification Demo",
       logo_uri: `${PUBLIC_URL}/logo.png`,
       vp_formats: {
-        mso_mdoc: { alg: ["ES256", "ES384", "ES512"] },
+        mso_mdoc: {
+          // COSE algorithm IDs: ES256=-7, ES384=-35, ES512=-36
+          issuerauth_alg_values: [-7, -35, -36],
+          deviceauth_alg_values: [-7, -35, -36],
+        },
       },
-      jwks: { keys: [publicKey] },
     };
 
     // Store the transaction
@@ -580,22 +690,30 @@ async function handleInitOpenID4VPTransaction(
 }
 
 /**
- * Convert legacy presentation_definition to DCQL query format
+ * Convert legacy presentation_definition to DCQL query format.
+ *
+ * The frontend builds paths in bracket notation: $['namespace']['claim_name']
+ * For mso_mdoc DCQL, the path must be exactly [namespace, claim_name] (two plain strings).
  */
 function convertPresentationDefinitionToDCQL(
   // deno-lint-ignore no-explicit-any
   presentationDefinition: any,
 ): DCQLQuery {
-  // Basic conversion - extract input_descriptors and convert to DCQL credentials
   const credentials: DCQLCredentialQuery[] = [];
 
   if (presentationDefinition?.input_descriptors) {
     for (const descriptor of presentationDefinition.input_descriptors) {
+      // Extract doctype from descriptor format if available, otherwise fall back to EU PID
+      const doctype =
+        descriptor.format?.mso_mdoc?.doctype ||
+        descriptor.meta?.doctype_value ||
+        "eu.europa.ec.eudi.pid.1";
+
       const credential: DCQLCredentialQuery = {
         id: descriptor.id || crypto.randomUUID(),
-        format: "mso_mdoc", // Default to mso_mdoc for EU PID
+        format: "mso_mdoc",
         meta: {
-          doctype_value: "eu.europa.ec.eudi.pid.1", // EU PID doctype
+          doctype_value: doctype,
         },
         claims: [],
       };
@@ -604,16 +722,42 @@ function convertPresentationDefinitionToDCQL(
       if (descriptor.constraints?.fields) {
         for (const field of descriptor.constraints.fields) {
           if (field.path && field.path.length > 0) {
-            // Parse JSONPath like "$.age_over_18" to DCQL path ["eu.europa.ec.eudi.pid.1", "age_over_18"]
-            const pathStr = field.path[0];
-            const claimName = pathStr.replace(/^\$\.?/, "");
-            if (claimName) {
+            const pathStr: string = field.path[0];
+
+            // Parse the path to extract namespace and claim name.
+            // Supported formats:
+            //   $['namespace']['claim_name']  → bracket notation from frontend
+            //   $.claim_name                  → dot notation
+            //   claim_name                    → plain claim name
+            const bracketMatch = pathStr.match(
+              /^\$?\[['"]([^'"]+)['"]\]\[['"]([^'"]+)['"]\]$/,
+            );
+            if (bracketMatch) {
+              // Bracket notation: $['eu.europa.ec.av.1']['age_over_18']
+              // → namespace = "eu.europa.ec.av.1", claimName = "age_over_18"
+              const namespace = bracketMatch[1];
+              const claimName = bracketMatch[2];
               credential.claims!.push({
-                path: ["eu.europa.ec.eudi.pid.1", claimName],
+                path: [namespace, claimName],
               });
+            } else {
+              // Dot notation or plain: $.age_over_18 or age_over_18
+              const claimName = pathStr.replace(/^\$\.?/, "");
+              if (claimName) {
+                credential.claims!.push({
+                  path: [doctype, claimName],
+                });
+              }
             }
           }
         }
+      }
+
+      // If we extracted a namespace from bracket paths, update the doctype to match
+      // (the namespace in the path is the authoritative source)
+      if (credential.claims!.length > 0) {
+        const firstNamespace = credential.claims![0].path[0];
+        credential.meta = { doctype_value: firstNamespace };
       }
 
       credentials.push(credential);
@@ -699,24 +843,23 @@ async function handleGetAuthorizationRequest(
     const now = Math.floor(Date.now() / 1000);
     const exp = Math.floor(transaction.expiresAt / 1000);
 
-    // Get the public key for client_metadata.jwks
-    const publicKeyJwk = { ...jarSigningKeyJwk };
-    delete publicKeyJwk.d; // Remove private key component
-    publicKeyJwk.kid = JAR_KEY_ID;
-    publicKeyJwk.use = "sig";
-    publicKeyJwk.alg = "ES256";
-
-    // Build client_metadata with the public key
+    // Build client_metadata
+    // For x509_san_dns, the wallet extracts the public key from the x5c certificate
+    // chain in the JWT header, so we don't need to include jwks.
     const clientMetadata = {
       client_name:
         transaction.clientMetadata?.client_name ||
         "EwQwE Age Verification Demo",
       logo_uri:
         transaction.clientMetadata?.logo_uri || `${PUBLIC_URL}/logo.png`,
-      vp_formats: transaction.clientMetadata?.vp_formats || {
-        mso_mdoc: { alg: ["ES256", "ES384", "ES512"] },
+      // vp_formats_supported with COSE algorithm IDs
+      vp_formats_supported: transaction.clientMetadata?.vp_formats || {
+        mso_mdoc: {
+          // COSE algorithm IDs: ES256=-7, ES384=-35, ES512=-36
+          issuerauth_alg_values: [-7, -35, -36],
+          deviceauth_alg_values: [-7, -35, -36],
+        },
       },
-      jwks: { keys: [publicKeyJwk] },
     };
 
     // Build the JWT payload (authorization request claims)
@@ -730,7 +873,7 @@ async function handleGetAuthorizationRequest(
 
       // OpenID4VP required claims
       client_id: transaction.clientId,
-      client_id_scheme: "pre-registered",
+      client_id_scheme: "x509_san_dns",
       response_type: "vp_token",
       response_mode: "direct_post",
       response_uri: transaction.responseUri,
@@ -747,12 +890,17 @@ async function handleGetAuthorizationRequest(
     console.log(`[OpenID4VP] Building JAR with claims:`);
     console.log(JSON.stringify(jwtPayload, null, 2));
 
-    // Sign the JWT (JAR)
+    // Sign the JWT (JAR) with the x5c certificate chain in the header
+    // For x509_san_dns, the wallet verifies:
+    // 1. The JWT signature using the public key from the leaf certificate in x5c
+    // 2. That the leaf certificate's SAN DNS matches the client_id
+    // 3. The certificate chain is trusted
     const jwt = await new jose.SignJWT(jwtPayload)
       .setProtectedHeader({
         alg: "ES256",
         typ: "oauth-authz-req+jwt",
         kid: JAR_KEY_ID,
+        x5c: jarX5cChain,
       })
       .sign(jarSigningKey);
 

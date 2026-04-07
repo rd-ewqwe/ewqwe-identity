@@ -12,6 +12,25 @@ The wallet implements key standards including **OpenID4VP** (for verifiable pres
 
 The [EUDI Android Wallet source code](https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui) is open source and available on GitHub.
 
+> **Important: EUDI Wallet vs. Age Verification App**
+>
+> There are **two separate wallet applications** with different purposes:
+>
+> | Wallet | Profile | Client ID Schemes | Credentials | URL Scheme |
+> |--------|---------|-------------------|-------------|------------|
+> | **EUDI Wallet** | HAIP (High Assurance) | `x509_san_dns`, `x509_hash` | PID, mDL, various | `eudi-openid4vp://` |
+> | **Age Verification App** | Annex A | `redirect_uri` | Proof of Age only | `av://` |
+>
+> The **EUDI Wallet** (this guide) does **not** support the `redirect_uri` client ID scheme mandated by the EU Age Verification Profile (Annex A). To test Annex A-compliant age verification, you need the [Age Verification App](./av_wallet_android_studio.md) instead.
+>
+> **For testing with the EUDI Wallet**, your Relying Party must:
+>
+> 1. Use the `x509_san_dns` or `x509_hash` client ID scheme
+> 2. Sign Authorization Requests as JWTs with an `x5c` certificate chain in the header
+> 3. Add your verifier's root CA certificate to the wallet's [Reader Trust Store](#adding-trusted-verifier-certificates)
+>
+> See the [User Journey](./user-journey.md) for a detailed comparison of both profiles.
+
 ## Quick Start: Download APK Directly (No Build Required)
 
 You don't need to build the EUDI Wallet from source. The easiest way to install it is to download the pre-built APK directly from GitHub using Chrome on the Android emulator:
@@ -32,6 +51,7 @@ This guide also explains how to build the wallet from source if you need to modi
 
 ## Table of Contents
 
+- [HAIP Profile Requirements](#haip-profile-requirements)
 - [Prerequisites](#prerequisites)
 - [Installing Android Studio](#installing-android-studio)
 - [Cloning and Building the EUDI Wallet](#cloning-and-building-the-eudi-wallet)
@@ -40,8 +60,67 @@ This guide also explains how to build the wallet from source if you need to modi
 - [Enabling Developer Mode on Android](#enabling-developer-mode-on-android)
 - [Installing External APKs](#installing-external-apks)
 - [Debugging a Webapp with Android Studio](#debugging-a-webapp-with-android-studio)
+- [Viewing EUDI Wallet Logs](#viewing-eudi-wallet-logs)
+- [Adding Trusted Verifier Certificates](#adding-trusted-verifier-certificates)
 - [Troubleshooting](#troubleshooting)
 - [References](#references)
+
+## HAIP Profile Requirements
+
+The EUDI Wallet implements the **High Assurance Interoperability Profile (HAIP)**, which is more restrictive than the Annex A profile used by the Age Verification App. Your Relying Party must meet these requirements to work with the EUDI Wallet:
+
+### 1. Client ID Scheme: `x509_san_dns` or `x509_hash`
+
+The EUDI Wallet only accepts these client identifier schemes:
+
+| Scheme | Format | Trust Verification |
+|--------|--------|-------------------|
+| `x509_san_dns` | `x509_san_dns:your-domain.com` | Verifier's certificate must have a `dNSName` SAN matching the client ID |
+| `x509_hash` | `x509_hash:sha-256:base64url_encoded_hash` | Verifier's certificate must match the hash |
+
+The **`redirect_uri`** scheme from Annex A is **not supported** by the EUDI Wallet.
+
+### 2. Signed Authorization Request (JAR)
+
+All Authorization Requests must be signed JWTs. The JWT header must include:
+
+- `alg`: Signing algorithm (e.g., `ES256` for P-256 ECDSA)
+- `x5c`: X.509 certificate chain as an array of base64-encoded certificates (leaf first)
+- `kid`: Key identifier (typically the certificate's thumbprint)
+
+Example JWT header:
+
+```json
+{
+  "alg": "ES256",
+  "typ": "oauth-authz-req+jwt",
+  "x5c": [
+    "MIIBtjCCAVygAwIBAgIUEo...",  // Leaf certificate
+    "MIIBxjCCAWygAwIBAgIUAb..."   // Intermediate CA
+  ],
+  "kid": "7SJZ5d9..."
+}
+```
+
+### 3. Response Mode: `direct_post.jwt`
+
+The EUDI Wallet uses `response_mode=direct_post.jwt`, meaning the VP Token is wrapped in a signed JWT before being POSTed to the `response_uri`. Your RP must be able to unwrap and verify this JWT.
+
+### 4. Reader Trust Store
+
+The **root CA** that signed your verifier's certificate must be present in the wallet's Reader Trust Store. The EUDI Wallet comes pre-configured with EU PID issuer CAs, but does not include public CAs like Let's Encrypt by default.
+
+If your verifier uses a Let's Encrypt certificate or a custom CA, you must [rebuild the wallet with your root CA](#adding-trusted-verifier-certificates).
+
+### Why These Requirements?
+
+The HAIP profile is designed for **high-assurance credentials** like PID and mDL, where:
+
+- The verifier's identity must be cryptographically proven (via certificate chain)
+- Trust is established through a pre-defined set of trusted CAs
+- Credential data requires stronger protection (JWT-wrapped responses)
+
+For age verification scenarios where these high-assurance requirements are not necessary, use the [Age Verification App](./av_wallet_android_studio.md) with the simpler Annex A profile.
 
 ## Prerequisites
 
@@ -447,6 +526,109 @@ If your webapp runs inside an Android app's WebView:
 >
 > - [Chrome Developers - Remote Debugging on Android](https://developer.chrome.com/docs/devtools/remote-debugging/)
 > - [Android Developers - Debug Your Layout](https://developer.android.com/studio/debug/layout-inspector)
+
+## Viewing EUDI Wallet Logs
+
+When debugging OpenID4VP flows or diagnosing wallet errors, you can inspect the EUDI Wallet's runtime logs using **Logcat** — Android's standard logging system. The easiest approach is to use the **Logcat** tab built into Android Studio (located in the bottom panel): select your emulator from the device dropdown, then filter by the wallet's package name `eu.europa.ec.euidiw` to isolate its output. You can further narrow the results by searching for tags such as `OpenId4Vp`, `PresentationManager`, or `WalletCore`. Alternatively, you can use `adb` from the command line:
+
+```bash
+# Stream logs for the EUDI Wallet process only
+adb logcat --pid=$(adb shell pidof eu.europa.ec.euidiw)
+
+# Or filter by relevant tags
+adb logcat -s "OpenId4VpManager" "PresentationManager" "WalletCore"
+
+# Or grep for wallet-related keywords across all logs
+adb logcat | grep -iE "eudi|openid4vp|presentation|mdoc|wallet"
+```
+
+> **Tip**: If you installed `adb` via Android Studio, the binary is located at `~/Library/Android/sdk/platform-tools/adb`. Add it to your `PATH` for convenience.
+
+## Adding Trusted Verifier Certificates
+
+When using the `x509_san_dns` client ID scheme for OpenID4VP, the EUDI Wallet validates the verifier's x5c certificate chain against a built-in **Reader Trust Store**. By default, this trust store only contains EU PID Issuer CA certificates (e.g., `pidissuerca02_eu`, `dc4eu`, `r45_staging`). If your verifier uses a certificate signed by a different CA — such as Let's Encrypt — the wallet will reject the request with:
+
+```
+CERTIFICATE_PATH_ERROR: Trust anchor for certification path not found.
+Invalid resolution: InvalidJarJwt(cause=Untrusted x5c)
+```
+
+To fix this, you must build the wallet from source with your CA's root certificate added to the trust store.
+
+### Step 1: Identify Your Root CA
+
+Determine which root CA signed your verifier's certificate. For a Let's Encrypt certificate, inspect the chain:
+
+```bash
+openssl x509 -in your_fullchain.pem -noout -issuer
+# issuer= /C=US/O=Let's Encrypt/CN=E7
+
+# The E7 intermediate is signed by ISRG Root X1
+```
+
+Let's Encrypt uses two root CAs:
+
+- **ISRG Root X1** (RSA) — signs E-series and R-series intermediates (via cross-sign)
+- **ISRG Root X2** (ECDSA) — signs E-series intermediates natively
+
+### Step 2: Download the Root CA Certificates
+
+```bash
+# Download ISRG Root X1
+curl -s https://letsencrypt.org/certs/isrgrootx1.pem \
+  -o resources-logic/src/main/res/raw/isrg_root_x1.pem
+
+# Download ISRG Root X2
+curl -s https://letsencrypt.org/certs/isrg-root-x2.pem \
+  -o resources-logic/src/main/res/raw/isrg_root_x2.pem
+```
+
+Verify the downloaded certificates:
+
+```bash
+openssl x509 -in resources-logic/src/main/res/raw/isrg_root_x1.pem -noout -subject -issuer
+# subject= /C=US/O=Internet Security Research Group/CN=ISRG Root X1
+# issuer= /C=US/O=Internet Security Research Group/CN=ISRG Root X1
+```
+
+### Step 3: Update the Reader Trust Store Configuration
+
+Edit the `WalletCoreConfigImpl.kt` for your build flavor (e.g., `demo`):
+
+```
+core-logic/src/demo/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
+```
+
+Add your root certificates to the `configureReaderTrustStore` call:
+
+```kotlin
+configureReaderTrustStore(
+    context,
+    R.raw.pidissuerca02_cz,
+    R.raw.pidissuerca02_ee,
+    R.raw.pidissuerca02_eu,
+    R.raw.pidissuerca02_lu,
+    R.raw.pidissuerca02_nl,
+    R.raw.pidissuerca02_pt,
+    R.raw.pidissuerca02_ut,
+    R.raw.dc4eu,
+    R.raw.r45_staging,
+    R.raw.isrg_root_x1,   // Let's Encrypt RSA root
+    R.raw.isrg_root_x2    // Let's Encrypt ECDSA root
+)
+```
+
+### Step 4: Build and Install
+
+```bash
+./gradlew :app:installDemoDebug
+```
+
+This will build and install the updated wallet on your connected emulator or device. The wallet will now accept verifier certificates signed by Let's Encrypt.
+
+> **Note**: If you use a different CA (e.g., your own self-signed root CA), follow the same steps: place your root CA `.pem` file in `resources-logic/src/main/res/raw/` and add its resource reference to `configureReaderTrustStore()`. Only **root CA** certificates need to be added — intermediates are validated through the x5c chain provided in the JAR JWT header.
+
+> **Source**: [EUDI Wallet Configuration Guide](https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/blob/main/wiki/configuration.md)
 
 ## Troubleshooting
 
