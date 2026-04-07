@@ -9,6 +9,8 @@ This library is designed to:
 - **Implement the UI part of Relying Party webapps** - Handle credential requests, user interactions, and presentation flows in the browser
 - **Work in conjunction with the [EwQwE Credential Verifier](../../credential_verifier/)** - Frontend builds requests and sends VP Tokens to the backend verifier for cryptographic validation
 
+> **Technical Note**: While we call it the "Credential Verifier," the service technically verifies **Verifiable Presentations** (VP Tokens) containing credentials. We use "Credential Verifier" for clarity—non-expert users immediately understand verifying credentials, whereas "Presentation Verifier" requires explaining the technical distinction.
+
 ## What are Digital Credentials?
 
 **Digital Credentials** are verifiable, cryptographically signed attestations about a person or entity, stored in a digital wallet on a mobile device. In the European Union, the **EU Digital Identity Wallet (EUDI Wallet)** initiative enables citizens to securely store and present credentials like national IDs (Personal Identification Data - PID), mobile driver's licenses (mDL), and age verification attestations.
@@ -97,6 +99,38 @@ export default defineConfig({
     },
   },
 });
+```
+
+## Architecture
+
+This library is the **frontend component** of the EwQwE Digital Identity system. It works in conjunction with:
+
+1. **[@ewqwe/digital-identity-backend](../ewqwe-digital-identity-backend/)** - Server-side library that:
+   - Handles OpenID4VP transaction management
+   - Signs JWT Authorization Requests (JAR) for HAIP
+   - Manages session state and wallet responses
+   - Integrates with the credential verifier
+
+2. **[EwQwE Credential Verifier](../../credential_verifier/)** - Rust service that:
+   - Validates cryptographic signatures on VP Tokens
+   - Verifies issuer certificates and trust chains
+   - Returns signed attestations confirming verification
+
+**Typical integration:**
+
+```typescript
+// Frontend (this library)
+import { CREDENTIAL_TYPES, PROTOCOL_PROFILES } from "@ewqwe/digital-identity";
+const request = buildPresentationRequest("proof-of-age", ["age_over_18"]);
+
+// Send to backend endpoint
+const response = await fetch("/api/openid4vp/init", {
+  method: "POST",
+  body: JSON.stringify({ credentials: request }),
+});
+
+// Backend uses @ewqwe/digital-identity-backend
+// which delegates verification to the Credential Verifier
 ```
 
 ## Usage
@@ -252,90 +286,104 @@ interface MyOpenID4VPRequest extends OpenID4VPRequest {
 
 ## Real-World Example
 
-From the [demo webapp](../../webapp/src/credentials.ts) - **Proof of Age verification using Annex A profile**:
+From the [demo webapp](../../webapp/src/credentials.ts) - **Building credential presentation requests**:
 
 ```typescript
-import {
-  buildAgeVerificationQuery,
-  CREDENTIAL_TYPES,
-  PROTOCOL_PROFILES,
-  type OpenID4VPRequest,
-  type DCQLQuery,
+import type {
+  OpenID4VPRequest,
+  PresentationDefinition,
+  InputDescriptor,
+  ConstraintField,
 } from "@ewqwe/digital-identity";
+import { CREDENTIAL_TYPES, PROTOCOL_PROFILES } from "@ewqwe/digital-identity";
 
 /**
- * Request Proof of Age (18+) from an Age Verification App
- * Uses the EU Age Verification Profile (Annex A)
+ * Build an OpenID4VP presentation request
+ * Works for any credential type: mDL, PID, or Proof of Age
  */
-function requestProofOfAge(): OpenID4VPRequest {
-  // Get Proof of Age credential configuration
-  const config = CREDENTIAL_TYPES["proof-of-age"];
-  // config.profile = "annex-a"
-  // config.namespace = "eu.europa.ec.av.1"
-  // config.docType = "eu.europa.ec.av.1"
-  
+function buildPresentationRequest(
+  credentialType: string,
+  selectedClaims: string[],
+): OpenID4VPRequest {
+  const config = CREDENTIAL_TYPES[credentialType];
+  if (!config) {
+    throw new Error(`Unknown credential type: ${credentialType}`);
+  }
+
   const profile = PROTOCOL_PROFILES[config.profile];
-  // profile.clientIdScheme = "redirect_uri"
-  // profile.requestFormat = "plain" (no JAR signing)
-  // profile.responseMode = "direct_post"
-  
   const nonce = crypto.randomUUID();
   const state = crypto.randomUUID();
 
-  // Build DCQL query for age_over_18
-  const dcqlQuery: DCQLQuery = buildAgeVerificationQuery(18);
-  // Returns:
-  // {
-  //   credentials: [{
-  //     id: "eu_av_proof",
-  //     format: "mso_mdoc",
-  //     meta: { doctype_value: "eu.europa.ec.av.1.mdoc" },
-  //     claims: [{
-  //       path: ["age_over_18"],
-  //       namespace: "eu.europa.ec.av.1",
-  //       values: [true],
-  //       intent_to_retain: false
-  //     }]
-  //   }]
-  // }
+  // Build constraint fields from selected claims
+  const fields: ConstraintField[] = selectedClaims.map((claimId) => {
+    const claim = config.claims.find((c) => c.id === claimId);
+    return {
+      path: [`$['${config.namespace}']['${claimId}']`],
+      id: claimId,
+      name: claim?.name || claimId,
+      intent_to_retain: false,
+    };
+  });
 
-  // Build OpenID4VP request using Annex A profile
-  return {
-    client_id: `redirect_uri:${window.location.origin}/api/openid4vp/direct_post`,
-    client_id_scheme: profile.clientIdScheme, // "redirect_uri"
-    response_type: "vp_token",
-    response_mode: profile.responseMode, // "direct_post"
-    response_uri: `${window.location.origin}/api/openid4vp/direct_post`,
-    nonce,
-    state,
-    dcql_query: dcqlQuery,
-    client_metadata: {
-      client_name: "Demo Age-Restricted Service",
-      client_purpose: "Verify you are 18 or older to access this content",
-      vp_formats_supported: {
-        mso_mdoc: { alg: ["ES256", "ES384", "ES512"] },
+  const inputDescriptor: InputDescriptor = {
+    id: `${credentialType}_credential`,
+    name: config.name,
+    purpose: `We need to verify your ${config.name.toLowerCase()}`,
+    format: {
+      mso_mdoc: {
+        alg: ["ES256", "ES384", "ES512", "EdDSA"],
       },
     },
-  } as OpenID4VPRequest;
+    constraints: {
+      limit_disclosure: "required",
+      fields,
+    },
+  };
+
+  const presentationDefinition: PresentationDefinition = {
+    id: crypto.randomUUID(),
+    name: `${config.name} Verification`,
+    purpose: `Verify identity using ${config.name}`,
+    input_descriptors: [inputDescriptor],
+  };
+
+  return {
+    client_id: window.location.origin,
+    client_id_scheme: profile.clientIdScheme,
+    response_type: "vp_token",
+    response_mode: profile.responseMode,
+    nonce,
+    state,
+    presentation_definition: presentationDefinition,
+    client_metadata: {
+      client_name: "Digital Credentials Demo",
+      client_purpose: "Identity verification for demo purposes",
+      vp_formats: {
+        mso_mdoc: { alg: ["ES256", "ES384", "ES512", "EdDSA"] },
+        jwt_vp: { alg: ["ES256", "ES384", "ES512", "EdDSA"] },
+      },
+    },
+  };
 }
 
-// Usage: Generate deep link or QR code
-const request = requestProofOfAge();
-const authUrl = new URL("av://"); // Age Verification App deep link scheme
-Object.entries(request).forEach(([key, value]) => {
-  authUrl.searchParams.set(
-    key,
-    typeof value === "object" ? JSON.stringify(value) : String(value)
-  );
-});
+// Example: Request Proof of Age (18+)
+const request = buildPresentationRequest("proof-of-age", ["age_over_18"]);
+// Uses Annex A profile automatically:
+// - client_id_scheme: "redirect_uri"
+// - response_mode: "direct_post"
+// - No JAR signing required
 
-console.log(authUrl.toString());
-// av://?client_id=redirect_uri:https://example.com/api/openid4vp/direct_post
-//      &response_type=vp_token
-//      &response_mode=direct_post
-//      &dcql_query={...}
-//      &nonce=xyz&state=abc
-//      &client_metadata={...}
+// Example: Request mDL claims
+const mdlRequest = buildPresentationRequest("mdl", [
+  "family_name",
+  "given_name",
+  "birth_date",
+  "age_over_18",
+]);
+// Uses HAIP profile automatically:
+// - client_id_scheme: "x509_san_dns"
+// - response_mode: "direct_post.jwt"
+// - Requires JAR signing on backend
 ```
 
 ## API Reference
@@ -489,7 +537,7 @@ See [ISO/IEC 18013-5:2021](https://www.iso.org/standard/69084.html) for complete
 
 ## Contributing
 
-This library is part of the **EwQwE Digital Identity** suit.
+This library is part of the **EwQwE Digital Identity** system.
 
 See the [main project README](../../README.md) for architecture and contribution guidelines.
 
