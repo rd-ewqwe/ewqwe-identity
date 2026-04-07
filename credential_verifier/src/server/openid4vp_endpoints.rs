@@ -275,7 +275,6 @@ pub async fn get_jwks(
     }
 
     // Attestation verification key (from the issuer certificate)
-    #[cfg(feature = "openssl")]
     if let Some(att_jwk) = build_attestation_jwk(&server_params) {
         keys.push(att_jwk);
     }
@@ -289,7 +288,6 @@ pub async fn get_jwks(
 ///
 /// Returns `None` if the certificate cannot be loaded or parsed (non-fatal: the
 /// JWKS will simply not include the attestation key).
-#[cfg(feature = "openssl")]
 fn build_attestation_jwk(server_params: &ServerParams) -> Option<serde_json::Value> {
     use base64::Engine as _;
     use openssl::bn::BigNumContext;
