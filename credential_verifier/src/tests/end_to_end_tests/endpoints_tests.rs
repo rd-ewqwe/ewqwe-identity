@@ -3,11 +3,12 @@ use crate::{
     server::Version,
     tests::{start_default_test_server, test_client::TestClient},
 };
+use ewqwe_logging::log_init;
 use tracing::info;
 
 #[actix_web::test]
 async fn test_version_endpoint() -> AttResult<()> {
-    // log_init(Some("info,actix_server=warn,attestation_provider=debug"));
+    log_init(Some("info,actix_server=warn,attestation_provider=debug"));
     info!("Starting test server...");
     let ctx = start_default_test_server().await?;
 

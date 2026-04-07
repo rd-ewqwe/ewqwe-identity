@@ -55,9 +55,11 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
 
     // Initialize OpenID4VP service if configured
     let openid4vp_service: Arc<OpenID4VPService> = Arc::new(
-        OpenID4VPService::create(params.openid4vp_config.clone()).map_err(|e| {
-            crate::AttError::Config(format!("Failed to initialize OpenID4VP service: {e}"))
-        })?,
+        OpenID4VPService::create(params.openid4vp_config.clone())
+            .await
+            .map_err(|e| {
+                crate::AttError::Config(format!("Failed to initialize OpenID4VP service: {e}"))
+            })?,
     );
 
     // Clone attestation server params for HttpServer closure

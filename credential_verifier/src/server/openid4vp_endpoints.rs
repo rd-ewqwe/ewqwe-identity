@@ -47,7 +47,7 @@ pub async fn init_transaction(
     info!("POST /api/openid4vp/init");
     let request = body.into_inner();
 
-    match service.init_transaction(request) {
+    match service.init_transaction(request).await {
         Ok(response) => {
             info!(
                 transaction_id = %response.transaction_id,
@@ -71,7 +71,7 @@ pub async fn get_transaction_status(
 ) -> HttpResponse {
     let transaction_id = path.into_inner();
 
-    match service.get_transaction_status(&transaction_id) {
+    match service.get_transaction_status(&transaction_id).await {
         Ok(status) => HttpResponse::Ok().json(status),
         Err(e) => openid4vp_error_response(e),
     }
@@ -97,9 +97,9 @@ pub async fn handle_direct_post(
         .unwrap_or("");
 
     let result = if content_type.contains("application/x-www-form-urlencoded") {
-        handle_form_direct_post(&service, &body)
+        handle_form_direct_post(&service, &body).await
     } else {
-        handle_json_direct_post(&service, &body)
+        handle_json_direct_post(&service, &body).await
     };
 
     match result {
@@ -114,7 +114,10 @@ pub async fn handle_direct_post(
 }
 
 /// Parse and handle form-encoded direct_post data.
-fn handle_form_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<(), OpenID4VPError> {
+async fn handle_form_direct_post(
+    service: &OpenID4VPService,
+    body: &[u8],
+) -> Result<(), OpenID4VPError> {
     let params: Vec<(String, String)> = url::form_urlencoded::parse(body).into_owned().collect();
 
     let get_param = |name: &str| -> Option<String> {
@@ -128,7 +131,9 @@ fn handle_form_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<()
     if let Some(jwe_response) = get_param("response") {
         info!(jwe_len = jwe_response.len(), "JWE response received");
         let fallback_state = get_param("state");
-        service.handle_wallet_response(None, Some(&jwe_response), fallback_state.as_deref())
+        service
+            .handle_wallet_response(None, Some(&jwe_response), fallback_state.as_deref())
+            .await
     } else if let Some(error_code) = get_param("error") {
         // §8.5: Wallet sent an error response instead of a VP Token
         let error_description = get_param("error_description");
@@ -144,7 +149,7 @@ fn handle_form_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<()
             error_description,
             state,
         };
-        service.handle_wallet_error(wallet_error)
+        service.handle_wallet_error(wallet_error).await
     } else {
         // Plain form data (Annex A profile: direct_post)
         let vp_token = get_param("vp_token").unwrap_or_default();
@@ -160,12 +165,17 @@ fn handle_form_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<()
             presentation_submission,
             state,
         };
-        service.handle_wallet_response(Some(wallet_data), None, None)
+        service
+            .handle_wallet_response(Some(wallet_data), None, None)
+            .await
     }
 }
 
 /// Parse and handle JSON direct_post data.
-fn handle_json_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<(), OpenID4VPError> {
+async fn handle_json_direct_post(
+    service: &OpenID4VPService,
+    body: &[u8],
+) -> Result<(), OpenID4VPError> {
     #[derive(Deserialize)]
     struct JsonDirectPost {
         vp_token: Option<String>,
@@ -194,7 +204,7 @@ fn handle_json_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<()
             error_description: parsed.error_description,
             state,
         };
-        return service.handle_wallet_error(wallet_error);
+        return service.handle_wallet_error(wallet_error).await;
     }
 
     let state = parsed.state.unwrap_or_default();
@@ -208,7 +218,9 @@ fn handle_json_direct_post(service: &OpenID4VPService, body: &[u8]) -> Result<()
         presentation_submission: parsed.presentation_submission,
         state,
     };
-    service.handle_wallet_response(Some(wallet_data), None, None)
+    service
+        .handle_wallet_response(Some(wallet_data), None, None)
+        .await
 }
 
 /// Serve the authorization request for a transaction.
@@ -227,7 +239,7 @@ pub async fn get_authorization_request(
         "GET /api/openid4vp/request"
     );
 
-    match service.get_authorization_request(&transaction_id) {
+    match service.get_authorization_request(&transaction_id).await {
         Ok(result) => {
             info!(content_type = %result.content_type, "Returning authorization request");
             HttpResponse::Ok()

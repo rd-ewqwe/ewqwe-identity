@@ -62,7 +62,10 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
     let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
 
     let server_params = ServerParams {
-        host_name: "localhost".to_string(),
+        // Bind to 127.0.0.1 explicitly — on macOS "localhost" resolves to ::1 (IPv6)
+        // but the test client connects to 127.0.0.1 (IPv4), causing the connection to fail.
+        // The server certificate has IP:127.0.0.1 as a SAN so TLS verification still works.
+        host_name: "127.0.0.1".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         tls_params: TlsParams {
             server_certificate: certificates_dir
@@ -97,13 +100,17 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         default_username: Some("default_user".to_string()),
         openid4vp_config: OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests
+            transaction_store: Default::default(),
             haip_config: Some(HaipConfig {
                 // Use the pre-built fullchain PEM (leaf + CA) for x5c
-                x509_cert_path: format!(
-                    "{}/ewqwe.server.fullchain.pem",
-                    certificates_dir.display()
-                ),
-                x509_key_path: format!("{}/ewqwe.server.key.pem", certificates_dir.display()),
+                x509_cert_path: certificates_dir
+                    .join("ewqwe.server.fullchain.pem")
+                    .to_string_lossy()
+                    .to_string(),
+                x509_key_path: certificates_dir
+                    .join("ewqwe.server.key.pem")
+                    .to_string_lossy()
+                    .to_string(),
             }),
         },
     };
