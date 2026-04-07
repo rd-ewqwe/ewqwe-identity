@@ -45,6 +45,12 @@ let jarX5cChain: string[];
 let jarSanDnsName: string;
 const JAR_KEY_ID = "ewqwe-jar-key-1";
 
+// ECDH encryption key pair for HAIP direct_post.jwt response decryption
+// The EUDI wallet encrypts its response (JWE) using the RP's public encryption key.
+let jweDecryptionKey: CryptoKey;
+let jwePublicJwk: jose.JWK;
+const JWE_KEY_ID = "ewqwe-enc-key-1";
+
 /**
  * Parse PEM-encoded certificate chain into individual base64-encoded DER certificates
  * suitable for use in the JWT x5c header (RFC 7515 §4.1.6).
@@ -150,8 +156,30 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
   return bytes.buffer;
 }
 
-// Initialize the signing key at startup
+/**
+ * Generate an ECDH P-256 key pair for decrypting JWE responses from the EUDI wallet.
+ * When response_mode=direct_post.jwt, the wallet encrypts its response using the
+ * RP's public key from client_metadata.jwks.
+ */
+async function initializeJweEncryptionKey() {
+  const keyPair = await crypto.subtle.generateKey(
+    { name: "ECDH", namedCurve: "P-256" },
+    true, // extractable
+    ["deriveBits", "deriveKey"],
+  );
+  jweDecryptionKey = keyPair.privateKey;
+  jwePublicJwk = await jose.exportJWK(keyPair.publicKey);
+  jwePublicJwk.kid = JWE_KEY_ID;
+  jwePublicJwk.use = "enc";
+  jwePublicJwk.alg = "ECDH-ES";
+  console.log(
+    `[JWE] Generated ECDH P-256 encryption key pair (kid: ${JWE_KEY_ID})`,
+  );
+}
+
+// Initialize the signing key and encryption key at startup
 await initializeJarSigningKey();
+await initializeJweEncryptionKey();
 
 // Load CA certificate for TLS connection to Credential Verifier
 const CA_CERT_PATH =
@@ -257,6 +285,9 @@ interface ClientMetadata {
     };
   };
   jwks?: { keys: jose.JWK[] };
+  authorization_encrypted_response_alg?: string;
+  authorization_encrypted_response_enc?: string;
+  authorization_signed_response_alg?: string;
 }
 
 // Keep the old interface for backward compatibility during transition
@@ -325,7 +356,10 @@ setInterval(() => {
 }, 60000); // Check every minute
 
 interface VerifyRequest {
-  vp_token: string;
+  // vp_token can be a string (single credential) or an object/map
+  // (DCQL returns { credential_id: "<base64-cbor>" })
+  // deno-lint-ignore no-explicit-any
+  vp_token: string | Record<string, any>;
   // presentation_submission is optional for DCQL-based responses (OpenID4VP Section 8.1)
   // With DCQL, the vp_token is already structured with credential IDs as keys
   presentation_submission?: {
@@ -447,13 +481,39 @@ async function handleVerifyCredential(
   try {
     const body: VerifyRequest = await req.json();
 
-    console.log("[Backend] VP Token length:", body.vp_token?.length);
+    // vp_token may be a string or an object (DCQL map: { credential_id: "<cbor>" })
+    const vpTokenPreview =
+      typeof body.vp_token === "string"
+        ? body.vp_token.substring(0, 100) + "..."
+        : JSON.stringify(body.vp_token).substring(0, 200) + "...";
     console.log(
-      "[Backend] VP Token preview:",
-      body.vp_token?.substring(0, 100) + "...",
+      "[Backend] VP Token type:",
+      typeof body.vp_token,
+      Array.isArray(body.vp_token) ? "(array)" : "",
     );
+    console.log("[Backend] VP Token preview:", vpTokenPreview);
     console.log("[Backend] Nonce:", body.nonce);
     console.log("[Backend] State:", body.state);
+
+    // If vp_token is a DCQL map (object with credential IDs as keys),
+    // stringify it for forwarding to the credential verifier
+    if (typeof body.vp_token === "object" && body.vp_token !== null) {
+      // deno-lint-ignore no-explicit-any
+      (body as any).vp_token = JSON.stringify(body.vp_token);
+      console.log(
+        "[Backend] Converted vp_token object to JSON string for verifier",
+      );
+    }
+
+    // Clean up presentation_submission: if it's an empty string or falsy,
+    // remove it so the credential verifier doesn't choke on it.
+    // DCQL-based responses don't use presentation_submission.
+    if (!body.presentation_submission) {
+      delete body.presentation_submission;
+      console.log(
+        "[Backend] Removed empty/missing presentation_submission (DCQL mode)",
+      );
+    }
 
     // Add client_id from the request origin
     const origin = req.headers.get("origin") || "unknown";
@@ -968,21 +1028,34 @@ async function handleGetAuthorizationRequest(
 
   try {
     // Build client_metadata
-    const clientMetadata = {
+    // For HAIP (direct_post.jwt), include jwks with the encryption public key
+    // and encryption algorithm parameters so the wallet can encrypt its response.
+    // For Annex A (direct_post), no encryption is needed.
+    const baseFormats = transaction.clientMetadata?.vp_formats || {
+      mso_mdoc: {
+        // COSE algorithm IDs: ES256=-7, ES384=-35, ES512=-36
+        issuerauth_alg_values: [-7, -35, -36],
+        deviceauth_alg_values: [-7, -35, -36],
+      },
+    };
+
+    // deno-lint-ignore no-explicit-any
+    const clientMetadata: Record<string, any> = {
       client_name:
         transaction.clientMetadata?.client_name ||
         "EwQwE Age Verification Demo",
       logo_uri:
         transaction.clientMetadata?.logo_uri || `${PUBLIC_URL}/logo.png`,
       // vp_formats_supported with COSE algorithm IDs
-      vp_formats_supported: transaction.clientMetadata?.vp_formats || {
-        mso_mdoc: {
-          // COSE algorithm IDs: ES256=-7, ES384=-35, ES512=-36
-          issuerauth_alg_values: [-7, -35, -36],
-          deviceauth_alg_values: [-7, -35, -36],
-        },
-      },
+      vp_formats_supported: baseFormats,
     };
+
+    // For HAIP profile, the EUDI wallet requires jwks for response encryption
+    if (transaction.profile === "haip") {
+      clientMetadata.jwks = { keys: [jwePublicJwk] };
+      clientMetadata.authorization_encrypted_response_alg = "ECDH-ES";
+      clientMetadata.authorization_encrypted_response_enc = "A256GCM";
+    }
 
     if (transaction.profile === "haip") {
       // HAIP Profile: Return signed JAR (JWT with x5c header)
@@ -1101,21 +1174,118 @@ async function handleWalletDirectPost(
     console.log(`[OpenID4VP] Content-Type: ${contentType}`);
     console.log(`[OpenID4VP] Method: ${req.method}`);
 
-    // Parse form data or JSON (wallets may use either)
+    // Parse the wallet response
+    // Two modes:
+    //   1. direct_post.jwt (HAIP) → wallet sends `response` param containing a JWE
+    //   2. direct_post (Annex A) → wallet sends `vp_token` + `state` as plain params
     let vpToken: string;
     let presentationSubmission: string;
     let state: string;
 
     if (contentType.includes("application/x-www-form-urlencoded")) {
       const formData = await req.formData();
-      vpToken = formData.get("vp_token") as string;
-      presentationSubmission = formData.get(
-        "presentation_submission",
-      ) as string;
-      state = formData.get("state") as string;
-      console.log(
-        `[OpenID4VP] Parsed form data - state: ${state?.slice(0, 8)}...`,
-      );
+
+      // Check for JWE response (direct_post.jwt mode, used by EUDI wallet HAIP)
+      const jweResponse = formData.get("response") as string;
+      if (jweResponse) {
+        console.log(
+          `[OpenID4VP] Received JWE 'response' parameter (direct_post.jwt mode)`,
+        );
+        console.log(`[OpenID4VP] JWE length: ${jweResponse.length}`);
+        console.log(
+          `[OpenID4VP] JWE header (first 100 chars): ${jweResponse.slice(0, 100)}...`,
+        );
+
+        try {
+          // Import the ECDH private key for jose JWE decryption
+          const privateJwk = await crypto.subtle.exportKey(
+            "jwk",
+            jweDecryptionKey,
+          );
+          const privateJwkWithKid: jose.JWK = {
+            ...privateJwk,
+            kty: privateJwk.kty ?? "EC",
+            kid: JWE_KEY_ID,
+          };
+          const decryptKey = await jose.importJWK(
+            privateJwkWithKid,
+            "ECDH-ES",
+          );
+
+          // Decrypt the JWE → yields either a nested JWS or a plain JWT payload
+          const { plaintext, protectedHeader } = await jose.compactDecrypt(
+            jweResponse,
+            decryptKey,
+          );
+          console.log(`[OpenID4VP] JWE decrypted successfully`);
+          console.log(
+            `[OpenID4VP] JWE protected header:`,
+            JSON.stringify(protectedHeader),
+          );
+
+          const decryptedText = new TextDecoder().decode(plaintext);
+
+          // The decrypted content may be a nested JWS (signed JWT) or a JSON payload
+          // Try to decode as a JWT first (nested JWS inside JWE)
+          let payload: jose.JWTPayload;
+          if (decryptedText.split(".").length === 3) {
+            // Looks like a JWS - decode payload without verification
+            // (we trust the content since it was encrypted to our key)
+            const jwtParts = decryptedText.split(".");
+            const payloadJson = new TextDecoder().decode(
+              jose.base64url.decode(jwtParts[1]),
+            );
+            payload = JSON.parse(payloadJson);
+            console.log(`[OpenID4VP] Decoded nested JWS payload`);
+          } else {
+            // Plain JSON payload
+            payload = JSON.parse(decryptedText);
+            console.log(`[OpenID4VP] Decoded plain JSON payload from JWE`);
+          }
+
+          vpToken = (payload.vp_token as string) || "";
+          presentationSubmission =
+            (payload.presentation_submission as string) || "";
+          state = (payload.state as string) || "";
+
+          // Also check for the state in form data (some wallets send it outside the JWE too)
+          if (!state) {
+            state = (formData.get("state") as string) || "";
+          }
+
+          console.log(
+            `[OpenID4VP] Extracted from JWE - state: ${state?.slice(0, 8)}...`,
+          );
+        } catch (jweError) {
+          console.error(
+            `[OpenID4VP] Failed to decrypt JWE response:`,
+            jweError,
+          );
+          return new Response(
+            JSON.stringify({
+              error: "Failed to decrypt wallet response",
+              message:
+                jweError instanceof Error
+                  ? jweError.message
+                  : "JWE decryption failed",
+            }),
+            {
+              status: 400,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            },
+          );
+        }
+      } else {
+        // Plain direct_post mode (Annex A / AV wallet)
+        vpToken = formData.get("vp_token") as string;
+        presentationSubmission = formData.get(
+          "presentation_submission",
+        ) as string;
+        state = formData.get("state") as string;
+        console.log(
+          `[OpenID4VP] Parsed plain form data - state: ${state?.slice(0, 8)}...`,
+        );
+      }
     } else {
       const body = await req.json();
       vpToken = body.vp_token;
@@ -1254,7 +1424,10 @@ function simulateVerification(
 
   try {
     // Parse the VP token
-    const vpToken = JSON.parse(body.vp_token);
+    const vpToken =
+      typeof body.vp_token === "string"
+        ? JSON.parse(body.vp_token)
+        : body.vp_token;
     const claims = vpToken.claims || {};
 
     const response: VerifyResponse = {
