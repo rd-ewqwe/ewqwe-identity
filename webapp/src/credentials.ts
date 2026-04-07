@@ -328,7 +328,7 @@ function showQRCodeModal(
     };
   }
 
-  overlay.classList.remove("hidden");
+  overlay.classList.replace("hidden", "flex");
 
   // ── Wire up buttons (clone to drop stale listeners) ──────────────────────
   function rewire(id: string): HTMLElement | null {
@@ -344,7 +344,7 @@ function showQRCodeModal(
 
   const close = () => {
     abortCtrl.abort();
-    overlay.classList.add("hidden");
+    overlay.classList.replace("flex", "hidden");
   };
 
   rewire("qr-cancel-btn")?.addEventListener("click", () => {
@@ -559,7 +559,7 @@ function showSameDeviceModal(
     return;
   }
 
-  modal.classList.remove("hidden");
+  modal.classList.replace("hidden", "flex");
 
   // Replace each interactive button with a fresh clone to drop stale listeners.
   function rewire(id: string): HTMLElement | null {
@@ -603,7 +603,9 @@ function showSameDeviceModal(
  * Hide the same-device modal
  */
 function hideSameDeviceModal(): void {
-  document.getElementById("same-device-modal")?.classList.add("hidden");
+  document
+    .getElementById("same-device-modal")
+    ?.classList.replace("flex", "hidden");
 }
 
 /**

@@ -366,18 +366,14 @@ export class RelyingPartyApp {
     }
 
     // Disable button and show spinner
-    const btn = document.getElementById(
+    const btn_request = document.getElementById(
       "request-credentials-btn",
     ) as HTMLButtonElement;
-    const originalContent = btn.innerHTML;
-    btn.disabled = true;
-    btn.innerHTML = `
-      <svg class="animate-spin w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24">
-        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-      </svg>
-      Requesting...
-    `;
+    btn_request.classList.replace("flex", "hidden");
+    const btn_requesting = document.getElementById(
+      "requesting-credentials-btn",
+    ) as HTMLButtonElement;
+    btn_requesting.classList.replace("hidden", "flex");
 
     try {
       this.logger.log(
@@ -423,8 +419,8 @@ export class RelyingPartyApp {
         error instanceof Error ? error.message : "Unknown error",
       );
     } finally {
-      btn.disabled = false;
-      btn.innerHTML = originalContent;
+      btn_requesting.classList.replace("flex", "hidden");
+      btn_request.classList.replace("hidden", "flex");
     }
   }
 

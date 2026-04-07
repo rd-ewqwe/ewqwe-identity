@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ewQwe Digital Identity - Relying Party</title>
+    <title>ewQwe Digital Identity - Relying Party Demo</title>
     <link rel="stylesheet" href="/src/styles.css" />
   </head>
   <body class="brand-page min-h-screen text-white">
@@ -167,7 +167,7 @@
             </div>
           </div>
 
-          <!-- Request Button -->
+          <!-- Request Button and Spinner -->
           <div class="mb-6">
             <button
               id="request-credentials-btn"
@@ -187,6 +187,32 @@
                 />
               </svg>
               Request Credentials
+            </button>
+            <button
+              id="requesting-credentials-btn"
+              disabled="true"
+              class="hidden w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] items-center justify-center"
+            >
+              <svg
+                class="animate-spin w-5 h-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              Requesting...
             </button>
           </div>
 
@@ -380,7 +406,7 @@
     <!-- QR Code Modal (hidden until triggered by cross-device flow) -->
     <div
       id="openid4vp-qr-modal"
-      class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50"
+      class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm items-center justify-center z-50"
     >
       <div
         class="bg-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-white/20"
@@ -450,7 +476,7 @@
     <!-- Same-Device Wallet Modal (hidden until triggered by same-device flow) -->
     <div
       id="same-device-modal"
-      class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-[10000]"
+      class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm items-center justify-center z-[10000]"
     >
       <div
         class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl"
