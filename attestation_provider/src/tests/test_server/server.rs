@@ -1,16 +1,14 @@
+use crate::{
+    AttServerParams, AuthError, AuthResult, TlsParams, server::start_att_server,
+    tests::TestsContext,
+};
+use actix_web::dev::ServerHandle;
 use std::{
     path::PathBuf,
     sync::{Arc, mpsc},
     thread,
 };
-
-use actix_web::{HttpRequest, HttpResponse, dev::ServerHandle, web::Data};
 use tracing::error;
-
-use crate::{
-    AttServerParams, AuthError, AuthResult, IdpParams, JwtParams, TlsParams,
-    server::start_att_server, tests::TestsContext,
-};
 
 /// Starts the test server in a separate thread and returns a `TestsContext` containing
 /// the server handle and thread handle.
@@ -25,14 +23,14 @@ pub async fn start_test_server(server_params: AttServerParams) -> AuthResult<Tes
             .build()
             .map_err(|e| {
                 error!("Error building tokio runtime: {e:?}");
-                AuthError::AuthServer(e.to_string())
+                AuthError::Test(e.to_string())
             })?;
 
         runtime
             .block_on(start_att_server(params, Some(tx)))
             .map_err(|e| {
                 error!("Error starting the attestation provider server: {e:?}");
-                AuthError::AuthServer(e.to_string())
+                AuthError::Test(e.to_string())
             })
     });
 
@@ -56,7 +54,7 @@ pub async fn start_test_server(server_params: AttServerParams) -> AuthResult<Tes
 pub async fn start_default_test_server() -> AuthResult<TestsContext> {
     let cargo_manifest_dir = PathBuf::from(
         std::env::var("CARGO_MANIFEST_DIR")
-            .map_err(|_e| AuthError::AuthServer("Failed to find cargo manifest dir".to_owned()))?,
+            .map_err(|_e| AuthError::Test("Failed to find cargo manifest dir".to_owned()))?,
     );
     let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
 
@@ -97,28 +95,4 @@ pub async fn start_default_test_server() -> AuthResult<TestsContext> {
     };
 
     start_test_server(server_params).await
-}
-
-mod tests {
-
-    use tokio::time::sleep;
-    use tracing::info;
-
-    use crate::{
-        AuthError,
-        tests::{log_test, test_server::start_default_test_server},
-    };
-
-    #[tokio::test]
-    async fn test_start_server() -> Result<(), AuthError> {
-        log_test(Some("info,attestation_provider=debug"));
-        info!("Starting test server...");
-        let ctx = start_default_test_server().await?;
-        info!("Test server started successfully. Sleeping for 3 seconds...");
-        sleep(std::time::Duration::from_secs(3)).await;
-        info!("Stopping test server...");
-        ctx.stop_server().await?;
-        info!("Test server stopped.");
-        Ok(())
-    }
 }

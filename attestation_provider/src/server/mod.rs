@@ -1,16 +1,19 @@
+mod att_server;
+pub use att_server::start_att_server;
+
+pub(crate) mod endpoints;
+
 mod params;
 pub use params::AttServerParams;
-use serde::{Deserialize, Serialize};
 
 use crate::AuthError;
-mod endpoints;
-mod server;
-pub use server::start_att_server;
+use serde::{Deserialize, Serialize};
 
 impl actix_web::ResponseError for AuthError {
     fn error_response(&self) -> actix_web::HttpResponse {
         match self {
-            Self::AuthServer(_) => actix_web::HttpResponse::BadRequest().json(format!("{self}")),
+            Self::BadRequest(_) => actix_web::HttpResponse::BadRequest().json(format!("{self}")),
+            Self::Session(_) => actix_web::HttpResponse::Unauthorized().json(format!("{self}")),
             _ => actix_web::HttpResponse::InternalServerError().json(format!("{self}")),
         }
     }

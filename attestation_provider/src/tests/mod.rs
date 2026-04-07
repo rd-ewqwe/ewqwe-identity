@@ -1,18 +1,14 @@
-#![allow(unused_imports)]
-
-mod context;
-pub use context::TestsContext;
-
-mod logging;
-pub use logging::log_test;
-
-mod sample_server_test;
+mod mock_authenticate;
 
 mod test_client;
-pub use test_client::TestClient;
+
+mod test_logging;
+pub use test_logging::log_test;
 
 mod test_server;
-pub use test_server::{start_default_test_server, start_test_server};
+pub use test_server::{TestsContext, start_default_test_server};
+
+mod end_to_end_tests;
 
 use std::sync::Once;
 

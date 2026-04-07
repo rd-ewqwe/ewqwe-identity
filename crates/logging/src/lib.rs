@@ -29,31 +29,29 @@
 //! ```no_run
 //! use ewqwe_logging::{TracingConfig, TelemetryConfig, tracing_init};
 //!
-//! fn main() {
-//!     let config = TracingConfig {
-//!         service_name: "my-service".to_string(),
-//!         otlp: Some(TelemetryConfig {
-//!             version: Some("1.0.0".to_string()),
-//!             environment: Some("production".to_string()),
-//!             otlp_url: "http://localhost:4317".to_string(),
-//!             enable_metering: true,
-//!         }),
-//!         no_log_to_stdout: false,
-//!         #[cfg(not(target_os = "windows"))]
-//!         log_to_syslog: false,
-//!         log_to_file: Some((
-//!             std::path::PathBuf::from("./logs"),
-//!             "my-service".to_string()
-//!         )),
-//!         rust_log: Some("info".to_string()),
-//!         with_ansi_colors: true,
-//!     };
+//! let config = TracingConfig {
+//!     service_name: "my-service".to_string(),
+//!     otlp: Some(TelemetryConfig {
+//!         version: Some("1.0.0".to_string()),
+//!         environment: Some("production".to_string()),
+//!         otlp_url: "http://localhost:4317".to_string(),
+//!         enable_metering: true,
+//!     }),
+//!     no_log_to_stdout: false,
+//!     #[cfg(not(target_os = "windows"))]
+//!     log_to_syslog: false,
+//!     log_to_file: Some((
+//!         std::path::PathBuf::from("./logs"),
+//!         "my-service".to_string()
+//!     )),
+//!     rust_log: Some("info".to_string()),
+//!     with_ansi_colors: true,
+//! };
 //!
-//!     // Keep the guard alive for the application lifetime
-//!     let _guard = tracing_init(&config);
+//! // Keep the guard alive for the application lifetime
+//! let _guard = tracing_init(&config);
 //!
-//!     tracing::info!("Service initialized");
-//! }
+//! tracing::info!("Service initialized");
 //! ```
 //!
 //! ## Configuration

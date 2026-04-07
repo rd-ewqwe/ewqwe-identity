@@ -220,17 +220,10 @@ pub struct TelemetryConfig {
 ///
 /// ```no_run
 /// use ewqwe_logging::{TracingConfig, tracing_init};
-///
-/// fn main() {
-///     let config = TracingConfig::default();
+/// let config = TracingConfig::default();
 ///     
-///     // Keep the guard alive for the entire program
-///     let _guard = tracing_init(&config);
-///     
-///     // Your application code
-///     
-///     // Guard is dropped here, shutting down telemetry
-/// }
+/// // Keep the guard alive for the entire program
+/// let _guard = tracing_init(&config);
 /// ```
 #[derive(Default)]
 pub struct LoggingGuards {
@@ -312,18 +305,16 @@ impl Drop for LoggingGuards {
 /// ```no_run
 /// use ewqwe_logging::{TracingConfig, tracing_init};
 ///
-/// fn main() {
-///     let config = TracingConfig {
-///         service_name: "my-service".to_string(),
-///         rust_log: Some("info".to_string()),
-///         ..Default::default()
-///     };
-///     
-///     let _guard = tracing_init(&config);
-///     
-///     tracing::info!("Application started");
-///     // ... application code ...
-/// }
+/// let config = TracingConfig {
+///     service_name: "my-service".to_string(),
+///     rust_log: Some("info".to_string()),
+///     ..Default::default()
+/// };
+///
+/// let _guard = tracing_init(&config);
+///
+/// tracing::info!("Application started");
+/// // ... application code ...
 /// ```
 ///
 /// ## With Full OTLP Integration
@@ -331,25 +322,23 @@ impl Drop for LoggingGuards {
 /// ```no_run
 /// use ewqwe_logging::{TracingConfig, TelemetryConfig, tracing_init};
 ///
-/// fn main() {
-///     let config = TracingConfig {
-///         service_name: "api-server".to_string(),
-///         otlp: Some(TelemetryConfig {
-///             version: Some(env!("CARGO_PKG_VERSION").to_string()),
-///             environment: Some("production".to_string()),
-///             otlp_url: "http://localhost:4317".to_string(),
-///             enable_metering: true,
-///         }),
-///         rust_log: Some("info,api_server=debug".to_string()),
-///         with_ansi_colors: false,
-///         ..Default::default()
-///     };
-///     
-///     let _guard = tracing_init(&config);
-///     
-///     // Tracing and metrics are now active
-///     tracing::info!("Server starting");
-/// }
+/// let config = TracingConfig {
+///     service_name: "api-server".to_string(),
+///     otlp: Some(TelemetryConfig {
+///         version: Some(env!("CARGO_PKG_VERSION").to_string()),
+///         environment: Some("production".to_string()),
+///         otlp_url: "http://localhost:4317".to_string(),
+///         enable_metering: true,
+///     }),
+///     rust_log: Some("info,api_server=debug".to_string()),
+///     with_ansi_colors: false,
+///     ..Default::default()
+/// };
+///
+/// let _guard = tracing_init(&config);
+///
+/// // Tracing and metrics are now active
+/// tracing::info!("Server starting");
 /// ```
 ///
 /// ## Recording Metrics
@@ -357,27 +346,25 @@ impl Drop for LoggingGuards {
 /// ```no_run
 /// use ewqwe_logging::{TracingConfig, TelemetryConfig, tracing_init};
 ///
-/// fn main() {
-///     let config = TracingConfig {
-///         service_name: "metrics-example".to_string(),
-///         otlp: Some(TelemetryConfig {
-///             otlp_url: "http://localhost:4317".to_string(),
-///             enable_metering: true,
-///             ..Default::default()
-///         }),
+/// let config = TracingConfig {
+///     service_name: "metrics-example".to_string(),
+///     otlp: Some(TelemetryConfig {
+///         otlp_url: "http://localhost:4317".to_string(),
+///         enable_metering: true,
 ///         ..Default::default()
-///     };
-///     let _guard = tracing_init(&config);
+///     }),
+///     ..Default::default()
+/// };
+/// let _guard = tracing_init(&config);
 ///
-///     // Counter
-///     tracing::info!(monotonic_counter.requests = 1_u64, "Request handled");
+/// // Counter
+/// tracing::info!(monotonic_counter.requests = 1_u64, "Request handled");
 ///
-///     // Histogram
-///     tracing::info!(histogram.response_time_ms = 42, "Request completed");
+/// // Histogram
+/// tracing::info!(histogram.response_time_ms = 42, "Request completed");
 ///
-///     // Gauge
-///     tracing::info!(gauge.connections = 5_u64, "Connection pool status");
-/// }
+/// // Gauge
+/// tracing::info!(gauge.connections = 5_u64, "Connection pool status");
 /// ```
 pub fn tracing_init(tracing_config: &TracingConfig) -> LoggingGuards {
     // Set the RUST_LOG environment variable if a config value is provided

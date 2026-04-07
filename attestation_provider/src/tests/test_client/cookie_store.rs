@@ -1,9 +1,7 @@
-use std::sync::{LockResult, Mutex, MutexGuard, PoisonError};
-
-use actix_web::web::Header;
 use cookie_store::{CookieStore, RawCookie, RawCookieParseError};
-use tracing::error;
 use reqwest::header::HeaderValue;
+use std::sync::{LockResult, Mutex, MutexGuard, PoisonError};
+use tracing::error;
 
 #[derive(Debug)]
 pub struct TestCookieStore(Mutex<CookieStore>);

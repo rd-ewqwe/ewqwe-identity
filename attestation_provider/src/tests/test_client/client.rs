@@ -1,40 +1,42 @@
 //! Test HTTP Client for Integration Testing
 //!
-//! This module provides a configurable HTTPS client for testing purposes.
-//! It supports three authentication modes:
-//! - No authentication
-//! - JWT authentication (using RS256 tokens from `RsaIdp`)
-//! - Client certificate authentication (using EC P-256 certificates)
+//! This module provides an HTTPS client for testing purposes that uses a custom
+//! CA certificate for TLS verification and manages cookies through a shared cookie store.
+//!
+//! The client is configured to:
+//! - Use a custom CA certificate for server verification
+//! - Store and send cookies automatically
+//! - Make authenticated requests using session cookies
 //!
 //! # Example
 //! ```no_run
-//! use application_server::tests::{TestClient, TestClientAuth};
+//! use attestation_provider::tests::test_client::TestClient;
 //!
-//! // Create a client with no authentication
-//! let client = TestClient::new("https://localhost:8443", TestClientAuth::None)?;
+//! # async fn example() -> Result<(), attestation_provider::AuthError> {
+//! // Create a client
+//! let client = TestClient::new("https://localhost:8443")?;
 //!
-//! // Create a client with JWT authentication
-//! let client = TestClient::new(
-//!     "https://localhost:8443",
-//!     TestClientAuth::Jwt {
-//!         email: "user@example.com".to_string(),
-//!         audience: "my-api".to_string(),
-//!     },
-//! )?;
+//! // Make a GET request
+//! let response: serde_json::Value = client.get("/api/health").await?;
 //!
-//! // Create a client with client certificate authentication
-//! let client = TestClient::new(
-//!     "https://localhost:8443",
-//!     TestClientAuth::ClientCertificate { user: 1 },
-//! )?;
-//! # Ok::<(), application_server::AuthError>(())
+//! // Make a POST request
+//! let body = serde_json::json!({"key": "value"});
+//! let response: serde_json::Value = client.post("/api/submit", &body).await?;
+//!
+//! // Get a raw response
+//! let response = client.get_raw("/api/endpoint").await?;
+//!
+//! // Access cookies
+//! let cookie = client.get_cookie("https://localhost:8443")?;
+//! # Ok(())
+//! # }
 //! ```
 
-use std::{collections::HashMap, hash::Hash, sync::Arc};
+use std::sync::Arc;
 
 use crate::{AuthError, AuthResult, tests::test_client::TestCookieStore};
 use cookie_store::{Cookie, CookieDomain};
-use reqwest::{Certificate, Client, Identity, Response, header::HeaderValue};
+use reqwest::{Certificate, Client, Response};
 use serde::{Serialize, de::DeserializeOwned};
 use tracing::{debug, error, info};
 use url::Url;

@@ -9,30 +9,30 @@ fn test_auth_error_interpolation() {
 
 #[test]
 fn test_result_helper_context() {
-    let result: Result<(), AuthError> = Err(AuthError::JWT("original error".to_owned()));
+    let result: Result<(), AuthError> = Err(AuthError::Generic("original error".to_owned()));
     let err = result.context("additional context").unwrap_err();
     assert_eq!(
-        "authentication error: additional context: JWT error: original error",
+        "authentication error: additional context: error: original error",
         err.to_string()
     );
 
     let var = "test";
-    let result: Result<(), AuthError> = Err(AuthError::JWT("original error".to_owned()));
+    let result: Result<(), AuthError> = Err(AuthError::Generic("original error".to_owned()));
     let err = result.context(&format!("context with {var}")).unwrap_err();
     assert_eq!(
-        "authentication error: context with test: JWT error: original error",
+        "authentication error: context with test: error: original error",
         err.to_string()
     );
 }
 
 #[test]
 fn test_result_helper_with_context() {
-    let result: Result<(), AuthError> = Err(AuthError::JWT("original error".to_owned()));
+    let result: Result<(), AuthError> = Err(AuthError::Generic("original error".to_owned()));
     let err = result
         .with_context(|| "dynamic context".to_string())
         .unwrap_err();
     assert_eq!(
-        "authentication error: dynamic context: JWT error: original error",
+        "authentication error: dynamic context: error: original error",
         err.to_string()
     );
 }
