@@ -159,14 +159,9 @@ mod jwt_tests {
 
         let mut cred_claims = serde_json::Map::new();
         cred_claims.insert("age_over_18".to_owned(), serde_json::Value::Bool(true));
-        let claims = Attestation::new(
-            "verifier.example.com",
-            "rp.example.com",
-            "session-123",
-            true,
-        )
-        .with_doc_type("org.iso.18013.5.1.mDL")
-        .with_credential_claims(cred_claims);
+        let claims = Attestation::new("verifier.example.com", "rp.example.com", "session-123")
+            .with_doc_type("org.iso.18013.5.1.mDL")
+            .with_credential_claims(cred_claims);
 
         let token = signer.sign_to_string(&claims).expect("failed to sign");
 
@@ -186,7 +181,6 @@ mod jwt_tests {
         let decoded = jsonwebtoken::decode::<Attestation>(&token, &decoding_key, &validation)
             .expect("failed to decode token");
 
-        assert!(decoded.claims.verified);
         assert_eq!(
             decoded.claims.credential_claims.get("age_over_18"),
             Some(&serde_json::Value::Bool(true))
@@ -202,12 +196,7 @@ mod jwt_tests {
         let signer = JwtSigner::from_pem(SigningAlgorithm::RS256, TEST_RSA_PRIVATE_KEY)
             .expect("failed to create RS256 signer");
 
-        let claims = Attestation::new(
-            "verifier.example.com",
-            "rp.example.com",
-            "session-123",
-            false, // age not verified
-        );
+        let claims = Attestation::new("verifier.example.com", "rp.example.com", "session-123");
 
         let token = signer.sign_to_string(&claims).expect("failed to sign");
 
@@ -226,8 +215,9 @@ mod jwt_tests {
 
         let decoded = jsonwebtoken::decode::<Attestation>(&token, &decoding_key, &validation)
             .expect("failed to decode token");
-
-        assert!(!decoded.claims.verified);
+        assert_eq!(decoded.claims.iss, "verifier.example.com");
+        assert_eq!(decoded.claims.aud, "rp.example.com");
+        assert_eq!(decoded.claims.sub, "session-123");
     }
 
     #[test]
@@ -236,7 +226,7 @@ mod jwt_tests {
             .expect("failed to create signer")
             .with_key_id("key-2024-01");
 
-        let claims = Attestation::new("issuer", "audience", "sub", true);
+        let claims = Attestation::new("issuer", "audience", "sub");
         let token = signer.sign_to_string(&claims).expect("failed to sign");
 
         // Decode header to verify key ID

@@ -361,14 +361,9 @@ mod cose_tests {
 
         let mut cred_claims = serde_json::Map::new();
         cred_claims.insert("age_over_18".to_owned(), serde_json::Value::Bool(true));
-        let claims = Attestation::new(
-            "verifier.example.com",
-            "rp.example.com",
-            "session-123",
-            true,
-        )
-        .with_doc_type("org.iso.18013.5.1.mDL")
-        .with_credential_claims(cred_claims);
+        let claims = Attestation::new("verifier.example.com", "rp.example.com", "session-123")
+            .with_doc_type("org.iso.18013.5.1.mDL")
+            .with_credential_claims(cred_claims);
 
         let cose_bytes = signer.sign_to_bytes(&claims).expect("failed to sign");
 
@@ -382,7 +377,6 @@ mod cose_tests {
             verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigningAlgorithm::ES256)
                 .expect("failed to verify");
 
-        assert!(verified_claims.verified);
         assert_eq!(
             verified_claims.credential_claims.get("age_over_18"),
             Some(&serde_json::Value::Bool(true))
@@ -398,12 +392,7 @@ mod cose_tests {
         let signer = CoseSigner::from_pem(CoseSigningAlgorithm::RS256, TEST_RSA_PRIVATE_KEY)
             .expect("failed to create RS256 signer");
 
-        let claims = Attestation::new(
-            "verifier.example.com",
-            "rp.example.com",
-            "session-456",
-            false,
-        );
+        let claims = Attestation::new("verifier.example.com", "rp.example.com", "session-456");
 
         let cose_bytes = signer.sign_to_bytes(&claims).expect("failed to sign");
 
@@ -412,8 +401,9 @@ mod cose_tests {
         let verified_claims =
             verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigningAlgorithm::RS256)
                 .expect("failed to verify");
-
-        assert!(!verified_claims.verified);
+        assert_eq!(verified_claims.iss, "verifier.example.com");
+        assert_eq!(verified_claims.aud, "rp.example.com");
+        assert_eq!(verified_claims.sub, "session-456");
     }
 
     #[test]
@@ -422,7 +412,7 @@ mod cose_tests {
             .expect("failed to create signer")
             .with_key_id(b"key-2024-01");
 
-        let claims = Attestation::new("issuer", "audience", "sub", true);
+        let claims = Attestation::new("issuer", "audience", "sub");
         let cose_bytes = signer.sign_to_bytes(&claims).expect("failed to sign");
 
         // Parse and check the key ID is in the protected header

@@ -18,7 +18,7 @@
  * `age_over_18`, `given_name`) are accessible via index signature because they
  * are format-agnostic and defined by the credential schema, not this library.
  */
-export interface AttestationClaims {
+export interface Attestation {
   /** Issuer — credential verifier identifier. */
   iss: string;
   /** Subject — transaction / attestation event ID. */
@@ -33,8 +33,6 @@ export interface AttestationClaims {
   nbf: number;
   /** Unique attestation ID (UUID). */
   jti: string;
-  /** `true` when the entire verification pipeline succeeded. */
-  verified: boolean;
   /** Nonce from the OpenID4VP request (replay prevention). */
   nonce?: string;
   /** Credential doc_type (e.g. `"org.iso.18013.5.1.mDL"`). */
@@ -78,9 +76,9 @@ function splitJwt(jwt: string): [string, string, Uint8Array] {
   return [headerB64, payloadB64, signature];
 }
 
-function decodePayload(payloadB64: string): AttestationClaims {
+function decodePayload(payloadB64: string): Attestation {
   const json = new TextDecoder().decode(base64urlDecode(payloadB64));
-  return JSON.parse(json) as AttestationClaims;
+  return JSON.parse(json) as Attestation;
 }
 
 // ============================================================================
@@ -234,7 +232,7 @@ function readTlvBounds(bytes: Uint8Array, offset: number): [number, number] {
  *    to the first key carrying an `x5c` certificate chain).
  * 3. Imports the public key from the DER certificate in `x5c[0]`.
  * 4. Verifies the ES256 signature and checks `exp` / `nbf`.
- * 5. Returns the verified {@link AttestationClaims}.
+ * 5. Returns the verified {@link Attestation}.
  *
  * @param jwt     - Compact-serialized JWT from `VerifyResponse.attestation`.
  * @param jwksUrl - URL of the JWK Set that contains the attestation signing key,
@@ -244,7 +242,7 @@ function readTlvBounds(bytes: Uint8Array, offset: number): [number, number] {
 export async function parseAttestation(
   jwt: string,
   jwksUrl: string,
-): Promise<AttestationClaims> {
+): Promise<Attestation> {
   // Decode the JWT header to obtain the key ID
   const parts = jwt.split(".");
   if (parts.length !== 3) {
@@ -305,7 +303,7 @@ export async function parseAttestation(
 export async function verifyAttestation(
   jwt: string,
   publicKey: CryptoKey,
-): Promise<AttestationClaims> {
+): Promise<Attestation> {
   const [headerB64, payloadB64, signature] = splitJwt(jwt);
 
   const message = new TextEncoder().encode(`${headerB64}.${payloadB64}`);

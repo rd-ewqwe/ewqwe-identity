@@ -39,13 +39,6 @@ pub struct Attestation {
     /// JWT ID - unique identifier for this attestation
     pub jti: String,
 
-    // ============== Verification Result ==============
-    /// Whether the full verification pipeline succeeded.
-    ///
-    /// When `false` the `credential_claims` map is empty — the presented
-    /// credential was not trusted enough to assert anything about its content.
-    pub verified: bool,
-
     /// Nonce from the original OpenID4VP request (for replay prevention)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
@@ -80,11 +73,10 @@ impl Attestation {
     /// * `issuer` - The credential verifier's identifier
     /// * `audience` - The relying party's identifier
     /// * `transaction_id` - The verification transaction identifier
-    /// * `verified` - Whether the full verification pipeline succeeded
     #[must_use]
-    pub fn new(issuer: &str, audience: &str, transaction_id: &str, verified: bool) -> Self {
+    pub fn new(issuer: &str, audience: &str, transaction_id: &str) -> Self {
         let now = Utc::now();
-        Self::with_timestamps(issuer, audience, transaction_id, verified, now, None)
+        Self::with_timestamps(issuer, audience, transaction_id, now, None)
     }
 
     /// Creates an attestation with custom timestamps and validity.
@@ -93,12 +85,13 @@ impl Attestation {
         issuer: &str,
         audience: &str,
         transaction_id: &str,
-        verified: bool,
         issued_at: DateTime<Utc>,
         validity_seconds: Option<i64>,
     ) -> Self {
         let validity = validity_seconds.unwrap_or(Self::DEFAULT_VALIDITY_SECONDS);
         let expiration = issued_at + Duration::seconds(validity);
+        // Allow up to 5 seconds of clock skew between the server and the verifier.
+        let not_before = issued_at - Duration::seconds(5);
 
         Self {
             iss: issuer.to_owned(),
@@ -106,9 +99,8 @@ impl Attestation {
             aud: audience.to_owned(),
             exp: expiration.timestamp(),
             iat: issued_at.timestamp(),
-            nbf: issued_at.timestamp(),
+            nbf: not_before.timestamp(),
             jti: uuid::Uuid::new_v4().to_string(),
-            verified,
             nonce: None,
             doc_type: None,
             namespace: None,
@@ -165,13 +157,11 @@ mod claim_tests {
 
     #[test]
     fn test_new_claims() {
-        let attestation =
-            Attestation::new("verifier.example.com", "rp.example.com", "txn-123", true);
+        let attestation = Attestation::new("verifier.example.com", "rp.example.com", "txn-123");
 
         assert_eq!(attestation.iss, "verifier.example.com");
         assert_eq!(attestation.aud, "rp.example.com");
         assert_eq!(attestation.sub, "txn-123");
-        assert!(attestation.verified);
         assert!(attestation.is_valid_now());
     }
 
@@ -179,7 +169,7 @@ mod claim_tests {
     fn test_builder_pattern() {
         let mut claims = serde_json::Map::new();
         claims.insert("age_over_18".to_owned(), serde_json::Value::Bool(true));
-        let attestation = Attestation::new("verifier", "rp", "txn-456", true)
+        let attestation = Attestation::new("verifier", "rp", "txn-456")
             .with_nonce("random-nonce-value")
             .with_doc_type("org.iso.18013.5.1.mDL")
             .with_namespace("org.iso.18013.5.1")

@@ -23,7 +23,7 @@ fn test_signer_trait_implementations() {
     let cose_rs256 = CoseSigner::from_pem(CoseSigningAlgorithm::RS256, RSA_PRIVATE_KEY)
         .expect("failed to create COSE RS256 signer");
 
-    let claims = Attestation::new("issuer", "audience", "subject", true);
+    let claims = Attestation::new("issuer", "audience", "subject");
 
     // All signers should successfully produce output
     let signers: Vec<&dyn AttestationSigner> =
@@ -41,7 +41,7 @@ fn test_signer_trait_implementations() {
 fn test_full_claims() {
     let mut cred_claims = serde_json::Map::new();
     cred_claims.insert("age_over_21".to_owned(), serde_json::Value::Bool(true));
-    let claims = Attestation::new("verifier.ewqwe.com", "rp.example.com", "txn-abc123", true)
+    let claims = Attestation::new("verifier.ewqwe.com", "rp.example.com", "txn-abc123")
         .with_doc_type("org.iso.18013.5.1.mDL")
         .with_nonce("unique-nonce-from-request")
         .with_credential_claims(cred_claims);
@@ -72,8 +72,8 @@ fn test_full_claims() {
 /// Test that different sessions produce different JTIs.
 #[test]
 fn test_unique_jti() {
-    let claims1 = Attestation::new("issuer", "audience", "session1", true);
-    let claims2 = Attestation::new("issuer", "audience", "session2", true);
+    let claims1 = Attestation::new("issuer", "audience", "session1");
+    let claims2 = Attestation::new("issuer", "audience", "session2");
 
     assert_ne!(claims1.jti, claims2.jti);
 }

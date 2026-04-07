@@ -78,7 +78,7 @@ export {
 } from "./src/dcql.ts";
 
 // === Attestation ===
-export type { AttestationClaims } from "./src/attestation.ts";
+export type { Attestation as AttestationClaims } from "./src/attestation.ts";
 export {
   parseAttestation,
   importVerifierPublicKey,

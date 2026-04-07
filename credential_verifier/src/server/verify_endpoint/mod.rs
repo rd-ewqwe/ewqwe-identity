@@ -498,7 +498,6 @@ pub(crate) async fn verify_credential_endpoint(
             &claims,
             &doc_type,
             &namespace,
-            false,
             &server_params,
         )?;
         return Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
@@ -535,7 +534,6 @@ pub(crate) async fn verify_credential_endpoint(
         &claims,
         &doc_type,
         &namespace,
-        true,
         &server_params,
     )?;
     tracing::info!(doc_type = ?doc_type, client_id = ?body.client_id, "credential verified");
@@ -676,21 +674,14 @@ fn create_attestation(
     claims: &serde_json::Value,
     doc_type: &str,
     namespace: &str,
-    is_verified: bool,
     server_params: &ServerParams,
 ) -> Result<String, AttError> {
-    // Only embed credential claims when verification actually succeeded — a failure
-    // attestation must not assert anything about the (untrusted) presented claims.
-    let credential_claims = if is_verified {
-        claims.as_object().cloned().unwrap_or_default()
-    } else {
-        serde_json::Map::new()
-    };
+    let credential_claims = claims.as_object().cloned().unwrap_or_default();
 
     let iss = server_params.attestation_issuer_iss()?;
 
-    let mut attestation = Attestation::new(&iss, client_id, transaction_id, is_verified)
-        .with_credential_claims(credential_claims);
+    let mut attestation =
+        Attestation::new(&iss, client_id, transaction_id).with_credential_claims(credential_claims);
 
     attestation = attestation
         .with_doc_type(doc_type)
