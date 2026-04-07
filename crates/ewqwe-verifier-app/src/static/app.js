@@ -851,15 +851,17 @@ function renderJournal(entries) {
 
   tbody.innerHTML = entries
     .map((e) => {
-      const time = new Date(e.created_at || e.timestamp).toLocaleString();
-      const action = escapeHtml(e.doc_type || e.namespace || "—");
-      const verifier = escapeHtml(e.qrcode_app_user_email || e.qrcode_app_user_id || "—");
-      const detail = escapeHtml(e.client_id || e.doc_type || "—");
+      const time = new Date(e.created_at).toLocaleString();
+      const verifier = escapeHtml(e.qrcode_app_user_email || e.verifier || "—");
+      const credential = escapeHtml(e.doc_type || e.namespace || "—");
+      const statusBadge = e.success
+        ? `<span class="text-green-400 font-semibold">✓</span>`
+        : `<span class="text-red-400 font-semibold">✗</span>`;
       return `<tr>
         <td class="whitespace-nowrap">${time}</td>
-        <td class="max-w-[200px] truncate" title="${escapeHtml(action)}">${action}</td>
-        <td>${verifier}</td>
-        <td class="max-w-xs truncate" title="${escapeHtml(JSON.stringify(e))}">${detail}</td>
+        <td class="max-w-[220px] truncate" title="${escapeHtml(e.qrcode_app_user_email || e.verifier || "")}">${verifier}</td>
+        <td class="max-w-[200px] truncate" title="${escapeHtml(e.doc_type || e.namespace || "")}">${credential}</td>
+        <td class="text-center">${statusBadge}</td>
       </tr>`;
     })
     .join("");

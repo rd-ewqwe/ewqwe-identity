@@ -49,9 +49,10 @@ fn test_different_attestations_produce_different_hashes() {
 
 #[test]
 fn test_genesis_entry_hash_uses_empty_previous() {
+    let username = "alice@example.com";
     let attestation_hash = compute_attestation_signature_hash("some-attestation");
-    let h_none = compute_entry_hash(None, &attestation_hash);
-    let h_empty = compute_entry_hash(Some(""), &attestation_hash);
+    let h_none = compute_entry_hash(username, None, &attestation_hash);
+    let h_empty = compute_entry_hash(username, Some(""), &attestation_hash);
     assert_eq!(
         h_none, h_empty,
         "None previous and empty string should produce same hash"
@@ -60,26 +61,29 @@ fn test_genesis_entry_hash_uses_empty_previous() {
 
 #[test]
 fn test_entry_hash_changes_with_previous() {
+    let username = "alice@example.com";
     let att_hash = compute_attestation_signature_hash("attestation");
-    let h1 = compute_entry_hash(None, &att_hash);
-    let h2 = compute_entry_hash(Some(&h1), &att_hash);
+    let h1 = compute_entry_hash(username, None, &att_hash);
+    let h2 = compute_entry_hash(username, Some(&h1), &att_hash);
     assert_ne!(h1, h2, "Chaining should change the entry hash");
 }
 
 #[test]
 fn test_chain_hash_formula() {
-    // Verify the exact formula: SHA-256(previous_hash_bytes || att_sig_hash_bytes)
+    // Verify the exact formula: SHA-256(username_bytes || previous_hash_bytes || att_sig_hash_bytes)
     use sha2::{Digest, Sha256};
 
+    let username = "test@example.com";
     let att_hash = compute_attestation_signature_hash("test-attestation-jwt");
     let prev = "abc123";
 
     let mut hasher = Sha256::new();
+    hasher.update(username.as_bytes());
     hasher.update(prev.as_bytes());
     hasher.update(att_hash.as_bytes());
     let expected = hex::encode(hasher.finalize());
 
-    assert_eq!(compute_entry_hash(Some(prev), &att_hash), expected);
+    assert_eq!(compute_entry_hash(username, Some(prev), &att_hash), expected);
 }
 
 // ============================================================================
@@ -218,7 +222,7 @@ async fn test_stale_head_returns_error() {
 
     // Now attempt a direct append with an incorrect expected_previous_hash.
     let att_hash = compute_attestation_signature_hash("second-jwt");
-    let entry_hash = compute_entry_hash(Some("deliberate-wrong-hash"), &att_hash);
+    let entry_hash = compute_entry_hash(username, Some("deliberate-wrong-hash"), &att_hash);
     let bad_entry = JournalEntry {
         id: uuid::Uuid::new_v4().to_string(),
         username: username.to_string(),

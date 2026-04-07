@@ -345,12 +345,21 @@ pub fn compute_attestation_signature_hash(attestation_jwt: &str) -> String {
 /// Compute the chain hash for a new journal entry.
 ///
 /// ```text
-/// entry_hash = SHA-256(previous_hash_utf8_bytes || attestation_signature_hash_utf8_bytes)
+/// entry_hash = SHA-256(username_bytes || previous_hash_utf8_bytes || attestation_signature_hash_utf8_bytes)
 /// ```
 ///
+/// Including `username` scopes each entry hash to its owner, preventing a
+/// cross-user collision on the global `UNIQUE INDEX` when two genesis entries
+/// happen to have the same `attestation_signature_hash` (e.g. both QR entries).
+///
 /// When `previous_hash` is `None` (genesis entry) an empty byte string is used.
-pub fn compute_entry_hash(previous_hash: Option<&str>, attestation_signature_hash: &str) -> String {
+pub fn compute_entry_hash(
+    username: &str,
+    previous_hash: Option<&str>,
+    attestation_signature_hash: &str,
+) -> String {
     let mut hasher = Sha256::new();
+    hasher.update(username.as_bytes());
     hasher.update(previous_hash.unwrap_or("").as_bytes());
     hasher.update(attestation_signature_hash.as_bytes());
     hex::encode(hasher.finalize())
@@ -381,11 +390,23 @@ pub async fn append_verification(
 ) -> JournalResult<()> {
     for attempt in 0..MAX_CAS_RETRIES {
         let current_head = store.get_head(username).await?;
-        let attestation_signature_hash = compute_attestation_signature_hash(attestation_jwt);
-        let entry_hash = compute_entry_hash(current_head.as_deref(), &attestation_signature_hash);
+        // Generate the entry ID here so it can act as a unique salt for QR entries.
+        let entry_id = uuid::Uuid::new_v4().to_string();
+        // For QR entries the caller passes an empty JWT because no signed attestation is
+        // produced.  Synthesise a unique, user-scoped value so the stored
+        // `attestation_signature_hash` is never the constant SHA-256 of the empty string,
+        // which would collide across all users who have an empty-JWT genesis entry.
+        let att_hash_input: std::borrow::Cow<str> = if attestation_jwt.is_empty() {
+            format!("qr:{}:{}", username, entry_id).into()
+        } else {
+            attestation_jwt.into()
+        };
+        let attestation_signature_hash = compute_attestation_signature_hash(&att_hash_input);
+        let entry_hash =
+            compute_entry_hash(username, current_head.as_deref(), &attestation_signature_hash);
 
         let entry = JournalEntry {
-            id: uuid::Uuid::new_v4().to_string(),
+            id: entry_id,
             username: username.to_string(),
             previous_hash: current_head.clone(),
             entry_hash,

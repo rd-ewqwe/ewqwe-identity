@@ -828,7 +828,7 @@
                 data-i18n="verifier"
                 >Verifier</label
               >
-              <select id="journal-filter-user" class="form-input text-sm">
+              <select id="journal-filter-user" class="form-input text-sm" onchange="loadJournal(0)">
                 <option value="" data-i18n="all_verifiers">
                   All verifiers
                 </option>
@@ -842,6 +842,7 @@
                 id="journal-filter-from"
                 type="date"
                 class="form-input text-sm"
+                onchange="loadJournal(0)"
               />
             </div>
             <div class="flex-1 min-w-[140px]">
@@ -852,6 +853,7 @@
                 id="journal-filter-to"
                 type="date"
                 class="form-input text-sm"
+                onchange="loadJournal(0)"
               />
             </div>
             <div class="flex gap-2">
@@ -877,9 +879,9 @@
               <thead>
                 <tr>
                   <th data-i18n="time">Time</th>
-                  <th data-i18n="action">Action</th>
                   <th data-i18n="verifier">Verifier</th>
-                  <th data-i18n="detail">Detail</th>
+                  <th data-i18n="doc_type">Doc Type</th>
+                  <th data-i18n="status">Status</th>
                 </tr>
               </thead>
               <tbody id="journal-tbody">

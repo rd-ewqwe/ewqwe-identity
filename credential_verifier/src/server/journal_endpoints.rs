@@ -14,13 +14,56 @@
 
 use crate::{
     AttError,
-    journal::{DynJournalStore, JournalQuery, JournalStore as _},
+    journal::{DynJournalStore, JournalEntry, JournalQuery, JournalStore as _},
     tls::AuthenticatedUser,
 };
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use chrono::{DateTime, Utc};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+
+// ============================================================================
+// Slim response type for the UI (hides internal chain-hash fields)
+// ============================================================================
+
+/// A UI-facing view of a journal entry.
+///
+/// Contains only the fields relevant for human display. The raw chain-hash
+/// internals (`entry_hash`, `previous_hash`, `attestation_signature_hash`, …)
+/// are intentionally omitted to avoid leaking audit-internals to the browser.
+#[derive(Debug, Serialize)]
+pub struct JournalEntryView {
+    pub created_at: DateTime<Utc>,
+    /// Relying-party `client_id` that initiated the verification.
+    pub verifier: Option<String>,
+    pub doc_type: Option<String>,
+    pub namespace: Option<String>,
+    /// Email of the QR App user who was verified (when triggered via the embedded app).
+    pub qrcode_app_user_email: Option<String>,
+    /// Whether the age verification was successful.
+    pub success: bool,
+    /// Full claim details from the attestation (safe to display).
+    pub verification_summary: serde_json::Value,
+}
+
+impl From<JournalEntry> for JournalEntryView {
+    fn from(e: JournalEntry) -> Self {
+        let success = e
+            .verification_summary
+            .get("success")
+            .and_then(|v| v.as_bool())
+            .unwrap_or(false);
+        JournalEntryView {
+            created_at: e.created_at,
+            verifier: e.client_id,
+            doc_type: e.doc_type,
+            namespace: e.namespace,
+            qrcode_app_user_email: e.qrcode_app_user_email,
+            success,
+            verification_summary: e.verification_summary,
+        }
+    }
+}
 
 // ============================================================================
 // Query parameter structs
@@ -99,7 +142,7 @@ pub async fn list_journal_entries(
 
     let limit = query.limit.unwrap_or(20).min(1000);
 
-    let entries = journal
+    let entries: Vec<JournalEntryView> = journal
         .list_entries(&JournalQuery {
             username,
             limit: Some(limit),
@@ -107,7 +150,10 @@ pub async fn list_journal_entries(
             after: query.after,
         })
         .await
-        .map_err(AttError::from)?;
+        .map_err(AttError::from)?
+        .into_iter()
+        .map(JournalEntryView::from)
+        .collect();
 
     Ok(HttpResponse::Ok().json(entries))
 }

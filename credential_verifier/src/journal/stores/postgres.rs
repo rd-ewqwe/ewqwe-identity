@@ -392,7 +392,8 @@ impl JournalStore for PostgresJournalStore {
                 });
             }
 
-            let recomputed = compute_entry_hash(expected_previous.as_deref(), att_sig_hash);
+            let recomputed =
+                compute_entry_hash(username, expected_previous.as_deref(), att_sig_hash);
             if &recomputed != stored_hash {
                 return Ok(ChainVerificationResult {
                     username: username.to_string(),

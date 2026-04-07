@@ -3,7 +3,8 @@ use crate::{
     journal::{DynJournalStore, JournalStore},
     parameters::ServerParams,
     server::{
-        EnsureAuth, journal_endpoints, openid4vp_endpoints, qr_verifier::QrCredentialVerifierImpl,
+        EnsureAuth, journal_endpoints::{self, JournalEntryView}, openid4vp_endpoints,
+        qr_verifier::QrCredentialVerifierImpl,
         verify_endpoint::{self, verify_credential_endpoint, version_endpoint},
     },
     tls::SslAuth,
@@ -51,8 +52,8 @@ impl VerifierJournalProvider for JournalProviderForVerifier {
             .await
             .map(|entries| {
                 entries
-                    .iter()
-                    .map(|e| serde_json::to_value(e).unwrap_or_default())
+                    .into_iter()
+                    .map(|e| serde_json::to_value(JournalEntryView::from(e)).unwrap_or_default())
                     .collect()
             })
             .map_err(|e| e.to_string())
