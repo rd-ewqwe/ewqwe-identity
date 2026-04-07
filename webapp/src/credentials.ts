@@ -318,7 +318,7 @@ function showQRCodeModal(
   // Reset to spinner state first
   spinner?.classList.remove("hidden");
   qrImg?.classList.add("hidden");
-  qrError?.classList.add("hidden");
+  qrError?.classList.replace("flex", "hidden");
 
   if (qrCodeDataUrl && qrImg) {
     qrImg.src = qrCodeDataUrl;
@@ -329,7 +329,7 @@ function showQRCodeModal(
     const hint = document.getElementById("qr-code-error-hint");
     if (hint) hint.textContent = authorizationRequestUri.slice(0, 80);
     spinner?.classList.add("hidden");
-    qrError?.classList.remove("hidden");
+    qrError?.classList.replace("hidden", "flex");
     logger.error("No QR code data URL received from server");
   }
 
