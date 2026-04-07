@@ -2,6 +2,7 @@ use crate::{
     AttError, AttResult, ServerParams, TlsParams, server::start_server, tests::TestsContext,
 };
 use actix_web::dev::ServerHandle;
+use ewqwe_logging::TracingConfig;
 use ewqwe_openid4vp::{HaipConfig, OpenID4VPServiceConfig};
 use std::{
     path::PathBuf,
@@ -67,6 +68,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         // The server certificate has IP:127.0.0.1 as a SAN so TLS verification still works.
         host_name: "127.0.0.1".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
+        rust_log: None,
         tls_params: TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")
@@ -121,6 +123,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         journal_config: Default::default(),
         disable_authentication: false,
         disabled_authentication_user: None,
+        tracing_config: TracingConfig::default(),
     };
 
     start_test_server(server_params).await
@@ -131,14 +134,14 @@ pub fn make_test_server_params(
     disabled_authentication_user: impl Into<String>,
 ) -> ServerParams {
     let cargo_manifest_dir = PathBuf::from(
-        std::env::var("CARGO_MANIFEST_DIR")
-            .expect("Failed to find cargo manifest dir"),
+        std::env::var("CARGO_MANIFEST_DIR").expect("Failed to find cargo manifest dir"),
     );
     let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
 
     ServerParams {
         host_name: "127.0.0.1".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
+        rust_log: None,
         tls_params: TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")
@@ -186,6 +189,7 @@ pub fn make_test_server_params(
         journal_config: Default::default(),
         disable_authentication,
         disabled_authentication_user: Some(disabled_authentication_user.into()),
+        tracing_config: TracingConfig::default(),
     }
 }
 
@@ -202,6 +206,7 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
     let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
 
     let server_params = crate::ServerParams {
+        rust_log: None,
         host_name: "127.0.0.1".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         tls_params: crate::TlsParams {
@@ -254,6 +259,7 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
         },
         disable_authentication: false,
         disabled_authentication_user: None,
+        tracing_config: TracingConfig::default(),
     };
 
     start_test_server(server_params).await

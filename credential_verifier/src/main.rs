@@ -14,17 +14,13 @@
 //! ```
 
 use credential_verifier::{ServerParams, start_server};
-use ewqwe_logging::{TracingConfig, tracing_init};
+use ewqwe_logging::tracing_init;
 use std::{path::PathBuf, sync::Arc};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    // Initialize logging
-    let config = TracingConfig::default();
-    let _guard = tracing_init(&config);
-
-    tracing::info!("Starting ewQwe Credential Verifier");
-
+    // Initialize logging from server parameters (overrides RUST_LOG with rust_log).
+    // This relies on tracingConfig in ServerParams.
     let (server_params, config_path) = if let Some(config_path) = std::env::args_os().nth(1) {
         let config_path = PathBuf::from(config_path);
         let server_params = ServerParams::load_from_file(&config_path)
@@ -34,6 +30,11 @@ async fn main() -> std::io::Result<()> {
         ServerParams::load_from_default_locations()
             .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()))?
     };
+
+    let tracing_config = server_params.tracing_config();
+    let _guard = tracing_init(&tracing_config);
+
+    tracing::info!("Starting ewQwe Credential Verifier");
 
     tracing::info!("Loaded configuration from {}", config_path.display());
     tracing::info!(

@@ -86,7 +86,10 @@ static TRACING_SET: AtomicBool = AtomicBool::new(false);
 ///     with_ansi_colors: false,
 /// };
 /// ```
-#[derive(Debug, Default, Clone)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
 pub struct TracingConfig {
     /// Name of the service using this configuration.
     ///
@@ -162,7 +165,8 @@ pub struct TracingConfig {
 ///     enable_metering: true,
 /// };
 /// ```
-#[derive(Debug, Default, Clone)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize)]
+#[serde(default)]
 pub struct TelemetryConfig {
     /// Service version for resource attributes.
     ///
@@ -632,4 +636,56 @@ fn tracing_init_(config: &TracingConfig) -> Result<LoggingGuards, LoggerError> {
         .try_init()?;
 
     Ok(otel_guard)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json;
+    use std::path::PathBuf;
+
+    #[test]
+    fn telemetry_config_serde_roundtrip() {
+        let cfg = TelemetryConfig {
+            version: Some("1.2.3".to_string()),
+            environment: Some("testing".to_string()),
+            otlp_url: "http://localhost:4317".to_string(),
+            enable_metering: true,
+        };
+
+        let json = serde_json::to_string(&cfg).expect("serialize telemetry config");
+        let cfg2: TelemetryConfig =
+            serde_json::from_str(&json).expect("deserialize telemetry config");
+
+        assert_eq!(cfg.version, cfg2.version);
+        assert_eq!(cfg.environment, cfg2.environment);
+        assert_eq!(cfg.otlp_url, cfg2.otlp_url);
+        assert_eq!(cfg.enable_metering, cfg2.enable_metering);
+    }
+
+    #[test]
+    fn tracing_config_serde_with_otlp() {
+        let cfg = TracingConfig {
+            service_name: "my-app".to_string(),
+            otlp: Some(TelemetryConfig {
+                version: Some("1.2.3".to_string()),
+                environment: Some("dev".to_string()),
+                otlp_url: "http://localhost:4317".to_string(),
+                enable_metering: false,
+            }),
+            no_log_to_stdout: true,
+            #[cfg(not(target_os = "windows"))]
+            log_to_syslog: false,
+            log_to_file: Some((PathBuf::from("./logs"), "app".to_string())),
+            rust_log: Some("info".to_string()),
+            with_ansi_colors: false,
+        };
+
+        let toml = toml::to_string(&cfg).expect("serialize tracing config to toml");
+        let cfg2: TracingConfig =
+            toml::from_str(&toml).expect("deserialize tracing config from toml");
+
+        assert_eq!(cfg.service_name, cfg2.service_name);
+        assert!(cfg2.otlp.is_some());
+    }
 }

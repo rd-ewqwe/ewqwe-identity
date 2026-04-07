@@ -18,6 +18,16 @@ pub struct ServerParams {
     pub tls_params: TlsParams,
     pub default_username: Option<String>,
     pub openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig,
+
+    /// Logging/tracing configuration.
+    #[serde(default)]
+    pub tracing_config: ewqwe_logging::TracingConfig,
+
+    /// Legacy/shortcut `rust_log` string for compatibility with existing config format.
+    /// If both `rust_log` and `tracing_config.rust_log` are provided, the nested configuration wins.
+    #[serde(default)]
+    pub rust_log: Option<String>,
+
     /// If true, skip requiring client certificate authentication and use a default
     /// authenticated user for all requests.
     #[serde(default)]
@@ -96,6 +106,25 @@ impl ServerParams {
                 path.display()
             ))
         })?;
+
+        // Allow top-level rust_log to shadow tracing_config.rust_log for backward compatibility.
+        if params.tracing_config.rust_log.is_none()
+            && let Some(rust_log) = params.rust_log.take()
+        {
+            params.tracing_config.rust_log = Some(rust_log);
+        }
+
+        // Ensure optional tracing config gets defaults.
+        // Do not overwrite explicit values set by config, especially rust_log.
+        if params.tracing_config.service_name.is_empty() {
+            params.tracing_config.service_name = "credential_verifier".to_string();
+        }
+
+        // Keep defaults for other optionals only if not set.
+        let default_tracing = ewqwe_logging::TracingConfig::default();
+        if params.tracing_config.otlp.is_none() {
+            params.tracing_config.otlp = default_tracing.otlp;
+        }
 
         let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
         params.resolve_relative_paths(base_dir);
@@ -218,6 +247,12 @@ impl ServerParams {
             .unwrap_or(self.tls_params.server_certificate.as_str())
     }
 
+    /// Construct tracing configuration to use for initialization.
+    /// Returns a copy of the configured tracing settings.
+    pub fn tracing_config(&self) -> ewqwe_logging::TracingConfig {
+        self.tracing_config.clone()
+    }
+
     /// Issuer identifier for the `iss` claim — the CN from the attestation signing certificate.
     ///
     /// Reads `attestation_issuer_certificate` (or falls back to
@@ -286,6 +321,7 @@ fn resolve_path(base_dir: &Path, value: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::ServerParams;
+    use ewqwe_logging::TracingConfig;
     use std::{fs, path::PathBuf};
     use uuid::Uuid;
 
@@ -354,12 +390,107 @@ x509_key_path = "certs/server.key.pem"
     }
 
     #[test]
+    fn loads_toml_with_tracing_config() {
+        let temp_dir =
+            std::env::temp_dir().join(format!("credential-server-config-test-{}", Uuid::new_v4()));
+        fs::create_dir_all(&temp_dir).expect("failed to create temp dir");
+
+        let config_path = temp_dir.join("credential-server.toml");
+        fs::write(
+            &config_path,
+            r#"
+host_name = "127.0.0.1"
+host_port = 9443
+
+[tls_params]
+server_private_key = "certs/server.key.pem"
+server_certificate = "certs/server.cert.pem"
+server_ca_chain = "certs/ca.chain.pem"
+
+[openid4vp_config]
+transaction_ttl_secs = 300
+
+[tracing_config]
+rust_log = "info,actix_server=warn"
+"#,
+        )
+        .expect("failed to write config file");
+
+        let params = ServerParams::load_from_file(&config_path).expect("failed to load config");
+        assert_eq!(
+            params.tracing_config().rust_log.as_deref(),
+            Some("info,actix_server=warn")
+        );
+
+        fs::remove_dir_all(&temp_dir).expect("failed to remove temp config directory");
+    }
+
+    #[test]
+    fn loads_credential_server_toml_from_project() {
+        let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
+        let config_path = manifest_dir.join("credential-server.toml");
+        let params = ServerParams::load_from_file(config_path)
+            .expect("failed to load credential-server.toml");
+
+        assert_eq!(
+            params.tracing_config().rust_log.as_deref(),
+            Some("info,credential_verifier=debug,ewqwe_openid4vp=debug")
+        );
+        assert!(params.disable_authentication);
+        assert_eq!(params.disabled_authentication_user(), "local_tests_user");
+
+        assert_eq!(
+            PathBuf::from(&params.tls_params.server_private_key),
+            manifest_dir.join("src/tests/certificates/ec/ewqwe.server.key.pem")
+        );
+        assert_eq!(
+            PathBuf::from(&params.tls_params.server_certificate),
+            manifest_dir.join("src/tests/certificates/ec/ewqwe.server.cert.pem")
+        );
+        assert_eq!(
+            PathBuf::from(&params.tls_params.server_ca_chain),
+            manifest_dir.join("src/tests/certificates/ec/ewqwe.chain.pem")
+        );
+    }
+
+    #[test]
+    fn loads_toml_without_tracing_config_uses_default() {
+        let temp_dir =
+            std::env::temp_dir().join(format!("credential-server-config-test-{}", Uuid::new_v4()));
+        fs::create_dir_all(&temp_dir).expect("failed to create temp dir");
+
+        let config_path = temp_dir.join("credential-server.toml");
+        fs::write(
+            &config_path,
+            r#"
+host_name = "127.0.0.1"
+host_port = 9443
+
+[tls_params]
+server_private_key = "certs/server.key.pem"
+server_certificate = "certs/server.cert.pem"
+server_ca_chain = "certs/ca.chain.pem"
+
+[openid4vp_config]
+transaction_ttl_secs = 300
+"#,
+        )
+        .expect("failed to write config file");
+
+        let params = ServerParams::load_from_file(&config_path).expect("failed to load config");
+        assert!(params.tracing_config().rust_log.is_none());
+
+        fs::remove_dir_all(&temp_dir).expect("failed to remove temp config directory");
+    }
+
+    #[test]
     fn server_params_enable_disable_authentication_defaults() {
         let params = ServerParams {
             host_name: "127.0.0.1".to_string(),
             host_port: 9443,
             tls_params: crate::parameters::TlsParams::default(),
             default_username: None,
+            rust_log: None,
             openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig {
                 transaction_ttl_secs: None,
                 haip_config: None,
@@ -371,9 +502,42 @@ x509_key_path = "certs/server.key.pem"
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
+            tracing_config: TracingConfig::default(),
         };
 
         assert!(!params.disable_authentication);
         assert_eq!(params.disabled_authentication_user(), "test");
+        assert!(params.tracing_config.rust_log.is_none());
+    }
+
+    #[test]
+    fn server_params_tracing_config_override() {
+        let params = ServerParams {
+            host_name: "127.0.0.1".to_string(),
+            host_port: 9443,
+            tls_params: crate::parameters::TlsParams::default(),
+            default_username: None,
+            rust_log: None,
+            openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig {
+                transaction_ttl_secs: None,
+                haip_config: None,
+                transaction_store: Default::default(),
+            },
+            tracing_config: ewqwe_logging::TracingConfig {
+                rust_log: Some("info,actix_server=warn".to_string()),
+                ..Default::default()
+            },
+            disable_authentication: false,
+            disabled_authentication_user: None,
+            trusted_issuer_certs_dir: None,
+            attestation_issuer_certificate: None,
+            attestation_issuer_key: None,
+            journal_config: crate::journal::JournalConfig::default(),
+        };
+
+        assert_eq!(
+            params.tracing_config().rust_log.as_deref(),
+            Some("info,actix_server=warn")
+        );
     }
 }

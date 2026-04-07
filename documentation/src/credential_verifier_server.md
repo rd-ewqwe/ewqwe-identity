@@ -163,6 +163,10 @@ url     = "redis://127.0.0.1:6379"
 x509_cert_path = "certs/server.fullchain.pem"
 x509_key_path  = "certs/server.key.pem"
 
+# Optional logging configuration
+# If set, rust_log overrides the RUST_LOG environment variable.
+rust_log = "info,actix_server=warn,attestation_provider=debug"
+
 # Optional authentication bypass for local development and tests
 # When set, client certificate verification is not required and all requests are
 # treated as coming from the configured user.

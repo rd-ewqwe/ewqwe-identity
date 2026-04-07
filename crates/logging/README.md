@@ -109,6 +109,31 @@ Configuration for OpenTelemetry Protocol (OTLP) integration.
 | `otlp_url` | `String` | OTLP collector endpoint (e.g., "<http://localhost:4317>") |
 | `enable_metering` | `bool` | Enable metrics collection and export |
 
+### Serde / TOML support
+
+`TelemetryConfig` and `TracingConfig` now implement `serde::Serialize` and `serde::Deserialize`, so configuration can be roundtripped via JSON or TOML.
+
+```toml
+service_name = "my-service"
+no_log_to_stdout = false
+rust_log = "info"
+with_ansi_colors = true
+
+[otlp]
+version = "1.0.0"
+environment = "production"
+otlp_url = "http://localhost:4317"
+enable_metering = true
+```
+
+```rust
+use ewqwe_logging::TracingConfig;
+use toml;
+
+let cfg: TracingConfig = toml::from_str(toml_str)?;
+let serialized = toml::to_string(&cfg)?;
+```
+
 ## Usage Examples
 
 ### File Logging with Daily Rotation
