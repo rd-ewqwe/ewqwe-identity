@@ -39,17 +39,50 @@ export const EU_PID_DOCTYPE = "eu.europa.ec.eudi.pid.1";
 // DCQL (Digital Credentials Query Language) — OpenID4VP 1.0 §6
 // ============================================================================
 
+/**
+ * A single entry in `trusted_authorities` — identifies an authority or trust framework
+ * that certifies credential issuers the Verifier will accept.
+ *
+ * A Credential matches if it satisfies **at least one** entry in the array.
+ *
+ * Type identifiers defined by OpenID4VP 1.0 §6.1.1:
+ * - `"aki"` — X.509 Authority Key Identifier, base64url-encoded (§6.1.1.1)
+ * - `"etsi_tl"` — ETSI Trusted List identifier (§6.1.1.2)
+ * - `"openid_federation"` — OpenID Federation Entity Identifier (§6.1.1.3)
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6.1.1
+ */
+export interface TrustedAuthoritiesQuery {
+  /** Type identifier for the trust framework. */
+  type: "aki" | "etsi_tl" | "openid_federation" | string;
+  /** Non-empty array of values interpreted according to `type`. */
+  values: string[];
+}
+
 /** A single claim constraint in a DCQL credential query. */
 export interface DCQLClaimsQuery {
   /** Claim identifier (for referencing in claim_sets). */
   id?: string;
-  /** Path to the claim — e.g. ["age_over_18"] for mso_mdoc. */
-  path: string[];
-  /** Namespace for mso_mdoc claims (e.g. "eu.europa.ec.av.1"). */
-  namespace?: string;
-  /** Expected values — if provided, claim must match one of these. */
-  values?: unknown[];
-  /** Whether to retain this claim after verification. */
+  /**
+   * Claims Path Pointer (OpenID4VP 1.0 §7).
+   *
+   * A **non-empty** array whose elements must be:
+   * - `string` — navigate into the named key of an object (§7.1)
+   * - `number` (non-negative integer) — select the element at this index in an array (§7.1)
+   * - `null` — select **all** elements of the currently selected array(s) (§7.1)
+   *
+   * For `mso_mdoc` credentials (§7.2) exactly two strings are required:
+   * `[namespace, dataElementIdentifier]`.
+   *
+   * Examples from §7.3:
+   * - `["address", "street_address"]` — nested object key
+   * - `["degrees", null, "type"]` — all `type` values across the `degrees` array
+   * - `["nationalities", 1]` — second element of the `nationalities` array
+   */
+  path: (string | number | null)[];
+  /** Expected values — if provided, claim must match one of these (§6.3). */
+  values?: (string | number | boolean)[];
+  /** Whether to retain this claim after verification (mso_mdoc only, §B.2.4). */
   intent_to_retain?: boolean;
 }
 
@@ -100,7 +133,23 @@ export interface DCQLCredentialQuery {
   claim_sets?: string[][];
   /** Allow the wallet to return multiple matching credentials. */
   multiple?: boolean;
-  /** Require cryptographic holder binding in the presentation. */
+  /**
+   * Expected authorities or trust frameworks that certify issuers the Verifier will accept.
+   *
+   * OPTIONAL non-empty array. Every Credential returned by the Wallet SHOULD match at least
+   * one of the conditions. The Verifier still bears its own responsibility to verify issuer
+   * trust; this field is a hint to the Wallet to avoid sending credentials likely to be
+   * rejected. See §6.1.1 for matching semantics per type.
+   *
+   * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6.1.1
+   */
+  trusted_authorities?: TrustedAuthoritiesQuery[];
+  /**
+   * Require cryptographic holder binding in the presentation.
+   *
+   * OPTIONAL. Default is `true` per §6.1 — a Verifiable Presentation with Cryptographic
+   * Holder Binding is required unless explicitly set to `false`.
+   */
   require_cryptographic_holder_binding?: boolean;
 }
 
@@ -144,8 +193,7 @@ export function buildAgeVerificationQuery(
         meta: { doctype_value: EU_AV_DOCTYPE },
         claims: [
           {
-            path: [claimName],
-            namespace: EU_AV_NAMESPACE,
+            path: [EU_AV_NAMESPACE, claimName],
             values: [true],
             intent_to_retain: false,
           },
@@ -175,8 +223,7 @@ export function buildAgeVerificationQueryWithFallback(
         meta: { doctype_value: EU_AV_DOCTYPE },
         claims: [
           {
-            path: [claimName],
-            namespace: EU_AV_NAMESPACE,
+            path: [EU_AV_NAMESPACE, claimName],
             values: [true],
             intent_to_retain: false,
           },
@@ -188,8 +235,7 @@ export function buildAgeVerificationQueryWithFallback(
         meta: { doctype_value: ISO_MDL_DOCTYPE },
         claims: [
           {
-            path: [claimName],
-            namespace: ISO_MDL_NAMESPACE,
+            path: [ISO_MDL_NAMESPACE, claimName],
             values: [true],
             intent_to_retain: false,
           },
@@ -257,7 +303,7 @@ export function buildInitTransactionRequest(
         format: "mso_mdoc",
         meta: { doctype_value: config.docType },
         claims,
-      },
+      } as DCQLCredentialQuery,
     ],
   };
 
@@ -314,6 +360,133 @@ export function generateNonce(): string {
 }
 
 /**
+ * Validate the structural rules of a DCQL query per OpenID4VP 1.0 §6 and §6.4.1.
+ *
+ * Rules enforced:
+ *
+ * **§6 — Top level**
+ * - `credentials` MUST be non-empty.
+ * - Credential query `id` values MUST be unique across `credentials`.
+ * - `credential_sets`, if present, MUST be non-empty.
+ * - Each `credential_sets` option element MUST reference a valid credential query `id`.
+ *
+ * **§6.1 — Credential Query**
+ * - Each credential `id` MUST be a non-empty string of alphanumeric, `-`, or `_`.
+ * - `trusted_authorities`, if present, MUST be non-empty.
+ *
+ * **§6.3 & §6.4.1 — Claims / claim_sets**
+ * - `claim_sets` MUST NOT be present when `claims` is absent.
+ * - Claim `id` values MUST be unique within a single `claims` array.
+ * - When `claim_sets` is present, every claim MUST have a non-empty `id`.
+ * - Every identifier referenced in `claim_sets` MUST appear in `claims`.
+ *
+ * @param query - The DCQL query to validate.
+ * @returns An object `{ valid: true }` or `{ valid: false, error: string }`.
+ */
+export function isValidDCQLQuery(
+  query: DCQLQuery,
+): { valid: true } | { valid: false; error: string } {
+  const err = (msg: string) => ({ valid: false as const, error: msg });
+  const idPattern = /^[A-Za-z0-9_-]+$/;
+
+  // §6: credentials MUST be non-empty.
+  if (!query.credentials || query.credentials.length === 0) {
+    return err("DCQL query 'credentials' must be non-empty");
+  }
+
+  const seenCredIds = new Set<string>();
+  for (const cred of query.credentials) {
+    // §6.1: id must be non-empty alphanumeric/underscore/hyphen.
+    if (!cred.id || !idPattern.test(cred.id)) {
+      return err(
+        `Credential query id ${JSON.stringify(cred.id)} must be a non-empty alphanumeric/underscore/hyphen string`,
+      );
+    }
+    if (seenCredIds.has(cred.id)) {
+      return err(`Duplicate credential query id ${JSON.stringify(cred.id)}`);
+    }
+    seenCredIds.add(cred.id);
+
+    // §6.1.1: trusted_authorities, if present, must be non-empty.
+    if (cred.trusted_authorities !== undefined) {
+      if (cred.trusted_authorities.length === 0) {
+        return err(
+          `Credential query ${JSON.stringify(cred.id)}: 'trusted_authorities' must be non-empty when present`,
+        );
+      }
+    }
+
+    // §6.4.1: claim_sets MUST NOT be present if claims is absent.
+    if (cred.claim_sets !== undefined && cred.claims === undefined) {
+      return err(
+        `Credential query ${JSON.stringify(cred.id)}: 'claim_sets' must not be present when 'claims' is absent`,
+      );
+    }
+
+    if (cred.claims !== undefined) {
+      // Claim IDs must be unique within the claims array.
+      const seenClaimIds = new Set<string>();
+      for (const claim of cred.claims) {
+        if (claim.id !== undefined) {
+          if (!claim.id || !idPattern.test(claim.id)) {
+            return err(
+              `Credential query ${JSON.stringify(cred.id)}: claim id ${JSON.stringify(claim.id)} must be a non-empty alphanumeric/underscore/hyphen string`,
+            );
+          }
+          if (seenClaimIds.has(claim.id)) {
+            return err(
+              `Credential query ${JSON.stringify(cred.id)}: duplicate claim id ${JSON.stringify(claim.id)}`,
+            );
+          }
+          seenClaimIds.add(claim.id);
+        }
+      }
+
+      if (cred.claim_sets !== undefined) {
+        // When claim_sets is present, every claim MUST have an id.
+        for (const claim of cred.claims) {
+          if (claim.id === undefined) {
+            return err(
+              `Credential query ${JSON.stringify(cred.id)}: all claims must have an 'id' when 'claim_sets' is present`,
+            );
+          }
+        }
+        // Every id in claim_sets must reference a known claim id.
+        for (const set of cred.claim_sets) {
+          for (const refId of set) {
+            if (!seenClaimIds.has(refId)) {
+              return err(
+                `Credential query ${JSON.stringify(cred.id)}: 'claim_sets' references unknown claim id ${JSON.stringify(refId)}`,
+              );
+            }
+          }
+        }
+      }
+    }
+  }
+
+  // §6: credential_sets, if present, must be non-empty and reference valid credential IDs.
+  if (query.credential_sets !== undefined) {
+    if (query.credential_sets.length === 0) {
+      return err("'credential_sets' must be non-empty when present");
+    }
+    for (const cs of query.credential_sets) {
+      for (const optionSet of cs.options) {
+        for (const refId of optionSet) {
+          if (!seenCredIds.has(refId)) {
+            return err(
+              `'credential_sets' option references unknown credential query id ${JSON.stringify(refId)}`,
+            );
+          }
+        }
+      }
+    }
+  }
+
+  return { valid: true };
+}
+
+/**
  * Parse a DCQL query from a string (typically from URL parameters).
  *
  * @param queryString - JSON string containing DCQL query
@@ -336,8 +509,9 @@ export function parseDCQLQuery(queryString: string): DCQLQuery | null {
 export function extractAgeThreshold(query: DCQLQuery): number | null {
   for (const credential of query.credentials) {
     for (const claim of credential.claims ?? []) {
-      const path = claim.path[0];
-      const match = path?.match(/^age_over_(\d+)$/);
+      const pathComp = claim.path[0];
+      if (typeof pathComp !== "string") continue;
+      const match = pathComp.match(/^age_over_(\d+)$/);
       if (match) {
         return parseInt(match[1], 10);
       }

@@ -18,24 +18,140 @@ use serde::{Deserialize, Serialize};
 // DCQL Types (OpenID4VP §6)
 // ============================================================================
 
+/// A single component in a Claims Path Pointer (OpenID4VP 1.0 §7).
+///
+/// Per §7, a claims path pointer is a **non-empty** array of:
+///
+/// - [`Key`](ClaimsPathComponent::Key) — a string, navigating into a named
+///   field of the currently selected JSON object(s).
+/// - [`Index`](ClaimsPathComponent::Index) — a non-negative integer, selecting
+///   the element at that position within the currently selected array(s).
+/// - [`All`](ClaimsPathComponent::All) — JSON `null`, selecting **all**
+///   elements of the currently selected array(s).
+///
+/// For ISO mdoc-based credentials (§7.2) the path MUST contain exactly two
+/// `Key` components: the namespace and the data element identifier.
+///
+/// Serializes/deserializes as JSON string | number | null.
+#[derive(Debug, Clone, PartialEq)]
+pub enum ClaimsPathComponent {
+    /// String key — navigate into the named field of a JSON object.
+    Key(String),
+    /// Non-negative integer index — select the element at this position in an array.
+    Index(u32),
+    /// Null — select all elements of the currently selected array(s) (§7.1).
+    All,
+}
+
+impl serde::Serialize for ClaimsPathComponent {
+    fn serialize<S: serde::Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        match self {
+            Self::Key(s) => serializer.serialize_str(s),
+            Self::Index(i) => serializer.serialize_u32(*i),
+            Self::All => serializer.serialize_none(),
+        }
+    }
+}
+
+impl<'de> serde::Deserialize<'de> for ClaimsPathComponent {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct Visitor;
+
+        impl<'de> serde::de::Visitor<'de> for Visitor {
+            type Value = ClaimsPathComponent;
+
+            fn expecting(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+                write!(f, "a string, non-negative integer, or null")
+            }
+
+            fn visit_str<E: serde::de::Error>(self, v: &str) -> Result<Self::Value, E> {
+                Ok(ClaimsPathComponent::Key(v.to_string()))
+            }
+
+            fn visit_string<E: serde::de::Error>(self, v: String) -> Result<Self::Value, E> {
+                Ok(ClaimsPathComponent::Key(v))
+            }
+
+            fn visit_u64<E: serde::de::Error>(self, v: u64) -> Result<Self::Value, E> {
+                u32::try_from(v)
+                    .map(ClaimsPathComponent::Index)
+                    .map_err(|_| E::custom(format!("index {v} out of range for u32")))
+            }
+
+            fn visit_i64<E: serde::de::Error>(self, v: i64) -> Result<Self::Value, E> {
+                if v < 0 {
+                    return Err(E::custom(format!(
+                        "negative integer {v} is not a valid claims path component"
+                    )));
+                }
+                u32::try_from(v as u64)
+                    .map(ClaimsPathComponent::Index)
+                    .map_err(|_| E::custom(format!("index {v} out of range for u32")))
+            }
+
+            fn visit_none<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                Ok(ClaimsPathComponent::All)
+            }
+
+            fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+                Ok(ClaimsPathComponent::All)
+            }
+        }
+
+        deserializer.deserialize_any(Visitor)
+    }
+}
+
+impl From<String> for ClaimsPathComponent {
+    fn from(s: String) -> Self {
+        Self::Key(s)
+    }
+}
+
+impl From<&str> for ClaimsPathComponent {
+    fn from(s: &str) -> Self {
+        Self::Key(s.to_string())
+    }
+}
+
+impl From<u32> for ClaimsPathComponent {
+    fn from(i: u32) -> Self {
+        Self::Index(i)
+    }
+}
+
+impl std::fmt::Display for ClaimsPathComponent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Key(s) => write!(f, "{s}"),
+            Self::Index(i) => write!(f, "{i}"),
+            Self::All => write!(f, "null"),
+        }
+    }
+}
+
 /// A single claims query within a DCQL credential query.
 ///
 /// Specifies which claim to request from the credential, using a Claims Path
 /// Pointer as defined in OpenID4VP 1.0 §7.
 ///
-/// For `mso_mdoc` format, `path` MUST contain exactly two string elements:
-/// the namespace and the data element identifier (§7.2).
+/// For `mso_mdoc` format, `path` MUST contain exactly two [`ClaimsPathComponent::Key`]
+/// elements: the namespace and the data element identifier (§7.2).
 ///
-/// For JSON-based formats, `path` contains one or more strings/integers
-/// representing a JSON path (§7.1).
+/// For JSON-based formats, `path` may contain strings, non-negative integers,
+/// and/or nulls representing a JSON path (§7.1).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DCQLClaimsQuery {
     /// Optional identifier for this claims query.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub id: Option<String>,
 
-    /// Claims Path Pointer — for mso_mdoc: `["namespace", "element"]` (§7.2).
-    pub path: Vec<String>,
+    /// Claims Path Pointer (§7): a non-empty array of strings, non-negative
+    /// integers, and/or nulls.
+    ///
+    /// For `mso_mdoc`: exactly `[Key(namespace), Key(element)]` (§7.2).
+    /// For JSON-based credentials: one or more components per §7.1.
+    pub path: Vec<ClaimsPathComponent>,
 
     /// Acceptable values for this claim.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -44,6 +160,61 @@ pub struct DCQLClaimsQuery {
     /// Whether the RP intends to retain this data element.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub intent_to_retain: Option<bool>,
+}
+
+/// Type identifier for a `trusted_authorities` entry — specifies which trust framework
+/// mechanism is used to identify the issuer authority.
+///
+/// Defined by OpenID4VP 1.0 §6.1.1.
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6.1.1>
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum TrustedAuthorityType {
+    /// X.509 Authority Key Identifier, base64url-encoded (§6.1.1.1).
+    ///
+    /// The raw byte representation MUST match the `AuthorityKeyIdentifier` extension
+    /// of an X.509 certificate in the credential's certificate chain.
+    Aki,
+
+    /// ETSI Trusted List identifier (§6.1.1.2).
+    ///
+    /// The trust chain of a matching credential MUST contain at least one X.509
+    /// certificate matching an entry of the referenced Trusted List or its cascading lists.
+    EtsiTl,
+
+    /// OpenID Federation Entity Identifier (§6.1.1.3).
+    ///
+    /// A valid trust path including this entity identifier must be constructible from
+    /// a matching credential.
+    OpenidFederation,
+}
+
+impl std::fmt::Display for TrustedAuthorityType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TrustedAuthorityType::Aki => write!(f, "aki"),
+            TrustedAuthorityType::EtsiTl => write!(f, "etsi_tl"),
+            TrustedAuthorityType::OpenidFederation => write!(f, "openid_federation"),
+        }
+    }
+}
+
+/// A single entry in `trusted_authorities` — identifies an authority or trust framework
+/// that certifies credential issuers the Verifier will accept.
+///
+/// A Credential is considered a match if it satisfies **at least one** entry in
+/// the `trusted_authorities` array for any one of the provided types.
+///
+/// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6.1.1>
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TrustedAuthority {
+    /// Type identifier for the trust framework.
+    #[serde(rename = "type")]
+    pub authority_type: TrustedAuthorityType,
+
+    /// Non-empty array of values interpreted according to `authority_type`.
+    pub values: Vec<String>,
 }
 
 /// A credential query within DCQL, specifying which credential to request.
@@ -80,9 +251,33 @@ pub struct DCQLCredentialQuery {
     #[serde(skip_serializing_if = "Option::is_none")]
     pub multiple: Option<bool>,
 
+    /// Expected authorities or trust frameworks that certify issuers the Verifier will accept.
+    ///
+    /// OPTIONAL. A non-empty array as defined in §6.1.1. Every Credential returned by the
+    /// Wallet SHOULD match at least one of the conditions. The Verifier still bears its own
+    /// responsibility to verify issuer trust independently; this field is a hint to the Wallet
+    /// to avoid sending credentials that would likely be rejected.
+    ///
+    /// See: <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6.1.1>
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub trusted_authorities: Option<Vec<TrustedAuthority>>,
+
     /// Whether cryptographic holder binding is required.
+    ///
+    /// OPTIONAL. Default value is `true` per §6.1 — use [`Self::requires_holder_binding()`]
+    /// to obtain the effective value rather than unwrapping this field directly.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub require_cryptographic_holder_binding: Option<bool>,
+}
+
+impl DCQLCredentialQuery {
+    /// Returns the effective value of `require_cryptographic_holder_binding`.
+    ///
+    /// Per OpenID4VP 1.0 §6.1, the default is `true` when the field is absent.
+    #[inline]
+    pub fn requires_holder_binding(&self) -> bool {
+        self.require_cryptographic_holder_binding.unwrap_or(true)
+    }
 }
 
 /// Format-specific metadata for a DCQL credential query.
@@ -136,6 +331,147 @@ pub struct DCQLQuery {
     /// Optional credential set constraints.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub credential_sets: Option<Vec<DCQLCredentialSetQuery>>,
+}
+
+impl DCQLQuery {
+    /// Validate the structural rules from OpenID4VP 1.0 §6 and §6.4.1.
+    ///
+    /// Returns `Ok(())` when the query is structurally valid, or `Err(String)` with a
+    /// human-readable description of the first violation found.
+    ///
+    /// Rules enforced (referencing spec sections):
+    ///
+    /// **§6 — Top level**
+    /// - `credentials` MUST be non-empty.
+    /// - Credential query `id` values MUST be unique across `credentials`.
+    /// - `credential_sets`, if present, MUST be non-empty.
+    /// - Each `credential_sets` option element MUST reference a valid credential query `id`.
+    ///
+    /// **§6.1 — Credential Query**
+    /// - Each credential query `id` MUST be a non-empty string of alphanumeric, `-`, or `_`.
+    /// - `trusted_authorities`, if present, MUST be non-empty.
+    ///
+    /// **§6.3 & §6.4.1 — Claims / claim_sets**
+    /// - `claim_sets` MUST NOT be present when `claims` is absent.
+    /// - Claim `id` values MUST be unique within a single `claims` array.
+    /// - When `claim_sets` is present, every claim MUST have a non-empty `id`.
+    /// - Every identifier referenced in `claim_sets` MUST appear in `claims`.
+    pub fn is_valid(&self) -> Result<(), String> {
+        // §6: credentials MUST be non-empty.
+        if self.credentials.is_empty() {
+            return Err("DCQL query 'credentials' must be non-empty".into());
+        }
+
+        // §6.1: credential query IDs must be unique.
+        let mut seen_cred_ids = std::collections::HashSet::new();
+        for cred in &self.credentials {
+            // ID must be non-empty and consist only of [A-Za-z0-9_-].
+            if cred.id.is_empty()
+                || !cred
+                    .id
+                    .chars()
+                    .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+            {
+                return Err(format!(
+                    "Credential query id {:?} must be a non-empty alphanumeric/underscore/hyphen string",
+                    cred.id
+                ));
+            }
+            if !seen_cred_ids.insert(cred.id.as_str()) {
+                return Err(format!(
+                    "Duplicate credential query id {:?} in 'credentials'",
+                    cred.id
+                ));
+            }
+
+            // §6.1.1: trusted_authorities, if present, must be non-empty.
+            if let Some(ta) = &cred.trusted_authorities {
+                if ta.is_empty() {
+                    return Err(format!(
+                        "Credential query {:?}: 'trusted_authorities' must be non-empty when present",
+                        cred.id
+                    ));
+                }
+            }
+
+            // §6.4.1: claim_sets MUST NOT be present if claims is absent.
+            if cred.claim_sets.is_some() && cred.claims.is_none() {
+                return Err(format!(
+                    "Credential query {:?}: 'claim_sets' must not be present when 'claims' is absent",
+                    cred.id
+                ));
+            }
+
+            if let Some(claims) = &cred.claims {
+                // Claim IDs must be unique within the claims array.
+                let mut seen_claim_ids = std::collections::HashSet::new();
+                for claim in claims {
+                    if let Some(id) = &claim.id {
+                        if id.is_empty()
+                            || !id
+                                .chars()
+                                .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+                        {
+                            return Err(format!(
+                                "Credential query {:?}: claim id {:?} must be a non-empty alphanumeric/underscore/hyphen string",
+                                cred.id, id
+                            ));
+                        }
+                        if !seen_claim_ids.insert(id.as_str()) {
+                            return Err(format!(
+                                "Credential query {:?}: duplicate claim id {:?}",
+                                cred.id, id
+                            ));
+                        }
+                    }
+                }
+
+                if let Some(claim_sets) = &cred.claim_sets {
+                    // §6.4.1: all claims must have an id when claim_sets is present.
+                    for claim in claims {
+                        if claim.id.is_none() {
+                            return Err(format!(
+                                "Credential query {:?}: all claims must have an 'id' when 'claim_sets' is present",
+                                cred.id
+                            ));
+                        }
+                    }
+                    // Every id referenced in claim_sets must exist in claims.
+                    for set in claim_sets {
+                        for ref_id in set {
+                            if !seen_claim_ids.contains(ref_id.as_str()) {
+                                return Err(format!(
+                                    "Credential query {:?}: 'claim_sets' references unknown claim id {:?}",
+                                    cred.id, ref_id
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // §6: credential_sets, if present, must be non-empty and reference valid credential IDs.
+        if let Some(cred_sets) = &self.credential_sets {
+            if cred_sets.is_empty() {
+                return Err("'credential_sets' must be non-empty when present".into());
+            }
+            for cs in cred_sets {
+                for option_set in &cs.options {
+                    for ref_id in option_set {
+                        if !seen_cred_ids.contains(ref_id.as_str()) {
+                            return Err(format!(
+                                "'credential_sets' option references unknown credential query id {:?}",
+                                ref_id
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+
+        Ok(())
+    }
 }
 
 // ============================================================================

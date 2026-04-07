@@ -4,5 +4,8 @@
   "exports": "./mod.ts",
   "compilerOptions": {
     "lib": ["ES2022", "DOM", "DOM.Iterable"]
+  },
+  "imports": {
+    "@std/assert":"jsr:@std/assert@1"
   }
 }

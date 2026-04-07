@@ -174,6 +174,11 @@ impl OpenID4VPService {
             get_default_age_verification_dcql()
         };
 
+        // Validate the DCQL query structure (§6 + §6.4.1)
+        dcql_query
+            .is_valid()
+            .map_err(|msg| OpenID4VPError::BadRequest(format!("Invalid dcql_query: {msg}")))?;
+
         // Client metadata (use request-provided or defaults)
         let client_metadata = request.client_metadata.unwrap_or_else(|| {
             let mut meta = ClientMetadata::default();

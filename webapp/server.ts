@@ -196,11 +196,6 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 
   try {
-    // ── Health check (local) ────────────────────────────────────────────
-    if (path === "/api/health") {
-      return jsonResponse({ status: "ok" });
-    }
-
     // ── All other API requests — straight proxy ─────────────────────
     if (path.startsWith("/api/")) {
       return await proxyToVerifier(path, req);

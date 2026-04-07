@@ -8,7 +8,9 @@
 //! - <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6>
 //! - EU Age Verification Profile Annex A
 
-use crate::types::{DCQLClaimsQuery, DCQLCredentialMeta, DCQLCredentialQuery, DCQLQuery};
+use crate::types::{
+    ClaimsPathComponent, DCQLClaimsQuery, DCQLCredentialMeta, DCQLCredentialQuery, DCQLQuery,
+};
 
 // ============================================================================
 // Well-Known Namespaces and Document Types
@@ -58,12 +60,13 @@ pub fn build_age_verification_query(age_threshold: Option<u8>) -> DCQLQuery {
             claims: Some(vec![DCQLClaimsQuery {
                 id: Some(claim_id.clone()),
                 // Claims Path Pointer for mso_mdoc: [namespace, element] (OpenID4VP §7.2)
-                path: vec![EU_AV_NAMESPACE.to_string(), claim_id.clone()],
+                path: vec![EU_AV_NAMESPACE.into(), claim_id.clone().into()],
                 values: None,
                 intent_to_retain: Some(false),
             }]),
             claim_sets: None,
             multiple: None,
+            trusted_authorities: None,
             require_cryptographic_holder_binding: None,
         }],
         credential_sets: None,
@@ -92,12 +95,13 @@ pub fn build_age_verification_query_with_fallback(age_threshold: Option<u8>) -> 
                 claims: Some(vec![DCQLClaimsQuery {
                     id: Some(claim_id.clone()),
                     // Claims Path Pointer for mso_mdoc: [namespace, element] (OpenID4VP §7.2)
-                    path: vec![EU_AV_NAMESPACE.to_string(), claim_id.clone()],
+                    path: vec![EU_AV_NAMESPACE.into(), claim_id.clone().into()],
                     values: None,
                     intent_to_retain: Some(false),
                 }]),
                 claim_sets: None,
                 multiple: None,
+                trusted_authorities: None,
                 require_cryptographic_holder_binding: None,
             },
             // Fallback: ISO mDL
@@ -112,12 +116,13 @@ pub fn build_age_verification_query_with_fallback(age_threshold: Option<u8>) -> 
                 claims: Some(vec![DCQLClaimsQuery {
                     id: Some(claim_id.clone()),
                     // Claims Path Pointer for mso_mdoc: [namespace, element] (OpenID4VP §7.2)
-                    path: vec![ISO_MDL_NAMESPACE.to_string(), claim_id.clone()],
+                    path: vec![ISO_MDL_NAMESPACE.into(), claim_id.clone().into()],
                     values: None,
                     intent_to_retain: Some(false),
                 }]),
                 claim_sets: None,
                 multiple: None,
+                trusted_authorities: None,
                 require_cryptographic_holder_binding: None,
             },
         ],
@@ -149,12 +154,13 @@ pub fn get_default_age_verification_dcql() -> DCQLQuery {
             claims: Some(vec![DCQLClaimsQuery {
                 id: Some("age_over_18".to_string()),
                 // Claims Path Pointer for mso_mdoc: [namespace, element] (OpenID4VP §7.2)
-                path: vec![EU_PID_NAMESPACE.to_string(), "age_over_18".to_string()],
+                path: vec![EU_PID_NAMESPACE.into(), "age_over_18".into()],
                 values: None,
                 intent_to_retain: Some(false),
             }]),
             claim_sets: None,
             multiple: None,
+            trusted_authorities: None,
             require_cryptographic_holder_binding: None,
         }],
         credential_sets: None,
@@ -228,17 +234,25 @@ pub fn convert_presentation_definition_to_dcql(
                         // For mso_mdoc, convert JSONPath bracket notation to
                         // Claims Path Pointer (two-element array) per §7.2:
                         //   "$['namespace']['element']" → ["namespace", "element"]
-                        let converted_path = if format == "mso_mdoc" && path_strings.len() == 1 {
+                        let converted_path: Vec<ClaimsPathComponent> = if format == "mso_mdoc"
+                            && path_strings.len() == 1
+                        {
                             if let (Some(ns), Some(elem)) = (
                                 extract_namespace_from_path(&path_strings[0]),
                                 extract_claim_id_from_path(&path_strings[0]),
                             ) {
-                                vec![ns, elem]
+                                vec![ClaimsPathComponent::Key(ns), ClaimsPathComponent::Key(elem)]
                             } else {
                                 path_strings
+                                    .into_iter()
+                                    .map(ClaimsPathComponent::Key)
+                                    .collect()
                             }
                         } else {
                             path_strings
+                                .into_iter()
+                                .map(ClaimsPathComponent::Key)
+                                .collect()
                         };
 
                         Some(DCQLClaimsQuery {
@@ -273,7 +287,10 @@ pub fn convert_presentation_definition_to_dcql(
             claims
                 .as_ref()
                 .and_then(|c| c.first())
-                .and_then(|first_claim| first_claim.path.first().cloned())
+                .and_then(|first_claim| match first_claim.path.first() {
+                    Some(ClaimsPathComponent::Key(s)) => Some(s.clone()),
+                    _ => None,
+                })
         });
 
         let meta = DCQLCredentialMeta {
@@ -289,6 +306,7 @@ pub fn convert_presentation_definition_to_dcql(
             claims,
             claim_sets: None,
             multiple: None,
+            trusted_authorities: None,
             require_cryptographic_holder_binding: None,
         });
     }
@@ -353,6 +371,7 @@ fn extract_claim_id_from_path(path: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::types::ClaimsPathComponent;
 
     #[test]
     fn test_build_age_verification_query() {
@@ -371,8 +390,11 @@ mod tests {
         assert_eq!(claims[0].id.as_deref(), Some("age_over_21"));
         // Claims Path Pointer: [namespace, element] per §7.2
         assert_eq!(claims[0].path.len(), 2);
-        assert_eq!(claims[0].path[0], EU_AV_NAMESPACE);
-        assert_eq!(claims[0].path[1], "age_over_21");
+        assert_eq!(
+            claims[0].path[0],
+            ClaimsPathComponent::from(EU_AV_NAMESPACE)
+        );
+        assert_eq!(claims[0].path[1], ClaimsPathComponent::from("age_over_21"));
     }
 
     #[test]
@@ -456,7 +478,13 @@ mod tests {
         let claims = query.credentials[0].claims.as_ref().unwrap();
         assert_eq!(claims[0].id.as_deref(), Some("age_over_18"));
         // Bracket notation should be converted to two-element path (§7.2)
-        assert_eq!(claims[0].path, vec!["eu.europa.ec.av.1", "age_over_18"]);
+        assert_eq!(
+            claims[0].path,
+            vec![
+                ClaimsPathComponent::Key("eu.europa.ec.av.1".to_string()),
+                ClaimsPathComponent::Key("age_over_18".to_string()),
+            ]
+        );
     }
 
     #[test]
@@ -490,7 +518,13 @@ mod tests {
         // doctype_value should be derived from the first claim's namespace
         assert_eq!(meta.doctype_value.as_deref(), Some("eu.europa.ec.av.1"));
         let claims = query.credentials[0].claims.as_ref().unwrap();
-        assert_eq!(claims[0].path, vec!["eu.europa.ec.av.1", "age_over_18"]);
+        assert_eq!(
+            claims[0].path,
+            vec![
+                ClaimsPathComponent::Key("eu.europa.ec.av.1".to_string()),
+                ClaimsPathComponent::Key("age_over_18".to_string()),
+            ]
+        );
     }
 
     #[test]
@@ -503,5 +537,446 @@ mod tests {
             meta.doctype_value.as_deref(),
             Some("eu.europa.ec.eudi.pid.1")
         );
+    }
+
+    // =========================================================================
+    // Appendix D — Non-normative DCQL query examples from the spec
+    // https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-D
+    // =========================================================================
+    mod appendix_d {
+        use crate::types::{
+            ClaimsPathComponent, DCQLClaimsQuery, DCQLCredentialMeta, DCQLCredentialQuery,
+            DCQLQuery,
+        };
+
+        // Helper: key component from a &str.
+        fn key(s: &str) -> ClaimsPathComponent {
+            ClaimsPathComponent::Key(s.to_string())
+        }
+
+        // Helper: assert a DCQLQuery round-trips through JSON unchanged.
+        // Returns the deserialized value so callers can do further assertions.
+        fn roundtrip(q: &DCQLQuery) -> DCQLQuery {
+            let json = serde_json::to_value(q).expect("serialize");
+            let back: DCQLQuery = serde_json::from_value(json).expect("deserialize");
+            back
+        }
+
+        // Helper: deserialize the verbatim spec JSON into a DCQLQuery.
+        fn from_spec(json: serde_json::Value) -> DCQLQuery {
+            serde_json::from_value(json).expect("parse spec JSON")
+        }
+
+        /// Appendix D §1 — mVRC: single mso_mdoc credential requesting
+        /// `vehicle_holder` from namespace `org.iso.7367.1` and
+        /// `first_name` from namespace `org.iso.18013.5.1`.
+        #[test]
+        fn example1_mvrc_single_mdoc() {
+            // Verbatim spec JSON (Appendix D, first example).
+            let spec_json = serde_json::json!({
+                "credentials": [{
+                    "id": "my_credential",
+                    "format": "mso_mdoc",
+                    "meta": {"doctype_value": "org.iso.7367.1.mVRC"},
+                    "claims": [
+                        {"path": ["org.iso.7367.1", "vehicle_holder"]},
+                        {"path": ["org.iso.18013.5.1", "first_name"]}
+                    ]
+                }]
+            });
+
+            let parsed = from_spec(spec_json);
+            assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
+            assert_eq!(parsed.credentials.len(), 1);
+            assert!(parsed.credential_sets.is_none());
+
+            let cred = &parsed.credentials[0];
+            assert_eq!(cred.id, "my_credential");
+            assert_eq!(cred.format, "mso_mdoc");
+            assert_eq!(
+                cred.meta.doctype_value.as_deref(),
+                Some("org.iso.7367.1.mVRC")
+            );
+
+            let claims = cred.claims.as_ref().unwrap();
+            assert_eq!(claims.len(), 2);
+            assert_eq!(
+                claims[0].path,
+                vec![key("org.iso.7367.1"), key("vehicle_holder")]
+            );
+            assert_eq!(
+                claims[1].path,
+                vec![key("org.iso.18013.5.1"), key("first_name")]
+            );
+
+            // Also verify the equivalent query built from structs round-trips.
+            let built = DCQLQuery {
+                credentials: vec![DCQLCredentialQuery {
+                    id: "my_credential".into(),
+                    format: "mso_mdoc".into(),
+                    meta: DCQLCredentialMeta {
+                        doctype_value: Some("org.iso.7367.1.mVRC".into()),
+                        ..Default::default()
+                    },
+                    claims: Some(vec![
+                        DCQLClaimsQuery {
+                            id: None,
+                            path: vec![key("org.iso.7367.1"), key("vehicle_holder")],
+                            values: None,
+                            intent_to_retain: None,
+                        },
+                        DCQLClaimsQuery {
+                            id: None,
+                            path: vec![key("org.iso.18013.5.1"), key("first_name")],
+                            values: None,
+                            intent_to_retain: None,
+                        },
+                    ]),
+                    claim_sets: None,
+                    multiple: None,
+                    trusted_authorities: None,
+                    require_cryptographic_holder_binding: None,
+                }],
+                credential_sets: None,
+            };
+            assert!(built.is_valid().is_ok());
+            let rt = roundtrip(&built);
+            assert_eq!(rt.credentials[0].format, "mso_mdoc");
+            assert_eq!(
+                rt.credentials[0].claims.as_ref().unwrap()[0].path,
+                vec![key("org.iso.7367.1"), key("vehicle_holder")]
+            );
+        }
+
+        /// Appendix D §2 — Two credentials, both must be returned (no credential_sets).
+        /// `pid` is dc+sd-jwt; `mdl` is mso_mdoc.
+        #[test]
+        fn example2_multiple_credentials_all_required() {
+            let spec_json = serde_json::json!({
+                "credentials": [
+                    {
+                        "id": "pid",
+                        "format": "dc+sd-jwt",
+                        "meta": {
+                            "vct_values": ["https://credentials.example.com/identity_credential"]
+                        },
+                        "claims": [
+                            {"path": ["given_name"]},
+                            {"path": ["family_name"]},
+                            {"path": ["address", "street_address"]}
+                        ]
+                    },
+                    {
+                        "id": "mdl",
+                        "format": "mso_mdoc",
+                        "meta": {"doctype_value": "org.iso.7367.1.mVRC"},
+                        "claims": [
+                            {"path": ["org.iso.7367.1", "vehicle_holder"]},
+                            {"path": ["org.iso.18013.5.1", "first_name"]}
+                        ]
+                    }
+                ]
+            });
+
+            let parsed = from_spec(spec_json);
+            assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
+            // Without credential_sets, all credentials are required (§6.4.2).
+            assert_eq!(parsed.credentials.len(), 2);
+            assert!(parsed.credential_sets.is_none());
+
+            let pid = &parsed.credentials[0];
+            assert_eq!(pid.id, "pid");
+            assert_eq!(pid.format, "dc+sd-jwt");
+            assert_eq!(
+                pid.meta.vct_values.as_deref(),
+                Some(&["https://credentials.example.com/identity_credential".to_string()][..])
+            );
+            let pid_claims = pid.claims.as_ref().unwrap();
+            assert_eq!(pid_claims[0].path, vec![key("given_name")]);
+            assert_eq!(pid_claims[1].path, vec![key("family_name")]);
+            assert_eq!(
+                pid_claims[2].path,
+                vec![key("address"), key("street_address")]
+            );
+
+            let mdl = &parsed.credentials[1];
+            assert_eq!(mdl.id, "mdl");
+            assert_eq!(mdl.format, "mso_mdoc");
+
+            roundtrip(&parsed); // must not panic
+        }
+
+        /// Appendix D §3 — Complex credential_sets:
+        /// pid OR other_pid OR (pid_reduced_cred_1 + pid_reduced_cred_2),
+        /// plus optional nice_to_have.
+        #[test]
+        fn example3_complex_credential_sets() {
+            let spec_json = serde_json::json!({
+                "credentials": [
+                    {
+                        "id": "pid",
+                        "format": "dc+sd-jwt",
+                        "meta": {"vct_values": ["https://credentials.example.com/identity_credential"]},
+                        "claims": [
+                            {"path": ["given_name"]},
+                            {"path": ["family_name"]},
+                            {"path": ["address", "street_address"]}
+                        ]
+                    },
+                    {
+                        "id": "other_pid",
+                        "format": "dc+sd-jwt",
+                        "meta": {"vct_values": ["https://othercredentials.example/pid"]},
+                        "claims": [
+                            {"path": ["given_name"]},
+                            {"path": ["family_name"]},
+                            {"path": ["address", "street_address"]}
+                        ]
+                    },
+                    {
+                        "id": "pid_reduced_cred_1",
+                        "format": "dc+sd-jwt",
+                        "meta": {"vct_values": ["https://credentials.example.com/reduced_identity_credential"]},
+                        "claims": [
+                            {"path": ["family_name"]},
+                            {"path": ["given_name"]}
+                        ]
+                    },
+                    {
+                        "id": "pid_reduced_cred_2",
+                        "format": "dc+sd-jwt",
+                        "meta": {"vct_values": ["https://cred.example/residence_credential"]},
+                        "claims": [
+                            {"path": ["postal_code"]},
+                            {"path": ["locality"]},
+                            {"path": ["region"]}
+                        ]
+                    },
+                    {
+                        "id": "nice_to_have",
+                        "format": "dc+sd-jwt",
+                        "meta": {"vct_values": ["https://company.example/company_rewards"]},
+                        "claims": [{"path": ["rewards_number"]}]
+                    }
+                ],
+                "credential_sets": [
+                    {
+                        "options": [
+                            ["pid"],
+                            ["other_pid"],
+                            ["pid_reduced_cred_1", "pid_reduced_cred_2"]
+                        ]
+                    },
+                    {
+                        "required": false,
+                        "options": [["nice_to_have"]]
+                    }
+                ]
+            });
+
+            let parsed = from_spec(spec_json);
+            assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
+            assert_eq!(parsed.credentials.len(), 5);
+
+            let sets = parsed.credential_sets.as_ref().unwrap();
+            assert_eq!(sets.len(), 2);
+
+            // First set is required (default), has three options.
+            assert_eq!(sets[0].required, None); // default = true per §6.2
+            assert_eq!(sets[0].options.len(), 3);
+            assert_eq!(sets[0].options[0], vec!["pid"]);
+            assert_eq!(sets[0].options[1], vec!["other_pid"]);
+            assert_eq!(
+                sets[0].options[2],
+                vec!["pid_reduced_cred_1", "pid_reduced_cred_2"]
+            );
+
+            // Second set is optional.
+            assert_eq!(sets[1].required, Some(false));
+            assert_eq!(sets[1].options[0], vec!["nice_to_have"]);
+
+            roundtrip(&parsed);
+        }
+
+        /// Appendix D §4 — mdl/photo_card: ID and address can come from either mDL
+        /// or photo_card; address is optional.
+        #[test]
+        fn example4_mdl_or_photo_card_with_optional_address() {
+            let spec_json = serde_json::json!({
+                "credentials": [
+                    {
+                        "id": "mdl-id",
+                        "format": "mso_mdoc",
+                        "meta": {"doctype_value": "org.iso.18013.5.1.mDL"},
+                        "claims": [
+                            {"id": "given_name",  "path": ["org.iso.18013.5.1", "given_name"]},
+                            {"id": "family_name", "path": ["org.iso.18013.5.1", "family_name"]},
+                            {"id": "portrait",    "path": ["org.iso.18013.5.1", "portrait"]}
+                        ]
+                    },
+                    {
+                        "id": "mdl-address",
+                        "format": "mso_mdoc",
+                        "meta": {"doctype_value": "org.iso.18013.5.1.mDL"},
+                        "claims": [
+                            {"id": "resident_address", "path": ["org.iso.18013.5.1", "resident_address"]},
+                            {"id": "resident_country", "path": ["org.iso.18013.5.1", "resident_country"]}
+                        ]
+                    },
+                    {
+                        "id": "photo_card-id",
+                        "format": "mso_mdoc",
+                        "meta": {"doctype_value": "org.iso.23220.photoid.1"},
+                        "claims": [
+                            {"id": "given_name",  "path": ["org.iso.18013.5.1", "given_name"]},
+                            {"id": "family_name", "path": ["org.iso.18013.5.1", "family_name"]},
+                            {"id": "portrait",    "path": ["org.iso.18013.5.1", "portrait"]}
+                        ]
+                    },
+                    {
+                        "id": "photo_card-address",
+                        "format": "mso_mdoc",
+                        "meta": {"doctype_value": "org.iso.23220.photoid.1"},
+                        "claims": [
+                            {"id": "resident_address", "path": ["org.iso.18013.5.1", "resident_address"]},
+                            {"id": "resident_country", "path": ["org.iso.18013.5.1", "resident_country"]}
+                        ]
+                    }
+                ],
+                "credential_sets": [
+                    {
+                        "options": [["mdl-id"], ["photo_card-id"]]
+                    },
+                    {
+                        "required": false,
+                        "options": [["mdl-address"], ["photo_card-address"]]
+                    }
+                ]
+            });
+
+            let parsed = from_spec(spec_json);
+            assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
+            assert_eq!(parsed.credentials.len(), 4);
+
+            let sets = parsed.credential_sets.as_ref().unwrap();
+            assert_eq!(sets.len(), 2);
+
+            // Required set: mdl-id OR photo_card-id.
+            assert_eq!(sets[0].options, vec![vec!["mdl-id"], vec!["photo_card-id"]]);
+            // Optional set: mdl-address OR photo_card-address.
+            assert_eq!(sets[1].required, Some(false));
+            assert_eq!(
+                sets[1].options,
+                vec![vec!["mdl-address"], vec!["photo_card-address"]]
+            );
+
+            // Claims have ids for use with claim_sets (§6.3).
+            let mdl_id_claims = parsed.credentials[0].claims.as_ref().unwrap();
+            assert_eq!(mdl_id_claims[0].id.as_deref(), Some("given_name"));
+            assert_eq!(
+                mdl_id_claims[0].path,
+                vec![key("org.iso.18013.5.1"), key("given_name")]
+            );
+
+            roundtrip(&parsed);
+        }
+
+        /// Appendix D §5 — claim_sets: mandatory (last_name, date_of_birth) plus
+        /// either postal_code or (locality + region).
+        #[test]
+        fn example5_claim_sets_mandatory_plus_alternatives() {
+            let spec_json = serde_json::json!({
+                "credentials": [{
+                    "id": "pid",
+                    "format": "dc+sd-jwt",
+                    "meta": {
+                        "vct_values": ["https://credentials.example.com/identity_credential"]
+                    },
+                    "claims": [
+                        {"id": "a", "path": ["last_name"]},
+                        {"id": "b", "path": ["postal_code"]},
+                        {"id": "c", "path": ["locality"]},
+                        {"id": "d", "path": ["region"]},
+                        {"id": "e", "path": ["date_of_birth"]}
+                    ],
+                    "claim_sets": [
+                        ["a", "c", "d", "e"],
+                        ["a", "b", "e"]
+                    ]
+                }]
+            });
+
+            let parsed = from_spec(spec_json);
+            assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
+            let cred = &parsed.credentials[0];
+            assert_eq!(cred.format, "dc+sd-jwt");
+
+            let claims = cred.claims.as_ref().unwrap();
+            assert_eq!(claims.len(), 5);
+            // All claims must have ids when claim_sets is present (§6.4.1).
+            for claim in claims {
+                assert!(claim.id.is_some(), "every claim needs an id");
+            }
+            assert_eq!(claims[0].path, vec![key("last_name")]);
+            assert_eq!(claims[4].path, vec![key("date_of_birth")]);
+
+            let claim_sets = cred.claim_sets.as_ref().unwrap();
+            assert_eq!(claim_sets.len(), 2);
+            // First option: last_name + locality + region + date_of_birth (privacy-preferred).
+            assert_eq!(claim_sets[0], vec!["a", "c", "d", "e"]);
+            // Second option: last_name + postal_code + date_of_birth.
+            assert_eq!(claim_sets[1], vec!["a", "b", "e"]);
+
+            roundtrip(&parsed);
+        }
+
+        /// Appendix D §6 — values constraints: specific expected values for
+        /// `last_name` and `postal_code` claims.
+        #[test]
+        fn example6_values_constraints() {
+            let spec_json = serde_json::json!({
+                "credentials": [{
+                    "id": "my_credential",
+                    "format": "dc+sd-jwt",
+                    "meta": {
+                        "vct_values": ["https://credentials.example.com/identity_credential"]
+                    },
+                    "claims": [
+                        {"path": ["last_name"],  "values": ["Doe"]},
+                        {"path": ["first_name"]},
+                        {"path": ["address", "street_address"]},
+                        {"path": ["postal_code"], "values": ["90210", "90211"]}
+                    ]
+                }]
+            });
+
+            let parsed = from_spec(spec_json);
+            assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
+            let claims = parsed.credentials[0].claims.as_ref().unwrap();
+            assert_eq!(claims.len(), 4);
+
+            // last_name: values = ["Doe"]
+            assert_eq!(claims[0].path, vec![key("last_name")]);
+            let last_name_vals = claims[0].values.as_ref().unwrap();
+            assert_eq!(last_name_vals, &[serde_json::json!("Doe")]);
+
+            // first_name: no values constraint
+            assert_eq!(claims[1].path, vec![key("first_name")]);
+            assert!(claims[1].values.is_none());
+
+            // address.street_address: nested path, no values constraint
+            assert_eq!(claims[2].path, vec![key("address"), key("street_address")]);
+            assert!(claims[2].values.is_none());
+
+            // postal_code: values = ["90210", "90211"]
+            assert_eq!(claims[3].path, vec![key("postal_code")]);
+            let postal_vals = claims[3].values.as_ref().unwrap();
+            assert_eq!(
+                postal_vals,
+                &[serde_json::json!("90210"), serde_json::json!("90211")]
+            );
+
+            roundtrip(&parsed);
+        }
     }
 }

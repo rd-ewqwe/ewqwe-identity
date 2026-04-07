@@ -181,9 +181,7 @@ async function requestViaOpenID4VPCrossDevice(
   logger.log("OpenID4VP cross-device flow - initializing transaction");
 
   if (request.credential_type) {
-    logger.log(
-      `Credential type: ${request.credential_type}, callback url: ${request.public_url}`,
-    );
+    logger.log(`Request: ${JSON.stringify(request, null, 2)}`);
   }
 
   // Step 1: Initialize the transaction on the backend
@@ -484,9 +482,7 @@ async function requestViaOpenID4VPSameDevice(
   logger.log("Initializing OpenID4VP transaction for same-device flow...");
 
   if (request.credential_type) {
-    logger.log(
-      `Credential type: ${request.credential_type}, url: ${request.public_url}`,
-    );
+    logger.log(`Request: ${JSON.stringify(request, null, 2)}`);
   }
 
   const initResponse = await fetch("/api/openid4vp/init", {
