@@ -58,6 +58,8 @@ impl PostgresJournalStore {
                 client_id                  TEXT,
                 doc_type                   TEXT,
                 namespace                  TEXT,
+                qrcode_app_user_id         TEXT,
+                qrcode_app_user_email      TEXT,
                 verification_summary       JSONB       NOT NULL,
                 created_at                 TIMESTAMPTZ NOT NULL DEFAULT NOW()
             )",
@@ -93,6 +95,16 @@ impl PostgresJournalStore {
         .await
         .map_err(|e| JournalError::Storage(format!("Postgres journal migration: {e}")))?;
 
+        // Additive migration for existing tables.
+        for col in &[
+            "ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS qrcode_app_user_id TEXT",
+            "ALTER TABLE journal_entries ADD COLUMN IF NOT EXISTS qrcode_app_user_email TEXT",
+        ] {
+            sqlx::query(col).execute(&self.pool).await.map_err(|e| {
+                JournalError::Storage(format!("Postgres ALTER journal_entries: {e}"))
+            })?;
+        }
+
         Ok(())
     }
 }
@@ -111,13 +123,15 @@ type PgRowTuple = (
     Option<String>,
     Option<String>,
     Option<String>,
+    Option<String>,
+    Option<String>,
     serde_json::Value,
     DateTime<Utc>,
 );
 
 const SELECT_COLS: &str = "id, username, previous_hash, entry_hash, \
     attestation_signature_hash, attestation_jti, client_id, doc_type, \
-    namespace, verification_summary, created_at";
+    namespace, qrcode_app_user_id, qrcode_app_user_email, verification_summary, created_at";
 
 #[async_trait]
 impl JournalStore for PostgresJournalStore {
@@ -175,8 +189,10 @@ impl JournalStore for PostgresJournalStore {
         sqlx::query(
             "INSERT INTO journal_entries \
              (id, username, previous_hash, entry_hash, attestation_signature_hash, \
-              attestation_jti, client_id, doc_type, namespace, verification_summary, created_at) \
-             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
+              attestation_jti, client_id, doc_type, namespace, \
+              qrcode_app_user_id, qrcode_app_user_email, \
+              verification_summary, created_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)",
         )
         .bind(&entry.id)
         .bind(&entry.username)
@@ -187,6 +203,8 @@ impl JournalStore for PostgresJournalStore {
         .bind(&entry.client_id)
         .bind(&entry.doc_type)
         .bind(&entry.namespace)
+        .bind(&entry.qrcode_app_user_id)
+        .bind(&entry.qrcode_app_user_email)
         .bind(summary_value)
         .bind(entry.created_at)
         .execute(&mut *tx)
@@ -266,7 +284,7 @@ impl JournalStore for PostgresJournalStore {
         Ok(rows
             .into_iter()
             .map(
-                |(id, un, prev, eh, ash, jti, cid, dt, ns, vs, ca)| JournalEntry {
+                |(id, un, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)| JournalEntry {
                     id,
                     username: un,
                     previous_hash: prev,
@@ -276,6 +294,63 @@ impl JournalStore for PostgresJournalStore {
                     client_id: cid,
                     doc_type: dt,
                     namespace: ns,
+                    qrcode_app_user_id: quid,
+                    qrcode_app_user_email: quem,
+                    verification_summary: vs,
+                    created_at: ca,
+                },
+            )
+            .collect())
+    }
+
+    async fn list_qrcode_app_entries(
+        &self,
+        qrcode_app_user_id: Option<&str>,
+        limit: u32,
+        offset: u32,
+    ) -> JournalResult<Vec<JournalEntry>> {
+        let limit = i64::from(limit);
+        let offset = i64::from(offset);
+        let rows: Vec<PgRowTuple> = match qrcode_app_user_id {
+            Some(uid) => sqlx::query_as(&format!(
+                "SELECT {SELECT_COLS} FROM journal_entries \
+                 WHERE qrcode_app_user_id = $1 \
+                 ORDER BY created_at DESC LIMIT $2 OFFSET $3"
+            ))
+            .bind(uid)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| JournalError::Storage(format!("Postgres list_qrcode_app_entries: {e}")))?,
+
+            None => sqlx::query_as(&format!(
+                "SELECT {SELECT_COLS} FROM journal_entries \
+                 WHERE qrcode_app_user_id IS NOT NULL \
+                 ORDER BY created_at DESC LIMIT $1 OFFSET $2"
+            ))
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| JournalError::Storage(format!("Postgres list_qrcode_app_entries: {e}")))?,
+        };
+
+        Ok(rows
+            .into_iter()
+            .map(
+                |(id, un, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)| JournalEntry {
+                    id,
+                    username: un,
+                    previous_hash: prev,
+                    entry_hash: eh,
+                    attestation_signature_hash: ash,
+                    attestation_jti: jti,
+                    client_id: cid,
+                    doc_type: dt,
+                    namespace: ns,
+                    qrcode_app_user_id: quid,
+                    qrcode_app_user_email: quem,
                     verification_summary: vs,
                     created_at: ca,
                 },

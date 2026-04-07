@@ -77,6 +77,8 @@ tracing-opentelemetry = { version = "0.30" }
 tracing-subscriber = { version = "0.3", default-features = false }
 url = { version = "2.5", features = ["serde"] }
 urlencoding = "2"
+actix-session = { version = "0.10", features = ["cookie-session"] }
+argon2 = "0.5"
 utoipa = { version = "5.4.0", features = ["actix_extras"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["actix-web"] }
 uuid = { version = "1.8", features = ["v4", "serde"] }

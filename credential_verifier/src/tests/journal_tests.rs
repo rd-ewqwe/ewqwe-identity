@@ -107,6 +107,8 @@ async fn test_append_single_entry() {
         Some("org.iso.18013.5.1.mDL"),
         Some("org.iso.18013.5.1"),
         json!({"success": true}),
+        None,
+        None,
     )
     .await
     .expect("first append should succeed");
@@ -148,6 +150,8 @@ async fn test_append_multiple_entries_forms_chain() {
             Some("org.iso.18013.5.1.mDL"),
             Some("org.iso.18013.5.1"),
             json!({"attempt": i}),
+            None,
+            None,
         )
         .await
         .expect("append should succeed");
@@ -204,6 +208,8 @@ async fn test_stale_head_returns_error() {
         None,
         None,
         json!({}),
+        None,
+        None,
     )
     .await
     .unwrap();
@@ -223,6 +229,8 @@ async fn test_stale_head_returns_error() {
         client_id: None,
         doc_type: None,
         namespace: None,
+        qrcode_app_user_id: None,
+        qrcode_app_user_email: None,
         verification_summary: json!({}),
         created_at: Utc::now(),
     };
@@ -263,6 +271,8 @@ async fn test_multiple_usernames_independent_chains() {
                 None,
                 None,
                 json!({}),
+                None,
+                None,
             )
             .await
             .expect("append should succeed");
@@ -295,6 +305,8 @@ async fn test_list_entries_limit() {
             None,
             None,
             json!({}),
+            None,
+            None,
         )
         .await
         .unwrap();
@@ -331,6 +343,8 @@ async fn test_list_entries_before_filter() {
             None,
             None,
             json!({}),
+            None,
+            None,
         )
         .await
         .unwrap();
@@ -383,6 +397,8 @@ async fn test_verify_chain_detects_tampering() {
             None,
             None,
             json!({}),
+            None,
+            None,
         )
         .await
         .unwrap();

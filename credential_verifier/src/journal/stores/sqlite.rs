@@ -96,6 +96,8 @@ impl SqliteJournalStore {
                 client_id                  TEXT,
                 doc_type                   TEXT,
                 namespace                  TEXT,
+                qrcode_app_user_id         TEXT,
+                qrcode_app_user_email      TEXT,
                 verification_summary       TEXT NOT NULL,
                 created_at                 TEXT NOT NULL
             );
@@ -103,6 +105,8 @@ impl SqliteJournalStore {
                 ON journal_entries (entry_hash);
             CREATE INDEX IF NOT EXISTS idx_journal_username_created
                 ON journal_entries (username, created_at);
+            CREATE INDEX IF NOT EXISTS idx_journal_qrcode_app_user
+                ON journal_entries (qrcode_app_user_id);
             CREATE TABLE IF NOT EXISTS journal_heads (
                 username   TEXT PRIMARY KEY NOT NULL,
                 head_hash  TEXT,
@@ -114,10 +118,19 @@ impl SqliteJournalStore {
         .await
         .map_err(|e| JournalError::Storage(format!("SQLite journal migration: {e}")))?;
 
+        // Additive migration: add new columns to existing tables that were
+        // created before this version.  SQLite does not support IF NOT EXISTS
+        // for ALTER TABLE; we ignore errors ("duplicate column name").
+        for col in &[
+            "ALTER TABLE journal_entries ADD COLUMN qrcode_app_user_id TEXT",
+            "ALTER TABLE journal_entries ADD COLUMN qrcode_app_user_email TEXT",
+        ] {
+            let _ = sqlx::query(col).execute(&self.pool).await;
+        }
+
         Ok(())
     }
 
-    /// Parse a raw database row into a [`JournalEntry`].
     #[allow(clippy::too_many_arguments)]
     fn parse_row(
         id: String,
@@ -129,6 +142,8 @@ impl SqliteJournalStore {
         client_id: Option<String>,
         doc_type: Option<String>,
         namespace: Option<String>,
+        qrcode_app_user_id: Option<String>,
+        qrcode_app_user_email: Option<String>,
         verification_summary: String,
         created_at: String,
     ) -> JournalResult<JournalEntry> {
@@ -150,6 +165,8 @@ impl SqliteJournalStore {
             client_id,
             doc_type,
             namespace,
+            qrcode_app_user_id,
+            qrcode_app_user_email,
             verification_summary,
             created_at,
         })
@@ -170,13 +187,15 @@ type RowTuple = (
     Option<String>,
     Option<String>,
     Option<String>,
+    Option<String>,
+    Option<String>,
     String,
     String,
 );
 
 const SELECT_COLS: &str = "id, username, previous_hash, entry_hash, \
     attestation_signature_hash, attestation_jti, client_id, doc_type, \
-    namespace, verification_summary, created_at";
+    namespace, qrcode_app_user_id, qrcode_app_user_email, verification_summary, created_at";
 
 #[async_trait]
 impl JournalStore for SqliteJournalStore {
@@ -230,8 +249,10 @@ impl JournalStore for SqliteJournalStore {
         sqlx::query(
             "INSERT INTO journal_entries \
              (id, username, previous_hash, entry_hash, attestation_signature_hash, \
-              attestation_jti, client_id, doc_type, namespace, verification_summary, created_at) \
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)",
+              attestation_jti, client_id, doc_type, namespace, \
+              qrcode_app_user_id, qrcode_app_user_email, \
+              verification_summary, created_at) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)",
         )
         .bind(&entry.id)
         .bind(&entry.username)
@@ -242,6 +263,8 @@ impl JournalStore for SqliteJournalStore {
         .bind(&entry.client_id)
         .bind(&entry.doc_type)
         .bind(&entry.namespace)
+        .bind(&entry.qrcode_app_user_id)
+        .bind(&entry.qrcode_app_user_email)
         .bind(&summary_str)
         .bind(&created_at_str)
         .execute(&mut *tx)
@@ -326,8 +349,48 @@ impl JournalStore for SqliteJournalStore {
         };
 
         rows.into_iter()
-            .map(|(id, username, prev, eh, ash, jti, cid, dt, ns, vs, ca)| {
-                Self::parse_row(id, username, prev, eh, ash, jti, cid, dt, ns, vs, ca)
+            .map(|(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)| {
+                Self::parse_row(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)
+            })
+            .collect()
+    }
+
+    async fn list_qrcode_app_entries(
+        &self,
+        qrcode_app_user_id: Option<&str>,
+        limit: u32,
+        offset: u32,
+    ) -> JournalResult<Vec<JournalEntry>> {
+        let limit = i64::from(limit);
+        let offset = i64::from(offset);
+        let rows: Vec<RowTuple> = match qrcode_app_user_id {
+            Some(uid) => sqlx::query_as(&format!(
+                "SELECT {SELECT_COLS} FROM journal_entries \
+                 WHERE qrcode_app_user_id = ?1 \
+                 ORDER BY created_at DESC LIMIT ?2 OFFSET ?3"
+            ))
+            .bind(uid)
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| JournalError::Storage(format!("SQLite list_qrcode_app_entries: {e}")))?,
+
+            None => sqlx::query_as(&format!(
+                "SELECT {SELECT_COLS} FROM journal_entries \
+                 WHERE qrcode_app_user_id IS NOT NULL \
+                 ORDER BY created_at DESC LIMIT ?1 OFFSET ?2"
+            ))
+            .bind(limit)
+            .bind(offset)
+            .fetch_all(&self.pool)
+            .await
+            .map_err(|e| JournalError::Storage(format!("SQLite list_qrcode_app_entries: {e}")))?,
+        };
+
+        rows.into_iter()
+            .map(|(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)| {
+                Self::parse_row(id, username, prev, eh, ash, jti, cid, dt, ns, quid, quem, vs, ca)
             })
             .collect()
     }

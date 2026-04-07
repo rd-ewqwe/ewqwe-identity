@@ -5,6 +5,8 @@ pub mod attestation;
 
 pub mod journal;
 
+pub mod qrcode_app;
+
 mod server;
 pub use server::{ServerParams, start_server};
 

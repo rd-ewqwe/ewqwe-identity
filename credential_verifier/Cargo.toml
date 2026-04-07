@@ -21,6 +21,8 @@ alcoholic_jwt = { workspace = true }
 actix-cors = { workspace = true }
 actix-identity = { workspace = true }
 actix-files = { workspace = true }
+actix-session = { workspace = true }
+argon2 = { workspace = true }
 actix-service = { workspace = true }
 actix-tls = { workspace = true }
 actix-web = { workspace = true, features = ["macros", "openssl"] }

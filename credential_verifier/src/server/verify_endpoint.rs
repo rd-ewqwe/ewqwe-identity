@@ -10,6 +10,7 @@ use crate::{
     AttError,
     attestation::{Attestation, AttestationSigner, JwtSigner, SigningAlgorithm},
     journal::{DynJournalStore, append_verification},
+    qrcode_app::qr_user_map::QrUserMap,
     server::{ServerParams, Version},
     tls::AuthenticatedUser,
 };
@@ -424,6 +425,7 @@ pub(crate) async fn verify_credential_endpoint(
     server_params: web::Data<Arc<ServerParams>>,
     trusted_cas: web::Data<Arc<Vec<X509>>>,
     journal: Option<web::Data<Arc<DynJournalStore>>>,
+    qr_map: Option<web::Data<Arc<QrUserMap>>>,
 ) -> Result<HttpResponse, AttError> {
     let username = req
         .extensions()
@@ -637,6 +639,12 @@ pub(crate) async fn verify_credential_endpoint(
     tracing::info!(doc_type = ?doc_type, client_id = ?body.client_id, "credential verified");
 
     // Append to the verification journal if enabled.
+    // Look up the QR app user who initiated this transaction (if any).
+    let qr_user = body
+        .state
+        .as_deref()
+        .and_then(|txn_id| qr_map.as_ref()?.get(txn_id));
+
     if let Some(journal_store) = &journal {
         let jti = extract_attestation_jti(&attestation);
         let summary = serde_json::json!({
@@ -656,6 +664,8 @@ pub(crate) async fn verify_credential_endpoint(
             Some(&doc_type),
             Some(&namespace),
             summary,
+            qr_user.as_ref().map(|u| u.user_id.as_str()),
+            qr_user.as_ref().map(|u| u.user_email.as_str()),
         )
         .await
         {

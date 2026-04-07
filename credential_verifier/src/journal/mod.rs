@@ -161,6 +161,12 @@ pub struct JournalEntry {
     /// Credential namespace (e.g. `org.iso.18013.5.1`).
     pub namespace: Option<String>,
 
+    /// QR Code APP user ID who initiated this verification (when triggered via the embedded app).
+    pub qrcode_app_user_id: Option<String>,
+
+    /// QR Code APP user email for the initiating user.
+    pub qrcode_app_user_email: Option<String>,
+
     /// JSON summary of the verification outcome.
     pub verification_summary: serde_json::Value,
 
@@ -217,6 +223,17 @@ pub trait JournalStore: Send + Sync {
     ///
     /// Respects the optional `limit`, `before`, and `after` filters in the query.
     async fn list_entries(&self, query: &JournalQuery) -> JournalResult<Vec<JournalEntry>>;
+
+    /// List all journal entries attributed to a specific QR Code APP user.
+    ///
+    /// When `qrcode_app_user_id` is `None`, returns all entries that have any
+    /// QR Code APP user attribution, newest first.
+    async fn list_qrcode_app_entries(
+        &self,
+        qrcode_app_user_id: Option<&str>,
+        limit: u32,
+        offset: u32,
+    ) -> JournalResult<Vec<JournalEntry>>;
 
     /// Verify the entire chain for a user by recomputing every hash from genesis.
     async fn verify_chain(&self, username: &str) -> JournalResult<ChainVerificationResult>;
@@ -281,6 +298,18 @@ impl JournalStore for DynJournalStore {
         }
     }
 
+    async fn list_qrcode_app_entries(
+        &self,
+        qrcode_app_user_id: Option<&str>,
+        limit: u32,
+        offset: u32,
+    ) -> JournalResult<Vec<JournalEntry>> {
+        match self {
+            Self::Sqlite(s) => s.list_qrcode_app_entries(qrcode_app_user_id, limit, offset).await,
+            Self::Postgres(s) => s.list_qrcode_app_entries(qrcode_app_user_id, limit, offset).await,
+        }
+    }
+
     async fn verify_chain(&self, username: &str) -> JournalResult<ChainVerificationResult> {
         match self {
             Self::Sqlite(s) => s.verify_chain(username).await,
@@ -336,6 +365,8 @@ pub async fn append_verification(
     doc_type: Option<&str>,
     namespace: Option<&str>,
     verification_summary: serde_json::Value,
+    qrcode_app_user_id: Option<&str>,
+    qrcode_app_user_email: Option<&str>,
 ) -> JournalResult<()> {
     for attempt in 0..MAX_CAS_RETRIES {
         let current_head = store.get_head(username).await?;
@@ -352,6 +383,8 @@ pub async fn append_verification(
             client_id: client_id.map(str::to_string),
             doc_type: doc_type.map(str::to_string),
             namespace: namespace.map(str::to_string),
+            qrcode_app_user_id: qrcode_app_user_id.map(str::to_string),
+            qrcode_app_user_email: qrcode_app_user_email.map(str::to_string),
             verification_summary: verification_summary.clone(),
             created_at: Utc::now(),
         };

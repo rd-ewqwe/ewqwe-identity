@@ -1,0 +1,131 @@
+//! QR Code APP store trait and dynamic dispatch wrapper.
+
+use async_trait::async_trait;
+
+use crate::qrcode_app::{
+    config::{QrcodeAppConfig, QrcodeAppDbBackend},
+    error::QrcodeAppResult,
+    models::{NewUserRecord, QrcodeAppUser, UserChanges},
+    stores::{PostgresQrcodeAppStore, SqliteQrcodeAppStore},
+};
+
+// ============================================================================
+// Store trait
+// ============================================================================
+
+/// Async interface for the QR Code APP user store.
+#[async_trait]
+pub trait QrcodeAppStore: Send + Sync {
+    /// Return the total number of users in the database.
+    ///
+    /// Used to gate the bootstrap endpoint — it only succeeds when this is 0.
+    async fn user_count(&self) -> QrcodeAppResult<u64>;
+
+    /// Create a new user and return the persisted record.
+    async fn create_user(&self, record: &NewUserRecord) -> QrcodeAppResult<QrcodeAppUser>;
+
+    /// Look up a user by their email address.
+    async fn get_user_by_email(&self, email: &str) -> QrcodeAppResult<Option<QrcodeAppUser>>;
+
+    /// Look up a user by their UUID.
+    async fn get_user_by_id(&self, id: &str) -> QrcodeAppResult<Option<QrcodeAppUser>>;
+
+    /// List all users. When `active_only` is `true`, only active users are returned.
+    async fn list_users(&self, active_only: bool) -> QrcodeAppResult<Vec<QrcodeAppUser>>;
+
+    /// Apply partial changes to a user and return the updated record.
+    async fn update_user(&self, id: &str, changes: &UserChanges) -> QrcodeAppResult<QrcodeAppUser>;
+
+    /// Permanently remove a user from the database.
+    ///
+    /// Returns [`QrcodeAppError::Conflict`] if the user is the superadmin.
+    async fn delete_user(&self, id: &str) -> QrcodeAppResult<()>;
+}
+
+// ============================================================================
+// Dynamic dispatch wrapper
+// ============================================================================
+
+/// Wraps any supported backend behind a single concrete type.
+pub enum DynQrcodeAppStore {
+    Sqlite(SqliteQrcodeAppStore),
+    Postgres(PostgresQrcodeAppStore),
+}
+
+impl DynQrcodeAppStore {
+    /// Construct a new store from the provided configuration.
+    ///
+    /// Runs schema migrations automatically.  Call once during server startup.
+    pub async fn new(config: &QrcodeAppConfig) -> QrcodeAppResult<Self> {
+        match &config.db {
+            QrcodeAppDbBackend::SqliteMemory => {
+                let store = SqliteQrcodeAppStore::new_memory().await?;
+                Ok(Self::Sqlite(store))
+            }
+            QrcodeAppDbBackend::SqliteFile { path } => {
+                let store = SqliteQrcodeAppStore::new_file(path).await?;
+                Ok(Self::Sqlite(store))
+            }
+            QrcodeAppDbBackend::Postgres { url } => {
+                let store = PostgresQrcodeAppStore::new(url).await?;
+                Ok(Self::Postgres(store))
+            }
+        }
+    }
+}
+
+// ============================================================================
+// Trait delegation
+// ============================================================================
+
+#[async_trait]
+impl QrcodeAppStore for DynQrcodeAppStore {
+    async fn user_count(&self) -> QrcodeAppResult<u64> {
+        match self {
+            Self::Sqlite(s) => s.user_count().await,
+            Self::Postgres(s) => s.user_count().await,
+        }
+    }
+
+    async fn create_user(&self, record: &NewUserRecord) -> QrcodeAppResult<QrcodeAppUser> {
+        match self {
+            Self::Sqlite(s) => s.create_user(record).await,
+            Self::Postgres(s) => s.create_user(record).await,
+        }
+    }
+
+    async fn get_user_by_email(&self, email: &str) -> QrcodeAppResult<Option<QrcodeAppUser>> {
+        match self {
+            Self::Sqlite(s) => s.get_user_by_email(email).await,
+            Self::Postgres(s) => s.get_user_by_email(email).await,
+        }
+    }
+
+    async fn get_user_by_id(&self, id: &str) -> QrcodeAppResult<Option<QrcodeAppUser>> {
+        match self {
+            Self::Sqlite(s) => s.get_user_by_id(id).await,
+            Self::Postgres(s) => s.get_user_by_id(id).await,
+        }
+    }
+
+    async fn list_users(&self, active_only: bool) -> QrcodeAppResult<Vec<QrcodeAppUser>> {
+        match self {
+            Self::Sqlite(s) => s.list_users(active_only).await,
+            Self::Postgres(s) => s.list_users(active_only).await,
+        }
+    }
+
+    async fn update_user(&self, id: &str, changes: &UserChanges) -> QrcodeAppResult<QrcodeAppUser> {
+        match self {
+            Self::Sqlite(s) => s.update_user(id, changes).await,
+            Self::Postgres(s) => s.update_user(id, changes).await,
+        }
+    }
+
+    async fn delete_user(&self, id: &str) -> QrcodeAppResult<()> {
+        match self {
+            Self::Sqlite(s) => s.delete_user(id).await,
+            Self::Postgres(s) => s.delete_user(id).await,
+        }
+    }
+}

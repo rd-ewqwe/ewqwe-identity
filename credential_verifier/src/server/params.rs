@@ -1,4 +1,4 @@
-use crate::{AttError, AttResult, journal::JournalConfig, parameters::TlsParams};
+use crate::{AttError, AttResult, journal::JournalConfig, parameters::TlsParams, qrcode_app::QrcodeAppConfig};
 use serde::{Deserialize, Serialize};
 use std::{
     env, fs,
@@ -69,6 +69,14 @@ pub struct ServerParams {
     /// Omit or set `enabled = false` to disable journaling.
     #[serde(default)]
     pub journal_config: JournalConfig,
+
+    /// QR Code APP configuration.
+    ///
+    /// When `enabled = true`, the embedded web application for QR-code-based
+    /// age verification is activated and all `/qrcode_app/*` routes are served.
+    /// Omit or set `enabled = false` (the default) to disable the app.
+    #[serde(default)]
+    pub qrcode_app_config: QrcodeAppConfig,
 }
 
 impl ServerParams {
@@ -505,6 +513,7 @@ transaction_ttl_secs = 300
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
+            qrcode_app_config: crate::qrcode_app::QrcodeAppConfig::default(),
             tracing_config: TracingConfig::default(),
         };
 
@@ -536,6 +545,7 @@ transaction_ttl_secs = 300
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
+            qrcode_app_config: crate::qrcode_app::QrcodeAppConfig::default(),
         };
 
         assert_eq!(
