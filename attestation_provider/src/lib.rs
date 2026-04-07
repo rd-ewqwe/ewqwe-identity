@@ -2,7 +2,7 @@ mod authenticated_user;
 pub use authenticated_user::AuthenticatedUser;
 
 mod server;
-pub use server::{AuthServerParams, start_auth_server};
+pub use server::{AttServerParams, start_att_server};
 
 mod error;
 pub use error::{AuthError, AuthResult, AuthResultHelper};

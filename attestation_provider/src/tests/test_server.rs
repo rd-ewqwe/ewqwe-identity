@@ -8,13 +8,13 @@ use actix_web::{HttpRequest, HttpResponse, dev::ServerHandle, web::Data};
 use tracing::error;
 
 use crate::{
-    AuthError, AuthResult, AuthServerParams, IdpParams, JwtParams, TlsParams,
-    server::start_auth_server, tests::TestsContext,
+    AttServerParams, AuthError, AuthResult, IdpParams, JwtParams, TlsParams,
+    server::start_att_server, tests::TestsContext,
 };
 
 /// Starts the test server in a separate thread and returns a `TestsContext` containing
 /// the server handle and thread handle.
-pub async fn start_test_server(server_params: AuthServerParams) -> AuthResult<TestsContext> {
+pub async fn start_test_server(server_params: AttServerParams) -> AuthResult<TestsContext> {
     let (tx, rx) = mpsc::channel::<ServerHandle>();
 
     let params = Arc::new(server_params.clone());
@@ -29,16 +29,20 @@ pub async fn start_test_server(server_params: AuthServerParams) -> AuthResult<Te
             })?;
 
         runtime
-            .block_on(start_auth_server(params, Some(tx)))
+            .block_on(start_att_server(params, Some(tx)))
             .map_err(|e| {
-                error!("Error starting the  server: {e:?}");
+                error!("Error starting the attestation provider server: {e:?}");
                 AuthError::AuthServer(e.to_string())
             })
     });
 
     let server_handle = rx
         .recv_timeout(std::time::Duration::from_secs(10))
-        .map_err(|e| AuthError::Unexpected(format!("Error getting test server handle: {e}")))?;
+        .map_err(|e| {
+            AuthError::Unexpected(format!(
+                "Error getting the attestation provider server handle: {e}"
+            ))
+        })?;
 
     Ok(TestsContext {
         server_params,
@@ -56,25 +60,25 @@ pub async fn start_default_test_server() -> AuthResult<TestsContext> {
     );
     let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
 
-    let server_params = AuthServerParams {
+    let server_params = AttServerParams {
         host_name: "localhost".to_string(),
         host_port: 49998,
         tls_params: TlsParams {
             server_certificate: certificates_dir
-                .join("velo.server.cert.pem")
+                .join("ewqwe.server.cert.pem")
                 .to_string_lossy()
                 .to_string(),
             server_private_key: certificates_dir
-                .join("velo.server.key.pem")
+                .join("ewqwe.server.key.pem")
                 .to_string_lossy()
                 .to_string(),
             server_ca_chain: certificates_dir
-                .join("velo.chain.pem")
+                .join("ewqwe.chain.pem")
                 .to_string_lossy()
                 .to_string(),
             client_ca_cert_chain: Some(
                 certificates_dir
-                    .join("velo.chain.pem")
+                    .join("ewqwe.chain.pem")
                     .to_string_lossy()
                     .to_string(),
             ),
@@ -107,7 +111,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_start_server() -> Result<(), AuthError> {
-        log_test(Some("info"));
+        log_test(Some("info,attestation_provider=debug"));
         info!("Starting test server...");
         let ctx = start_default_test_server().await?;
         info!("Test server started successfully. Sleeping for 3 seconds...");

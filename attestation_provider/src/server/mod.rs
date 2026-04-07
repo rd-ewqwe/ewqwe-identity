@@ -1,11 +1,11 @@
 mod params;
-pub use params::AuthServerParams;
+pub use params::AttServerParams;
 use serde::{Deserialize, Serialize};
 
 use crate::AuthError;
 mod endpoints;
 mod server;
-pub use server::start_auth_server;
+pub use server::start_att_server;
 
 impl actix_web::ResponseError for AuthError {
     fn error_response(&self) -> actix_web::HttpResponse {

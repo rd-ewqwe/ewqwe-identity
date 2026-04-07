@@ -1,6 +1,6 @@
 use crate::{
     AuthResult, AuthResultHelper,
-    server::{AuthServerParams, endpoints::version_endpoint},
+    server::{AttServerParams, endpoints::version_endpoint},
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -15,28 +15,29 @@ use std::{
     io,
     sync::{Arc, mpsc},
 };
-use tracing::info;
+use tracing::{debug, info};
 
 #[cfg(feature = "openssl")]
 use crate::tls::openssl_config::{create_openssl_acceptor, extract_openssl_peer_certificate};
 
 /// Inner function to start the test server asynchronously.
-pub async fn start_auth_server(
-    server_params: Arc<AuthServerParams>,
-    _server_handle_tx: Option<mpsc::Sender<ServerHandle>>,
+pub async fn start_att_server(
+    server_params: Arc<AttServerParams>,
+    server_handle_tx: Option<mpsc::Sender<ServerHandle>>,
 ) -> AuthResult<()> {
     // Log the server configuration
-    info!(" Server configuration: {server_params:#?}");
+    info!("Server configuration: {server_params:#?}");
+    debug!("MPSC handle: {} ?", server_handle_tx.is_some());
     // Instantiate and prepare the  server
     let server = prepare_test_server(server_params).await?;
 
     // send the server handle to the caller
-    if let Some(tx) = &_server_handle_tx {
+    if let Some(tx) = &server_handle_tx {
         tx.send(server.handle())
             .context("failed to send server handle")?;
     }
 
-    info!("Starting the HTTPS Velo test server...");
+    info!("Starting the HTTPS Attestation Provider server...");
 
     // Run the server and return the result
     server
@@ -45,7 +46,7 @@ pub async fn start_auth_server(
 }
 
 /// Prepares the test server with the given parameters and returns the server instance.
-async fn prepare_test_server(params: Arc<AuthServerParams>) -> AuthResult<actix_web::dev::Server> {
+async fn prepare_test_server(params: Arc<AttServerParams>) -> AuthResult<actix_web::dev::Server> {
     // Determine the address to bind the server to.
     let address = format!("{}:{}", &params.host_name, params.host_port);
 

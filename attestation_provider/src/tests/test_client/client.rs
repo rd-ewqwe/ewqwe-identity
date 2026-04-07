@@ -75,14 +75,14 @@ impl TestClient {
     /// Build the reqwest client based on authentication configuration
     fn build_client(cookie_store: Arc<TestCookieStore>) -> AuthResult<Client> {
         // Load the CA certificate for TLS verification
-        let ca_cert_path = format!("{}/velo.chain.pem", EC_CERTIFICATES_PATH);
+        let ca_cert_path = format!("{}/ewqwe.chain.pem", EC_CERTIFICATES_PATH);
         let ca_cert_pem = std::fs::read(&ca_cert_path)
             .map_err(|e| AuthError::Config(format!("Failed to read CA certificate: {}", e)))?;
         let ca_cert = Certificate::from_pem(&ca_cert_pem)
             .map_err(|e| AuthError::Config(format!("Failed to parse CA certificate: {}", e)))?;
         info!("Loaded CA certificate from {}", ca_cert_path);
 
-        let mut builder = Client::builder()
+        let builder = Client::builder()
             .cookie_provider(cookie_store)
             .add_root_certificate(ca_cert)
             .danger_accept_invalid_certs(false);
