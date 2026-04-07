@@ -612,9 +612,9 @@ fn create_attestation(
 
     // Build attestation claims
     let mut attestation_claims = AttestationClaims::new(
-        "credential-verifier.ewqwe.local", // issuer
-        client_id,                         // audience (RP)
-        &uuid::Uuid::new_v4().to_string(), // session ID
+        "credential-verifier.demo.ewqwe.local", // issuer
+        client_id,                              // audience (RP)
+        &uuid::Uuid::new_v4().to_string(),      // session ID
         age_verified,
     );
 

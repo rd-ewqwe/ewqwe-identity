@@ -15,7 +15,7 @@ echo "Generating Root CA..."
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out ewqwe.root.key.pem
 openssl req -new -x509 -days 3650 -key ewqwe.root.key.pem -out ewqwe.chain.pem \
     -subj "/CN=acme.com" \
-    -addext "subjectAltName=DNS:localhost,IP:127.0.0.1" \
+    -addext "subjectAltName=DNS:demo.ewqwe.local,DNS:localhost,IP:127.0.0.1" \
     -addext "basicConstraints=CA:TRUE,pathlen:0" \
     -addext "keyUsage = digitalSignature,cRLSign,keyCertSign" \
     -addext "extendedKeyUsage = serverAuth, clientAuth" \
@@ -26,11 +26,11 @@ echo "Generating Server Certificate..."
 openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:4096 -out ewqwe.server.key.pem
 openssl req -new -key ewqwe.server.key.pem -out server.csr \
     -subj "/CN=ewqwe.acme.com" \
-    -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
+    -addext "subjectAltName=DNS:demo.ewqwe.local,DNS:localhost,IP:127.0.0.1"
 
 openssl x509 -req -sha256 -in server.csr -CA ewqwe.chain.pem -CAkey ewqwe.root.key.pem \
-    -CAcreateserial -out ewqwe.server.cert.pem -days 365 \
-    -extfile <(cat server_extensions && echo "subjectAltName=DNS:localhost,IP:127.0.0.1") \
+    -CAcreateserial -out ewqwe.server.cert.pem -days 3650 \
+    -extfile <(cat server_extensions && echo "subjectAltName=DNS:demo.ewqwe.local,DNS:localhost,IP:127.0.0.1") \
     -extensions v3_req
 
 # 3. Generate User 1 Certificate
@@ -40,7 +40,7 @@ openssl req -new -key ewqwe.user1.key.pem -out user1.csr \
     -subj "/CN=user1.acme.com" \
     -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 openssl x509 -req  -sha256 -in user1.csr -CA ewqwe.chain.pem -CAkey ewqwe.root.key.pem \
-    -CAcreateserial -out ewqwe.user1.cert.pem -days 365 \
+    -CAcreateserial -out ewqwe.user1.cert.pem -days 3650 \
     -extfile <(cat user_extensions && echo "subjectAltName=DNS:localhost,IP:127.0.0.1") \
     -extensions v3_req
 
@@ -51,7 +51,7 @@ openssl req -new -key ewqwe.user2.key.pem -out user2.csr \
     -subj "/CN=user2.acme.com" \
     -addext "subjectAltName=DNS:localhost,IP:127.0.0.1"
 openssl x509 -req  -sha256 -in user2.csr -CA ewqwe.chain.pem -CAkey ewqwe.root.key.pem \
-    -CAcreateserial -out ewqwe.user2.cert.pem -days 365 \
+    -CAcreateserial -out ewqwe.user2.cert.pem -days 3650 \
     -extfile <(cat user_extensions && echo "subjectAltName=DNS:localhost,IP:127.0.0.1") \
     -extensions v3_req
 

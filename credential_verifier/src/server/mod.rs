@@ -5,7 +5,7 @@ pub(crate) mod endpoints;
 pub(crate) mod openid4vp_endpoints;
 
 mod params;
-pub use params::AttServerParams;
+pub use params::ServerParams;
 
 use crate::AttError;
 use serde::{Deserialize, Serialize};

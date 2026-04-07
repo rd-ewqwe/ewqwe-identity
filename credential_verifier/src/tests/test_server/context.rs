@@ -1,10 +1,10 @@
-use crate::{AttResult, auth_error, server::AttServerParams};
+use crate::{AttResult, auth_error, server::ServerParams};
 use actix_web::dev::ServerHandle;
 use std::thread::JoinHandle;
 
 #[derive(Debug)]
 pub struct TestsContext {
-    pub server_params: AttServerParams,
+    pub server_params: ServerParams,
     pub server_handle: ServerHandle,
     pub thread_handle: JoinHandle<AttResult<()>>,
 }

@@ -1,5 +1,5 @@
 use crate::{
-    AttError, AttResult, AttServerParams, TlsParams, server::start_att_server, tests::TestsContext,
+    AttError, AttResult, ServerParams, TlsParams, server::start_att_server, tests::TestsContext,
 };
 use actix_web::dev::ServerHandle;
 use ewqwe_openid4vp::{HaipConfig, OpenID4VPServiceConfig};
@@ -15,7 +15,7 @@ static SERVER_PORT_COUNTER: AtomicU16 = AtomicU16::new(59900);
 
 /// Starts the test server in a separate thread and returns a `TestsContext` containing
 /// the server handle and thread handle.
-pub async fn start_test_server(server_params: AttServerParams) -> AttResult<TestsContext> {
+pub async fn start_test_server(server_params: ServerParams) -> AttResult<TestsContext> {
     let (tx, rx) = mpsc::channel::<ServerHandle>();
 
     let params = Arc::new(server_params.clone());
@@ -61,7 +61,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
     );
     let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
 
-    let server_params = AttServerParams {
+    let server_params = ServerParams {
         host_name: "localhost".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         tls_params: TlsParams {
@@ -96,7 +96,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         },
         default_username: Some("default_user".to_string()),
         openid4vp_config: OpenID4VPServiceConfig {
-            transaction_ttl_ms: Some(60_000), // 1 minute for tests
+            transaction_ttl_secs: Some(60), // 1 minute for tests
             haip_config: Some(HaipConfig {
                 // Use the pre-built fullchain PEM (leaf + CA) for x5c
                 x509_cert_path: format!(

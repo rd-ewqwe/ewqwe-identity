@@ -6,17 +6,16 @@
 //! # Usage
 //!
 //! ```bash
-//! # With default settings (uses test certificates)
-//! cargo run --features openssl
+//! # With an explicit config file path
+//! cargo run --features openssl -- /path/to/credential-server.toml
 //!
-//! # With environment variables
-//! RUST_LOG=debug HOST=0.0.0.0 PORT=9443 cargo run --features openssl
+//! # From a TOML configuration file in the current directory or the platform config directory
+//! cargo run --features openssl
 //! ```
 
-use credential_verifier::{AttServerParams, TlsParams, start_att_server};
+use credential_verifier::{ServerParams, start_att_server};
 use ewqwe_logging::{TracingConfig, tracing_init};
-use ewqwe_openid4vp::{HaipConfig, OpenID4VPServiceConfig};
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
@@ -24,68 +23,26 @@ async fn main() -> std::io::Result<()> {
     let config = TracingConfig::default();
     let _guard = tracing_init(&config);
 
-    tracing::info!("Starting EU Age Verification Credential Verifier");
+    tracing::info!("Starting ewQwe Credential Verifier");
 
-    // Load configuration from environment or use defaults
-    let host = std::env::var("HOST").unwrap_or_else(|_| "0.0.0.0".to_string());
-    let port: u16 = std::env::var("PORT")
-        .ok()
-        .and_then(|p| p.parse().ok())
-        .unwrap_or(9443);
-
-    // For development, use test certificates
-    // In production, these would be loaded from secure configuration
-    let cert_dir =
-        std::env::var("CERT_DIR").unwrap_or_else(|_| "src/tests/certificates/ec".to_string());
-
-    let tls_params = TlsParams {
-        server_private_key: format!("{}/ewqwe.server.key.pem", cert_dir),
-        server_certificate: format!("{}/ewqwe.server.cert.pem", cert_dir),
-        server_ca_chain: format!("{}/ewqwe.chain.pem", cert_dir),
-        client_ca_cert_chain: None,
-        tls_cipher_suites: None,
+    let (server_params, config_path) = if let Some(config_path) = std::env::args_os().nth(1) {
+        let config_path = PathBuf::from(config_path);
+        let server_params = ServerParams::load_from_file(&config_path)
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()))?;
+        (server_params, config_path)
+    } else {
+        ServerParams::load_from_default_locations()
+            .map_err(|e| std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string()))?
     };
 
-    let ttl_ms = std::env::var("OPENID4VP_TTL_MS")
-        .ok()
-        .and_then(|v| v.parse().ok());
+    tracing::info!("Loaded configuration from {}", config_path.display());
+    tracing::info!(
+        "Server will listen on https://{}:{}",
+        server_params.host_name,
+        server_params.host_port
+    );
 
-    // OpenID4VP configuration (optional, enabled via env vars)
-    // X509_CERT_PATH: path to PEM certificate chain for JAR signing
-    // IMPORTANT: Must contain the FULL chain (leaf + CA) so the x5c header
-    // includes all certificates needed for the EUDI Wallet to validate the path.
-    // Use ewqwe.server.fullchain.pem (not ewqwe.server.cert.pem which is leaf-only).
-    // X509_KEY_PATH: path to PEM private key for JAR signing
-    let openid4vp_config = match (
-        std::env::var("X509_CERT_PATH").ok(),
-        std::env::var("X509_KEY_PATH").ok(),
-    ) {
-        (Some(cert_path), Some(key_path)) => {
-            tracing::info!("OpenID4VP: cert={}, key={}", cert_path, key_path,);
-            OpenID4VPServiceConfig {
-                transaction_ttl_ms: ttl_ms,
-                haip_config: Some(HaipConfig {
-                    x509_cert_path: cert_path,
-                    x509_key_path: key_path,
-                }),
-            }
-        }
-        _ => OpenID4VPServiceConfig {
-            transaction_ttl_ms: ttl_ms,
-            haip_config: None,
-        },
-    };
-
-    let server_params = Arc::new(AttServerParams {
-        host_name: host.clone(),
-        host_port: port,
-        tls_params,
-        default_username: Some("demo-user".to_string()),
-        openid4vp_config,
-    });
-
-    tracing::info!("Server will listen on https://{}:{}", host, port);
-    tracing::info!("Certificate directory: {}", cert_dir);
+    let server_params = Arc::new(server_params);
 
     // Start the server
     match start_att_server(server_params, None).await {

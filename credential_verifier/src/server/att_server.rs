@@ -1,7 +1,7 @@
 use crate::{
     AttResult, AttResultHelper,
     server::{
-        AttServerParams,
+        ServerParams,
         endpoints::{verify_credential_endpoint, version_endpoint},
         openid4vp_endpoints,
     },
@@ -24,7 +24,7 @@ use crate::tls::openssl_config::{create_openssl_acceptor, extract_openssl_peer_c
 
 /// Inner function to start the attestation server asynchronously.
 pub async fn start_att_server(
-    server_params: Arc<AttServerParams>,
+    server_params: Arc<ServerParams>,
     server_handle_tx: Option<mpsc::Sender<ServerHandle>>,
 ) -> AttResult<()> {
     // Log the server configuration
@@ -49,7 +49,7 @@ pub async fn start_att_server(
 }
 
 /// Prepares the attestation server with the given parameters and returns the server instance.
-async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::dev::Server> {
+async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::Server> {
     // Determine the address to bind the server to.
     let address = format!("{}:{}", &params.host_name, params.host_port);
 
