@@ -46,11 +46,10 @@ const CORS_HEADERS: Record<string, string> = {
 // TLS-aware HTTP client for self-signed credential_verifier certs
 // ============================================================================
 
-let httpClient: Deno.HttpClient | undefined;
-
+// Cache the PEM so we can recreate the client without hitting the filesystem.
+let caCertPem: string | undefined;
 try {
-  const caCert = await Deno.readTextFile(CA_CERT_PATH);
-  httpClient = Deno.createHttpClient({ caCerts: [caCert] });
+  caCertPem = await Deno.readTextFile(CA_CERT_PATH);
   console.log(`[Server] Loaded CA cert from ${CA_CERT_PATH}`);
 } catch (e) {
   console.warn(
@@ -58,6 +57,24 @@ try {
       `TLS connections to credential_verifier may fail.`,
   );
 }
+
+/**
+ * Create a fresh HttpClient.
+ *
+ * poolIdleTimeout (ms) — drop idle connections after 30 s so Deno never
+ * tries to reuse a connection that the upstream server (actix-web / OpenSSL)
+ * has already closed during inactivity.  When undefined the default is no
+ * timeout, which causes TLS "InternalError" alerts after long idle periods.
+ */
+function makeHttpClient(): Deno.HttpClient | undefined {
+  if (!caCertPem) return undefined;
+  return Deno.createHttpClient({
+    caCerts: [caCertPem],
+    poolIdleTimeout: 30_000,
+  });
+}
+
+let httpClient = makeHttpClient();
 
 // ============================================================================
 // Proxy Helper
@@ -93,7 +110,30 @@ async function proxyToVerifier(
     fetchOptions.client = httpClient;
   }
 
-  const upstream = await fetch(url, fetchOptions);
+  let upstream: Response;
+  try {
+    upstream = await fetch(url, fetchOptions);
+  } catch (err) {
+    // Stale pooled connection: the server closed its end during inactivity and
+    // Deno tried to reuse it.  Recreate the client (resets the pool) and retry
+    // once.  If the retry also fails the error propagates normally.
+    const isConnectError =
+      err instanceof TypeError &&
+      (err.message.includes("Connect") ||
+        err.message.includes("TLS") ||
+        err.message.includes("InternalError") ||
+        err.message.includes("connection"));
+    if (!isConnectError) throw err;
+
+    console.warn(
+      `[Server] Connection error on ${req.method} ${upstreamPath}, ` +
+        `recreating HTTP client and retrying once…`,
+    );
+    httpClient?.close();
+    httpClient = makeHttpClient();
+    if (httpClient) fetchOptions.client = httpClient;
+    upstream = await fetch(url, fetchOptions);
+  }
 
   console.log(
     `[Server] Proxied ${req.method} ${upstreamPath} → ${upstream.status}`,

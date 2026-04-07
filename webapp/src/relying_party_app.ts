@@ -40,7 +40,7 @@ export class RelyingPartyApp {
       this.selectedClaims.add(claim);
     });
     this.updateClaimsUI();
-    this.updatePresentationRequest();
+    this.updateInitTransactionRequest();
 
     // Restore any verification result that survived a page navigation
     // (same-device flow can trigger a brief page reload when the wallet
@@ -80,7 +80,7 @@ export class RelyingPartyApp {
         this.selectedProtocol = (e.target as HTMLSelectElement).value;
         console.log("Selected protocol:", this.selectedProtocol);
         this.updateProtocolDescription();
-        this.updatePresentationRequest();
+        this.updateInitTransactionRequest();
       });
 
     // Initialize protocol description
@@ -154,7 +154,7 @@ export class RelyingPartyApp {
       this.selectedClaims.add(claim);
     });
     this.updateClaimsUI();
-    this.updatePresentationRequest();
+    this.updateInitTransactionRequest();
     this.updateProfileInfo();
 
     this.logger.log(`Selected credential type: ${type}`);
@@ -233,7 +233,7 @@ export class RelyingPartyApp {
           this.selectedClaims.delete(target.value);
         }
         this.updateClaimsUI();
-        this.updatePresentationRequest();
+        this.updateInitTransactionRequest();
       });
     });
   }
@@ -253,7 +253,7 @@ export class RelyingPartyApp {
     });
   }
 
-  private updatePresentationRequest(): void {
+  private updateInitTransactionRequest(): void {
     const requestJson = document.getElementById("request-json");
     if (!requestJson) return;
 
@@ -477,7 +477,7 @@ export class RelyingPartyApp {
     } else {
       resultIcon.setAttribute("class", "w-6 h-6 mr-3 text-red-400");
       resultIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
-      resultTitle.textContent = "Verification Failed";
+      resultTitle.textContent = "Last Verification Failed";
       resultTitle.setAttribute("class", "result-error");
 
       const errorsHtml = result.errors
