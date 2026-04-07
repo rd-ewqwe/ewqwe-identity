@@ -214,11 +214,13 @@ export function convertPresentationDefinitionToDCQL(
  * Builds a **DCQL query** directly (never a legacy `PresentationDefinition`),
  * so no server-side conversion is required.
  *
+ * @param publicUrl - The public URL the wallet is going to call back to
  * @param credentialType - The type of credential to request
  * @param selectedClaims - Array of claim IDs to include (e.g. `["age_over_18"]`)
  * @returns `InitTransactionRequest` ready to POST to `/api/openid4vp/init`
  */
 export function buildInitTransactionRequest(
+  publicUrl: string,
   credentialType: CredentialType,
   selectedClaims: string[],
 ): InitTransactionRequest {
@@ -246,6 +248,7 @@ export function buildInitTransactionRequest(
   };
 
   return {
+    public_url: publicUrl,
     dcql_query: dcqlQuery,
     nonce: generateNonce(),
     credential_type: credentialType,

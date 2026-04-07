@@ -1,7 +1,7 @@
 /// <reference lib="deno.ns" />
 
 /**
- * EU Age Verification Webapp — Backend Proxy Server
+ * Demo Webapp — Backend Proxy Server
  *
  * Thin HTTP proxy that forwards all OpenID4VP and verification requests
  * to the Rust credential_verifier server. No business logic here.
@@ -26,8 +26,6 @@
 const SERVER_PORT = 5175;
 const CREDENTIAL_VERIFIER_URL =
   Deno.env.get("CREDENTIAL_VERIFIER_URL") || "https://127.0.0.1:9443";
-const PUBLIC_URL =
-  Deno.env.get("PUBLIC_URL") || `http://localhost:${SERVER_PORT}`;
 const CA_CERT_PATH =
   Deno.env.get("CA_CERT_PATH") ||
   "../credential_verifier/src/tests/certificates/ec/ewqwe.chain.pem";
@@ -89,6 +87,8 @@ async function proxyToVerifier(
   req: Request,
   bodyOverride?: string,
 ): Promise<Response> {
+  console.log(`[Server] ${req.method} ${upstreamPath} → credential_verifier`);
+
   const url = `${CREDENTIAL_VERIFIER_URL}${upstreamPath}`;
 
   const headers = new Headers();
@@ -135,9 +135,7 @@ async function proxyToVerifier(
     upstream = await fetch(url, fetchOptions);
   }
 
-  console.log(
-    `[Server] Proxied ${req.method} ${upstreamPath} → ${upstream.status}`,
-  );
+  console.log(`    → ${upstream.status}`);
 
   // Buffer the body fully before responding — streaming upstream.body directly
   // causes AbortError when Vite's HTTP proxy closes the connection prematurely.
@@ -198,35 +196,14 @@ async function handleRequest(req: Request): Promise<Response> {
   }
 
   try {
-    // ── OpenID4VP init (inject public_url) ──────────────────────────────
-    if (path === "/api/openid4vp/init" && req.method === "POST") {
-      console.log("[Server] POST /api/openid4vp/init → credential_verifier");
-
-      // Parse body, inject public_url, forward
-      const body = await req.json();
-      body.public_url = PUBLIC_URL;
-      return await proxyToVerifier(
-        "/api/openid4vp/init",
-        req,
-        JSON.stringify(body),
-      );
-    }
-
-    // ── All other /api/openid4vp/* — straight proxy ─────────────────────
-    if (path.startsWith("/api/openid4vp/")) {
-      console.log(`[Server] ${req.method} ${path} → credential_verifier`);
-      return await proxyToVerifier(path, req);
-    }
-
-    // ── Verification proxy ──────────────────────────────────────────────
-    if (path === "/api/verify" && req.method === "POST") {
-      console.log("[Server] POST /api/verify → credential_verifier");
-      return await proxyToVerifier("/api/verify", req);
-    }
-
     // ── Health check (local) ────────────────────────────────────────────
     if (path === "/api/health") {
       return jsonResponse({ status: "ok" });
+    }
+
+    // ── All other API requests — straight proxy ─────────────────────
+    if (path.startsWith("/api/")) {
+      return await proxyToVerifier(path, req);
     }
 
     return jsonResponse({ error: "Not found" }, 404);
@@ -242,7 +219,6 @@ async function handleRequest(req: Request): Promise<Response> {
 // ============================================================================
 
 console.log(`[Server] Starting webapp proxy server on port ${SERVER_PORT}`);
-console.log(`[Server] Public URL: ${PUBLIC_URL}`);
-console.log(`[Server] Credential Verifier: ${CREDENTIAL_VERIFIER_URL}`);
+console.log(`[Server] Credential Verifier URL: ${CREDENTIAL_VERIFIER_URL}`);
 
 Deno.serve({ port: SERVER_PORT }, handleRequest);

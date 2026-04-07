@@ -3,6 +3,7 @@ import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
 import * as path from "node:path";
 import basicSsl from "@vitejs/plugin-basic-ssl";
+import postcss from "postcss";
 
 export default defineConfig({
   root: ".",
@@ -32,7 +33,10 @@ export default defineConfig({
   },
   css: {
     postcss: {
-      plugins: [tailwindcss as any, autoprefixer as any],
+      plugins: [
+        tailwindcss as postcss.AcceptedPlugin,
+        autoprefixer as postcss.AcceptedPlugin,
+      ],
     },
   },
   plugins: [

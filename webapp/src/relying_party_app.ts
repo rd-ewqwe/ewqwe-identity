@@ -281,6 +281,8 @@ export class RelyingPartyApp {
 
     try {
       const request = buildInitTransactionRequest(
+        // The Vite dev server will proxy back to the types server URL, see vite.config.ts.
+        document.URL,
         this.selectedCredentialType,
         Array.from(this.selectedClaims),
       );
