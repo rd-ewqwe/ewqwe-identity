@@ -55,7 +55,7 @@ pub fn extract_openssl_peer_certificate(cnx: &dyn Any, extensions: &mut Extensio
             );
             extensions.insert(PeerCertificate { cert });
         } else {
-            debug!("No peer certificate presented by client");
+            trace!("No peer certificate presented by client");
         }
     } else if let Some(cnx) = cnx.downcast_ref::<TcpStream>() {
         error!("Not a TLS connection: {:?}", cnx.peer_addr());

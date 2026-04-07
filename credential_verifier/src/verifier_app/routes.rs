@@ -5,10 +5,12 @@ use std::sync::Arc;
 use actix_identity::Identity;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use chrono::Utc;
-use ewqwe_openid4vp::{InitTransactionRequest, OpenID4VPService, ProfileId};
+use ewqwe_openid4vp::{determine_profile, get_credential_type, InitTransactionRequest, OpenID4VPService, ProfileId};
+use ewqwe_verifier_app::VerifierAppConfig;
 use serde_json::json;
 use uuid::Uuid;
 
+use crate::parameters::ServerParams;
 use crate::{
     journal::{DynJournalStore, JournalStore},
     verifier_app::{
@@ -210,27 +212,63 @@ pub async fn generate_qr(
     store: web::Data<Arc<DynVerifierAppStore>>,
     service: web::Data<Arc<OpenID4VPService>>,
     qr_map: web::Data<Arc<QrUserMap>>,
+    verifier_config: web::Data<Arc<VerifierAppConfig>>,
+    server_params: web::Data<Arc<ServerParams>>,
+    body: web::Json<verifier_app::models::GenerateQrRequest>,
 ) -> HttpResponse {
     let user = match current_user(identity, &store).await {
         Some(u) => u,
         None => return unauthorized(),
     };
 
-    // Build the public URL the wallet will use for `response_uri`.
-    // We derive it from the incoming request so no extra config is required.
-    let public_url = {
-        let conn = req.connection_info();
-        format!("{}://{}", conn.scheme(), conn.host())
-    };
+    // Resolve the public URL used for `response_uri` / `request_uri` in the
+    // OpenID4VP authorization request that the wallet decodes from the QR code.
+    // Priority:
+    //   1. [verifier_app].public_url  — specific to this embedded app
+    //   2. public_root_url            — server-wide override (useful behind NAT/proxy)
+    //   3. Inferred from the incoming request (works for local use only)
+    let public_url = verifier_config
+        .public_url
+        .clone()
+        .or_else(|| server_params.public_root_url.clone())
+        .unwrap_or_else(|| {
+            let conn = req.connection_info();
+            format!("{}://{}", conn.scheme(), conn.host())
+        });
 
+    // Honor credential type from the UI (proof-of-age / mdl / national-id)
+    let credential_type = body
+        .credential_type
+        .as_deref()
+        .unwrap_or("proof-of-age");
+
+    if get_credential_type(credential_type).is_none() {
+        return bad_request(&format!("unknown credential type: {credential_type}"));
+    }
+
+    let profile = determine_profile(Some(credential_type), None);
+
+    // Enforce configured allowed types for verifier_app users
+    if !verifier_config.allowed_credential_types.is_empty()
+        && !verifier_config
+            .allowed_credential_types
+            .iter()
+            .any(|t| t == credential_type)
+    {
+        return bad_request(&format!(
+            "credential type '{credential_type}' is not enabled on this server"
+        ));
+    }
+
+    // Build request for OpenID4VP init_transaction
     let init_req = InitTransactionRequest {
         public_url,
-        profile: Some(ProfileId::AnnexA),
-        dcql_query: None, // use default age-verification DCQL
+        profile: Some(profile),
+        dcql_query: None,
         nonce: None,
         state: None,
         client_metadata: None,
-        credential_type: None,
+        credential_type: Some(credential_type.to_string()),
         transaction_data: None,
     };
 

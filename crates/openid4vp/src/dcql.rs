@@ -167,6 +167,41 @@ pub fn get_default_age_verification_dcql() -> DCQLQuery {
     }
 }
 
+/// Build a default DCQL query for the given credential type string.
+///
+/// - `"proof-of-age"` / `"proof_of_age"` → EU Age Verification (`eu.europa.ec.av.1`)
+/// - `"mdl"` → ISO mDL (`org.iso.18013.5.1.mDL`)
+/// - `"national-id"` / `"pid"` → EU PID (`eu.europa.ec.eudi.pid.1`)
+/// - anything else → EU PID (backward-compatible default)
+pub fn build_default_dcql_for_credential_type(credential_type: &str) -> DCQLQuery {
+    match credential_type {
+        "proof-of-age" | "proof_of_age" => build_age_verification_query(None),
+        "mdl" => DCQLQuery {
+            credentials: vec![DCQLCredentialQuery {
+                id: "mdl_age".to_string(),
+                format: "mso_mdoc".to_string(),
+                meta: DCQLCredentialMeta {
+                    doctype_value: Some(ISO_MDL_DOCTYPE.to_string()),
+                    vct_values: None,
+                    type_values: None,
+                },
+                claims: Some(vec![DCQLClaimsQuery {
+                    id: Some("age_over_18".to_string()),
+                    path: vec![ISO_MDL_NAMESPACE.into(), "age_over_18".into()],
+                    values: None,
+                    intent_to_retain: Some(false),
+                }]),
+                claim_sets: None,
+                multiple: None,
+                trusted_authorities: None,
+                require_cryptographic_holder_binding: None,
+            }],
+            credential_sets: None,
+        },
+        _ => get_default_age_verification_dcql(),
+    }
+}
+
 /// Convert a legacy PresentationDefinition to DCQL.
 ///
 /// Parses `input_descriptors` from the presentation definition and

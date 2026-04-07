@@ -33,6 +33,38 @@ pub use config::VerifierAppConfig;
 use actix_web::web;
 use async_trait::async_trait;
 
+/// Result of an inline credential verification performed by the Verifier App
+/// QR polling endpoint.
+pub struct QrVerifyResult {
+    /// Whether the credential passed all verification checks.
+    pub success: bool,
+    /// Credential document type (e.g. `"eu.europa.ec.av.1"`).
+    pub doc_type: String,
+    /// Failures or warnings produced during verification.
+    pub errors: Vec<String>,
+}
+
+/// Pluggable in-process credential verifier for the Verifier App QR flow.
+///
+/// Implemented by `credential_verifier` via `credential_verifier::server::start`
+/// and registered as `web::Data<Arc<dyn VerifierCredentialVerifier>>` on the app.
+/// Breaks the dependency cycle between `ewqwe_verifier_app` and `credential_verifier`.
+#[async_trait]
+pub trait VerifierCredentialVerifier: Send + Sync {
+    /// Verify a VP token received from the wallet via the OpenID4VP direct_post.
+    ///
+    /// * `vp_token` – raw VP token string (DCQL mDoc or SD-JWT VC).
+    /// * `state`    – OpenID4VP state parameter used to look up the server nonce.
+    /// * `username` – email of the Verifier App user who initiated the QR, used for
+    ///   journal attribution.
+    async fn verify_qr_presentation(
+        &self,
+        vp_token: &str,
+        state: &str,
+        username: &str,
+    ) -> Result<QrVerifyResult, String>;
+}
+
 /// Minimal journal access interface for the [`routes::admin_journal`] handler.
 ///
 /// Implemented by `credential_verifier::journal::DynJournalStore` via a thin

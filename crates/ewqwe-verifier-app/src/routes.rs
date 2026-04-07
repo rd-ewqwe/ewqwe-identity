@@ -3,7 +3,9 @@
 use actix_identity::Identity;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use chrono::{DateTime, Utc};
-use ewqwe_openid4vp::{InitTransactionRequest, OpenID4VPService, determine_profile, get_credential_type};
+use ewqwe_openid4vp::{
+    InitTransactionRequest, OpenID4VPService, determine_profile, get_credential_type,
+};
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
@@ -11,7 +13,7 @@ use tracing::info;
 use uuid::Uuid;
 
 use crate::{
-    VerifierJournalProvider, auth,
+    VerifierCredentialVerifier, VerifierJournalProvider, auth,
     config::VerifierAppConfig,
     db::{DynVerifierAppStore, VerifierAppStore},
     error::VerifierAppError,
@@ -226,10 +228,7 @@ pub async fn generate_qr(
     };
 
     // Resolve credential type (default: proof-of-age).
-    let credential_type = body
-        .credential_type
-        .as_deref()
-        .unwrap_or("proof-of-age");
+    let credential_type = body.credential_type.as_deref().unwrap_or("proof-of-age");
 
     // Validate the credential type is known.
     if get_credential_type(credential_type).is_none() {
@@ -239,14 +238,20 @@ pub async fn generate_qr(
     // ── Permission check ───────────────────────────────────────────────
     // First check the server-level allowed types, then the user-level list.
     if !config.allowed_credential_types.is_empty()
-        && !config.allowed_credential_types.iter().any(|t| t == credential_type)
+        && !config
+            .allowed_credential_types
+            .iter()
+            .any(|t| t == credential_type)
     {
         return bad_request(&format!(
             "credential type '{credential_type}' is not enabled on this server"
         ));
     }
     if !user.allowed_credential_types.is_empty()
-        && !user.allowed_credential_types.iter().any(|t| t == credential_type)
+        && !user
+            .allowed_credential_types
+            .iter()
+            .any(|t| t == credential_type)
     {
         return HttpResponse::Forbidden().json(json!({
             "error": format!("you are not allowed to request '{credential_type}' credentials")
@@ -318,6 +323,7 @@ pub async fn qr_status(
     store: web::Data<Arc<DynVerifierAppStore>>,
     service: web::Data<Arc<OpenID4VPService>>,
     qr_map: web::Data<Arc<QrUserMap>>,
+    verifier: Option<web::Data<Arc<dyn VerifierCredentialVerifier>>>,
     path: web::Path<String>,
 ) -> HttpResponse {
     let user = match current_user(identity, &store).await {
@@ -343,10 +349,89 @@ pub async fn qr_status(
     }
 
     match service.get_transaction_status(&transaction_id).await {
-        Ok(status) => HttpResponse::Ok().json(json!({
-            "status": status.status,
-            "expires_in": status.expires_in,
-        })),
+        Ok(status) => {
+            use ewqwe_openid4vp::TransactionStatus;
+
+            // When the wallet has posted a VP token, verify the credential inline
+            // (if a verifier is wired in) so the frontend receives a final result.
+            if status.status == TransactionStatus::Received {
+                if let Some(auth_resp) = status.authorization_response.as_ref() {
+                    if let Some(verifier) = verifier.as_ref() {
+                        let owner_email = owner_entry
+                            .as_ref()
+                            .map(|e| e.user_email.as_str())
+                            .unwrap_or("system");
+                        match verifier
+                            .verify_qr_presentation(
+                                &auth_resp.vp_token,
+                                &auth_resp.state,
+                                owner_email,
+                            )
+                            .await
+                        {
+                            Ok(result) if result.success => {
+                                tracing::info!(
+                                    transaction_id = %transaction_id,
+                                    doc_type = %result.doc_type,
+                                    "QR verification succeeded"
+                                );
+                                // Transition state to Verified so subsequent polls
+                                // return "verified" without re-running verification.
+                                if let Err(e) =
+                                    service.mark_transaction_verified(&transaction_id).await
+                                {
+                                    tracing::warn!(
+                                        transaction_id = %transaction_id,
+                                        error = %e,
+                                        "failed to mark transaction verified; subsequent polls will re-verify"
+                                    );
+                                }
+                                HttpResponse::Ok().json(json!({"status": "verified"}))
+                            }
+                            Ok(result) => {
+                                tracing::warn!(
+                                    transaction_id = %transaction_id,
+                                    errors = ?result.errors,
+                                    "QR verification failed"
+                                );
+                                HttpResponse::Ok().json(json!({
+                                    "status": "failed",
+                                    "errors": result.errors,
+                                }))
+                            }
+                            Err(e) => {
+                                tracing::error!(
+                                    transaction_id = %transaction_id,
+                                    error = %e,
+                                    "QR verification error"
+                                );
+                                HttpResponse::Ok().json(json!({
+                                    "status": "failed",
+                                    "errors": [e],
+                                }))
+                            }
+                        }
+                    } else {
+                        // No verifier plugged in — return "received" so the RP can
+                        // verify externally via POST /ewqwe_api/verify.
+                        HttpResponse::Ok().json(json!({
+                            "status": status.status,
+                            "expires_in": status.expires_in,
+                        }))
+                    }
+                } else {
+                    HttpResponse::Ok().json(json!({
+                        "status": status.status,
+                        "expires_in": status.expires_in,
+                    }))
+                }
+            } else {
+                HttpResponse::Ok().json(json!({
+                    "status": status.status,
+                    "expires_in": status.expires_in,
+                }))
+            }
+        }
         Err(e) => {
             tracing::warn!(transaction_id = %transaction_id, "QR status error: {e}");
             HttpResponse::NotFound().json(json!({"error": "transaction not found"}))

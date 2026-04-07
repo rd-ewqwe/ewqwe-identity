@@ -864,3 +864,156 @@ fn extract_attestation_jti(compact_jwt: &str) -> Option<String> {
     let json: serde_json::Value = serde_json::from_slice(&decoded).ok()?;
     json.get("jti")?.as_str().map(str::to_string)
 }
+
+// ============================================================================
+// QR Verifier App in-process verification
+// ============================================================================
+
+/// Outcome of an in-process VP token verification for the Verifier App QR flow.
+pub(crate) struct QrVerificationOutcome {
+    pub success: bool,
+    pub doc_type: String,
+    #[allow(dead_code)]
+    pub namespace: String,
+    pub errors: Vec<String>,
+}
+
+/// Verify a VP token presented via the Verifier App QR (`direct_post`) flow.
+///
+/// Unlike [`verify_credential_endpoint`] this function:
+/// - does **not** require mTLS / `AuthenticatedUser` (the Verifier App user is passed as `username`)
+/// - does **not** create or return a signed attestation JWT
+/// - does **not** consume / delete the transaction (the caller must call
+///   `service.mark_transaction_verified(id)` after a successful result)
+/// - does append to the verification journal when `journal` is provided
+pub(crate) async fn verify_vp_token_for_qr(
+    vp_token_str: &str,
+    state: &str,
+    username: &str,
+    service: &OpenID4VPService,
+    trusted_cas: &[X509],
+    journal: Option<&crate::journal::DynJournalStore>,
+) -> Result<QrVerificationOutcome, AttError> {
+    let transaction = service
+        .get_transaction_by_state(state)
+        .await
+        .map_err(|e| AttError::BadRequest(format!("failed to look up transaction by state: {e}")))?
+        .ok_or_else(|| AttError::BadRequest("no transaction found for state".to_string()))?;
+
+    let response_jwk_thumbprint = service.get_response_jwk_thumbprint();
+
+    let (vp_token, _credential_id) = parse_vp_token(vp_token_str)?;
+
+    let (claims, doc_type, namespace, verification_result) = if let Some(raw_mdoc) =
+        vp_token.raw_mdoc.as_deref()
+    {
+        let mdoc_result = verify_mdoc_presentation(
+            raw_mdoc,
+            &transaction.client_id,
+            &transaction.nonce,
+            &transaction.response_uri,
+            matches!(
+                transaction.response_mode,
+                ewqwe_openid4vp::ResponseMode::DirectPostJwt
+                    | ewqwe_openid4vp::ResponseMode::DcApiJwt
+            ),
+            response_jwk_thumbprint.as_deref(),
+            trusted_cas,
+        )
+        .map_err(|e| {
+            tracing::error!(error = %e, "QR mDoc presentation verification failed");
+            AttError::BadRequest(e.to_string())
+        })?;
+
+        if !mdoc_result.issuer_trusted {
+            return Err(AttError::BadRequest(
+                "mDoc issuerAuth certificate chain is not trusted: \
+                 the issuer CA is not in the trusted certificates directory"
+                    .to_string(),
+            ));
+        }
+        if !mdoc_result.not_expired {
+            return Err(AttError::BadRequest(
+                "mDoc credential has expired: MSO validUntil is in the past".to_string(),
+            ));
+        }
+
+        let vr = VerificationResult {
+            is_valid: true,
+            signature_valid: true,
+            not_expired: true,
+            issuer_trusted: true,
+            errors: Vec::new(),
+        };
+        (
+            mdoc_result.claims,
+            mdoc_result.doc_type,
+            mdoc_result.namespace,
+            vr,
+        )
+    } else {
+        let sig_result = if let Some(raw) = vp_token.raw_sd_jwt.as_deref() {
+            verify_sd_jwt_signatures(raw, trusted_cas)
+        } else {
+            SigVerificationResult::skipped("presentation format not recognized")
+        };
+        let claims = extract_claims(&vp_token);
+        let doc_type = vp_token.doc_type.clone();
+        let namespace = vp_token.namespace.clone();
+        let vr = verify_vp_token(&vp_token, Some(&transaction.nonce), &sig_result);
+        (claims, doc_type, namespace, vr)
+    };
+
+    if !verification_result.is_valid {
+        return Ok(QrVerificationOutcome {
+            success: false,
+            doc_type,
+            namespace,
+            errors: verification_result.errors,
+        });
+    }
+
+    tracing::info!(
+        doc_type = %doc_type,
+        namespace = %namespace,
+        username,
+        "QR credential verification succeeded"
+    );
+    let _ = claims; // claims available for future use (e.g. richer journal entries)
+
+    if let Some(journal_store) = journal {
+        let summary = serde_json::json!({
+            "success": true,
+            "doc_type": doc_type,
+            "namespace": namespace,
+            "signature_valid": verification_result.signature_valid,
+            "not_expired": verification_result.not_expired,
+            "issuer_trusted": verification_result.issuer_trusted,
+            "source": "qr_verifier_app",
+        });
+        // No attestation JWT in the QR flow — pass empty string; the hash is still recorded.
+        if let Err(e) = crate::journal::append_verification(
+            journal_store,
+            username,
+            "",
+            None,
+            Some(transaction.client_id.as_str()),
+            Some(doc_type.as_str()),
+            Some(namespace.as_str()),
+            summary,
+            None,
+            Some(username),
+        )
+        .await
+        {
+            tracing::error!(error = %e, "failed to append QR verification to journal");
+        }
+    }
+
+    Ok(QrVerificationOutcome {
+        success: true,
+        doc_type,
+        namespace,
+        errors: Vec::new(),
+    })
+}

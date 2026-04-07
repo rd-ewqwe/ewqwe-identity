@@ -3,7 +3,7 @@ use crate::{
     journal::{DynJournalStore, JournalStore},
     parameters::ServerParams,
     server::{
-        EnsureAuth, journal_endpoints, openid4vp_endpoints,
+        EnsureAuth, journal_endpoints, openid4vp_endpoints, qr_verifier::QrCredentialVerifierImpl,
         verify_endpoint::{self, verify_credential_endpoint, version_endpoint},
     },
     tls::SslAuth,
@@ -20,7 +20,8 @@ use actix_web::{
 use argon2::Argon2;
 use ewqwe_openid4vp::OpenID4VPService;
 use ewqwe_verifier_app::{
-    VerifierJournalProvider, db::DynVerifierAppStore, qr_user_map::QrUserMap,
+    VerifierCredentialVerifier, VerifierJournalProvider, db::DynVerifierAppStore,
+    qr_user_map::QrUserMap,
 };
 use std::{
     io,
@@ -185,6 +186,20 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         });
     let verifier_app_config = Arc::new(params.verifier_app_config.clone());
 
+    // Build in-process credential verifier for the Verifier App QR polling flow.
+    // Only constructed when the Verifier App is enabled; otherwise `qr_status`
+    // falls back to returning the raw "received" status.
+    let qr_credential_verifier: Option<Arc<dyn VerifierCredentialVerifier>> =
+        if params.verifier_app_config.enabled {
+            Some(Arc::new(QrCredentialVerifierImpl {
+                service: openid4vp_service.clone(),
+                trusted_cas: trusted_cas.clone(),
+                journal: journal_store.clone(),
+            }) as Arc<dyn VerifierCredentialVerifier>)
+        } else {
+            None
+        };
+
     // Clone attestation server params for HttpServer closure
     let server_params = params.clone();
     let ensure_auth = EnsureAuth::new(
@@ -235,6 +250,13 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             app
         };
 
+        // Optionally share the in-process QR credential verifier for the Verifier App.
+        let app = if let Some(ref v) = qr_credential_verifier {
+            app.app_data(Data::new(v.clone()))
+        } else {
+            app
+        };
+
         // The default scope serves from the root / the KMIP, permissions, and TEE endpoints
         let default_scope = web::scope("")
             .wrap(
@@ -247,21 +269,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             .route("/version", web::get().to(version_endpoint));
 
         let openid4vp_scope = web::scope("/ewqwe_api")
-            .wrap(ensure_auth.clone())
-            .wrap(SslAuth)
-            .service(web::resource("/verify").route(web::post().to(verify_credential_endpoint)))
-            .route(
-                "/.well-known/issuer_certs",
-                web::get().to(verify_endpoint::issuer_certs_endpoint),
-            )
-            .route(
-                "/openid4vp/init",
-                web::post().to(openid4vp_endpoints::init_transaction),
-            )
-            .route(
-                "/openid4vp/status/{id}",
-                web::get().to(openid4vp_endpoints::get_transaction_status),
-            )
+            // ----- Wallet-facing endpoints — no client cert required -----
             .route(
                 "/openid4vp/direct_post",
                 web::post().to(openid4vp_endpoints::handle_direct_post),
@@ -278,17 +286,48 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
                 "/openid4vp/.well-known/jwks.json",
                 web::get().to(openid4vp_endpoints::get_jwks),
             )
-            // Journal endpoints — use shared authentication pipeline.
+            // ----- RP-facing endpoints — require client cert (SslAuth + EnsureAuth) -----
+            .service(
+                web::resource("/verify")
+                    .wrap(ensure_auth.clone())
+                    .wrap(SslAuth)
+                    .route(web::post().to(verify_credential_endpoint)),
+            )
+            .service(
+                web::resource("/.well-known/issuer_certs")
+                    .wrap(ensure_auth.clone())
+                    .wrap(SslAuth)
+                    .route(web::get().to(verify_endpoint::issuer_certs_endpoint)),
+            )
+            .service(
+                web::resource("/openid4vp/init")
+                    .wrap(ensure_auth.clone())
+                    .wrap(SslAuth)
+                    .route(web::post().to(openid4vp_endpoints::init_transaction)),
+            )
+            .service(
+                web::resource("/openid4vp/status/{id}")
+                    .wrap(ensure_auth.clone())
+                    .wrap(SslAuth)
+                    .route(web::get().to(openid4vp_endpoints::get_transaction_status)),
+            )
+            // Journal endpoints — require authentication.
             .service(
                 web::resource("/journal/{username}/entries")
+                    .wrap(ensure_auth.clone())
+                    .wrap(SslAuth)
                     .route(web::get().to(journal_endpoints::list_journal_entries)),
             )
             .service(
                 web::resource("/journal/{username}/verify")
+                    .wrap(ensure_auth.clone())
+                    .wrap(SslAuth)
                     .route(web::get().to(journal_endpoints::verify_journal_chain)),
             )
             .service(
                 web::resource("/journal/{username}/download")
+                    .wrap(ensure_auth.clone())
+                    .wrap(SslAuth)
                     .route(web::get().to(journal_endpoints::download_journal)),
             );
 

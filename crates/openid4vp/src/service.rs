@@ -21,7 +21,7 @@ use crate::{
         DecryptedWalletResponse, JarKeyMaterial, JarPayload, JweKeyMaterial, build_public_jwk_set,
         decrypt_jwe_response, initialize_jar_key, initialize_jwe_key, sign_jar,
     },
-    dcql::get_default_age_verification_dcql,
+    dcql::build_default_dcql_for_credential_type,
     error::{OpenID4VPError, OpenID4VPResult},
     transaction::{DynTransactionStore, TransactionStore, TransactionStoreParams},
     types::{
@@ -242,11 +242,14 @@ impl OpenID4VPService {
             ),
         };
 
-        // Resolve DCQL query
+        // Resolve DCQL query: use explicit query if provided, otherwise derive a
+        // sensible default from the credential type so we request the right namespace.
         let dcql_query = if let Some(q) = request.dcql_query {
             q
         } else {
-            get_default_age_verification_dcql()
+            build_default_dcql_for_credential_type(
+                request.credential_type.as_deref().unwrap_or("proof-of-age"),
+            )
         };
 
         // Validate the DCQL query structure (§6 + §6.4.1)
@@ -634,6 +637,18 @@ impl OpenID4VPService {
         state: &str,
     ) -> OpenID4VPResult<Option<OpenID4VPTransaction>> {
         self.transactions.find_by_state(state).await
+    }
+
+    /// Transition a transaction from `Received` to `Verified`.
+    ///
+    /// Called by the Verifier App QR polling endpoint after the VP token has been
+    /// cryptographically verified in-process.  Subsequent calls to
+    /// [`get_transaction_status`] on the same ID will return
+    /// `TransactionStatus::Verified` so the UI can stop polling.
+    pub async fn mark_transaction_verified(&self, id: &str) -> OpenID4VPResult<()> {
+        self.transactions
+            .update_status(id, TransactionStatus::Verified)
+            .await
     }
 
     /// Delete the stored transaction identified by its OpenID4VP `state`.

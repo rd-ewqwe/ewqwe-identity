@@ -49,7 +49,8 @@ pub use crypto::{
 };
 pub use dcql::{
     build_age_verification_query, build_age_verification_query_with_fallback,
-    convert_presentation_definition_to_dcql, generate_nonce, get_default_age_verification_dcql,
+    build_default_dcql_for_credential_type, convert_presentation_definition_to_dcql,
+    generate_nonce, get_default_age_verification_dcql,
 };
 pub use error::{OpenID4VPError, OpenID4VPResult};
 pub use service::{HaipConfig, OpenID4VPService, OpenID4VPServiceConfig};

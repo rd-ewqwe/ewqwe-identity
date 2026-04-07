@@ -69,6 +69,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         host_name: "127.0.0.1".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         rust_log: None,
+        public_root_url: None,
         tls_params: TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")
@@ -89,12 +90,6 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
                     .to_string(),
             ),
             tls_cipher_suites: None,
-            // tls_cipher_suites: Some(
-            //     tls::openssl_config::TLS13_CIPHER_SUITES
-            //         .iter()
-            //         .map(|s| s.to_string())
-            //         .collect(),
-            // ),
         },
         default_username: Some("default_user".to_string()),
         openid4vp_config: OpenID4VPServiceConfig {
@@ -143,6 +138,7 @@ pub fn make_test_server_params(
         host_name: "127.0.0.1".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         rust_log: None,
+        public_root_url: None,
         tls_params: TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")
@@ -211,6 +207,7 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
         rust_log: None,
         host_name: "127.0.0.1".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
+        public_root_url: None,
         tls_params: crate::TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")
