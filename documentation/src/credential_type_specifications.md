@@ -1,22 +1,56 @@
 # Credential Type Specifications
 
-This document specifies the credential types used in this project:
+This document specifies the credential types used in this project. The system supports credentials from the EUDI Wallet ecosystem, organized by category:
 
-- **Mobile Driver's License (mDL)** - Full driving licence with optional age verification attributes
-- **Person Identification Data (PID/National ID)** - EU digital identity (no age attributes)
-- **Proof of Age (EU AV)** - Dedicated privacy-preserving age verification attestation
+**Government**:
+
+- **Mobile Driver's License (mDL)** — Full driving licence with optional age verification attributes
+- **Person Identification Data (PID/National ID)** — EU digital identity (mso_mdoc and SD-JWT VC)
+- **Proof of Age (EU AV)** — Dedicated privacy-preserving age verification attestation
+- **Tax Identification** — Tax number attestation (mso_mdoc and SD-JWT VC)
+- **Pseudonym (Age Over 18)** — Privacy-preserving age pseudonym (mso_mdoc and SD-JWT VC)
+- **Certificate of Residence** — Proof of residential address
+
+**Travel**:
+
+- **Photo ID** — ISO 23220-2 photo identification
+- **Travel Reservation** — Booking/reservation attestation
+
+**Finance**:
+
+- **IBAN** — Bank account attestation (mso_mdoc and SD-JWT VC)
+
+**Health**:
+
+- **European Health Insurance Card (EHIC)** — Cross-border healthcare attestation (mso_mdoc and SD-JWT VC)
+- **Health ID** — Health insurance identification (mso_mdoc and SD-JWT VC)
+
+**Social Security**:
+
+- **Portable Document A1 (PDA1)** — Social security coordination (mso_mdoc and SD-JWT VC)
+
+**Retail**:
+
+- **Loyalty Card** — Retail loyalty programme attestation
+- **MSISDN** — Mobile phone number attestation (mso_mdoc and SD-JWT VC)
+
+**Other**:
+
+- **Power of Representation (PoR)** — Legal representation attestation (mso_mdoc and SD-JWT VC)
 
 The authoritative specifications are defined in:
 
-1. **ISO/IEC 18013-5:2021** - For mDL (paid standard from ISO)
-2. **EU Commission Implementing Regulation (CIR) 2024/2977** - For PID attributes
-3. **EU Architecture and Reference Framework (ARF)** - Attestation Rulebooks
-4. **EU Age Verification Profile** - For dedicated Proof of Age attestations
+1. **ISO/IEC 18013-5:2021** — For mDL (paid standard from ISO)
+2. **ISO/IEC 23220-2** — For Photo ID
+3. **EU Commission Implementing Regulation (CIR) 2024/2977** — For PID attributes
+4. **EU Architecture and Reference Framework (ARF)** — Attestation Rulebooks
+5. **EU Age Verification Profile** — For dedicated Proof of Age attestations
+6. **IETF SD-JWT VC** — For SD-JWT-based Verifiable Credentials
 
 These specifications define attributes using:
 
-- **CBOR/CDDL** (Concise Data Definition Language) for ISO/IEC 18013-5-compliant formats
-- **JSON claims** for SD-JWT VC formats
+- **CBOR/CDDL** (Concise Data Definition Language) for ISO/IEC 18013-5-compliant formats (mso_mdoc)
+- **JSON claims** for SD-JWT VC formats (dc+sd-jwt)
 
 The encoding is specified in prose and tables rather than JSON Schema.
 
@@ -38,6 +72,34 @@ The encoding is specified in prose and tables rather than JSON Schema.
 | EU ARF mDL Rulebook       | mDL attribute encoding specification       | <https://github.com/eu-digital-identity-wallet/eudi-doc-attestation-rulebooks-catalog/blob/main/rulebooks/mdl/mdl-rulebook.md>                                                                          |
 | EU ARF Main Repository    | Architecture Reference Framework           | <https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework>                                                                                                           |
 | EU Age Verification Profile | Proof of Age attestation specification   | <https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile>                                                                                                              |
+
+---
+
+## Credential Formats
+
+The EUDI Wallet ecosystem supports two credential formats. Many credential types are available in both formats.
+
+### mso_mdoc (ISO/IEC 18013-5)
+
+- **DCQL format identifier**: `"mso_mdoc"`
+- **Type identifier**: `docType` (e.g., `eu.europa.ec.eudi.pid.1`)
+- **Claim paths**: Namespace-based — `[namespace, claimName]` (e.g., `["eu.europa.ec.eudi.pid.1", "family_name"]`)
+- **Encoding**: CBOR (RFC 8949) with COSE signatures
+- **VP format algorithms**: COSE algorithm identifiers (e.g., ES256 = `-7`)
+- **DCQL meta field**: `meta.doctype_value`
+
+### dc+sd-jwt (SD-JWT VC)
+
+- **DCQL format identifier**: `"dc+sd-jwt"` (canonical since November 2024; replaces earlier `"vc+sd-jwt"`)
+- **Type identifier**: `vct` — Verifiable Credential Type (e.g., `urn:eudi:pid:1`)
+- **Claim paths**: Flat JSON paths — `[claimName]` (e.g., `["family_name"]`)
+- **Encoding**: JSON with selective disclosure (IETF draft-ietf-oauth-sd-jwt-vc)
+- **VP format algorithms**: JOSE algorithm strings (e.g., `"ES256"`)
+- **DCQL meta field**: `meta.vct_values`
+
+### Naming Convention
+
+For mso_mdoc types, the docType and namespace follow the pattern `eu.europa.ec.eudi.<type>.1` (dot-separated). For SD-JWT VC types, the vct follows the URN pattern `urn:eu.europa.ec.eudi:<type>:1` (colon-separated). Notable exception: PID uses `urn:eudi:pid:1` (shorter URN) for the SD-JWT VC vct.
 
 ---
 
@@ -242,26 +304,57 @@ CountryCode = tstr  ; ISO 3166-1 alpha-2 country code
 
 ## Implementation in This Project
 
-The configuration in [webapp/src/config.ts](../webapp/src/config.ts) uses claim paths based on the ISO 18013-5 namespace pattern:
+The configuration in `js-lib/ewqwe-digital-identity/src/config.ts` defines all credential types with their format, identifiers, and claims. The DCQL query builder in `js-lib/ewqwe-digital-identity/src/dcql.ts` handles both formats:
 
 ```typescript
-// mDL claims use org.iso.18013.5.1 namespace (per ISO/IEC 18013-5)
-{ id: "age_over_18", path: "org.iso.18013.5.1/age_over_18" }
+// mso_mdoc: namespace-based claim paths
+{ id: "age_over_18", path: ["org.iso.18013.5.1", "age_over_18"] }
 
-// PID (national-id) claims use eu.europa.ec.eudi.pid.1 namespace (per EU ARF)
-{ id: "family_name", path: "eu.europa.ec.eudi.pid.1/family_name" }
-
-// Proof of Age uses eu.europa.ec.av.1 namespace (per EU Age Verification Profile)
-{ id: "age_over_18", path: "eu.europa.ec.av.1/age_over_18" }
+// dc+sd-jwt: flat JSON claim paths
+{ id: "family_name", path: ["family_name"] }
 ```
+
+### Webapp UI
+
+The [Relying Party Demo Webapp](./demo_webapp.md) currently offers four credential types for selection:
+
+| Credential | Format | Profile |
+|:-----------|:-------|:--------|
+| Proof of Age | MSO MDOC | Annex A |
+| Mobile Driver's License | MSO MDOC | HAIP |
+| National ID (PID) | MSO MDOC | HAIP |
+| Health ID | SD-JWT VC | HAIP |
+
+The Profile Information section displays both the protocol profile badge (HAIP or Annex A) and the credential format badge (MSO MDOC or SD-JWT VC).
 
 ### Credential Types Summary
 
-| Type ID         | Name                    | docType                   | Namespace                  | Age Verification |
-|:----------------|:------------------------|:--------------------------|:---------------------------|:-----------------|
-| `mdl`           | Mobile Driver's License | `org.iso.18013.5.1.mDL`   | `org.iso.18013.5.1`        | ✅ `age_over_18`, `age_over_21` |
-| `national-id`   | National ID (PID)       | `eu.europa.ec.eudi.pid.1` | `eu.europa.ec.eudi.pid.1`  | ❌ Not supported  |
-| `proof-of-age`  | Proof of Age (EU AV)    | `eu.europa.ec.av.1`       | `eu.europa.ec.av.1`        | ✅ `age_over_18` only |
+| Type ID               | Name                      | Format      | docType / vct                                      | Age Verification |
+|:----------------------|:--------------------------|:------------|:---------------------------------------------------|:-----------------|
+| `mdl`                 | Mobile Driver's License   | mso_mdoc    | `org.iso.18013.5.1.mDL`                            | ✅ `age_over_18`, `age_over_21` |
+| `national-id`         | National ID (PID)         | mso_mdoc    | `eu.europa.ec.eudi.pid.1`                           | ❌ |
+| `national-id-sd-jwt`  | National ID (PID)         | dc+sd-jwt   | `urn:eudi:pid:1`                                    | ❌ |
+| `proof-of-age`        | Proof of Age (EU AV)      | mso_mdoc    | `eu.europa.ec.av.1`                                 | ✅ `age_over_18` only |
+| `tax`                 | Tax Identification        | mso_mdoc    | `eu.europa.ec.eudi.tax.1`                           | ❌ |
+| `tax-sd-jwt`          | Tax Identification        | dc+sd-jwt   | `urn:eu.europa.ec.eudi:tax:1`                       | ❌ |
+| `pseudonym-age`       | Pseudonym (Age Over 18)   | mso_mdoc    | `eu.europa.ec.eudi.pseudonym.age_over_18.1`        | ✅ `age_over_18` only |
+| `pseudonym-age-sd-jwt`| Pseudonym (Age Over 18)   | dc+sd-jwt   | `urn:eu.europa.ec.eudi:pseudonym_age_over_18:1`    | ✅ `age_over_18` only |
+| `cor`                 | Certificate of Residence  | mso_mdoc    | `eu.europa.ec.eudi.cor.1`                           | ❌ |
+| `photo-id`            | Photo ID                  | mso_mdoc    | `org.iso.23220.2.photoid.1`                         | ❌ |
+| `reservation`         | Travel Reservation        | mso_mdoc    | `org.iso.18013.5.1.reservation`                     | ❌ |
+| `iban`                | IBAN                      | mso_mdoc    | `eu.europa.ec.eudi.iban.1`                          | ❌ |
+| `iban-sd-jwt`         | IBAN                      | dc+sd-jwt   | `urn:eu.europa.ec.eudi:iban:1`                      | ❌ |
+| `ehic`                | EHIC                      | mso_mdoc    | `eu.europa.ec.eudi.ehic.1`                          | ❌ |
+| `ehic-sd-jwt`         | EHIC                      | dc+sd-jwt   | `urn:eu.europa.ec.eudi:ehic:1`                      | ❌ |
+| `health-id`           | Health ID                 | mso_mdoc    | `eu.europa.ec.eudi.hiid.1`                          | ❌ |
+| `health-id-sd-jwt`    | Health ID                 | dc+sd-jwt   | `urn:eu.europa.ec.eudi:hiid:1`                      | ❌ |
+| `pda1`                | Portable Document A1      | mso_mdoc    | `eu.europa.ec.eudi.pda1.1`                          | ❌ |
+| `pda1-sd-jwt`         | Portable Document A1      | dc+sd-jwt   | `urn:eu.europa.ec.eudi:pda1:1`                      | ❌ |
+| `loyalty`             | Loyalty Card              | mso_mdoc    | `eu.europa.ec.eudi.loyalty.1`                       | ❌ |
+| `msisdn`              | MSISDN                    | mso_mdoc    | `eu.europa.ec.eudi.msisdn.1`                        | ❌ |
+| `msisdn-sd-jwt`       | MSISDN                    | dc+sd-jwt   | `urn:eu.europa.ec.eudi:msisdn:1`                    | ❌ |
+| `por`                 | Power of Representation   | mso_mdoc    | `eu.europa.ec.eudi.por.1`                           | ❌ |
+| `por-sd-jwt`          | Power of Representation   | dc+sd-jwt   | `urn:eu.europa.ec.eudi:por:1`                       | ❌ |
 
 ### Authoritative Requirements (EU ARF Annex 2.02 Topic 3)
 
@@ -333,6 +426,346 @@ The Proof of Age attestation is defined in the **EU Age Verification Profile**. 
   }]
 }
 ```
+
+---
+
+## 4. Tax Identification
+
+### Document Types
+
+| Format    | Identifier                          |
+|:----------|:------------------------------------|
+| mso_mdoc  | `eu.europa.ec.eudi.tax.1`          |
+| dc+sd-jwt | `urn:eu.europa.ec.eudi:tax:1` (vct)|
+
+### Namespace (mso_mdoc)
+
+```text
+eu.europa.ec.eudi.tax.1
+```
+
+### Claims
+
+| Claim ID                 | Name                     | Description                           |
+|:-------------------------|:-------------------------|:--------------------------------------|
+| `tax_number`             | Tax Number               | Tax identification number             |
+| `registered_family_name` | Registered Family Name   | Family name registered with tax authority |
+| `registered_given_name`  | Registered Given Names   | Given names registered with tax authority |
+| `issuing_country`        | Issuing Country          | Country code (ISO 3166-1 alpha-2)     |
+
+---
+
+## 5. Pseudonym (Age Over 18)
+
+### Document Types
+
+| Format    | Identifier                                            |
+|:----------|:------------------------------------------------------|
+| mso_mdoc  | `eu.europa.ec.eudi.pseudonym.age_over_18.1`          |
+| dc+sd-jwt | `urn:eu.europa.ec.eudi:pseudonym_age_over_18:1` (vct)|
+
+### Namespace (mso_mdoc)
+
+```text
+eu.europa.ec.eudi.pseudonym.age_over_18.1
+```
+
+### Claims
+
+| Claim ID       | Name         | Description              | Encoding       |
+|:---------------|:-------------|:-------------------------|:---------------|
+| `age_over_18`  | Age Over 18  | Whether holder is over 18| `bool`         |
+
+This credential provides a privacy-preserving pseudonymous attestation of age, disclosing only the `age_over_18` boolean without any identifying information.
+
+---
+
+## 6. Certificate of Residence
+
+### Document Type
+
+```text
+eu.europa.ec.eudi.cor.1
+```
+
+### Namespace
+
+```text
+eu.europa.ec.eudi.cor.1
+```
+
+### Format
+
+mso_mdoc only.
+
+### Claims
+
+| Claim ID               | Name                 | Description                          |
+|:-----------------------|:---------------------|:-------------------------------------|
+| `resident_address`     | Resident Address     | Full residential address             |
+| `resident_country`     | Resident Country     | Country of residence (ISO 3166-1)    |
+| `resident_city`        | Resident City        | City of residence                    |
+| `resident_postal_code` | Resident Postal Code | Postal code                          |
+| `issuing_country`      | Issuing Country      | Country code (ISO 3166-1 alpha-2)    |
+
+---
+
+## 7. Photo ID
+
+### Document Type
+
+```text
+org.iso.23220.2.photoid.1
+```
+
+### Namespace
+
+```text
+org.iso.23220.photoid.1
+```
+
+### Specification
+
+Photo ID is defined in **ISO/IEC 23220-2** and provides a general-purpose photo identification credential.
+
+### Format
+
+mso_mdoc only.
+
+### Claims
+
+| Claim ID             | Name               | Description                          |
+|:---------------------|:-------------------|:-------------------------------------|
+| `family_name`        | Family Name        | Current surname(s)                   |
+| `given_name`         | Given Names        | Current first/middle name(s)         |
+| `birth_date`         | Birth Date         | Date of birth                        |
+| `portrait`           | Portrait           | Facial image of the holder           |
+| `document_number`    | Document Number    | Unique document identifier           |
+| `issuing_authority`  | Issuing Authority  | Authority that issued the document   |
+| `issuing_country`    | Issuing Country    | Country code (ISO 3166-1 alpha-2)    |
+| `expiry_date`        | Expiry Date        | Date of document expiry              |
+
+---
+
+## 8. Travel Reservation
+
+### Document Type
+
+```text
+org.iso.18013.5.1.reservation
+```
+
+### Namespace
+
+```text
+org.iso.18013.5.1.reservation
+```
+
+### Format
+
+mso_mdoc only.
+
+### Claims
+
+| Claim ID             | Name               | Description                          |
+|:---------------------|:-------------------|:-------------------------------------|
+| `reservation_number` | Reservation Number | Booking/reservation identifier       |
+| `family_name`        | Family Name        | Passenger surname(s)                 |
+| `given_name`         | Given Names        | Passenger first/middle name(s)       |
+
+---
+
+## 9. IBAN
+
+### Document Types
+
+| Format    | Identifier                           |
+|:----------|:-------------------------------------|
+| mso_mdoc  | `eu.europa.ec.eudi.iban.1`          |
+| dc+sd-jwt | `urn:eu.europa.ec.eudi:iban:1` (vct)|
+
+### Namespace (mso_mdoc)
+
+```text
+eu.europa.ec.eudi.iban.1
+```
+
+### Claims
+
+| Claim ID         | Name            | Description                |
+|:-----------------|:----------------|:---------------------------|
+| `iban`           | IBAN            | International Bank Account Number |
+| `account_holder` | Account Holder  | Name of the account holder |
+| `bic`            | BIC             | Bank Identifier Code       |
+
+---
+
+## 10. European Health Insurance Card (EHIC)
+
+### Document Types
+
+| Format    | Identifier                           |
+|:----------|:-------------------------------------|
+| mso_mdoc  | `eu.europa.ec.eudi.ehic.1`          |
+| dc+sd-jwt | `urn:eu.europa.ec.eudi:ehic:1` (vct)|
+
+### Namespace (mso_mdoc)
+
+```text
+eu.europa.ec.eudi.ehic.1
+```
+
+### Claims
+
+| Claim ID              | Name                | Description                          |
+|:----------------------|:--------------------|:-------------------------------------|
+| `family_name`         | Family Name         | Holder's surname(s)                  |
+| `given_name`          | Given Names         | Holder's first/middle name(s)        |
+| `birth_date`          | Birth Date          | Date of birth                        |
+| `personal_id`         | Personal ID         | Personal identification number       |
+| `institution_id`      | Institution ID      | EHIC institution identifier          |
+| `institution_country` | Institution Country | Country of the insuring institution  |
+| `card_number`         | Card Number         | EHIC card number                     |
+| `expiry_date`         | Expiry Date         | Card expiry date                     |
+
+---
+
+## 11. Health ID
+
+### Document Types
+
+| Format    | Identifier                           |
+|:----------|:-------------------------------------|
+| mso_mdoc  | `eu.europa.ec.eudi.hiid.1`          |
+| dc+sd-jwt | `urn:eu.europa.ec.eudi:hiid:1` (vct)|
+
+### Namespace (mso_mdoc)
+
+```text
+eu.europa.ec.eudi.hiid.1
+```
+
+### Claims
+
+| Claim ID              | Name                | Description                          |
+|:----------------------|:--------------------|:-------------------------------------|
+| `family_name`         | Family Name         | Holder's surname(s)                  |
+| `given_name`          | Given Names         | Holder's first/middle name(s)        |
+| `birth_date`          | Birth Date          | Date of birth                        |
+| `health_insurance_id` | Health Insurance ID | Health insurance identifier          |
+| `issuing_country`     | Issuing Country     | Country code (ISO 3166-1 alpha-2)    |
+
+---
+
+## 12. Portable Document A1 (PDA1)
+
+### Document Types
+
+| Format    | Identifier                           |
+|:----------|:-------------------------------------|
+| mso_mdoc  | `eu.europa.ec.eudi.pda1.1`          |
+| dc+sd-jwt | `urn:eu.europa.ec.eudi:pda1:1` (vct)|
+
+### Namespace (mso_mdoc)
+
+```text
+eu.europa.ec.eudi.pda1.1
+```
+
+### Specification
+
+The Portable Document A1 (PDA1) is a social security coordination document used within the EU. It certifies the social security legislation applicable to the holder, typically when working in another EU member state.
+
+### Claims
+
+| Claim ID                 | Name                    | Description                                |
+|:-------------------------|:------------------------|:-------------------------------------------|
+| `family_name`            | Family Name             | Holder's surname(s)                        |
+| `given_name`             | Given Names             | Holder's first/middle name(s)              |
+| `birth_date`             | Birth Date              | Date of birth                              |
+| `nationality`            | Nationality             | Nationality (ISO 3166-1 alpha-2)           |
+| `social_security_number` | Social Security Number  | Social security identification number      |
+| `issuing_country`        | Issuing Country         | Country code (ISO 3166-1 alpha-2)          |
+| `expiry_date`            | Expiry Date             | Document expiry date                       |
+
+---
+
+## 13. Loyalty Card
+
+### Document Type
+
+```text
+eu.europa.ec.eudi.loyalty.1
+```
+
+### Namespace
+
+```text
+eu.europa.ec.eudi.loyalty.1
+```
+
+### Format
+
+mso_mdoc only.
+
+### Claims
+
+| Claim ID       | Name           | Description                     |
+|:---------------|:---------------|:--------------------------------|
+| `family_name`  | Family Name    | Holder's surname(s)             |
+| `given_name`   | Given Names    | Holder's first/middle name(s)   |
+| `loyalty_number` | Loyalty Number | Loyalty programme number      |
+| `program_name` | Program Name   | Name of the loyalty programme   |
+
+---
+
+## 14. Mobile Phone Number (MSISDN)
+
+### Document Types
+
+| Format    | Identifier                              |
+|:----------|:----------------------------------------|
+| mso_mdoc  | `eu.europa.ec.eudi.msisdn.1`           |
+| dc+sd-jwt | `urn:eu.europa.ec.eudi:msisdn:1` (vct) |
+
+### Namespace (mso_mdoc)
+
+```text
+eu.europa.ec.eudi.msisdn.1
+```
+
+### Claims
+
+| Claim ID                 | Name                   | Description                        |
+|:-------------------------|:-----------------------|:-----------------------------------|
+| `phone_number`           | Phone Number           | Mobile phone number (MSISDN)       |
+| `registered_family_name` | Registered Family Name | Family name registered with carrier|
+
+---
+
+## 15. Power of Representation (PoR)
+
+### Document Types
+
+| Format    | Identifier                          |
+|:----------|:------------------------------------|
+| mso_mdoc  | `eu.europa.ec.eudi.por.1`          |
+| dc+sd-jwt | `urn:eu.europa.ec.eudi:por:1` (vct)|
+
+### Namespace (mso_mdoc)
+
+```text
+eu.europa.ec.eudi.por.1
+```
+
+### Claims
+
+| Claim ID                     | Name                       | Description                          |
+|:-----------------------------|:---------------------------|:-------------------------------------|
+| `legal_person_id`            | Legal Person ID            | Identifier of the legal entity       |
+| `legal_person_name`          | Legal Person Name          | Name of the legal entity             |
+| `representative_family_name` | Representative Family Name | Surname of the representative        |
+| `representative_given_name`  | Representative Given Names | Given names of the representative    |
 
 ---
 

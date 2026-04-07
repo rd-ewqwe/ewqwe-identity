@@ -73,7 +73,34 @@ export interface ProtocolProfile {
 // ============================================================================
 
 /** Credential type identifier. */
-export type CredentialType = "mdl" | "national-id" | "proof-of-age";
+export type CredentialType =
+  | "mdl"
+  | "national-id"
+  | "national-id-sd-jwt"
+  | "proof-of-age"
+  | "photo-id"
+  | "tax"
+  | "tax-sd-jwt"
+  | "pseudonym-age"
+  | "pseudonym-age-sd-jwt"
+  | "ehic"
+  | "ehic-sd-jwt"
+  | "health-id"
+  | "health-id-sd-jwt"
+  | "iban"
+  | "iban-sd-jwt"
+  | "loyalty"
+  | "msisdn"
+  | "msisdn-sd-jwt"
+  | "pda1"
+  | "pda1-sd-jwt"
+  | "por"
+  | "por-sd-jwt"
+  | "reservation"
+  | "cor";
+
+/** Credential format identifier used in DCQL queries. */
+export type CredentialFormat = "mso_mdoc" | "dc+sd-jwt";
 
 /** Definition of a single claim within a credential type. */
 export interface ClaimDefinition {
@@ -82,12 +109,22 @@ export interface ClaimDefinition {
   description?: string;
 }
 
-/** Configuration for a credential type (mDL, PID, Proof of Age). */
+/** Configuration for a credential type (mDL, PID, Proof of Age, etc.). */
 export interface CredentialTypeConfig {
   id: CredentialType;
   name: string;
+  /**
+   * Credential format identifier for DCQL queries.
+   * - `"mso_mdoc"` — ISO/IEC 18013-5 Mobile Documents (CBOR-encoded)
+   * - `"dc+sd-jwt"` — IETF SD-JWT Verifiable Credentials (JSON-encoded)
+   */
+  format: CredentialFormat;
+  /** Document type for mso_mdoc credentials (e.g. `"org.iso.18013.5.1.mDL"`). */
   docType: string;
+  /** Namespace for mso_mdoc claims (e.g. `"org.iso.18013.5.1"`). */
   namespace: string;
+  /** Verifiable Credential Type for dc+sd-jwt credentials (e.g. `"urn:eudi:pid:1"`). */
+  vct?: string;
   profile: ProfileId;
   claims: ClaimDefinition[];
 }

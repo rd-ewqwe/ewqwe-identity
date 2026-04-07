@@ -10,7 +10,11 @@
  * @see https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile
  */
 
-import type { CredentialType, InitTransactionRequest } from "./types.ts";
+import type {
+  CredentialType,
+  InitTransactionRequest,
+  VpFormats,
+} from "./types.ts";
 import { CREDENTIAL_TYPES } from "./config.ts";
 
 // =============================================================================
@@ -289,23 +293,56 @@ export function buildInitTransactionRequest(
     throw new Error(`Unknown credential type: ${credentialType}`);
   }
 
-  // Build DCQL Claims Path Pointers: [namespace, element] per OpenID4VP §7.2
-  const claims: DCQLClaimsQuery[] = selectedClaims.map((claimId) => ({
-    id: claimId,
-    path: [config.namespace, claimId],
-    intent_to_retain: false,
-  }));
+  const isSdJwt = config.format === "dc+sd-jwt";
 
-  const dcqlQuery: DCQLQuery = {
-    credentials: [
-      {
+  // Build DCQL Claims Path Pointers:
+  // - mso_mdoc: [namespace, element] per OpenID4VP §7.2
+  // - dc+sd-jwt: [claimName] per OpenID4VP §B.3 (flat JSON path)
+  // Note: `intent_to_retain` is an mso_mdoc-only field (OpenID4VP §7.2.5).
+  // It MUST NOT appear in dc+sd-jwt credential queries.
+  const claims: DCQLClaimsQuery[] = selectedClaims.map((claimId) => {
+    const query: DCQLClaimsQuery = {
+      id: claimId,
+      path: isSdJwt ? [claimId] : [config.namespace, claimId],
+    };
+    if (!isSdJwt) {
+      query.intent_to_retain = false;
+    }
+    return query;
+  });
+
+  const credentialQuery: DCQLCredentialQuery = isSdJwt
+    ? {
+        id: `${credentialType}_credential`,
+        format: "dc+sd-jwt",
+        meta: { vct_values: [config.vct!] },
+        claims,
+      }
+    : {
         id: `${credentialType}_credential`,
         format: "mso_mdoc",
         meta: { doctype_value: config.docType },
         claims,
-      } as DCQLCredentialQuery,
-    ],
+      };
+
+  const dcqlQuery: DCQLQuery = {
+    credentials: [credentialQuery],
   };
+
+  // Build vp_formats based on the credential format
+  const vp_formats: VpFormats = isSdJwt
+    ? {
+        "dc+sd-jwt": {
+          "sd-jwt_alg_values": ["ES256", "ES384", "ES512"],
+          "kb-jwt_alg_values": ["ES256", "ES384", "ES512"],
+        },
+      }
+    : {
+        mso_mdoc: {
+          issuerauth_alg_values: [-7, -35, -36],
+          deviceauth_alg_values: [-7, -35, -36],
+        },
+      };
 
   return {
     public_url: publicUrl,
@@ -314,14 +351,7 @@ export function buildInitTransactionRequest(
     credential_type: credentialType,
     client_metadata: {
       client_name: "ewQwe Digital Credentials Demo",
-      // COSE algorithm integer IDs (RFC 8152 / IANA COSE Algorithms):
-      // ES256=-7, ES384=-35, ES512=-36 — per OpenID4VP §B.2.2
-      vp_formats: {
-        mso_mdoc: {
-          issuerauth_alg_values: [-7, -35, -36],
-          deviceauth_alg_values: [-7, -35, -36],
-        },
-      },
+      vp_formats,
     },
   };
 }

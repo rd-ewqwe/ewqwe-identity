@@ -47,7 +47,7 @@
             <label class="block text-sm font-medium text-gray-300 mb-3"
               >Credential Type</label
             >
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
               <!-- Proof of Age Credential -->
               <button
                 class="credential-type-btn active relative"
@@ -161,6 +161,46 @@
                   <div class="text-left">
                     <div class="font-medium">National ID</div>
                     <div class="text-sm text-gray-400">EU PID</div>
+                  </div>
+                </div>
+              </button>
+
+              <!-- Health ID SD-JWT VC Credential -->
+              <button
+                class="credential-type-btn relative"
+                data-type="health-id-sd-jwt"
+              >
+                <a
+                  href="https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="absolute top-2 right-2 text-gray-500/60 hover:text-rose-400 transition-colors text-sm z-10"
+                  aria-label="Learn more about EU Health ID"
+                  onclick="event.stopPropagation()"
+                >
+                  ⓘ
+                </a>
+                <div class="flex items-center">
+                  <div
+                    class="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center mr-3"
+                  >
+                    <svg
+                      class="w-5 h-5 text-rose-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                      />
+                    </svg>
+                  </div>
+                  <div class="text-left">
+                    <div class="font-medium">Health ID</div>
+                    <div class="text-sm text-gray-400">SD-JWT VC</div>
                   </div>
                 </div>
               </button>

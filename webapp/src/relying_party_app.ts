@@ -7,6 +7,7 @@ import type {
 } from "@ewqwe/digital-identity";
 import {
   buildInitTransactionRequest,
+  CREDENTIAL_TYPES,
   getClaimsForType,
   getDefaultClaims,
   getProfileForType,
@@ -186,11 +187,20 @@ export class RelyingPartyApp {
     const borderColor = isHaip ? "border-blue-500/30" : "border-green-500/30";
     const bgColor = isHaip ? "bg-blue-950/30" : "bg-green-950/30";
 
+    const config = CREDENTIAL_TYPES[this.selectedCredentialType];
+    const formatLabel =
+      config?.format === "dc+sd-jwt" ? "SD-JWT VC" : "MSO MDOC";
+    const formatBadgeColor =
+      config?.format === "dc+sd-jwt" ? "bg-amber-600" : "bg-slate-600";
+
     profileContainer.innerHTML = `
       <div class="rounded-lg ${bgColor} ${borderColor} border p-4 mb-6">
-        <div class="flex items-center gap-2 mb-3">
-          <span class="px-2 py-1 ${badgeColor} text-xs font-semibold rounded-full">${profile.name}</span>
-          <span class="text-gray-400 text-sm">${profile.description}</span>
+        <div class="mb-3">
+          <div class="flex items-center gap-2 mb-1.5 flex-wrap">
+            <span class="px-2 py-1 ${badgeColor} text-xs font-semibold rounded-full whitespace-nowrap">${profile.name}</span>
+            <span class="px-2 py-1 ${formatBadgeColor} text-xs font-semibold rounded-full whitespace-nowrap">${formatLabel}</span>
+          </div>
+          <p class="text-gray-400 text-sm">${profile.description}</p>
         </div>
         <div class="grid grid-cols-2 gap-4 text-sm">
           <div>

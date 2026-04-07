@@ -100,13 +100,14 @@ Used for **Proof of Age** attestations.
 
 The profile is determined automatically based on the credential type:
 
-| Credential Type | Profile | Target Wallet |
-| --------------- | ------- | ------------- |
-| Mobile Driver's License (mDL) | HAIP | EUDI Wallet |
-| National ID (PID) | HAIP | EUDI Wallet |
-| Proof of Age | Annex A | Age Verification App |
+| Credential Type | Profile | Format | Target Wallet |
+| --------------- | ------- | ------ | ------------- |
+| Mobile Driver's License (mDL) | HAIP | MSO MDOC | EUDI Wallet |
+| National ID (PID) | HAIP | MSO MDOC | EUDI Wallet |
+| Health ID (SD-JWT VC) | HAIP | SD-JWT VC | EUDI Wallet |
+| Proof of Age | Annex A | MSO MDOC | Age Verification App |
 
-The UI displays a badge indicating which profile is active, along with key technical details about the protocol configuration.
+The UI displays badges indicating which profile and credential format are active, along with key technical details about the protocol configuration.
 
 ### OpenID4VP Cross-Device Flow
 

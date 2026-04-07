@@ -6,6 +6,7 @@ use crate::{
 };
 use actix_session::Session;
 use actix_web::{HttpRequest, HttpResponse, web};
+use base64::Engine;
 use serde::{Deserialize, Serialize};
 
 /// Request body for credential verification
@@ -114,6 +115,142 @@ struct IssuerSigned {
     name_spaces: Option<serde_json::Value>,
 }
 
+/// Errors that can occur during SD-JWT VC decoding.
+#[derive(Debug, thiserror::Error)]
+enum SdJwtDecodeError {
+    #[error("not an SD-JWT: no '~' separator found")]
+    NotSdJwt,
+    #[error("malformed JWT: expected 3 dot-separated parts")]
+    MalformedJwt,
+    #[error("base64 decode failed: {0}")]
+    Base64(#[from] base64::DecodeError),
+    #[error("JSON parse failed: {0}")]
+    Json(#[from] serde_json::Error),
+}
+
+/// Decode an SD-JWT VC compact presentation.
+///
+/// Format (IETF SD-JWT §1): `<Issuer-Signed JWT>~<Disclosure1>~...~[KB-JWT]`
+///
+/// Each disclosure is a base64url-encoded JSON array: `[salt, claim_name, value]`
+/// The last `~`-separated element is optionally a Key Binding JWT (starts with "eyJ" and contains
+/// exactly 2 dots); it is silently skipped here as we don't verify key binding in demo mode.
+///
+/// Returns a `VpToken` populated with the decoded claims and issuer from the JWT payload.
+fn decode_sd_jwt_presentation(raw: &str) -> Result<VpToken, SdJwtDecodeError> {
+    if !raw.contains('~') {
+        return Err(SdJwtDecodeError::NotSdJwt);
+    }
+
+    let parts: Vec<&str> = raw.splitn(2, '~').collect();
+    let issuer_jwt = parts[0];
+    let rest = if parts.len() > 1 { parts[1] } else { "" };
+
+    // Decode JWT payload (middle dot-separated part)
+    let jwt_parts: Vec<&str> = issuer_jwt.split('.').collect();
+    if jwt_parts.len() != 3 {
+        return Err(SdJwtDecodeError::MalformedJwt);
+    }
+    let payload_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+        .decode(jwt_parts[1])
+        .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(jwt_parts[1]))?;
+    let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)?;
+
+    tracing::debug!("SD-JWT payload claims: {}", payload);
+
+    // Extract issuer and vct from JWT payload
+    let issuer = payload
+        .get("iss")
+        .and_then(|v| v.as_str())
+        .unwrap_or("sd-jwt-issuer")
+        .to_string();
+    let vct = payload
+        .get("vct")
+        .and_then(|v| v.as_str())
+        .unwrap_or("unknown")
+        .to_string();
+    let issued_at = payload
+        .get("iat")
+        .and_then(|v| v.as_i64())
+        .map(|ts| chrono::DateTime::from_timestamp(ts, 0).map(|dt| dt.to_rfc3339()))
+        .flatten();
+    let expires_at = payload
+        .get("exp")
+        .and_then(|v| v.as_i64())
+        .map(|ts| chrono::DateTime::from_timestamp(ts, 0).map(|dt| dt.to_rfc3339()))
+        .flatten();
+
+    // Collect confirmed (non-selectively-disclosed) claims from JWT payload,
+    // skipping standard JWT reserved claims and SD-JWT structural fields.
+    const SKIP_CLAIMS: &[&str] = &[
+        "iss", "sub", "aud", "iat", "exp", "nbf", "jti", "vct", "_sd", "_sd_alg", "cnf", "status",
+    ];
+    let mut claims = serde_json::Map::new();
+    if let Some(obj) = payload.as_object() {
+        for (k, v) in obj {
+            if !SKIP_CLAIMS.contains(&k.as_str()) {
+                claims.insert(k.clone(), v.clone());
+            }
+        }
+    }
+
+    // Decode each disclosure and add the revealed claim
+    // Disclosures are `~`-separated; skip empty strings and the optional KB-JWT at the end.
+    for disclosure_str in rest.split('~') {
+        if disclosure_str.is_empty() {
+            continue;
+        }
+        // KB-JWT: a full JWT (3 dots, starts with "eyJ") — skip it
+        let dot_count = disclosure_str.chars().filter(|&c| c == '.').count();
+        if dot_count == 2 && disclosure_str.starts_with("eyJ") {
+            tracing::debug!("Skipping Key Binding JWT in SD-JWT presentation");
+            continue;
+        }
+
+        let disc_bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
+            .decode(disclosure_str)
+            .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(disclosure_str));
+
+        match disc_bytes {
+            Ok(bytes) => match serde_json::from_slice::<serde_json::Value>(&bytes) {
+                Ok(serde_json::Value::Array(arr)) if arr.len() == 3 => {
+                    // [salt, claim_name, value]
+                    if let Some(claim_name) = arr[1].as_str() {
+                        tracing::debug!("SD-JWT disclosure: {} = {:?}", claim_name, arr[2]);
+                        claims.insert(claim_name.to_string(), arr[2].clone());
+                    }
+                }
+                Ok(other) => {
+                    tracing::warn!("SD-JWT disclosure is not a 3-element array: {:?}", other);
+                }
+                Err(e) => {
+                    tracing::warn!("Failed to parse SD-JWT disclosure JSON: {}", e);
+                }
+            },
+            Err(e) => {
+                tracing::warn!("Failed to base64-decode SD-JWT disclosure: {}", e);
+            }
+        }
+    }
+
+    tracing::info!(
+        "SD-JWT VC decoded: vct={}, issuer={}, claims={}",
+        vct,
+        issuer,
+        claims.len()
+    );
+
+    Ok(VpToken {
+        doc_type: Some(vct.clone()),
+        namespace: Some(vct),
+        claims: Some(serde_json::Value::Object(claims)),
+        issuer: Some(issuer),
+        issued_at,
+        expires_at,
+        issuer_signed: None,
+    })
+}
+
 /// Parse VP token - handles both direct format and DCQL-wrapped format
 fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttError> {
     // First, try parsing as DCQL format (object with credential IDs as keys)
@@ -126,9 +263,31 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
             tracing::info!("  Presentations count: {}", presentations.len());
 
             if let Some(presentation) = presentations.first() {
-                // The presentation might be a base64-encoded mDoc or a JSON object
+                // The presentation might be:
+                //   (a) SD-JWT VC compact string:  header.payload.sig~disc1~disc2~[kbjwt]
+                //   (b) base64-encoded mDoc CBOR DeviceResponse
+                //   (c) JSON object (legacy direct format)
                 if let Some(encoded_str) = presentation.as_str() {
-                    // It's a base64-encoded mDoc — decode the CBOR to extract claims
+                    // (a) Detect SD-JWT VC: the compact format contains '~' separators.
+                    if encoded_str.contains('~') {
+                        tracing::info!(
+                            "  Presentation is SD-JWT VC compact serialization (length: {})",
+                            encoded_str.len()
+                        );
+                        match decode_sd_jwt_presentation(encoded_str) {
+                            Ok(vp_token) => {
+                                return Ok((vp_token, Some(credential_id.clone())));
+                            }
+                            Err(e) => {
+                                tracing::warn!("  SD-JWT VC decode failed: {}", e);
+                                return Err(AttError::BadRequest(format!(
+                                    "SD-JWT VC decode failed: {e}"
+                                )));
+                            }
+                        }
+                    }
+
+                    // (b) Try base64-encoded mDoc CBOR
                     tracing::info!(
                         "  Presentation is base64-encoded mDoc (length: {})",
                         encoded_str.len()

@@ -19,6 +19,7 @@ export type {
   ProtocolProfile,
   // Credential configuration
   CredentialType,
+  CredentialFormat,
   ClaimDefinition,
   CredentialTypeConfig,
   // OpenID4VP
