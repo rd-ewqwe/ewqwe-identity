@@ -4,10 +4,13 @@ use crate::{
 use actix_web::dev::ServerHandle;
 use std::{
     path::PathBuf,
-    sync::{Arc, mpsc},
+    sync::{Arc, atomic::AtomicU16, mpsc},
     thread,
 };
 use tracing::error;
+
+/// An atomic monotonically increasing counter for generating unique server ports.
+static SERVER_PORT_COUNTER: AtomicU16 = AtomicU16::new(59900);
 
 /// Starts the test server in a separate thread and returns a `TestsContext` containing
 /// the server handle and thread handle.
@@ -59,7 +62,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
 
     let server_params = AttServerParams {
         host_name: "localhost".to_string(),
-        host_port: 59900,
+        host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         tls_params: TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")

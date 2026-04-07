@@ -14,7 +14,6 @@ impl actix_web::ResponseError for AttError {
     fn error_response(&self) -> actix_web::HttpResponse {
         match self {
             Self::BadRequest(_) => actix_web::HttpResponse::BadRequest().json(format!("{self}")),
-            Self::Session(_) => actix_web::HttpResponse::Unauthorized().json(format!("{self}")),
             _ => actix_web::HttpResponse::InternalServerError().json(format!("{self}")),
         }
     }

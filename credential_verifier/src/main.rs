@@ -15,7 +15,7 @@
 
 use credential_verifier::{AttServerParams, TlsParams, start_att_server};
 use ewqwe_logging::{TracingConfig, tracing_init};
-use ewqwe_openid4vp::OpenID4VPServiceConfig;
+use ewqwe_openid4vp::{HaipConfig, OpenID4VPServiceConfig};
 use std::sync::Arc;
 
 #[actix_web::main]
@@ -59,11 +59,13 @@ async fn main() -> std::io::Result<()> {
         (Some(cert_path), Some(key_path)) => {
             tracing::info!("OpenID4VP: cert={}, key={}", cert_path, key_path,);
             Some(OpenID4VPServiceConfig {
-                x509_cert_path: cert_path,
-                x509_key_path: key_path,
                 transaction_ttl_ms: std::env::var("OPENID4VP_TTL_MS")
                     .ok()
                     .and_then(|v| v.parse().ok()),
+                haip_config: Some(HaipConfig {
+                    x509_cert_path: cert_path,
+                    x509_key_path: key_path,
+                }),
             })
         }
         _ => {

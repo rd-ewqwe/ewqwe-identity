@@ -11,10 +11,6 @@ pub enum AttError {
     #[error("unexpected error: {0}")]
     Unexpected(String),
 
-    // Error related to an invalid session
-    #[error("session error: {0}")]
-    Session(String),
-
     // Error related to server configuration issues
     #[error("configuration error: {0}")]
     Config(String),

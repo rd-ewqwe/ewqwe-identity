@@ -18,7 +18,7 @@
 
 use actix_web::{HttpRequest, HttpResponse, web};
 use ewqwe_openid4vp::{
-    OpenID4VPResponse, InitTransactionRequest, OpenID4VPError, OpenID4VPService,
+    InitTransactionRequest, OpenID4VPError, OpenID4VPResponse, OpenID4VPService,
     WalletAuthorizationError,
 };
 use serde::Deserialize;
@@ -240,7 +240,10 @@ pub async fn get_authorization_request(
 
 /// Return the public JWK Set for JAR signature verification.
 pub async fn get_jwks(service: web::Data<Arc<OpenID4VPService>>) -> HttpResponse {
-    let jwks = service.get_public_jwk_set();
+    let jwks = match service.get_public_jwk_set() {
+        Ok(jwks) => jwks,
+        Err(e) => return openid4vp_error_response(e),
+    };
     HttpResponse::Ok()
         .content_type("application/jwk-set+json")
         .json(jwks)

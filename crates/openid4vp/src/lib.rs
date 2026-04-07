@@ -51,11 +51,10 @@ pub use dcql::{
     convert_presentation_definition_to_dcql, generate_nonce, get_default_age_verification_dcql,
 };
 pub use error::{OpenID4VPError, OpenID4VPResult};
-pub use service::{OpenID4VPService, OpenID4VPServiceConfig};
+pub use service::{HaipConfig, OpenID4VPService, OpenID4VPServiceConfig};
 pub use transaction::TransactionStore;
 pub use types::{
-    AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery,
-    OpenID4VPResponse, InitTransactionRequest, InitTransactionResponse,
-    OpenID4VPTransaction, ProfileId, ResponseMode, TransactionDataEntry, TransactionStatus,
-    TransactionStatusResult, WalletAuthorizationError,
+    AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery, InitTransactionRequest,
+    InitTransactionResponse, OpenID4VPResponse, OpenID4VPTransaction, ProfileId, ResponseMode,
+    TransactionDataEntry, TransactionStatus, TransactionStatusResult, WalletAuthorizationError,
 };

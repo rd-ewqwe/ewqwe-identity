@@ -26,8 +26,8 @@ use crate::{
     transaction::TransactionStore,
     types::{
         AuthorizationRequestResult, ClientIdScheme, ClientMetadata, DCQLQuery,
-        OpenID4VPResponse, InitTransactionRequest, InitTransactionResponse,
-        OpenID4VPTransaction, ProfileId, ResponseMode, TransactionStatus, TransactionStatusResult,
+        InitTransactionRequest, InitTransactionResponse, OpenID4VPResponse, OpenID4VPTransaction,
+        ProfileId, ResponseMode, TransactionStatus, TransactionStatusResult,
         WalletAuthorizationError,
     },
 };
@@ -42,15 +42,25 @@ const JWE_KEY_ID: &str = "ewqwe-enc-key-1";
 // Configuration
 // ============================================================================
 
+#[derive(Debug, Clone)]
+pub struct HaipConfig {
+    /// Path to X.509 certificate chain PEM (for JAR signing).
+    pub x509_cert_path: String,
+
+    /// Path to private key PEM (for JAR signing).
+    pub x509_key_path: String,
+}
+
 /// Configuration required to initialize the OpenID4VP service.
 #[derive(Debug, Clone)]
 pub struct OpenID4VPServiceConfig {
-    /// Path to X.509 certificate chain PEM (for JAR signing).
-    pub x509_cert_path: String,
-    /// Path to private key PEM (for JAR signing).
-    pub x509_key_path: String,
-    /// Transaction TTL in milliseconds (default: 5 minutes).
+    /// Time-to-live for transactions in milliseconds.
+    /// Used for cleanup and expiration logic.
+    /// Defaults to 5 minutes if not set.
     pub transaction_ttl_ms: Option<i64>,
+
+    /// HAIP profile requires a certificate for JAR signing.
+    pub haip_config: Option<HaipConfig>,
 }
 
 // ============================================================================
@@ -67,9 +77,17 @@ pub struct OpenID4VPServiceConfig {
 /// The service is `Send + Sync` and can be shared across actix-web handlers
 /// via `web::Data<OpenID4VPService>`.
 pub struct OpenID4VPService {
-    jar_key: JarKeyMaterial,
-    jwe_key: JweKeyMaterial,
+    /// Key material for signing JARs (HAIP profile). If `None`,
+    /// JAR signing is disabled and the service operates in Annex A mode.
+    jar_key: Option<JarKeyMaterial>,
+
+    /// Key material for JWE encryption (HAIP profile). If `None`, JWE encryption is disabled.
+    jwe_key: Option<JweKeyMaterial>,
+
+    /// In-memory store for active transactions. In production, consider a persistent store.
     transactions: TransactionStore,
+
+    /// Time-to-live for transactions in milliseconds. Used for cleanup and expiration logic.
     ttl_ms: i64,
 }
 
@@ -80,21 +98,29 @@ impl OpenID4VPService {
     /// an ECDH encryption key pair for JWE, and starts background transaction
     /// cleanup.
     pub fn create(config: OpenID4VPServiceConfig) -> OpenID4VPResult<Self> {
-        let cert_pem = std::fs::read_to_string(&config.x509_cert_path).map_err(|e| {
-            OpenID4VPError::Config(format!(
-                "Failed to read certificate from {}: {e}",
-                config.x509_cert_path
-            ))
-        })?;
-        let key_pem = std::fs::read_to_string(&config.x509_key_path).map_err(|e| {
-            OpenID4VPError::Config(format!(
-                "Failed to read private key from {}: {e}",
-                config.x509_key_path
-            ))
-        })?;
+        let (jar_key, jwe_key) = if let Some(haip_config) = &config.haip_config {
+            tracing::info!("HAIP profile enabled — JAR signing configured");
+            let cert_pem = std::fs::read_to_string(&haip_config.x509_cert_path).map_err(|e| {
+                OpenID4VPError::Config(format!(
+                    "Failed to read certificate from {}: {e}",
+                    haip_config.x509_cert_path
+                ))
+            })?;
+            let key_pem = std::fs::read_to_string(&haip_config.x509_key_path).map_err(|e| {
+                OpenID4VPError::Config(format!(
+                    "Failed to read private key from {}: {e}",
+                    haip_config.x509_key_path
+                ))
+            })?;
 
-        let jar_key = initialize_jar_key(&cert_pem, &key_pem, JAR_KEY_ID)?;
-        let jwe_key = initialize_jwe_key(JWE_KEY_ID)?;
+            let jar_key = initialize_jar_key(&cert_pem, &key_pem, JAR_KEY_ID)?;
+            let jwe_key = initialize_jwe_key(JWE_KEY_ID)?;
+            (Some(jar_key), Some(jwe_key))
+        } else {
+            tracing::info!("No HAIP config provided — running in Annex A mode only");
+            (None, None)
+        };
+
         let ttl_ms = config
             .transaction_ttl_ms
             .unwrap_or(DEFAULT_TRANSACTION_TTL_MS);
@@ -103,7 +129,7 @@ impl OpenID4VPService {
         transactions.start_cleanup(ttl_ms as u64);
 
         tracing::info!(
-            san = %jar_key.san_dns_name,
+            san = %jar_key.as_ref().map(|k| &k.san_dns_name).unwrap_or(&"N/A".to_string()),
             ttl_secs = ttl_ms / 1000,
             "OpenID4VP service initialized"
         );
@@ -154,12 +180,23 @@ impl OpenID4VPService {
 
         // Determine client_id, scheme, response_mode, and URL scheme per profile
         let (client_id, client_id_scheme, response_mode, url_scheme) = match profile {
-            ProfileId::Haip => (
-                format!("x509_san_dns:{}", self.jar_key.san_dns_name),
-                ClientIdScheme::X509SanDns,
-                ResponseMode::DirectPostJwt,
-                "eudi-openid4vp://",
-            ),
+            ProfileId::Haip => {
+                let san_dns_name =
+                    self.jar_key
+                        .as_ref()
+                        .map(|k| &k.san_dns_name)
+                        .ok_or_else(|| {
+                            OpenID4VPError::Config(
+                                "Unable to initialize transaction: HAIP is not configured; the JAR keys are not configured".into(),
+                            )
+                        })?;
+                (
+                    format!("x509_san_dns:{}", san_dns_name),
+                    ClientIdScheme::X509SanDns,
+                    ResponseMode::DirectPostJwt,
+                    "eudi-openid4vp://",
+                )
+            }
             ProfileId::AnnexA => (
                 format!("redirect_uri:{response_uri}"),
                 ClientIdScheme::RedirectUri,
@@ -276,6 +313,18 @@ impl OpenID4VPService {
             return Err(OpenID4VPError::Expired("Transaction expired".into()));
         }
 
+        let jar_key = self.jar_key.as_ref().ok_or_else(|| {
+            OpenID4VPError::Config(
+                "Unable to build authorization request: HAIP is not configured; the JAR signing key is not configured".into(),
+            )
+        })?;
+
+        let jwe_key = self.jwe_key.as_ref().ok_or_else(|| {
+            OpenID4VPError::Config(
+                "Unable to build authorization request: HAIP is not configured; the JWE encryption key is not configured".into(),
+            )
+        })?;
+
         // Build client_metadata with VP format capabilities.
         // `vp_formats` is typed as `VpFormats`; serialize to JSON for embedding in the request.
         let base_formats = transaction
@@ -311,7 +360,7 @@ impl OpenID4VPService {
 
         // Add JWE encryption parameters for HAIP profile
         if transaction.profile == ProfileId::Haip {
-            metadata["jwks"] = serde_json::json!({ "keys": [self.jwe_key.public_jwk.clone()] });
+            metadata["jwks"] = serde_json::json!({ "keys": [jwe_key.public_jwk.clone()] });
             metadata["authorization_encrypted_response_alg"] = "ECDH-ES".into();
             metadata["authorization_encrypted_response_enc"] = "A256GCM".into();
         }
@@ -331,7 +380,7 @@ impl OpenID4VPService {
                 transaction_data: transaction.transaction_data.clone(),
             };
 
-            let jwt = sign_jar(&jar_payload, &self.jar_key)?;
+            let jwt = sign_jar(&jar_payload, jar_key)?;
             Ok(AuthorizationRequestResult {
                 body: jwt,
                 content_type: "application/oauth-authz-req+jwt".to_string(),
@@ -387,8 +436,13 @@ impl OpenID4VPService {
         fallback_state: Option<&str>,
     ) -> OpenID4VPResult<()> {
         let wallet_data: OpenID4VPResponse = if let Some(jwe) = jwe_response {
+            let jwe_key = self.jwe_key.as_ref().ok_or_else(|| {
+                OpenID4VPError::Config(
+                    "Unable to handle wallet response: HAIP is not configured; the JWE encryption key is not configured".into(),
+                )
+            })?;
             // HAIP: Decrypt JWE
-            let decrypted: DecryptedWalletResponse = decrypt_jwe_response(jwe, &self.jwe_key)?;
+            let decrypted: DecryptedWalletResponse = decrypt_jwe_response(jwe, &jwe_key)?;
             let state = if decrypted.state.is_empty() {
                 fallback_state.unwrap_or("").to_string()
             } else {
@@ -522,8 +576,13 @@ impl OpenID4VPService {
     ///
     /// Serves at `.well-known/jwks.json` so wallets can verify the
     /// JWT Authorization Request signature.
-    pub fn get_public_jwk_set(&self) -> serde_json::Value {
-        build_public_jwk_set(&self.jar_key)
+    pub fn get_public_jwk_set(&self) -> OpenID4VPResult<serde_json::Value> {
+        let jar_key = self.jar_key.as_ref().ok_or_else(|| {
+            OpenID4VPError::Config(
+                "Unable to get public JWK Set: HAIP is not configured; the JAR signing key is not configured".into(),
+            )
+        })?;
+        Ok(build_public_jwk_set(jar_key))
     }
 
     // ========================================================================
@@ -596,13 +655,14 @@ mod tests {
     fn test_config() -> OpenID4VPServiceConfig {
         let base = env!("CARGO_MANIFEST_DIR");
         let cert_dir = format!("{base}/../../credential_verifier/src/tests/certificates/ec");
-        // Use the pre-built fullchain PEM (leaf + CA) for x5c
-        let cert_path = format!("{cert_dir}/ewqwe.server.fullchain.pem");
 
         OpenID4VPServiceConfig {
-            x509_cert_path: cert_path,
-            x509_key_path: format!("{cert_dir}/ewqwe.server.key.pem"),
             transaction_ttl_ms: Some(60_000), // 1 minute for tests
+            haip_config: Some(HaipConfig {
+                // Use the pre-built fullchain PEM (leaf + CA) for x5c
+                x509_cert_path: format!("{cert_dir}/ewqwe.server.fullchain.pem"),
+                x509_key_path: format!("{cert_dir}/ewqwe.server.key.pem"),
+            }),
         }
     }
 
@@ -842,7 +902,7 @@ mod tests {
         let config = test_config();
         let service = OpenID4VPService::create(config).unwrap();
 
-        let jwks = service.get_public_jwk_set();
+        let jwks = service.get_public_jwk_set().expect("a JWKS should exist");
         assert!(jwks["keys"].is_array());
         let keys = jwks["keys"].as_array().unwrap();
         assert_eq!(keys.len(), 1);

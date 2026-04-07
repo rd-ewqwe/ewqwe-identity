@@ -12,7 +12,6 @@ async fn test_version_endpoint() -> AttResult<()> {
     let ctx = start_default_test_server().await?;
 
     let client = TestClient::new(&ctx.base_url())?;
-    client.authenticate().await?;
 
     let version: Version = client.get("/version").await?;
     assert_eq!(version.version, env!("CARGO_PKG_VERSION"));

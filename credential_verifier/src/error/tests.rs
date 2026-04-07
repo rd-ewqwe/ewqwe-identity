@@ -4,7 +4,7 @@ use crate::{AttError, AttResultHelper, auth_bail, auth_ensure, auth_error};
 fn test_auth_error_interpolation() {
     let var = 42;
     let err = auth_error!("interpolate {var}");
-    assert_eq!("authentication error: interpolate 42", err.to_string());
+    assert_eq!("error: interpolate 42", err.to_string());
 }
 
 #[test]
@@ -12,7 +12,7 @@ fn test_result_helper_context() {
     let result: Result<(), AttError> = Err(AttError::Generic("original error".to_owned()));
     let err = result.context("additional context").unwrap_err();
     assert_eq!(
-        "authentication error: additional context: error: original error",
+        "error: additional context: error: original error",
         err.to_string()
     );
 
@@ -20,7 +20,7 @@ fn test_result_helper_context() {
     let result: Result<(), AttError> = Err(AttError::Generic("original error".to_owned()));
     let err = result.context(&format!("context with {var}")).unwrap_err();
     assert_eq!(
-        "authentication error: context with test: error: original error",
+        "error: context with test: error: original error",
         err.to_string()
     );
 }
@@ -32,7 +32,7 @@ fn test_result_helper_with_context() {
         .with_context(|| "dynamic context".to_string())
         .unwrap_err();
     assert_eq!(
-        "authentication error: dynamic context: error: original error",
+        "error: dynamic context: error: original error",
         err.to_string()
     );
 }
@@ -41,12 +41,12 @@ fn test_result_helper_with_context() {
 fn test_option_helper_context() {
     let option: Option<i32> = None;
     let err = option.context("option was none").unwrap_err();
-    assert_eq!("authentication error: option was none", err.to_string());
+    assert_eq!("error: option was none", err.to_string());
 
     let var = "test";
     let option: Option<i32> = None;
     let err = option.context(&format!("context with {var}")).unwrap_err();
-    assert_eq!("authentication error: context with test", err.to_string());
+    assert_eq!("error: context with test", err.to_string());
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn test_option_helper_with_context() {
     let err = option
         .with_context(|| "dynamic context".to_string())
         .unwrap_err();
-    assert_eq!("authentication error: dynamic context", err.to_string());
+    assert_eq!("error: dynamic context", err.to_string());
 }
 
 #[test]
@@ -87,10 +87,7 @@ fn ensure_true() -> Result<(), AttError> {
 fn test_auth_bail_immediately_returns() {
     let result = bail_early();
     assert!(result.is_err());
-    assert_eq!(
-        "authentication error: bailed early",
-        result.unwrap_err().to_string()
-    );
+    assert_eq!("error: bailed early", result.unwrap_err().to_string());
 }
 
 fn bail_early() -> Result<String, AttError> {

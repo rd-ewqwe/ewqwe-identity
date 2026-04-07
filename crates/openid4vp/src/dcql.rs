@@ -40,9 +40,9 @@ pub const EU_PID_DOCTYPE: &str = "eu.europa.ec.eudi.pid.1";
 /// Requests `age_over_{threshold}` from the `eu.europa.ec.av.1` namespace.
 /// Default threshold is 18.
 ///
-/// ```ignore
+/// ```
+/// use ewqwe_openid4vp::build_age_verification_query;
 /// let query = build_age_verification_query(Some(21));
-/// // Requests age_over_21 from eu.europa.ec.av.1
 /// ```
 pub fn build_age_verification_query(age_threshold: Option<u8>) -> DCQLQuery {
     let threshold = age_threshold.unwrap_or(18);

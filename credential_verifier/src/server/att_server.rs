@@ -132,12 +132,6 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
                 );
         }
 
-        #[cfg(test)]
-        let default_scope = default_scope.route(
-            "/authenticate",
-            web::get().to(crate::tests::mock_authenticate_endpoint),
-        );
-
         app.service(default_scope)
     })
     .keep_alive(actix_web::http::KeepAlive::Timeout(

@@ -34,13 +34,10 @@
 
 use std::sync::Arc;
 
-use crate::{AttError, AttResult, AttResultHelper, tests::test_client::TestCookieStore};
-use cookie_store::{Cookie, CookieDomain};
+use crate::{AttError, AttResult, tests::test_client::TestCookieStore};
 use reqwest::{Certificate, Client, Response};
 use serde::{Serialize, de::DeserializeOwned};
-use serde_json::Value;
 use tracing::{debug, error, trace};
-use url::Url;
 
 const EC_CERTIFICATES_PATH: &str =
     concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certificates/ec");
@@ -205,41 +202,6 @@ impl TestClient {
     /// Get the base URL
     pub fn base_url(&self) -> &str {
         &self.base_url
-    }
-
-    pub async fn authenticate(&self) -> AttResult<()> {
-        self.get::<Value>("/authenticate")
-            .await
-            .context("authentication failed")?;
-
-        let _cookie = self.get_cookie(&self.base_url)?.ok_or_else(|| {
-            AttError::Session("authentication failed: expected session cookie".to_owned())
-        })?;
-
-        Ok(())
-    }
-
-    pub fn get_cookie(&self, url: &str) -> AttResult<Option<Cookie<'_>>> {
-        let cookie_store = self
-            .cookie_store
-            .lock()
-            .map_err(|e| AttError::Config(format!("Failed to lock cookie store: {}", e)))?;
-        let host_string = Url::parse(url)
-            .map_err(|e| AttError::Config(format!("Failed to parse URL {}: {}", url, e)))?
-            .host_str()
-            .ok_or_else(|| AttError::Config(format!("URL {} has no host", url)))?
-            .to_string();
-        debug!("Looking for cookies for host: {}", host_string);
-        for cookie in cookie_store.iter_any() {
-            trace!(
-                "Checking cookie: {:?} - domain: {:?}",
-                cookie, cookie.domain
-            );
-            if cookie.domain == CookieDomain::HostOnly(host_string.clone()) {
-                return Ok(Some(cookie.clone()));
-            }
-        }
-        Ok(None)
     }
 }
 

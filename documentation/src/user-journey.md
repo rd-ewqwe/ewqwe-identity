@@ -266,7 +266,7 @@ sequenceDiagram
 When implementing a Relying Party, choose your approach based on which wallets you need to support:
 
 | If you need to support... | Use this profile | Client ID Scheme | Implementation |
-|--------------------------|------------------|------------------|----------------|
+| ------------------------ | ---------------- | ---------------- | -------------- |
 | **Age Verification App only** | Annex A | `redirect_uri` | Simpler — no JAR signing |
 | **EUDI Wallet only** | HAIP | `x509_san_dns` | Complex — requires JAR + trusted CA |
 | **Both wallets** | Dual-mode | Both | Implement both code paths |

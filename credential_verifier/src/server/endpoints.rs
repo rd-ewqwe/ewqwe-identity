@@ -4,7 +4,6 @@ use crate::{
     mdoc_decoder,
     server::Version,
 };
-use actix_session::Session;
 use actix_web::{HttpRequest, HttpResponse, web};
 use base64::Engine;
 use serde::{Deserialize, Serialize};
@@ -405,14 +404,7 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
     Ok((vp_token, None))
 }
 
-pub(crate) async fn version_endpoint(
-    _req: HttpRequest,
-    session: Session,
-) -> Result<HttpResponse, AttError> {
-    let _user_id: String = session
-        .get("user_id")
-        .map_err(|e| AttError::Session(e.to_string()))?
-        .ok_or_else(|| AttError::Session("Invalid session".to_owned()))?;
+pub(crate) async fn version_endpoint(_req: HttpRequest) -> Result<HttpResponse, AttError> {
     let version = env!("CARGO_PKG_VERSION");
     let version = Version {
         version: version.to_string(),

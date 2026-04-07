@@ -99,16 +99,17 @@ pub fn parse_pem_cert_chain(pem_chain: &str) -> Vec<String> {
     certs
 }
 
-/// Extract the first SAN DNS name from a base64-encoded DER certificate.
+/// Extract the first SAN IP address from a base64-encoded DER certificate.
+/// Must be 4 bytes for IPv4 or 16 bytes for IPv6. Returns the raw bytes of the IP address.
 ///
 /// Uses OpenSSL X.509 parsing.
-pub fn extract_san_dns_from_cert(base64_der: &str) -> Option<String> {
+pub fn extract_san_ip_from_cert(base64_der: &str) -> Option<Vec<u8>> {
     let der_bytes = STANDARD.decode(base64_der).ok()?;
     let cert = X509::from_der(&der_bytes).ok()?;
     let sans = cert.subject_alt_names()?;
     for name in sans.iter() {
-        if let Some(dns) = name.dnsname() {
-            return Some(dns.to_string());
+        if let Some(ip) = name.ipaddress() {
+            return Some(ip.to_vec());
         }
     }
     None
@@ -970,7 +971,7 @@ mod tests {
             "Should have server cert + CA cert"
         );
         // Test certs use IP SAN (127.0.0.1), not DNS
-        assert_eq!(jar_key.san_dns_name, "127.0.0.1");
+        assert_eq!(jar_key.san_dns_name, "ewqwe.local");
         assert_eq!(jar_key.signing_key_jwk["kty"], "EC");
         assert_eq!(jar_key.signing_key_jwk["crv"], "P-256");
         assert_eq!(jar_key.signing_key_jwk["alg"], "ES256");
@@ -1041,18 +1042,23 @@ mod tests {
         let base = env!("CARGO_MANIFEST_DIR");
         let cert_dir = format!("{base}/../../credential_verifier/src/tests/certificates/ec");
 
-        // The server cert has IP SAN, not DNS SAN
+        // The server cert has DNS SAN, not IP SAN
         let server_cert = std::fs::read_to_string(format!("{cert_dir}/ewqwe.server.cert.pem"))
             .expect("test server cert");
         let chain = parse_pem_cert_chain(&server_cert);
         assert_eq!(chain.len(), 1);
 
-        // extract_san_dns should return None (no DNS name)
-        let dns_san = extract_san_dns_from_cert(&chain[0]);
-        assert!(dns_san.is_none(), "Test cert has IP SAN, not DNS SAN");
+        // extract_san_ip should return 127.0.0.1
+        let ip_san = extract_san_ip_from_cert(&chain[0]);
+        assert_eq!(
+            ip_san,
+            Some(vec![127, 0, 0, 1]),
+            "Expected 127.0.0.1, got {:?}",
+            ip_san
+        );
 
-        // extract_san should return the IP address
+        // extract_san should return the DNS name first
         let any_san = extract_san_from_cert(&chain[0]);
-        assert_eq!(any_san, Some("127.0.0.1".to_string()));
+        assert_eq!(any_san, Some("ewqwe.local".to_string()));
     }
 }
