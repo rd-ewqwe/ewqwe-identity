@@ -13,12 +13,12 @@ use crate::{
     server::{ServerParams, Version},
     tls::AuthenticatedUser,
 };
-use ewqwe_digital_credential::{
-    decode_mdoc_presentation, decode_sd_jwt_presentation, verify_mdoc_presentation,
-    verify_sd_jwt_signatures, SigVerificationResult,
-};
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use base64::Engine as _;
+use ewqwe_digital_credential::{
+    SigVerificationResult, decode_mdoc_presentation, decode_sd_jwt_presentation,
+    verify_mdoc_presentation, verify_sd_jwt_signatures,
+};
 use ewqwe_openid4vp::{OpenID4VPService, OpenID4VPTransaction};
 use openssl::x509::X509;
 use serde::{Deserialize, Serialize};
