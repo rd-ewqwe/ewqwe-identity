@@ -6,11 +6,16 @@
  * This server:
  * 1. Handles /api/* endpoints (Vite proxies these here)
  * 2. Proxies verification requests to the Credential Verifier server
+ * 3. Manages OpenID4VP cross-device presentation transactions
  */
 
 const SERVER_PORT = 5175; // Backend API port (Vite proxies /api/* here)
 const CREDENTIAL_VERIFIER_URL =
   Deno.env.get("CREDENTIAL_VERIFIER_URL") || "https://127.0.0.1:9443";
+
+// Public URL for OpenID4VP callbacks (must be accessible from mobile devices)
+const PUBLIC_URL =
+  Deno.env.get("PUBLIC_URL") || `http://localhost:${SERVER_PORT}`;
 
 // Load CA certificate for TLS connection to Credential Verifier
 const CA_CERT_PATH =
@@ -35,6 +40,79 @@ const httpClient = caCert
       caCerts: [caCert],
     })
   : undefined;
+
+// ============================================================================
+// OpenID4VP Transaction Management
+// ============================================================================
+
+/**
+ * Represents an OpenID4VP presentation transaction (cross-device flow)
+ * Based on the EUDI Verifier Endpoint implementation
+ */
+interface OpenID4VPTransaction {
+  id: string;
+  state: string;
+  nonce: string;
+  createdAt: number;
+  expiresAt: number;
+  status: "pending" | "received" | "verified" | "error";
+  authorizationRequest: OpenID4VPAuthorizationRequest;
+  walletResponse?: WalletDirectPostResponse;
+  verificationResult?: VerifyResponse;
+  errorMessage?: string;
+}
+
+interface OpenID4VPAuthorizationRequest {
+  client_id: string;
+  client_id_scheme: string;
+  response_type: "vp_token";
+  response_mode: "direct_post";
+  response_uri: string;
+  nonce: string;
+  state: string;
+  presentation_definition: unknown;
+  client_metadata?: unknown;
+}
+
+interface WalletDirectPostResponse {
+  vp_token: string;
+  presentation_submission: string;
+  state: string;
+}
+
+interface InitTransactionRequest {
+  presentation_definition: unknown;
+  nonce?: string;
+  client_metadata?: unknown;
+}
+
+interface InitTransactionResponse {
+  transaction_id: string;
+  request_uri: string;
+  authorization_request_uri: string;
+  /** Alias for authorization_request_uri, used by same-device flow */
+  deep_link_uri: string;
+  expires_in: number;
+}
+
+// In-memory transaction storage (use Redis in production)
+const transactions = new Map<string, OpenID4VPTransaction>();
+
+// Transaction TTL: 5 minutes
+const TRANSACTION_TTL_MS = 5 * 60 * 1000;
+
+// Clean up expired transactions periodically
+setInterval(() => {
+  const now = Date.now();
+  for (const [id, tx] of transactions) {
+    if (tx.expiresAt < now) {
+      transactions.delete(id);
+      console.log(
+        `[OpenID4VP] Transaction ${id.slice(0, 8)}... expired and removed`,
+      );
+    }
+  }
+}, 60000); // Check every minute
 
 interface VerifyRequest {
   vp_token: string;
@@ -86,6 +164,40 @@ async function handleApiRequest(req: Request): Promise<Response> {
   if (req.method === "OPTIONS") {
     return new Response(null, { status: 204, headers: corsHeaders });
   }
+
+  // ============================================================================
+  // OpenID4VP Cross-Device Flow Endpoints
+  // ============================================================================
+
+  // Initialize a new OpenID4VP transaction (returns QR code data)
+  if (path === "/api/openid4vp/init" && req.method === "POST") {
+    return await handleInitOpenID4VPTransaction(req, corsHeaders);
+  }
+
+  // Poll for transaction status (frontend polls this)
+  if (path.startsWith("/api/openid4vp/status/") && req.method === "GET") {
+    const transactionId = path.replace("/api/openid4vp/status/", "");
+    return handleGetTransactionStatus(transactionId, corsHeaders);
+  }
+
+  // Wallet direct_post endpoint (wallet posts VP token here)
+  if (path === "/api/openid4vp/direct_post" && req.method === "POST") {
+    return await handleWalletDirectPost(req, corsHeaders);
+  }
+
+  // Get the authorization request (wallet fetches this via request_uri)
+  // Note: EUDI Wallet may use either GET or POST (request_uri_method)
+  if (
+    path.startsWith("/api/openid4vp/request/") &&
+    (req.method === "GET" || req.method === "POST")
+  ) {
+    const transactionId = path.replace("/api/openid4vp/request/", "");
+    return handleGetAuthorizationRequest(transactionId, corsHeaders, req);
+  }
+
+  // ============================================================================
+  // Other API Endpoints
+  // ============================================================================
 
   if (path === "/api/verify" && req.method === "POST") {
     return await handleVerifyCredential(req, corsHeaders);
@@ -209,6 +321,332 @@ async function handleVerifyCredential(
       },
     );
   }
+}
+
+// ============================================================================
+// OpenID4VP Cross-Device Flow Handlers
+// ============================================================================
+
+/**
+ * Initialize an OpenID4VP transaction for cross-device presentation
+ * Compatible with EUDI Wallet (Android/iOS) reference implementation
+ *
+ * The wallet will:
+ * 1. Scan the QR code containing the authorization_request_uri
+ * 2. Fetch the authorization request from request_uri
+ * 3. POST the VP token to response_uri (direct_post)
+ */
+async function handleInitOpenID4VPTransaction(
+  req: Request,
+  corsHeaders: Record<string, string>,
+): Promise<Response> {
+  console.log("\n" + "=".repeat(60));
+  console.log("[OpenID4VP] === INITIALIZING TRANSACTION ===");
+  console.log("=".repeat(60));
+
+  try {
+    const body: InitTransactionRequest = await req.json();
+
+    // Generate unique identifiers
+    const transactionId = crypto.randomUUID();
+    const state = crypto.randomUUID();
+    const nonce = body.nonce || crypto.randomUUID();
+
+    const now = Date.now();
+    const expiresAt = now + TRANSACTION_TTL_MS;
+
+    // Build the response_uri where wallet will POST the VP token
+    const responseUri = `${PUBLIC_URL}/api/openid4vp/direct_post`;
+
+    // Build the request_uri where wallet will fetch the full authorization request
+    const requestUri = `${PUBLIC_URL}/api/openid4vp/request/${transactionId}`;
+
+    // For client_id_scheme: "redirect_uri", the client_id MUST equal the response_uri
+    // See OpenID4VP spec section on redirect_uri client_id scheme
+    const clientId = responseUri;
+
+    // Build the authorization request
+    const authorizationRequest: OpenID4VPAuthorizationRequest = {
+      client_id: clientId,
+      client_id_scheme: "redirect_uri",
+      response_type: "vp_token",
+      response_mode: "direct_post",
+      response_uri: responseUri,
+      nonce,
+      state,
+      presentation_definition: body.presentation_definition,
+      client_metadata: body.client_metadata || {
+        client_name: "EwQwE Age Verification Demo",
+        logo_uri: `${PUBLIC_URL}/logo.png`,
+        vp_formats: {
+          mso_mdoc: { alg: ["ES256", "ES384", "ES512"] },
+        },
+      },
+    };
+
+    // Store the transaction
+    const transaction: OpenID4VPTransaction = {
+      id: transactionId,
+      state,
+      nonce,
+      createdAt: now,
+      expiresAt,
+      status: "pending",
+      authorizationRequest,
+    };
+    transactions.set(transactionId, transaction);
+
+    console.log(
+      `[OpenID4VP] Transaction created: ${transactionId.slice(0, 8)}...`,
+    );
+    console.log(`[OpenID4VP] State: ${state.slice(0, 8)}...`);
+    console.log(`[OpenID4VP] Response URI: ${responseUri}`);
+    console.log(`[OpenID4VP] Request URI: ${requestUri}`);
+
+    // Build the authorization request URI for the QR code
+    // EUDI Wallet supports: openid4vp://, mdoc-openid4vp://, haip-vp://
+    // For redirect_uri scheme, client_id must match response_uri
+    const authorizationRequestUri = `openid4vp://?client_id=${encodeURIComponent(clientId)}&request_uri=${encodeURIComponent(requestUri)}`;
+
+    console.log(
+      `[OpenID4VP] Authorization Request URI: ${authorizationRequestUri.slice(0, 80)}...`,
+    );
+    console.log("=".repeat(60) + "\n");
+
+    const response: InitTransactionResponse = {
+      transaction_id: transactionId,
+      request_uri: requestUri,
+      authorization_request_uri: authorizationRequestUri,
+      // Include deep_link_uri as an alias for same-device flow
+      deep_link_uri: authorizationRequestUri,
+      expires_in: Math.floor(TRANSACTION_TTL_MS / 1000),
+    };
+
+    return new Response(JSON.stringify(response), {
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  } catch (error) {
+    console.error("[OpenID4VP] Error initializing transaction:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to initialize transaction",
+        message: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+}
+
+/**
+ * Get the authorization request for a transaction
+ * The wallet fetches this via the request_uri in the QR code
+ */
+function handleGetAuthorizationRequest(
+  transactionId: string,
+  corsHeaders: Record<string, string>,
+  req: Request,
+): Response {
+  console.log("\n" + "=".repeat(60));
+  console.log("[OpenID4VP] === WALLET FETCHING AUTHORIZATION REQUEST ===");
+  console.log(`[OpenID4VP] Transaction ID: ${transactionId.slice(0, 8)}...`);
+  console.log(`[OpenID4VP] Method: ${req.method}`);
+  console.log(`[OpenID4VP] Accept: ${req.headers.get("accept")}`);
+  console.log("=".repeat(60));
+
+  const transaction = transactions.get(transactionId);
+
+  if (!transaction) {
+    console.log(
+      `[OpenID4VP] Transaction not found: ${transactionId.slice(0, 8)}...`,
+    );
+    return new Response(JSON.stringify({ error: "Transaction not found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  if (transaction.expiresAt < Date.now()) {
+    console.log(
+      `[OpenID4VP] Transaction expired: ${transactionId.slice(0, 8)}...`,
+    );
+    transactions.delete(transactionId);
+    return new Response(JSON.stringify({ error: "Transaction expired" }), {
+      status: 410,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  console.log(`[OpenID4VP] Returning authorization request:`);
+  console.log(JSON.stringify(transaction.authorizationRequest, null, 2));
+  console.log("=".repeat(60) + "\n");
+
+  // Return the authorization request as JSON
+  // Note: In production, this should be a signed JWT (JAR - JWT Secured Authorization Request)
+  return new Response(JSON.stringify(transaction.authorizationRequest), {
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+}
+
+/**
+ * Handle wallet direct_post response
+ * The wallet POSTs the VP token here after user approves the presentation
+ */
+async function handleWalletDirectPost(
+  req: Request,
+  corsHeaders: Record<string, string>,
+): Promise<Response> {
+  console.log("\n" + "=".repeat(60));
+  console.log("[OpenID4VP] === WALLET DIRECT_POST RECEIVED ===");
+  console.log("=".repeat(60));
+
+  try {
+    // Log request details for debugging
+    const contentType = req.headers.get("content-type") || "";
+    console.log(`[OpenID4VP] Content-Type: ${contentType}`);
+    console.log(`[OpenID4VP] Method: ${req.method}`);
+
+    // Parse form data or JSON (wallets may use either)
+    let vpToken: string;
+    let presentationSubmission: string;
+    let state: string;
+
+    if (contentType.includes("application/x-www-form-urlencoded")) {
+      const formData = await req.formData();
+      vpToken = formData.get("vp_token") as string;
+      presentationSubmission = formData.get(
+        "presentation_submission",
+      ) as string;
+      state = formData.get("state") as string;
+      console.log(
+        `[OpenID4VP] Parsed form data - state: ${state?.slice(0, 8)}...`,
+      );
+    } else {
+      const body = await req.json();
+      vpToken = body.vp_token;
+      presentationSubmission = body.presentation_submission;
+      state = body.state;
+      console.log(`[OpenID4VP] Parsed JSON - state: ${state?.slice(0, 8)}...`);
+    }
+
+    console.log(`[OpenID4VP] State: ${state?.slice(0, 8)}...`);
+    console.log(`[OpenID4VP] VP Token length: ${vpToken?.length}`);
+
+    // Find the transaction by state
+    let transaction: OpenID4VPTransaction | undefined;
+    for (const [, tx] of transactions) {
+      if (tx.state === state) {
+        transaction = tx;
+        break;
+      }
+    }
+
+    if (!transaction) {
+      console.log(`[OpenID4VP] No transaction found for state: ${state}`);
+      return new Response(
+        JSON.stringify({ error: "Invalid state parameter" }),
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json", ...corsHeaders },
+        },
+      );
+    }
+
+    console.log(
+      `[OpenID4VP] Found transaction: ${transaction.id.slice(0, 8)}...`,
+    );
+
+    // Store the wallet response
+    transaction.walletResponse = {
+      vp_token: vpToken,
+      presentation_submission: presentationSubmission,
+      state,
+    };
+    transaction.status = "received";
+
+    console.log(
+      `[OpenID4VP] Transaction ${transaction.id.slice(0, 8)}... status -> received`,
+    );
+    console.log("=".repeat(60) + "\n");
+
+    // Return success - no redirect_uri for cross-device flow
+    return new Response(JSON.stringify({ status: "ok" }), {
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  } catch (error) {
+    console.error("[OpenID4VP] Error handling direct_post:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to process wallet response",
+        message: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+}
+
+/**
+ * Get the status of a transaction (frontend polls this)
+ */
+function handleGetTransactionStatus(
+  transactionId: string,
+  corsHeaders: Record<string, string>,
+): Response {
+  const transaction = transactions.get(transactionId);
+
+  if (!transaction) {
+    return new Response(JSON.stringify({ error: "Transaction not found" }), {
+      status: 404,
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    });
+  }
+
+  if (transaction.expiresAt < Date.now()) {
+    transactions.delete(transactionId);
+    return new Response(
+      JSON.stringify({
+        status: "expired",
+        error: "Transaction expired",
+      }),
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+
+  // If we have a wallet response but haven't verified yet, return the response
+  if (transaction.status === "received" && transaction.walletResponse) {
+    return new Response(
+      JSON.stringify({
+        status: "received",
+        vp_token: transaction.walletResponse.vp_token,
+        presentation_submission:
+          transaction.walletResponse.presentation_submission,
+        nonce: transaction.nonce,
+        state: transaction.state,
+      }),
+      {
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
+
+  // Return current status
+  return new Response(
+    JSON.stringify({
+      status: transaction.status,
+      expires_in: Math.floor((transaction.expiresAt - Date.now()) / 1000),
+    }),
+    {
+      headers: { "Content-Type": "application/json", ...corsHeaders },
+    },
+  );
 }
 
 /**

@@ -18,7 +18,7 @@ export class RelyingPartyApp {
   private logger: DebugLogger;
   private selectedCredentialType: string = "mdl";
   private selectedClaims: Set<string> = new Set();
-  private selectedProtocol: string = "w3c-dc";
+  private selectedProtocol: string = "w3c-dc-fallback";
   private currentRequest: OpenID4VPRequest | null = null;
   private currentResponse: OpenID4VPResponse | null = null;
 
@@ -99,10 +99,15 @@ export class RelyingPartyApp {
     if (!descEl) return;
 
     const descriptions: Record<string, string> = {
+      "w3c-dc-fallback":
+        "Tries W3C Digital Credentials API first, falls back to OpenID4VP QR code if unavailable",
       "w3c-dc": "Uses navigator.credentials.get() with the wallet extension",
-      openid4vp:
-        "OpenID for Verifiable Presentations 1.0 - cross-device flow with QR code (coming soon)",
-      preview: "Legacy preview protocol for testing",
+      "openid4vp-cross-device":
+        "OpenID4VP 1.0 cross-device flow - scan QR code with mobile wallet (EUDI Wallet)",
+      "openid4vp-same-device":
+        "OpenID4VP 1.0 same-device flow - opens wallet app via deep link (mobile browsers)",
+      simulated:
+        "Simulates credential flow without calling any wallet (for testing)",
     };
 
     descEl.textContent = descriptions[this.selectedProtocol] || "";
@@ -278,16 +283,20 @@ export class RelyingPartyApp {
     `;
 
     try {
-      this.logger.log("Starting credential request");
+      this.logger.log(
+        "Starting credential request with protocol:",
+        this.selectedProtocol,
+      );
 
       // Request credentials
       const response = await requestCredentials(
         this.currentRequest,
+        this.selectedProtocol,
         this.logger,
       );
 
       if (!response) {
-        throw new Error("Request was cancelled or failed");
+        throw new Error("Request was cancelled or no credentials found");
       }
 
       this.currentResponse = response;
