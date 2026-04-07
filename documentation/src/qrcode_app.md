@@ -1,6 +1,8 @@
 # Verifier App
 
-The Verifier App is an embedded, session-authenticated web application served directly by the credential verifier under the `/verifier_app` path. It provides a self-contained UI for credential verification operators — no separate deployment is required.
+The Verifier App is a Vite+TypeScript+Tailwind SPA served directly by the credential verifier. It provides a self-contained UI for credential verification operators — no separate deployment is required.
+
+The SPA is built from `crates/ewqwe-verifier-app/ui/` and served from the root URL (`/`). All API endpoints are under `/api/v1/`.
 
 ## Overview
 
@@ -8,30 +10,60 @@ The Verifier App is an embedded, session-authenticated web application served di
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                  Credential Verifier  (:9443)                            │
 │                                                                          │
-│   GET  /verifier_app/                     → embedded SPA (index.html)   │
-│   GET  /verifier_app/ui                   → same SPA (alias)            │
-│   GET  /verifier_app/app.js               → embedded SPA JavaScript     │
-│   GET  /verifier_app/logo.png             → embedded logo               │
-│   GET  /verifier_app/favicon_b64.txt      → base64 logo data URL        │
-│   GET  /verifier_app/api/i18n?lang=<code> → locale strings (JSON)       │
-│   POST /verifier_app/api/setup/bootstrap  → one-time admin creation     │
-│   GET  /verifier_app/api/setup/status     → bootstrap status (public)   │
-│   POST /verifier_app/api/auth/login                                      │
-│   POST /verifier_app/api/auth/logout                                     │
-│   GET  /verifier_app/api/auth/me                                         │
-│   POST /verifier_app/api/qr/generate      → OpenID4VP QR transaction    │
-│   GET  /verifier_app/api/qr/{id}/status                                 │
-│   GET  /verifier_app/api/settings         → public app settings         │
-│   PUT  /verifier_app/api/admin/settings   → (admin role only)           │
-│   GET  /verifier_app/api/admin/users      → (admin role only)           │
-│   POST /verifier_app/api/admin/users      → (admin role only)           │
-│   PUT  /verifier_app/api/admin/users/{id} → (admin role only)           │
-│   DELETE /verifier_app/api/admin/users/{id} → (admin role only)         │
-│   GET  /verifier_app/api/admin/journal    → (admin role only)           │
+│   GET  /                              → SPA index.html (dist/)          │
+│   GET  /assets/*                      → bundled JS/CSS assets           │
+│   GET  /logo.png                      → logo image                      │
+│   GET  /api/v1/i18n?lang=<code>       → locale strings (JSON)          │
+│   POST /api/v1/setup/bootstrap        → one-time admin creation         │
+│   GET  /api/v1/setup/status           → bootstrap status (public)       │
+│   POST /api/v1/auth/login                                                │
+│   POST /api/v1/auth/logout                                               │
+│   GET  /api/v1/auth/me                                                   │
+│   POST /api/v1/qr/generate            → OpenID4VP QR transaction        │
+│   GET  /api/v1/qr/{id}/status                                           │
+│   GET  /api/v1/settings               → public app settings             │
+│   PUT  /api/v1/admin/settings         → (admin role only)               │
+│   GET  /api/v1/admin/users            → (admin role only)               │
+│   POST /api/v1/admin/users            → (admin role only)               │
+│   PUT  /api/v1/admin/users/{id}       → (admin role only)               │
+│   DELETE /api/v1/admin/users/{id}     → (admin role only)               │
+│   GET  /api/v1/admin/journal          → (admin role only)               │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
 
-All assets are embedded in the server binary at compile time — there are no separate static file deployments.
+---
+
+## Building the UI
+
+The SPA must be built before the credential verifier can serve it.
+
+```bash
+cd crates/ewqwe-verifier-app/ui
+npm run build          # outputs to dist/
+```
+
+The `credential-server.toml` `[verifier_app]` section tells the server where to find the built assets:
+
+```toml
+[verifier_app]
+ui_dist_path = "./crates/ewqwe-verifier-app/ui/dist"
+```
+
+Paths are resolved relative to the directory containing the config file. The server logs a warning and skips serving the SPA if the directory is not found at startup.
+
+### Development Mode (Vite Dev Server)
+
+Run the Vite dev server alongside the credential verifier for hot-module reload during UI development:
+
+```bash
+# Terminal 1 — credential verifier (API + OpenID4VP)
+cd credential_verifier && cargo run -- --config credential-server.toml
+
+# Terminal 2 — Vite dev server (proxies /api/v1 to https://localhost:9443)
+cd crates/ewqwe-verifier-app/ui && npm run dev
+```
+
+Open <http://localhost:5175> in your browser. The Vite proxy forwards `/api/v1/*`, `/ewqwe_api/*`, `/.well-known/*`, and `/version` to the credential verifier over HTTPS (`secure: false` trusts the self-signed dev certificate).
 
 ---
 
@@ -42,12 +74,13 @@ Add the following section to `credential-server.toml`:
 ```toml
 [verifier_app]
 enabled = true
-app_name = "ACME.eu"                   # optional company name (default: ACME.eu)
-# logo_url = "https://example.com/logo.png"   # optional logo (URL or base64 data URL)
-# session_secret_key = "<128 hex chars>"       # recommended for production
+app_name = "ACME.eu"                          # optional (default: "Verifier App")
+# logo_url = "https://example.com/logo.png"   # optional logo
+# session_secret = "<128 hex chars>"           # recommended for production
+ui_dist_path = "./crates/ewqwe-verifier-app/ui/dist"
 ```
 
-When `enabled = false` (the default if the section is absent), all `/verifier_app/*` routes return 404.
+When `enabled = false` (the default if the section is absent), all `/api/v1/*` Verifier App routes return 404 and the SPA is not served.
 
 ### Session Secret Key
 
@@ -132,11 +165,11 @@ For most single-instance deployments the cookie store is sufficient. For multi-i
 
 ## First-Time Setup
 
-On the first visit, navigate to `https://<server>/verifier_app/`.
+On the first visit, navigate to `https://<server>/`.
 
-Because no users exist yet, click **"Create admin account"** (or navigate directly to `/verifier_app/ui` then follow the on-screen link) to reach the bootstrap form. Fill in the admin email and a password of at least 12 characters.
+Because no users exist yet, the app shows the bootstrap form. Fill in the admin email and a password of at least 12 characters.
 
-This `POST /verifier_app/api/setup/bootstrap` endpoint is automatically locked after the first admin is created — subsequent calls return `409 Conflict`.
+This `POST /api/v1/setup/bootstrap` endpoint is automatically locked after the first admin is created — subsequent calls return `409 Conflict`.
 
 ---
 
@@ -153,7 +186,7 @@ The first account created via bootstrap is always an admin with `is_superadmin =
 
 ## Generating a QR Code
 
-1. Sign in at `https://<server>/verifier_app/`.
+1. Sign in at `https://<server>/`.
 2. On the **Home** page, select the **Credential Type** from the dropdown (Proof of Age, mDL, or National ID).
 3. Click **Generate QR Code**.
 4. A QR code is displayed for the selected credential type. The holder scans it with their digital wallet; the status badge updates automatically every 2 seconds:
@@ -230,7 +263,7 @@ Entries are paginated (50 per page). The journal backend must be enabled in the 
 The UI fetches locale strings from:
 
 ```
-GET /verifier_app/api/i18n?lang=<code>
+GET /api/v1/i18n?lang=<code>
 ```
 
 Supported language codes:
@@ -254,35 +287,35 @@ By default the app detects the browser's language (`navigator.language`) and use
 The language preference is stored in `localStorage` (`verifier_app_lang`) and persists across sessions.
 
 Locale files are embedded in the binary at compile time from  
-`crates/ewqwe-verifier-app/src/static/i18n/`.
+`crates/ewqwe-verifier-app/src/static/i18n/` and served via `GET /api/v1/i18n?lang=<code>`.
 
 ---
 
 ## API Reference
 
-All API endpoints are under `/verifier_app/api/` and require `Content-Type: application/json` for POST/PUT requests. Sessions are managed via `HttpOnly` cookies.
+All API endpoints are under `/api/v1/` and require `Content-Type: application/json` for POST/PUT requests. Sessions are managed via `HttpOnly` cookies.
 
 ### Setup
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/setup/bootstrap` | `{email, password, first_name, last_name?}` | One-time admin creation |
-| `GET`  | `/api/setup/status`    | — | `{"bootstrapped": bool}` — public endpoint |
+| `POST` | `/api/v1/setup/bootstrap` | `{email, password, first_name, last_name?}` | One-time admin creation |
+| `GET`  | `/api/v1/setup/status`    | — | `{"bootstrapped": bool}` — public endpoint |
 
 ### Auth
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/auth/login`  | `{email, password}` | Sign in, sets session cookie |
-| `POST` | `/api/auth/logout` | — | Invalidate session |
-| `GET`  | `/api/auth/me`     | — | Current user profile |
+| `POST` | `/api/v1/auth/login`  | `{email, password}` | Sign in, sets session cookie |
+| `POST` | `/api/v1/auth/logout` | — | Invalidate session |
+| `GET`  | `/api/v1/auth/me`     | — | Current user profile |
 
 ### QR Code
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
-| `POST` | `/api/qr/generate`    | `{credential_type?}` | Start a new OpenID4VP transaction. `credential_type`: `"proof-of-age"` (default), `"mdl"`, or `"national-id"`. |
-| `GET`  | `/api/qr/{id}/status` | — | Poll transaction status |
+| `POST` | `/api/v1/qr/generate`    | `{credential_type?}` | Start a new OpenID4VP transaction. `credential_type`: `"proof-of-age"` (default), `"mdl"`, or `"national-id"`. |
+| `GET`  | `/api/v1/qr/{id}/status` | — | Poll transaction status |
 
 `generate` response:
 
@@ -299,13 +332,13 @@ All API endpoints are under `/verifier_app/api/` and require `Content-Type: appl
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
-| `GET`  | `/api/settings` | — | `{"app_name": "...", "logo_url": "...\|null", "allowed_credential_types": [...]}` |
+| `GET`  | `/api/v1/settings` | — | `{"app_name": "...", "logo_url": "...\|null", "allowed_credential_types": [...]}` |
 
 ### Admin: Settings
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
-| `PUT`  | `/api/admin/settings` | `{app_name?, logo_url?}` | Persist display settings |
+| `PUT`  | `/api/v1/admin/settings` | `{app_name?, logo_url?}` | Persist display settings |
 
 `status` response:
 
@@ -320,54 +353,67 @@ All API endpoints are under `/verifier_app/api/` and require `Content-Type: appl
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
-| `GET`    | `/api/admin/users`      | — | List all users |
-| `POST`   | `/api/admin/users`      | `{email, password, first_name, last_name?, role?, allowed_credential_types?}` | Create user |
-| `PUT`    | `/api/admin/users/{id}` | `{first_name?, last_name?, role?, is_active?, new_password?, allowed_credential_types?}` | Update user |
-| `DELETE` | `/api/admin/users/{id}` | — | Delete user |
+| `GET`    | `/api/v1/admin/users`      | — | List all users |
+| `POST`   | `/api/v1/admin/users`      | `{email, password, first_name, last_name?, role?, allowed_credential_types?}` | Create user |
+| `PUT`    | `/api/v1/admin/users/{id}` | `{first_name?, last_name?, role?, is_active?, new_password?, allowed_credential_types?}` | Update user |
+| `DELETE` | `/api/v1/admin/users/{id}` | — | Delete user |
 
 ### Admin: Journal
 
 | Method | Path | Query | Description |
 |--------|------|-------|-------------|
-| `GET` | `/api/admin/journal` | `user_id`, `limit` (≤200), `offset` | List journal entries attributed to QR app users |
+| `GET` | `/api/v1/admin/journal` | `user_id`, `limit` (≤200), `offset` | List journal entries attributed to QR app users |
 
 ### i18n
 
 | Method | Path | Query | Description |
 |--------|------|-------|-------------|
-| `GET` | `/api/i18n` | `lang` | Get locale strings JSON |
+| `GET` | `/api/v1/i18n` | `lang` | Get locale strings JSON |
 
 ---
 
 ## Source Layout
 
 ```
-crates/ewqwe-verifier-app/src/
-├── lib.rs            — module root + route registration
-├── config.rs         — VerifierAppConfig struct
-├── auth.rs           — argon2id password hashing/verification
-├── db.rs             — VerifierAppStore trait + DynVerifierAppStore dispatch
-├── error.rs          — VerifierAppError, VerifierAppResult
-├── models.rs         — DTOs: UserResponse, LoginRequest, …
-├── qr_user_map.rs    — in-memory transaction→user attribution map
-├── routes.rs         — all HTTP handlers (static + API)
-├── stores/
-│   ├── sqlite.rs     — SQLite backend (in-memory or file)
-│   ├── postgres.rs   — PostgreSQL backend
-│   └── mysql.rs      — MySQL / MariaDB backend
-└── static/
-    ├── index.html    — embedded SPA HTML (compiled into binary)
-    ├── app.js        — embedded SPA JavaScript (compiled into binary)
-    ├── logo.png      — embedded ewQwe logo
-    ├── favicon_b64.txt — base64 logo data URL (default branding)
-    └── i18n/
-        ├── en.json   — English
-        ├── de.json   — German
-        ├── fr.json   — French
-        ├── it.json   — Italian
-        ├── es.json   — Spanish
-        ├── sv.json   — Swedish
-        ├── pl.json   — Polish
-        ├── cs.json   — Czech
-        └── hr.json   — Croatian
+crates/ewqwe-verifier-app/
+├── src/
+│   ├── lib.rs            — module root + route registration
+│   ├── config.rs         — VerifierAppConfig struct (includes ui_dist_path)
+│   ├── auth.rs           — argon2id password hashing/verification
+│   ├── db.rs             — VerifierAppStore trait + DynVerifierAppStore dispatch
+│   ├── error.rs          — VerifierAppError, VerifierAppResult
+│   ├── models.rs         — DTOs: UserResponse, LoginRequest, …
+│   ├── qr_user_map.rs    — in-memory transaction→user attribution map
+│   ├── routes.rs         — HTTP handlers (API + i18n embedded assets)
+│   ├── stores/
+│   │   ├── sqlite.rs     — SQLite backend (in-memory or file)
+│   │   ├── postgres.rs   — PostgreSQL backend
+│   │   └── mysql.rs      — MySQL / MariaDB backend
+│   └── static/
+│       ├── logo.png      — ewQwe logo (copied to ui/public/ for the SPA)
+│       └── i18n/
+│           ├── en.json   — English
+│           ├── de.json   — German
+│           ├── fr.json   — French
+│           ├── it.json   — Italian
+│           ├── es.json   — Spanish
+│           ├── sv.json   — Swedish
+│           ├── pl.json   — Polish
+│           ├── cs.json   — Czech
+│           └── hr.json   — Croatian
+└── ui/                    — Vite+TypeScript+Tailwind SPA
+    ├── package.json       — scripts: dev, build, preview
+    ├── vite.config.ts     — proxy to https://localhost:9443
+    ├── tailwind.config.js
+    ├── tsconfig.json
+    ├── index.html         — SPA entry point
+    ├── public/
+    │   └── logo.png       — served as /logo.png
+    ├── src/
+    │   ├── main.ts        — entry: imports styles, calls initApp()
+    │   ├── app.ts         — all application logic
+    │   ├── api.ts         — apiFetch() with base /api/v1
+    │   ├── types.ts       — TypeScript interfaces
+    │   └── styles.css     — Tailwind + custom CSS
+    └── dist/              — output of `npm run build` (git-ignored)
 ```

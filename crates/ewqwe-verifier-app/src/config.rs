@@ -97,6 +97,19 @@ pub struct VerifierAppConfig {
     #[serde(default)]
     pub session_secret: Option<String>,
 
+    /// File-system path to the Vite-built UI assets directory.
+    ///
+    /// When set, the credential verifier serves the SPA from this directory
+    /// at the root URL (`/`).  Build with:
+    ///
+    /// ```bash
+    /// cd crates/ewqwe-verifier-app/ui && deno task build
+    /// ```
+    ///
+    /// Example: `"./crates/ewqwe-verifier-app/ui/dist"`
+    #[serde(default)]
+    pub ui_dist_path: Option<String>,
+
     /// Database backend for user accounts and OIDC provider configuration.
     ///
     /// Defaults to `sqlite_memory` when not specified.

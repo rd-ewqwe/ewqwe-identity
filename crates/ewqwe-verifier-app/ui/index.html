@@ -1,0 +1,1105 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title id="page-title">Verifier App</title>
+    <link rel="icon" type="image/png" href="/logo.png" />
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+
+  <body class="text-white min-h-screen flex flex-col">
+    <!-- ═══════════════════════════════════════════════════════ TOAST ══ -->
+    <div id="toast"></div>
+
+    <!-- ═══════════════════════════════════════════════════ MOBILE DRAWER ══ -->
+    <div
+      id="drawer-overlay"
+      class="fixed inset-0 bg-black/50 z-40 hidden"
+      onclick="closeDrawer()"
+    ></div>
+    <aside
+      id="drawer"
+      class="fixed top-0 left-0 h-full w-64 z-50 glass p-5 hidden flex-col gap-1 shadow-2xl"
+    >
+      <div class="flex items-center justify-between mb-4">
+        <span id="drawer-app-name" class="font-bold text-lg text-white"
+          >Verifier App</span
+        >
+        <button
+          onclick="closeDrawer()"
+          class="text-white/60 hover:text-white text-xl leading-none"
+        >
+          &times;
+        </button>
+      </div>
+      <nav id="drawer-nav"></nav>
+    </aside>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: login -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <div
+      id="page-login"
+      class="hidden flex-1 flex-col items-center justify-center p-4"
+    >
+      <div class="glass p-8 w-full max-w-sm">
+        <!-- Company logo + name on login -->
+        <div id="login-branding" class="flex flex-col items-center gap-2 mb-6">
+          <img id="login-logo" src="/logo.png" alt="Logo" class="h-10 w-auto" />
+          <span
+            id="login-company-name"
+            class="font-bold text-lg text-white"
+          ></span>
+        </div>
+        <h1
+          id="login-title"
+          class="text-2xl font-bold mb-1"
+          data-i18n="login_title"
+        >
+          Sign In
+        </h1>
+        <p
+          id="login-subtitle"
+          class="text-white/55 text-sm mb-7"
+          data-i18n="login_subtitle"
+        >
+          Credential Verification Application
+        </p>
+
+        <form
+          id="login-form"
+          onsubmit="doLogin(event)"
+          class="flex flex-col gap-4"
+        >
+          <div>
+            <label class="block text-sm text-white/70 mb-1" data-i18n="email"
+              >Email</label
+            >
+            <input
+              id="login-email"
+              type="email"
+              required
+              autocomplete="username"
+              class="form-input"
+              placeholder="admin@example.com"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-white/70 mb-1" data-i18n="password"
+              >Password</label
+            >
+            <input
+              id="login-password"
+              type="password"
+              required
+              autocomplete="current-password"
+              class="form-input"
+              placeholder="••••••••••••"
+            />
+          </div>
+          <p id="login-error" class="text-red-400 text-sm hidden"></p>
+          <button
+            type="submit"
+            class="btn-primary w-full mt-1"
+            data-i18n="sign_in"
+          >
+            Sign In
+          </button>
+        </form>
+      </div>
+      <!-- Powered by footer on login -->
+      <div class="flex flex-col items-center gap-2 opacity-45 mt-8">
+        <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45" data-i18n="powered_by">
+          powered by ewQwe Digital Identity
+        </p>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- PAGE: bootstrap -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <div
+      id="page-bootstrap"
+      class="hidden flex-1 items-center justify-center p-4"
+    >
+      <div class="glass p-8 w-full max-w-sm">
+        <div class="flex flex-col items-center gap-2 mb-6">
+          <img
+            id="bootstrap-logo"
+            src="/logo.png"
+            alt="Logo"
+            class="h-10 w-auto"
+          />
+          <span
+            id="bootstrap-company-name"
+            class="font-bold text-lg text-white"
+          ></span>
+        </div>
+        <h1 class="text-2xl font-bold mb-1" data-i18n="create_admin_account">
+          Create Admin Account
+        </h1>
+        <p class="text-white/55 text-sm mb-7" data-i18n="one_time_setup">
+          One-time initial setup
+        </p>
+
+        <form
+          id="bootstrap-form"
+          onsubmit="doBootstrap(event)"
+          class="flex flex-col gap-4"
+        >
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="first_name"
+                >First Name</label
+              >
+              <input
+                id="bs-first"
+                type="text"
+                class="form-input"
+                placeholder="Alice"
+              />
+            </div>
+            <div>
+              <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="last_name"
+                >Last Name</label
+              >
+              <input
+                id="bs-last"
+                type="text"
+                class="form-input"
+                placeholder="Smith"
+              />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-white/70 mb-1" data-i18n="email"
+              >Email</label
+            >
+            <input
+              id="bs-email"
+              type="email"
+              required
+              class="form-input"
+              placeholder="admin@example.com"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-white/70 mb-1">
+              <span data-i18n="password">Password</span>
+              <span class="text-white/40" data-i18n="min_chars"
+                >(min 12 chars)</span
+              >
+            </label>
+            <input
+              id="bs-password"
+              type="password"
+              required
+              minlength="12"
+              class="form-input"
+              placeholder="••••••••••••"
+            />
+          </div>
+          <div>
+            <label
+              class="block text-sm text-white/70 mb-1"
+              data-i18n="confirm_password"
+              >Confirm Password</label
+            >
+            <input
+              id="bs-password2"
+              type="password"
+              required
+              minlength="12"
+              class="form-input"
+              placeholder="••••••••••••"
+            />
+          </div>
+          <p id="bs-error" class="text-red-400 text-sm hidden"></p>
+          <button
+            type="submit"
+            class="btn-primary w-full mt-1"
+            data-i18n="create_admin"
+          >
+            Create Admin Account
+          </button>
+        </form>
+      </div>
+      <!-- Powered by footer on bootstrap -->
+      <div class="flex flex-col items-center gap-2 opacity-45 mt-8">
+        <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45" data-i18n="powered_by">
+          powered by ewQwe Digital Identity
+        </p>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- APP SHELL (nav + page area) — shown when logged in -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <div id="app-shell" class="hidden flex-1 flex-col overflow-hidden">
+      <!-- Top bar -->
+      <header class="glass m-3 mb-0 px-4 py-3 flex items-center gap-3 shrink-0">
+        <!-- Mobile hamburger -->
+        <button
+          id="hamburger"
+          onclick="openDrawer()"
+          class="md:hidden text-white/70 hover:text-white mr-1"
+        >
+          <svg
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
+        </button>
+
+        <!-- Company logo + name in top bar -->
+        <div class="flex items-center gap-2 flex-1">
+          <img
+            id="topbar-logo"
+            src="/logo.png"
+            alt="Logo"
+            class="h-7 w-auto hidden"
+          />
+          <span id="topbar-app-name" class="font-bold text-base text-white"
+            >Verifier App</span
+          >
+        </div>
+
+        <!-- Desktop nav -->
+        <nav id="topbar-nav" class="hidden md:flex items-center gap-1"></nav>
+      </header>
+
+      <!-- Page content -->
+      <main class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+        <!-- ── Home (QR verification) ───────────────────────────── -->
+        <section id="page-home" class="hidden flex-col items-center gap-6 pt-4">
+          <!-- QR + status -->
+          <div class="glass p-6 w-full max-w-sm text-center">
+            <h2
+              id="qr-title"
+              class="text-lg font-bold mb-4"
+              data-i18n="credential_verification_qr"
+            >
+              Credential Verification QR
+            </h2>
+
+            <!-- Credential type selector -->
+            <div id="qr-type-selector" class="mb-4">
+              <label
+                class="block text-sm text-white/60 mb-1 text-left"
+                data-i18n="credential_type"
+                >Credential Type</label
+              >
+              <select id="qr-credential-type" class="form-input text-sm">
+                <option value="proof-of-age" data-i18n="proof_of_age">
+                  Proof of Age (EU AV)
+                </option>
+                <option value="mdl" data-i18n="mobile_drivers_license">
+                  Mobile Driver's License (mDL)
+                </option>
+                <option value="national-id" data-i18n="national_id">
+                  National ID (EU PID)
+                </option>
+              </select>
+            </div>
+
+            <div id="qr-area-empty" class="">
+              <p
+                class="text-white/55 text-sm mb-4"
+                data-i18n="generate_qr_prompt"
+              >
+                Generate a QR code for the user to scan with their wallet.
+              </p>
+              <button
+                onclick="generateQR()"
+                id="qr-generate-btn"
+                class="btn-primary"
+                data-i18n="generate_qr"
+              >
+                Generate QR Code
+              </button>
+            </div>
+
+            <div
+              id="qr-area-loading"
+              class="hidden flex-col items-center gap-3 py-4"
+            >
+              <div class="spinner"></div>
+              <p
+                class="text-white/55 text-sm"
+                data-i18n="creating_verification_request"
+              >
+                Creating verification request…
+              </p>
+            </div>
+
+            <div id="qr-area-code" class="hidden flex-col items-center gap-4">
+              <img id="qr-img" src="" alt="QR Code" />
+              <div
+                id="qr-status-badge"
+                class="badge badge-indigo px-4 py-1 text-sm"
+                data-i18n="waiting_for_scan"
+              >
+                Waiting for scan…
+              </div>
+              <p
+                class="text-white/45 text-xs"
+                data-i18n="scan_with_wallet_short"
+              >
+                Scan with your digital identity wallet
+              </p>
+              <div class="flex gap-2">
+                <button
+                  onclick="generateQR()"
+                  class="btn-ghost text-sm"
+                  data-i18n="new_qr"
+                >
+                  New QR Code
+                </button>
+                <button
+                  id="qr-cancel-btn"
+                  onclick="cancelQR()"
+                  class="btn-ghost text-sm hidden"
+                  data-i18n="cancel"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="qr-area-verified"
+              class="hidden flex-col items-center gap-3 py-2"
+            >
+              <svg
+                class="w-14 h-14 text-green-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+                />
+              </svg>
+              <p class="text-green-300 font-bold text-xl" data-i18n="verified">
+                Verified ✓
+              </p>
+              <p
+                id="qr-age-result"
+                class="hidden text-base font-semibold px-4 py-1 rounded-full"
+              ></p>
+              <p
+                class="text-white/55 text-sm"
+                data-i18n="credential_verified_success"
+              >
+                The credential was successfully verified.
+              </p>
+              <button
+                onclick="generateQR()"
+                class="btn-primary mt-2"
+                data-i18n="new_verification"
+              >
+                New Verification
+              </button>
+            </div>
+
+            <div
+              id="qr-area-failed"
+              class="hidden flex-col items-center gap-3 py-2"
+            >
+              <svg
+                class="w-14 h-14 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+                />
+              </svg>
+              <p
+                class="text-red-300 font-bold text-xl"
+                data-i18n="verification_failed_title"
+              >
+                Verification Failed
+              </p>
+              <p
+                id="qr-fail-reason"
+                class="text-white/55 text-sm"
+                data-i18n="presentation_rejected"
+              >
+                The presentation was rejected or expired.
+              </p>
+              <button
+                onclick="generateQR()"
+                class="btn-primary mt-2"
+                data-i18n="try_again"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
+
+          <!-- ewqwe branding -->
+          <div class="flex flex-col items-center gap-2 opacity-45">
+            <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+            <p class="text-xs text-white/45" data-i18n="powered_by">
+              powered by ewQwe Digital Identity
+            </p>
+          </div>
+        </section>
+
+        <!-- ── Users ─────────────────────────────────────────────── -->
+        <section id="page-users" class="hidden flex-col gap-4">
+          <div class="flex items-center justify-between">
+            <h2 class="text-xl font-bold" data-i18n="users">Users</h2>
+            <button onclick="openCreateUserModal()" class="btn-primary text-sm">
+              + <span data-i18n="add_user">New User</span>
+            </button>
+          </div>
+
+          <div class="glass overflow-x-auto">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th data-i18n="email">Email</th>
+                  <th data-i18n="name">Name</th>
+                  <th data-i18n="role">Role</th>
+                  <th data-i18n="status">Status</th>
+                  <th data-i18n="actions">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-tbody">
+                <tr>
+                  <td
+                    colspan="5"
+                    class="text-center text-white/40 py-6"
+                    data-i18n="loading"
+                  >
+                    Loading…
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="flex flex-col items-center gap-2 opacity-45 mt-4">
+            <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+            <p class="text-xs text-white/45" data-i18n="powered_by">
+              powered by ewQwe Digital Identity
+            </p>
+          </div>
+        </section>
+
+        <!-- ── Journal ───────────────────────────────────────────── -->
+        <section id="page-journal" class="hidden flex-col gap-4">
+          <div class="flex items-center justify-between flex-wrap gap-2">
+            <h2 class="text-xl font-bold" data-i18n="audit_journal">
+              Audit Journal
+            </h2>
+            <div class="flex gap-2">
+              <button
+                onclick="loadJournal(0)"
+                class="btn-ghost text-sm"
+                data-i18n="refresh"
+              >
+                ↻ Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters -->
+          <div class="glass p-4 flex flex-wrap gap-3 items-end">
+            <div class="flex-1 min-w-[160px]">
+              <label
+                class="block text-xs text-white/60 mb-1"
+                data-i18n="verifier"
+                >Verifier</label
+              >
+              <select
+                id="journal-filter-user"
+                class="form-input text-sm"
+                onchange="loadJournal(0)"
+              >
+                <option value="" data-i18n="all_verifiers">
+                  All verifiers
+                </option>
+              </select>
+            </div>
+            <div class="flex-1 min-w-[140px]">
+              <label class="block text-xs text-white/60 mb-1" data-i18n="from"
+                >From</label
+              >
+              <input
+                id="journal-filter-from"
+                type="date"
+                class="form-input text-sm"
+                onchange="loadJournal(0)"
+              />
+            </div>
+            <div class="flex-1 min-w-[140px]">
+              <label class="block text-xs text-white/60 mb-1" data-i18n="to"
+                >To</label
+              >
+              <input
+                id="journal-filter-to"
+                type="date"
+                class="form-input text-sm"
+                onchange="loadJournal(0)"
+              />
+            </div>
+            <div class="flex gap-2">
+              <button
+                onclick="loadJournal(0)"
+                class="btn-primary text-sm"
+                data-i18n="filter"
+              >
+                Filter
+              </button>
+              <button
+                onclick="clearJournalFilters()"
+                class="btn-ghost text-sm"
+                data-i18n="clear"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div class="glass overflow-x-auto">
+            <table class="tbl">
+              <thead>
+                <tr>
+                  <th data-i18n="time">Time</th>
+                  <th data-i18n="verifier">Verifier</th>
+                  <th data-i18n="claims">Claims</th>
+                  <th data-i18n="status">Status</th>
+                </tr>
+              </thead>
+              <tbody id="journal-tbody">
+                <tr>
+                  <td
+                    colspan="4"
+                    class="text-center text-white/40 py-6"
+                    data-i18n="loading"
+                  >
+                    Loading…
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Pagination -->
+          <div class="flex justify-between items-center text-sm text-white/55">
+            <button
+              id="journal-prev"
+              onclick="journalPage(-1)"
+              class="btn-ghost text-sm"
+              disabled
+              data-i18n="prev"
+            >
+              ← Prev
+            </button>
+            <div class="flex items-center gap-3">
+              <span id="journal-page-info">Page 1</span>
+              <span class="text-white/40">|</span>
+              <label class="text-white/50 text-xs" data-i18n="rows_per_page"
+                >Rows</label
+              >
+              <select
+                id="journal-limit-select"
+                class="form-input text-xs py-0.5 px-2 h-7"
+                onchange="loadJournal(0)"
+              >
+                <option value="10" selected>10</option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+              </select>
+            </div>
+            <button
+              id="journal-next"
+              onclick="journalPage(1)"
+              class="btn-ghost text-sm"
+              data-i18n="next"
+            >
+              Next →
+            </button>
+          </div>
+
+          <div class="flex flex-col items-center gap-2 opacity-45 mt-4">
+            <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+            <p class="text-xs text-white/45" data-i18n="powered_by">
+              powered by ewQwe Digital Identity
+            </p>
+          </div>
+        </section>
+
+        <!-- ── Settings ──────────────────────────────────────────── -->
+        <section id="page-settings" class="hidden flex-col gap-6 max-w-lg">
+          <h2 class="text-xl font-bold" data-i18n="settings">Settings</h2>
+
+          <!-- Display settings -->
+          <div class="glass p-6 flex flex-col gap-5">
+            <h3 class="font-semibold text-white/80" data-i18n="display">
+              Display
+            </h3>
+            <div>
+              <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="company_name"
+                >Company Name</label
+              >
+              <input
+                id="settings-app-name"
+                type="text"
+                class="form-input"
+                placeholder="ACME.eu"
+              />
+              <p class="text-white/40 text-xs mt-1" data-i18n="app_name_hint">
+                Displayed in the navigation bar and login screen.
+              </p>
+            </div>
+            <div>
+              <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="logo_url"
+              >
+                Logo URL <span class="text-white/35">(optional)</span>
+              </label>
+              <input
+                id="settings-logo-url"
+                type="text"
+                class="form-input"
+                placeholder="https://example.com/logo.png or data:image/png;base64,..."
+              />
+              <p class="text-white/40 text-xs mt-1" data-i18n="logo_url_hint">
+                HTTPS URL or base64 data URL (data:image/png;base64,…)
+              </p>
+            </div>
+            <div>
+              <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="language"
+                >Language</label
+              >
+              <select id="settings-language" class="form-input">
+                <option value="default" data-i18n="language_default">
+                  Default (browser language)
+                </option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="it">Italiano</option>
+                <option value="es">Español</option>
+                <option value="sv">Svenska</option>
+                <option value="pl">Polski</option>
+                <option value="cs">Čeština</option>
+                <option value="hr">Hrvatski</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- PID claim settings -->
+          <div class="glass p-5 flex flex-col gap-3">
+            <h4 class="font-semibold text-white/80" data-i18n="pid_claims">
+              PID Claims (National ID)
+            </h4>
+            <div id="settings-pid-claims" class="flex flex-wrap gap-3">
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="family_name"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                family_name</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="given_name"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                given_name</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="birth_date"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                birth_date</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="age_over_18"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                age_over_18</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="age_birth_year"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                age_birth_year</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="nationality"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                nationality</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="resident_country"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                resident_country</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="issuing_authority"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issuing_authority</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="document_number"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                document_number</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="issuance_date"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issuance_date</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="expiry_date"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                expiry_date</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="portrait"
+                  class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                portrait</label
+              >
+            </div>
+          </div>
+
+          <!-- mDL claim settings -->
+          <div class="glass p-5 flex flex-col gap-3">
+            <h4 class="font-semibold text-white/80" data-i18n="mdl_claims">
+              mDL Claims (Driver's License)
+            </h4>
+            <div id="settings-mdl-claims" class="flex flex-wrap gap-3">
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="family_name"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                family_name</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="given_name"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                given_name</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="birth_date"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                birth_date</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="age_over_18"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                age_over_18</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="age_over_21"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                age_over_21</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="issue_date"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issue_date</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="expiry_date"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                expiry_date</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="issuing_country"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issuing_country</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="issuing_authority"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issuing_authority</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="document_number"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                document_number</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="portrait"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                portrait</label
+              >
+              <label class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                  type="checkbox"
+                  value="driving_privileges"
+                  class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                driving_privileges</label
+              >
+            </div>
+          </div>
+
+          <div class="flex gap-3 mt-1">
+            <button
+              onclick="saveSettings()"
+              class="btn-primary"
+              data-i18n="save_settings"
+            >
+              Save Settings
+            </button>
+            <button
+              onclick="loadSettings()"
+              class="btn-ghost"
+              data-i18n="cancel"
+            >
+              Cancel
+            </button>
+          </div>
+
+          <div class="flex flex-col items-center gap-2 opacity-45 mt-4">
+            <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+            <p class="text-xs text-white/45" data-i18n="powered_by">
+              powered by ewQwe Digital Identity
+            </p>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════════════ -->
+    <!-- MODALS -->
+    <!-- ════════════════════════════════════════════════════════════════ -->
+
+    <!-- Create / Edit User Modal -->
+    <div id="modal-user" class="modal-bg hidden">
+      <div class="glass modal-card p-7">
+        <h3
+          id="modal-user-title"
+          class="text-lg font-bold mb-5"
+          data-i18n="create_user"
+        >
+          Create User
+        </h3>
+        <form
+          id="modal-user-form"
+          onsubmit="submitUserModal(event)"
+          class="flex flex-col gap-4"
+        >
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="first_name"
+                >First Name</label
+              >
+              <input id="mu-first" type="text" class="form-input" />
+            </div>
+            <div>
+              <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="last_name"
+                >Last Name</label
+              >
+              <input id="mu-last" type="text" class="form-input" />
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm text-white/70 mb-1" data-i18n="email"
+              >Email</label
+            >
+            <input id="mu-email" type="email" class="form-input" />
+          </div>
+          <div id="mu-password-wrap">
+            <label class="block text-sm text-white/70 mb-1">
+              <span data-i18n="password">Password</span>
+              <span class="text-white/40" data-i18n="min_chars"
+                >(min 12 chars)</span
+              >
+            </label>
+            <input
+              id="mu-password"
+              type="password"
+              minlength="12"
+              class="form-input"
+              placeholder="••••••••••••"
+            />
+          </div>
+          <div>
+            <label class="block text-sm text-white/70 mb-1" data-i18n="role"
+              >Role</label
+            >
+            <select id="mu-role" class="form-input">
+              <option value="verifier" data-i18n="role_verifier">
+                Verifier
+              </option>
+              <option value="admin" data-i18n="role_admin">Admin</option>
+            </select>
+          </div>
+          <div id="mu-active-wrap" class="hidden items-center gap-2">
+            <input
+              id="mu-active"
+              type="checkbox"
+              class="w-4 h-4 accent-brand-indigo"
+            />
+            <label
+              for="mu-active"
+              class="text-sm text-white/70"
+              data-i18n="active"
+              >Active</label
+            >
+          </div>
+          <div>
+            <label
+              class="block text-sm text-white/70 mb-1"
+              data-i18n="allowed_credential_types"
+            >
+              Allowed Credential Types
+            </label>
+            <p
+              class="text-xs text-white/40 mb-2"
+              data-i18n="allowed_types_hint"
+            >
+              Leave all unchecked to allow every type.
+            </p>
+            <div id="mu-cred-types" class="flex flex-wrap gap-3">
+              <label class="flex items-center gap-1 text-sm text-white/70">
+                <input
+                  type="checkbox"
+                  value="proof-of-age"
+                  class="mu-cred-cb w-4 h-4 accent-brand-indigo"
+                />
+                <span data-i18n="proof_of_age">Proof of Age</span>
+              </label>
+              <label class="flex items-center gap-1 text-sm text-white/70">
+                <input
+                  type="checkbox"
+                  value="mdl"
+                  class="mu-cred-cb w-4 h-4 accent-brand-indigo"
+                />
+                <span data-i18n="mobile_drivers_license"
+                  >Mobile Driver's License (mDL)</span
+                >
+              </label>
+              <label class="flex items-center gap-1 text-sm text-white/70">
+                <input
+                  type="checkbox"
+                  value="national-id"
+                  class="mu-cred-cb w-4 h-4 accent-brand-indigo"
+                />
+                <span data-i18n="national_id">National ID (PID)</span>
+              </label>
+            </div>
+          </div>
+          <p id="mu-error" class="text-red-400 text-sm hidden"></p>
+          <div class="flex gap-3 mt-1">
+            <button type="submit" class="btn-primary flex-1" data-i18n="save">
+              Save
+            </button>
+            <button
+              type="button"
+              onclick="closeUserModal()"
+              class="btn-ghost flex-1"
+              data-i18n="cancel"
+            >
+              Cancel
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>

@@ -33,7 +33,9 @@ The [EUDI Android Wallet source code](https://github.com/eu-digital-identity-wal
 
 ## ewQwe Demo Setup
 
-> **⚠️ FOR TESTING ONLY** — The ewQwe fork contains security bypasses (TLS trust-all, soft reader trust store) that are strictly for local development. These modifications **must not** be used in production.
+> **⚠️ FOR TESTING ONLY** — The ewQwe fork uses debug-only CA pinning to trust the ewQwe
+> self-signed test certificates. These modifications **must not** be used in production.
+> Release builds use the standard EUDI trust store with no overrides.
 
 This section describes how to run the **ewQwe fork** of the EUDI Wallet together with the ewQwe Relying Party Demo Webapp for end-to-end HAIP testing on a local Android emulator.
 
@@ -74,6 +76,9 @@ Run the provided setup script from the project root. The script requires a roota
 > adb root && adb shell "echo '10.0.2.2  demo.ewqwe.local' >> /etc/hosts"
 > ```
 
+> **Physical device?** The emulator's `10.0.2.2` alias is emulator-only. For a physical Android
+> device on your LAN, use [Local Network DNS Setup](#local-network-dns-setup) instead.
+
 ### Step 3: Build and Run the App
 
 1. Open the project in Android Studio
@@ -101,18 +106,76 @@ Once the app is running on the emulator:
 
 1. From the webapp, select a HAIP credential type (mDL or National ID) and initiate a request
 2. This triggers a deep link that opens the EUDI Wallet
-3. Thanks to the TLS and reader trust bypasses, the wallet accepts the self-signed certificate chain and proceeds
+3. The wallet validates the certificate chain against the ewQwe CA bundled in `assets/ewqwe_dev_cas/` and proceeds
 4. Approve the credential sharing in the wallet
 5. The webapp displays the verified claims
 
-### Security Bypasses (Technical Details)
+### Debug Certificate Trust (Technical Details)
 
-The ewQwe fork includes two trust bypasses to interoperate with self-signed development certificates:
+The ewQwe fork uses **debug-only CA pinning** instead of trust-all bypasses. In `DEBUG` builds only:
 
-| Bypass | File | What it does |
-| ------- | ----- | ------------ |
-| **TLS trust-all** | `network-logic/.../di/NetworkModule.kt` | `X509TrustManager` that skips all certificate validation, allowing HTTPS connections to self-signed servers |
-| **Soft Reader Trust Store** | `core-logic/.../util/SoftReaderTrustStore.kt` | Returns `true` for all x5c chain validations instead of checking against trusted IACAs; logs a warning |
+| Mechanism | File | What it does |
+| --------- | ---- | ------------ |
+| **CA-pinned TLS** | `network-logic/.../di/NetworkModule.kt` | Loads `assets/ewqwe_dev_cas/*.pem` into a `KeyStore` and builds an `X509TrustManager` from it. Standard hostname verification still applies. No-op in `RELEASE` builds. |
+| **CA-pinned Reader Trust Store** | `core-logic/.../di/LogicCoreModule.kt` | Passes the same CA certificates as trust anchors to `ReaderTrustStore.getDefault()`. JAR `x5c` chains are validated against these CAs. No-op in `RELEASE` builds; production trust anchors from `WalletCoreConfigImpl.configureReaderTrustStore()` apply instead. |
+
+**Adding a new developer CA:** drop a `.pem` or `.crt` file into
+`resources-logic/src/main/assets/ewqwe_dev_cas/` and rebuild — no code change required.
+
+---
+
+## Local Network DNS Setup
+
+The `x509_san_dns` three-way binding rule means `demo.ewqwe.local` must be
+DNS-resolvable on every device used for testing. There are two approaches:
+
+### Option A — Android Emulator (easiest)
+
+The emulator uses `10.0.2.2` as its alias for the host machine. The setup script injects the
+mapping automatically; to do it manually:
+
+```bash
+adb root && adb shell "echo '10.0.2.2  demo.ewqwe.local' >> /etc/hosts"
+```
+
+### Option B — Physical Android Device via `dnsmasq` (LAN)
+
+`dnsmasq` turns your dev Mac into a local DNS server that resolves `demo.ewqwe.local` to your
+machine's LAN IP for any device on the same Wi-Fi network.
+
+**1. Install and configure dnsmasq:**
+
+```bash
+brew install dnsmasq
+
+# Replace <YOUR-LAN-IP> with your machine's LAN address (e.g. 192.168.1.42)
+# Find it with: ipconfig getifaddr en0
+echo "address=/demo.ewqwe.local/<YOUR-LAN-IP>" >> /opt/homebrew/etc/dnsmasq.conf
+
+sudo brew services restart dnsmasq
+```
+
+**2. Verify it works on your Mac:**
+
+```bash
+dig @127.0.0.1 demo.ewqwe.local
+# Should resolve to your LAN IP
+```
+
+**3. Point the Android device at your Mac's DNS:**
+
+On the Android device: **Settings → Wi-Fi → long-press your network → Modify network →
+Advanced → IP settings: Static** then set **DNS 1** to `<YOUR-LAN-IP>`.
+
+> No root access required on the Android device. Any device on your Wi-Fi that uses this DNS
+> setting will resolve `demo.ewqwe.local` correctly.
+
+### Custom Hostnames
+
+If you regenerate the test certificates with a different DNS SAN (e.g. your machine's mDNS name),
+update `public_root_url` in
+[`credential_verifier/credential-server.toml`](../credential_verifier/credential-server.toml) to
+match, and use the same hostname in your DNS setup.
 
 ---
 
@@ -137,6 +200,7 @@ This guide also explains how to build the wallet from source if you need to modi
 ## Table of Contents
 
 - [ewQwe Demo Setup](#ewqwe-demo-setup)
+- [Local Network DNS Setup](#local-network-dns-setup)
 - [HAIP Profile Requirements](#haip-profile-requirements)
 - [Prerequisites](#prerequisites)
 - [Installing Android Studio](#installing-android-studio)
@@ -165,6 +229,33 @@ The EUDI Wallet only accepts these client identifier schemes:
 | `x509_hash` | `x509_hash:sha-256:base64url_encoded_hash` | Verifier's certificate must match the hash |
 
 The **`redirect_uri`** scheme from Annex A is **not supported** by the EUDI Wallet.
+
+#### The Three-Way Binding Constraint (`x509_san_dns`)
+
+When using `x509_san_dns`, the wallet unconditionally enforces three conditions that form a
+transitive equality chain:
+
+| Property | Must equal | Enforced by |
+| -------- | ---------- | ----------- |
+| `client_id` bare value (e.g. `demo.ewqwe.local`) | A `dNSName` entry in the **leaf certificate** SAN of the JAR's `x5c` header | `RequestAuthenticator` in `eudi-lib-jvm-openid4vp-kt` |
+| `response_uri` **hostname** | The `client_id` bare value | `RequestObjectValidator` in `eudi-lib-jvm-openid4vp-kt` |
+| TLS server cert SAN | The `response_uri` hostname | Standard TLS hostname verification |
+
+By transitivity: **the hostname where the wallet posts the VP Token must be a DNS SAN on the JAR
+signing certificate.**
+
+> **`response_uri` vs `request_uri`** — These are two distinct URLs that happen to share the same
+> hostname in this project:
+>
+> - `request_uri`: the endpoint the wallet **fetches** the signed Authorization Request (JAR) from
+> - `response_uri`: the endpoint the wallet **posts the VP Token to** (`direct_post` / `direct_post.jwt`)
+>
+> The host-match check applies to `response_uri`, not `request_uri`.
+
+Both checks live in the **upstream Maven library** `eudi-lib-jvm-openid4vp-kt` — they cannot be
+bypassed through wallet application code. The practical consequence for local network testing is
+that `demo.ewqwe.local` must be DNS-resolvable on every test device.
+See [Local Network DNS Setup](#local-network-dns-setup) for options.
 
 ### 2. Signed Authorization Request (JAR)
 
