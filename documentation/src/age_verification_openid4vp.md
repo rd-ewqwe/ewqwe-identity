@@ -14,7 +14,111 @@ The W3C Digital Credentials API is the primary method specified in Annex A.5. Ho
 
 When the native API is unavailable, the Relying Party **MUST** fall back to OpenID4VP with specific constraints defined by the Age Verification Profile.
 
-## Normative requirements (what you must do)
+## End-to-end flow
+
+```mermaid
+flowchart TD
+  A[RP detects W3C Digital Credentials API unavailable] --> B[RP generates fresh random nonce and optional state]
+  B --> C[RP builds av:// URL with required parameters and DCQL query]
+  C --> D{Invocation method?}
+  D -->|Same device| E[RP navigates to av:// URL or opens link]
+  D -->|Cross device| F[RP displays QR code]
+  E --> G[Wallet parses the request]
+  F --> G
+  G --> H[Wallet prompts user to select/consent to credential presentation]
+  H --> I{User consent?}
+  I -->|Denied| J[Wallet returns error to RP]
+  I -->|Approved| K[Wallet builds VP token with requested claims and nonce]
+  K --> L[Wallet POSTs response to response_uri with vp_token and state]
+  L --> M[RP receives POST request]
+  M --> N[RP validates VP token: signature, nonce, validity]
+  N --> O{Validation successful?}
+  O -->|No| P[RP returns error response]
+  O -->|Yes| Q[RP extracts age verification claim]
+  Q --> R{Age requirement met?}
+  R -->|No| S[RP returns age requirement not met error]
+  R -->|Yes| T[RP completes age verification and updates session]
+  T --> U[RP returns success response with redirect_uri to wallet]
+  
+  style A fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style B fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style C fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style D fill:#BA55D3,stroke:#8A2BE2,color:#fff
+  style E fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style F fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style G fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style H fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style I fill:#BA55D3,stroke:#8A2BE2,color:#fff
+  style J fill:#8B4789,stroke:#8A2BE2,color:#fff
+  style K fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style L fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style M fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style N fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style O fill:#BA55D3,stroke:#8A2BE2,color:#fff
+  style P fill:#8B4789,stroke:#8A2BE2,color:#fff
+  style Q fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style R fill:#BA55D3,stroke:#8A2BE2,color:#fff
+  style S fill:#8B4789,stroke:#8A2BE2,color:#fff
+  style T fill:#9370DB,stroke:#8A2BE2,color:#fff
+  style U fill:#7B68EE,stroke:#8A2BE2,color:#fff
+```
+
+## OpenID4VP request parameters for the authorize endpoint
+
+According to [OpenID for Verifiable Presentations 1.0, Section 5](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5), the Authorization Request to the `authorize` endpoint contains the following parameters:
+
+| Parameter | Required | Description | Age Verification Profile Notes |
+|-----------|----------|-------------|-------------------------------|
+| `response_type` | ✓ | MUST be `vp_token` for Verifiable Presentation requests | Fixed value: `vp_token` |
+| `client_id` | ✓ | Identifier of the Relying Party | MUST use format: `redirect_uri:<response_uri>` |
+| `nonce` | ✓ | Random value to bind the presentation to the session | MUST be cryptographically random and fresh per request |
+| `response_mode` | ✓ | How the Authorization Response is returned | MUST be `direct_post` for cross-device flows |
+| `response_uri` | conditional | Endpoint where the wallet POSTs the response | REQUIRED when `response_mode=direct_post` |
+| `presentation_definition` | conditional* | [DIF Presentation Exchange](https://identity.foundation/presentation-exchange/) query | Age Verification Profile uses `dcql_query` instead (see below) |
+| `dcql_query` | conditional* | [Digital Credentials Query Language](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6) query | REQUIRED for Age Verification Profile (DCQL supersedes Presentation Exchange) |
+| `state` | optional | Opaque value to maintain state between request and callback | RECOMMENDED for session correlation |
+| `scope` | optional | OpenID Connect scopes | Not used in Age Verification Profile |
+| `redirect_uri` | optional | Fallback redirect after response delivery | Not used with `direct_post` |
+
+\* **Either** `presentation_definition` **OR** `dcql_query` MUST be present ([OpenID4VP Section 5.1](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.1)). The Age Verification Profile mandates DCQL.
+
+### Client ID schemes (OpenID4VP Section 5.3)
+
+The `client_id` parameter uses a **scheme prefix** to indicate how the RP is identified:
+
+- `redirect_uri:<URI>` – RP identified by the `response_uri` (REQUIRED for Age Verification)
+- `x509_san_dns:<DNS>` – RP identified by X.509 certificate SAN DNS name
+- `x509_san_uri:<URI>` – RP identified by X.509 certificate SAN URI
+- `verifier_attestation:<JWT>` – RP identified by a signed verifier attestation
+
+### Response modes (OpenID4VP Section 5.2)
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `fragment` | VP token returned in URL fragment | Same-device flows (NOT used in Age Verification Profile) |
+| `direct_post` | VP token POSTed to `response_uri` | Cross-device flows (REQUIRED for Age Verification Profile) |
+| `direct_post.jwt` | Encrypted JWT POSTed to `response_uri` | Enhanced privacy (optional extension) |
+
+### Example Authorization Request (Age Verification Profile compliant)
+
+```
+av://authorize?
+  response_type=vp_token&
+  response_mode=direct_post&
+  client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fapi%2Fopenid4vp%2Fcallback&
+  response_uri=https%3A%2F%2Frp.example.com%2Fapi%2Fopenid4vp%2Fcallback&
+  nonce=550e8400-e29b-41d4-a716-446655440000&
+  state=7c9e2d8f-3a1b-4e5f-8d7c-9a1b2c3d4e5f&
+  dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22age_attestation%22%2C%22format%22%3A%22mso_mdoc%22%2C%22meta%22%3A%7B%22doctype_value%22%3A%22eu.europa.ec.av.1%22%7D%2C%22claims%22%3A%5B%7B%22namespace%22%3A%22eu.europa.ec.av.1%22%2C%22claim_name%22%3A%22age_over_18%22%7D%5D%7D%5D%7D
+```
+
+**References:**
+
+- [OpenID4VP 1.0, Section 5: Authorization Request](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5)
+- [OpenID4VP 1.0, Section 6: DCQL](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6)
+- [EU Age Verification Profile, Annex A.5](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#openid-for-verifiable-presentations-profile-requirements)
+
+## Normative requirements
 
 The following requirements are **mandatory** when using OpenID4VP for age verification:
 
@@ -69,17 +173,6 @@ The following requirements are **mandatory** when using OpenID4VP for age verifi
 - The wallet does not need to authenticate the RP cryptographically.
 - Origin validation and nonce binding provide sufficient security for age verification.
 - This is explicitly out of scope for this profile.
-
-## End-to-end flow (sequence)
-
-1. **RP detects W3C Digital Credentials API is unavailable** (feature detection).
-2. **RP generates a fresh random `nonce`** and optional `state`.
-3. **RP builds the `av://` URL** with all required parameters (including DCQL query).
-4. **RP invokes the URL** (via link, redirect, or QR code).
-5. **Wallet parses the request** and prompts the user to select/consent to credential presentation.
-6. **Wallet builds a VP token** (Verifiable Presentation) containing the requested claims and the `nonce`.
-7. **Wallet POSTs the response** to the `response_uri` with `vp_token` and optional `state`.
-8. **RP receives the POST**, validates the VP token (signature, nonce, validity), and completes the age verification.
 
 ## Implementation: building the request
 
