@@ -255,8 +255,16 @@ interface QRCodeModal {
   onCancel: Promise<void>;
 }
 
+// Copy-icon SVG reused in the QR copy button
+const COPY_ICON_SVG = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+</svg>`;
+
 /**
- * Show a modal with QR code for the wallet to scan
+ * Show the QR code modal (defined as a hidden element in index.html).
+ * Dynamic content (badge, wallet name, QR image) is updated on each call.
+ * Buttons are cloned to clear any previous event listeners.
  */
 function showQRCodeModal(
   authorizationRequestUri: string,
@@ -268,67 +276,41 @@ function showQRCodeModal(
     profile,
   });
 
-  let cancelResolve: () => void;
+  const overlay = document.getElementById("openid4vp-qr-modal");
+  if (!overlay) {
+    logger.error("#openid4vp-qr-modal not found in DOM");
+    const onCancel = new Promise<void>(() => {});
+    return { close: () => {}, onCancel };
+  }
+
+  let cancelResolve!: () => void;
   const onCancel = new Promise<void>((resolve) => {
     cancelResolve = resolve;
   });
 
-  // Determine the wallet type based on profile
+  // ── Update dynamic content ───────────────────────────────────────────────
   const isHaip = profile === "haip";
   const walletName = isHaip ? "EUDI Wallet" : "Age Verification App";
-  const profileBadge = isHaip
-    ? '<span class="inline-block px-2 py-1 bg-blue-600 text-xs rounded-full">HAIP</span>'
-    : '<span class="inline-block px-2 py-1 bg-green-600 text-xs rounded-full">Annex A</span>';
 
-  // Create modal overlay
-  const overlay = document.createElement("div");
-  overlay.id = "openid4vp-qr-modal";
-  overlay.className =
-    "fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50";
+  const badge = document.getElementById("qr-profile-badge");
+  if (badge) {
+    badge.textContent = isHaip ? "HAIP" : "Annex A";
+    badge.className = `inline-block px-2 py-1 text-xs rounded-full ${
+      isHaip ? "bg-blue-600" : "bg-green-600"
+    }`;
+  }
 
-  overlay.innerHTML = `
-    <div class="bg-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-white/20">
-      <div class="text-center">
-        <div class="flex items-center justify-center gap-2 mb-2">
-          <h3 class="text-xl font-semibold">Scan with your Wallet</h3>
-          ${profileBadge}
-        </div>
-        <p class="text-gray-400 text-sm mb-6">
-          Scan this QR code with your ${walletName} or compatible mobile wallet app
-        </p>
-        
-        <div id="qr-code-container" class="bg-white p-4 rounded-xl inline-block mb-6">
-          <div class="w-64 h-64 flex items-center justify-center">
-            <div class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
-          </div>
-        </div>
-        
-        <p class="text-gray-500 text-xs mb-4">
-          Waiting for wallet response...
-        </p>
-        
-        <div class="flex gap-3 justify-center">
-          <button id="qr-cancel-btn" class="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors">
-            Cancel
-          </button>
-          <button id="qr-copy-btn" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            Copy Link
-          </button>
-        </div>
-      </div>
-    </div>
-  `;
+  const walletNameEl = document.getElementById("qr-wallet-name");
+  if (walletNameEl) walletNameEl.textContent = walletName;
 
-  document.body.appendChild(overlay);
-
-  // Generate QR code using a library or simple approach
-  const qrContainer = overlay.querySelector("#qr-code-container");
+  // Reset QR container to spinner, then load image
+  const qrContainer = document.getElementById("qr-code-container");
   if (qrContainer) {
-    // Use the QR code API service for simplicity
-    // In production, use a local library like qrcode.js
+    qrContainer.innerHTML = `
+      <div class="w-64 h-64 flex items-center justify-center">
+        <div class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"></div>
+      </div>`;
+
     const qrImg = document.createElement("img");
     qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=256x256&data=${encodeURIComponent(authorizationRequestUri)}`;
     qrImg.alt = "QR Code for wallet";
@@ -338,58 +320,66 @@ function showQRCodeModal(
       qrContainer.appendChild(qrImg);
     };
     qrImg.onerror = () => {
-      // Fallback: show the URI as text
       qrContainer.innerHTML = `
         <div class="w-64 h-64 flex flex-col items-center justify-center text-black text-xs p-2 overflow-hidden">
           <p class="font-medium mb-2">QR Code unavailable</p>
           <p class="break-all">${authorizationRequestUri.slice(0, 100)}...</p>
-        </div>
-      `;
+        </div>`;
     };
   }
 
-  // Set up event handlers
-  const cancelBtn = overlay.querySelector("#qr-cancel-btn");
-  const copyBtn = overlay.querySelector("#qr-copy-btn");
+  overlay.classList.remove("hidden");
+
+  // ── Wire up buttons (clone to drop stale listeners) ──────────────────────
+  function rewire(id: string): HTMLElement | null {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const clone = el.cloneNode(true) as HTMLElement;
+    el.replaceWith(clone);
+    return clone;
+  }
+
+  // AbortController lets us remove the overlay click listener on close.
+  const abortCtrl = new AbortController();
 
   const close = () => {
-    overlay.remove();
+    abortCtrl.abort();
+    overlay.classList.add("hidden");
   };
 
-  cancelBtn?.addEventListener("click", () => {
+  rewire("qr-cancel-btn")?.addEventListener("click", () => {
     cancelResolve();
     close();
   });
 
+  const copyBtn = rewire("qr-copy-btn");
   copyBtn?.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(authorizationRequestUri);
-      (copyBtn as HTMLButtonElement).innerHTML = `
+      copyBtn.innerHTML = `
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
         </svg>
-        Copied!
-      `;
+        Copied!`;
       setTimeout(() => {
-        (copyBtn as HTMLButtonElement).innerHTML = `
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-          Copy Link
-        `;
+        copyBtn.innerHTML = `${COPY_ICON_SVG} Copy Link`;
       }, 2000);
     } catch {
       logger.error("Failed to copy to clipboard");
     }
   });
 
-  // Close on overlay click
-  overlay.addEventListener("click", (e) => {
-    if (e.target === overlay) {
-      cancelResolve();
-      close();
-    }
-  });
+  // Close on overlay (backdrop) click
+  overlay.addEventListener(
+    "click",
+    (e) => {
+      if (e.target === overlay) {
+        cancelResolve();
+        close();
+      }
+    },
+    { signal: abortCtrl.signal },
+  );
 
   return { close, onCancel };
 }
@@ -553,7 +543,9 @@ async function requestViaOpenID4VPSameDevice(
 }
 
 /**
- * Show a modal with instructions and a button to open the wallet app
+ * Show the same-device modal (defined as a hidden element in index.html).
+ * Clones the interactive buttons to clear any previous event listeners before
+ * wiring up fresh ones for this particular transaction.
  */
 function showSameDeviceModal(
   deepLinkUri: string,
@@ -561,149 +553,57 @@ function showSameDeviceModal(
   logger: DebugLogger,
   onCancel: () => void,
 ): void {
-  // Remove existing modal if present
-  const existingModal = document.getElementById("same-device-modal");
-  if (existingModal) {
-    existingModal.remove();
+  const modal = document.getElementById("same-device-modal");
+  if (!modal) {
+    logger.error("#same-device-modal not found in DOM");
+    return;
   }
 
-  const modal = document.createElement("div");
-  modal.id = "same-device-modal";
-  modal.innerHTML = `
-    <div style="
-      position: fixed;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      background: rgba(0, 0, 0, 0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 10000;
-    ">
-      <div style="
-        background: white;
-        border-radius: 12px;
-        padding: 32px;
-        max-width: 400px;
-        text-align: center;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-      ">
-        <h2 style="margin: 0 0 16px 0; color: #1a1a2e; font-size: 24px;">
-          Open Wallet App
-        </h2>
-        <p style="color: #666; margin-bottom: 24px; line-height: 1.5;">
-          Click the button below to open your EUDI Wallet app and share your credentials.
-        </p>
-        
-        <button
-          id="open-wallet-btn"
-          style="
-            display: inline-block;
-            background: #3b82f6;
-            color: white;
-            padding: 14px 28px;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            text-decoration: none;
-            margin-bottom: 16px;
-            transition: background 0.2s;
-            border: none;
-            cursor: pointer;
-          "
-        >
-          Open EUDI Wallet
-        </button>
-        
-        <div style="
-          margin-top: 20px;
-          padding-top: 20px;
-          border-top: 1px solid #e5e5e5;
-        ">
-          <p style="color: #888; font-size: 14px; margin-bottom: 12px;">
-            Waiting for response from wallet...
-          </p>
-          <div id="same-device-spinner" style="
-            width: 24px;
-            height: 24px;
-            border: 3px solid #e5e5e5;
-            border-top-color: #3b82f6;
-            border-radius: 50%;
-            margin: 0 auto;
-            animation: spin 1s linear infinite;
-          "></div>
-        </div>
-        
-        <button 
-          id="cancel-same-device-btn"
-          style="
-            margin-top: 20px;
-            background: none;
-            border: none;
-            color: #888;
-            cursor: pointer;
-            font-size: 14px;
-            text-decoration: underline;
-          "
-        >
-          Cancel
-        </button>
-      </div>
-    </div>
-    <style>
-      @keyframes spin {
-        to { transform: rotate(360deg); }
-      }
-    </style>
-  `;
+  modal.classList.remove("hidden");
 
-  document.body.appendChild(modal);
-
-  // Add cancel button handler
-  const cancelBtn = document.getElementById("cancel-same-device-btn");
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", () => {
-      hideSameDeviceModal();
-      logger.log("User cancelled same-device flow");
-      onCancel();
-    });
+  // Replace each interactive button with a fresh clone to drop stale listeners.
+  function rewire(id: string): HTMLElement | null {
+    const el = document.getElementById(id);
+    if (!el) return null;
+    const clone = el.cloneNode(true) as HTMLElement;
+    el.replaceWith(clone);
+    return clone;
   }
+
+  const cancelBtn = rewire("cancel-same-device-btn");
+  cancelBtn?.addEventListener("click", () => {
+    hideSameDeviceModal();
+    logger.log("User cancelled same-device flow");
+    onCancel();
+  });
 
   // Open the wallet deep link without navigating the current page.
-  // For custom URI schemes (av://, openid4vp://) window.location.href triggers the
-  // app on mobile without leaving the page. For https:// authorization-request
-  // URIs, window.open opens a new tab so the RP page stays alive.
-  const openBtn = document.getElementById("open-wallet-btn");
-  if (openBtn) {
-    openBtn.addEventListener("click", () => {
-      logger.log("Opening wallet app via deep link", {
-        deepLinkUri,
-        transactionId,
-      });
-      if (
-        deepLinkUri.startsWith("https://") ||
-        deepLinkUri.startsWith("http://")
-      ) {
-        globalThis.open(deepLinkUri, "_blank", "noopener,noreferrer");
-      } else {
-        // Custom scheme (av://, openid4vp://) — triggers wallet app on mobile,
-        // does NOT navigate away from the RP page.
-        globalThis.location.href = deepLinkUri;
-      }
+  // For custom URI schemes (av://, openid4vp://) window.location.href triggers
+  // the app on mobile without leaving the page. For https:// authorization-
+  // request URIs, window.open opens a new tab so the RP page stays alive.
+  const openBtn = rewire("open-wallet-btn");
+  openBtn?.addEventListener("click", () => {
+    logger.log("Opening wallet app via deep link", {
+      deepLinkUri,
+      transactionId,
     });
-  }
+    if (
+      deepLinkUri.startsWith("https://") ||
+      deepLinkUri.startsWith("http://")
+    ) {
+      globalThis.open(deepLinkUri, "_blank", "noopener,noreferrer");
+    } else {
+      // Custom scheme (av://, openid4vp://) — triggers wallet app on mobile.
+      globalThis.location.href = deepLinkUri;
+    }
+  });
 }
 
 /**
  * Hide the same-device modal
  */
 function hideSameDeviceModal(): void {
-  const modal = document.getElementById("same-device-modal");
-  if (modal) {
-    modal.remove();
-  }
+  document.getElementById("same-device-modal")?.classList.add("hidden");
 }
 
 /**

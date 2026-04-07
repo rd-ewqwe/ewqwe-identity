@@ -117,6 +117,9 @@ export class RelyingPartyApp {
       });
   }
 
+  /**
+   * Update the protocol description based on the selected protocol
+   */
   private updateProtocolDescription(): void {
     const descEl = document.getElementById("protocol-description");
     if (!descEl) return;
@@ -136,6 +139,13 @@ export class RelyingPartyApp {
     descEl.textContent = descriptions[this.selectedProtocol] || "";
   }
 
+  /**
+   * Select a credential type and update the UI accordingly
+   * - Update selected claims based on defaults for the new type
+   * - Rebuild the transaction init request with the new type and claims
+   * - Update the profile information display
+   * @param type The credential type to select
+   */
   private selectCredentialType(type: CredentialType): void {
     this.selectedCredentialType = type;
     this.selectedClaims.clear();
@@ -206,6 +216,12 @@ export class RelyingPartyApp {
     `;
   }
 
+  /**
+   * Render the claim selection checkboxes based on the selected credential type.
+   *
+   * Adds event listeners to update the selected claims and rebuild the request
+   * whenever a checkbox is toggled.
+   */
   private renderClaims(): void {
     const container = document.getElementById("claims-selection");
     if (!container) return;
@@ -238,6 +254,10 @@ export class RelyingPartyApp {
     });
   }
 
+  /**
+   * Update the UI to reflect which claims are currently selected.
+   * This ensures that the checkboxes and labels are in sync with the selectedClaims set.
+   */
   private updateClaimsUI(): void {
     document.querySelectorAll(".claim-checkbox").forEach((label) => {
       const claimId = (label as HTMLElement).dataset.claim;
@@ -253,6 +273,10 @@ export class RelyingPartyApp {
     });
   }
 
+  /**
+   * Build the transaction init request based on the selected credential type and claims,
+   * then update the displayed JSON in the UI.
+   */
   private updateInitTransactionRequest(): void {
     const requestJson = document.getElementById("request-json");
     if (!requestJson) return;
@@ -269,6 +293,9 @@ export class RelyingPartyApp {
     }
   }
 
+  /**
+   * Check the support for various APIs and update the UI accordingly.
+   */
   private checkAPISupport(): void {
     const statusEl = document.getElementById("api-status");
     if (!statusEl) return;
@@ -326,6 +353,9 @@ export class RelyingPartyApp {
     this.logger.log("API support checked", checks);
   }
 
+  /**
+   * Handle the credential request process, including UI updates and error handling.
+   */
   private async handleCredentialRequest(): Promise<void> {
     if (!this.currentRequest) {
       this.logger.error("No request configured");
@@ -337,7 +367,7 @@ export class RelyingPartyApp {
       return;
     }
 
-    // Show loading state
+    // Disable button and show spinner
     const btn = document.getElementById(
       "request-credentials-btn",
     ) as HTMLButtonElement;
@@ -400,6 +430,15 @@ export class RelyingPartyApp {
     }
   }
 
+  /**
+   * Display the verification result in the UI, including success/failure status,
+   * any returned claims, and debug information.
+   *
+   * Persists the result in sessionStorage to survive page reloads (e.g. from deep link flow).
+   *
+   * @param result The result of the verification process, including success status, message, claims, and any errors.
+   * @param response The original OpenID4VP response received from the wallet, for debugging purposes.
+   */
   private displayVerificationResult(
     result: VerifyResponse,
     response: OpenID4VPResponse,
@@ -536,10 +575,21 @@ export class RelyingPartyApp {
     );
   }
 
+  /**
+   * Format claim keys into more human-readable names.
+   * E.g. "given_name" → "Given Name", "place_of_birth" → "Place Of Birth"
+   */
   private formatClaimName(key: string): string {
     return key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
   }
 
+  /**
+   * Format claim values for display. Handles different data types (string, boolean, arrays, nested objects).
+   * - Booleans are shown as "Yes ✓" or "No ✗"
+   * - Arrays are joined with ", "
+   * - Nested objects show non-empty leaf values joined by ", "
+   * - Null/undefined values show as "—"
+   */
   private formatClaimValue(value: unknown): string {
     if (value === null || value === undefined) {
       return "—";
@@ -564,6 +614,9 @@ export class RelyingPartyApp {
     return String(value);
   }
 
+  /**
+   * Reset the UI to the initial state for a new request
+   */
   private resetUI(): void {
     sessionStorage.removeItem("verificationResult");
     document.getElementById("verification-result")?.classList.add("hidden");
