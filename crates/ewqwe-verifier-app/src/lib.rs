@@ -42,6 +42,8 @@ pub struct QrVerifyResult {
     pub doc_type: String,
     /// Failures or warnings produced during verification.
     pub errors: Vec<String>,
+    /// Value of the `age_over_18` claim from the presented credential, if present.
+    pub age_over_18: Option<bool>,
 }
 
 /// Pluggable in-process credential verifier for the Verifier App QR flow.

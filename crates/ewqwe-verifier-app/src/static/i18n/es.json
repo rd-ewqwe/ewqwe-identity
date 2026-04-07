@@ -110,5 +110,8 @@
   "logout": "Cerrar sesión",
   "login_title": "Iniciar sesión",
   "login_subtitle": "Aplicación de verificación de credenciales",
-  "app_name_hint": "Se muestra en la barra de navegación y en la pantalla de inicio de sesión."
+  "app_name_hint": "Se muestra en la barra de navegación y en la pantalla de inicio de sesión.",
+  "age_over_18_true": "Mayor de 18 años — Verificado ✓",
+  "age_over_18_false": "NO mayor de 18 años — Acceso denegado ✗",
+  "rows_per_page": "Filas"
 }

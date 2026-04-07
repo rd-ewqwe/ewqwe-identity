@@ -110,5 +110,8 @@
   "logout": "Odjava",
   "login_title": "Prijava",
   "login_subtitle": "Aplikacija za provjeru vjerodajnica",
-  "app_name_hint": "Prikazano u navigacijskoj traci i na zaslonu za prijavu."
+  "app_name_hint": "Prikazano u navigacijskoj traci i na zaslonu za prijavu.",
+  "age_over_18_true": "Stariji od 18 godina — Potvrđeno ✓",
+  "age_over_18_false": "NIJE stariji od 18 godina — Pristup odbijen ✗",
+  "rows_per_page": "Redovi"
 }

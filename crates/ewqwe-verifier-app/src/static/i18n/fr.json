@@ -110,5 +110,8 @@
   "logout": "Déconnexion",
   "login_title": "Se connecter",
   "login_subtitle": "Application de vérification des justificatifs",
-  "app_name_hint": "Affiché dans la barre de navigation et l'écran de connexion."
+  "app_name_hint": "Affiché dans la barre de navigation et l'écran de connexion.",
+  "age_over_18_true": "Plus de 18 ans — Vérifié ✓",
+  "age_over_18_false": "PAS plus de 18 ans — Accès refusé ✗",
+  "rows_per_page": "Lignes"
 }

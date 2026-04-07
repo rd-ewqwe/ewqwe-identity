@@ -56,11 +56,37 @@ The webapp supports five protocol modes:
 
 | Protocol | Description | Use Case |
 | -------- | ----------- | -------- |
-| **W3C DC + fallback** | Tries W3C Digital Credentials API first, falls back to OpenID4VP cross-device | Default - best compatibility |
+| **W3C DC + fallback** | Tries W3C Digital Credentials API first, falls back to OpenID4VP cross-device | Default on **desktop** — best compatibility with browser extension wallet |
 | **W3C DC only** | Uses only the native browser API with wallet extension | Desktop with browser extension |
 | **OpenID4VP (Cross-Device)** | Cross-device flow with QR code scanning | Mobile wallets via QR code (EUDI Wallet, AV Apps) |
-| **OpenID4VP (Same-Device)** | Same-device flow with deep link | Mobile browsers with wallet app installed |
+| **OpenID4VP (Same-Device)** | Same-device flow with deep link | Default on **mobile** — reliable across all Android/iOS versions |
 | **Simulated** | Mock response for testing without a wallet | Development/testing |
+
+### Why W3C Digital Credentials is Disabled on Mobile
+
+On Android 15+, Chrome supports the [W3C Digital Credentials API](https://www.w3.org/TR/digital-credentials/).
+However, invoking `navigator.credentials.get({ digital: ... })` on Android routes the request through
+[Android CredentialManager](https://developer.android.com/identity/sign-in/credential-manager),
+which presents a **system-level picker UI before** the web page receives any response.
+
+The wallet's DCAPI handler (via [`eudi-lib-android-wallet-core`](https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core))
+receives the request with `protocol: "openid4vp"` — a protocol identifier that version 0.24.0 of the
+library does not yet recognize in its DCAPI handler, causing an "Unsupported protocol: openid4vp" error
+**inside the wallet** before the webapp's `try/catch` fallback can execute.
+
+This creates a broken user experience:
+
+| Android Version | DC API Available | Result |
+| --------------- | ---------------- | ------ |
+| Android 14 (emulator) | No | Silent throw → silent fallback to deep link ✓ |
+| Android 15 (real device) | Yes | CredentialManager shows system UI → wallet fails visibly ✗ |
+
+**Solution**: On mobile devices, this webapp skips the W3C DC API entirely and goes directly to
+the OpenID4VP same-device deep-link flow, which is reliable across all Android versions.
+
+> **References**: [W3C Digital Credentials API](https://www.w3.org/TR/digital-credentials/) ·
+> [Android CredentialManager](https://developer.android.com/identity/sign-in/credential-manager) ·
+> [EUDI Wallet Core library](https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core)
 
 ## Protocol Profiles
 

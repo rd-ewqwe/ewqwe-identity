@@ -485,8 +485,18 @@ export interface DescriptorMap {
 }
 
 // ============================================================================
-// Verification Results
+// Verification
 // ============================================================================
+
+/**
+ * Request to verify a verifiable presentation (VP) token.
+ */
+export interface VerifyRequest {
+  vp_token: string;
+  presentation_submission?: string | PresentationSubmission;
+  state?: string;
+  client_id?: string;
+}
 
 /**
  * Response from the credential verifier backend.

@@ -110,5 +110,8 @@
   "logout": "Odhlásit se",
   "login_title": "Přihlásit se",
   "login_subtitle": "Aplikace pro ověřování pověření",
-  "app_name_hint": "Zobrazeno v navigační liště a na přihlašovací obrazovce."
+  "app_name_hint": "Zobrazeno v navigační liště a na přihlašovací obrazovce.",
+  "age_over_18_true": "Starší 18 let — Ověřeno ✓",
+  "age_over_18_false": "NENÍ starší 18 let — Přístup zamítnut ✗",
+  "rows_per_page": "Řádky"
 }

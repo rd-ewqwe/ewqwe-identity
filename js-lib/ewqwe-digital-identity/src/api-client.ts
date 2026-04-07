@@ -5,6 +5,7 @@ import type {
   OpenID4VPResponse,
   PresentationSubmission,
   TransactionStatusResult,
+  VerifyRequest,
   VerifyResponse,
 } from "./types.js";
 
@@ -122,16 +123,11 @@ export class EwqweApiClient {
     );
   }
 
-  async verifyPresentation(args: {
-    vp_token: string;
-    presentation_submission?: PresentationSubmission | null;
-    state?: string;
-    client_id?: string;
-  }): Promise<VerifyResponse> {
+  async verifyPresentation(request: VerifyRequest): Promise<VerifyResponse> {
     return await this.requestJson<VerifyResponse>(
       "POST",
       "/ewqwe_api/verify",
-      args,
+      request,
     );
   }
 }

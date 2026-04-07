@@ -12,7 +12,7 @@ let currentPage = "home";
 let pollTimer = null;
 let currentTransactionId = null;
 let journalOffset = 0;
-const JOURNAL_LIMIT = 50;
+let journalLimit = 10;
 let editingUserId = null;
 let defaultLogoDataUrl = null; // loaded lazily from /verifier_app/favicon_b64.txt
 let _qrTypeSelectorWasVisible = false;
@@ -270,7 +270,7 @@ function navigateTo(page) {
 
   // Load data for page
   if (page === "users") loadUsers();
-  if (page === "journal") loadJournal(0);
+  if (page === "journal") initJournalPage();
   if (page === "settings") loadSettings();
   if (page === "home") setupQRPage();
 }
@@ -552,6 +552,23 @@ async function pollStatus(txId) {
     if (status === "verified" || status === "completed") {
       stopPolling();
       hideAllQRStates();
+      // Show age_over_18 claim result if the backend returned it
+      const ageEl = $("qr-age-result");
+      if (ageEl) {
+        if (data.age_over_18 === true) {
+          ageEl.textContent = t("age_over_18_true");
+          ageEl.className =
+            "text-base font-semibold px-4 py-1 rounded-full text-green-900 bg-green-300";
+          ageEl.classList.remove("hidden");
+        } else if (data.age_over_18 === false) {
+          ageEl.textContent = t("age_over_18_false");
+          ageEl.className =
+            "text-base font-semibold px-4 py-1 rounded-full text-amber-900 bg-amber-300";
+          ageEl.classList.remove("hidden");
+        } else {
+          ageEl.classList.add("hidden");
+        }
+      }
       show("qr-area-verified");
     } else if (
       status === "failed" ||
@@ -768,13 +785,47 @@ async function deleteUser(userId) {
 
 // ── Journal ───────────────────────────────────────────────────────────────
 
+/** Called when navigating to the journal page. Sets defaults then loads. */
+function initJournalPage() {
+  setJournalDefaultDates();
+  void loadJournalUserFilter();
+  loadJournal(0);
+}
+
+/** Set From = 2025-01-01, To = today (always resets when navigating to journal). */
+function setJournalDefaultDates() {
+  const fromEl = $("journal-filter-from");
+  const toEl = $("journal-filter-to");
+  if (fromEl) fromEl.value = "2025-01-01";
+  if (toEl) toEl.value = new Date().toISOString().slice(0, 10);
+}
+
+/** Populate the verifier filter from the admin users list. */
+async function loadJournalUserFilter() {
+  const select = $("journal-filter-user");
+  if (!select) return;
+  const current = select.value;
+  while (select.options.length > 1) select.remove(1);
+  try {
+    const users = await api("/api/admin/users");
+    (users || []).forEach((u) => {
+      const opt = document.createElement("option");
+      opt.value = u.email;
+      opt.textContent = u.email;
+      select.appendChild(opt);
+    });
+    if (current) select.value = current;
+  } catch (_) {}
+}
+
 async function loadJournal(offset) {
   journalOffset = offset || 0;
+  journalLimit = parseInt($("journal-limit-select")?.value) || journalLimit;
   const userId = $("journal-filter-user")?.value || "";
   const dateFrom = $("journal-filter-from")?.value || "";
   const dateTo = $("journal-filter-to")?.value || "";
 
-  let qs = `?limit=${JOURNAL_LIMIT}&offset=${journalOffset}`;
+  let qs = `?limit=${journalLimit}&offset=${journalOffset}`;
   if (userId) qs += "&user_id=" + encodeURIComponent(userId);
   if (dateFrom) qs += "&date_from=" + encodeURIComponent(dateFrom + "T00:00:00Z");
   if (dateTo) qs += "&date_to=" + encodeURIComponent(dateTo + "T23:59:59Z");
@@ -782,7 +833,6 @@ async function loadJournal(offset) {
   try {
     const entries = await api("/api/admin/journal" + qs);
     renderJournal(entries);
-    populateJournalUserFilter(entries);
   } catch (err) {
     const tbody = $("journal-tbody");
     tbody.innerHTML = `<tr><td colspan="4" class="text-center text-white/40 py-6">${t("no_journal")}</td></tr>`;
@@ -801,15 +851,13 @@ function renderJournal(entries) {
 
   tbody.innerHTML = entries
     .map((e) => {
-      const time = new Date(e.timestamp || e.created_at).toLocaleString();
-      const action = escapeHtml(e.action || e.event_type || "—");
-      const verifier = escapeHtml(e.user_email || e.user_id || "—");
-      const detail = escapeHtml(
-        e.detail || e.credential_type || e.doc_type || "—"
-      );
+      const time = new Date(e.created_at || e.timestamp).toLocaleString();
+      const action = escapeHtml(e.doc_type || e.namespace || "—");
+      const verifier = escapeHtml(e.qrcode_app_user_email || e.qrcode_app_user_id || "—");
+      const detail = escapeHtml(e.client_id || e.doc_type || "—");
       return `<tr>
         <td class="whitespace-nowrap">${time}</td>
-        <td>${action}</td>
+        <td class="max-w-[200px] truncate" title="${escapeHtml(action)}">${action}</td>
         <td>${verifier}</td>
         <td class="max-w-xs truncate" title="${escapeHtml(JSON.stringify(e))}">${detail}</td>
       </tr>`;
@@ -817,56 +865,28 @@ function renderJournal(entries) {
     .join("");
 
   $("journal-prev").disabled = journalOffset === 0;
-  $("journal-next").disabled = entries.length < JOURNAL_LIMIT;
+  $("journal-next").disabled = entries.length < journalLimit;
   updateJournalPageInfo();
 }
 
 function updateJournalPageInfo() {
-  const page = Math.floor(journalOffset / JOURNAL_LIMIT) + 1;
+  const page = Math.floor(journalOffset / journalLimit) + 1;
   $("journal-page-info").textContent = `${t("page")} ${page}`;
 }
 
 function journalPage(dir) {
-  const newOffset = journalOffset + dir * JOURNAL_LIMIT;
+  const newOffset = journalOffset + dir * journalLimit;
   if (newOffset < 0) return;
   loadJournal(newOffset);
 }
 
 function clearJournalFilters() {
   const filterUser = $("journal-filter-user");
-  const filterFrom = $("journal-filter-from");
-  const filterTo = $("journal-filter-to");
+  const limitEl = $("journal-limit-select");
   if (filterUser) filterUser.value = "";
-  if (filterFrom) filterFrom.value = "";
-  if (filterTo) filterTo.value = "";
+  if (limitEl) { limitEl.value = "10"; journalLimit = 10; }
+  setJournalDefaultDates();
   loadJournal(0);
-}
-
-function populateJournalUserFilter(entries) {
-  const select = $("journal-filter-user");
-  if (!select) return;
-
-  // Preserve current selection
-  const current = select.value;
-
-  // Collect unique user IDs from entries
-  const existing = new Set();
-  select.querySelectorAll("option").forEach((o) => {
-    if (o.value) existing.add(o.value);
-  });
-
-  (entries || []).forEach((e) => {
-    const uid = e.user_id || e.user_email;
-    if (uid && !existing.has(uid)) {
-      const opt = document.createElement("option");
-      opt.value = uid;
-      opt.textContent = e.user_email || uid;
-      select.appendChild(opt);
-      existing.add(uid);
-    }
-  });
-
-  select.value = current;
 }
 
 // ── Settings ──────────────────────────────────────────────────────────────

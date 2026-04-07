@@ -110,5 +110,8 @@
   "logout": "Logout",
   "login_title": "Sign In",
   "login_subtitle": "Credential Verification Application",
-  "app_name_hint": "Displayed in the navigation bar and login screen."
+  "app_name_hint": "Displayed in the navigation bar and login screen.",
+  "age_over_18_true": "Age Over 18 — Verified ✓",
+  "age_over_18_false": "NOT Over 18 — Access Denied ✗",
+  "rows_per_page": "Rows"
 }

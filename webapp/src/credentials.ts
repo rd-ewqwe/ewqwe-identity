@@ -10,13 +10,14 @@ import type {
 } from "@ewqwe/digital-identity";
 import { EwqweApiClient } from "@ewqwe/digital-identity";
 import type { DebugLogger } from "./debug.ts";
+import { VerifyRequest } from "../../js-lib/ewqwe-digital-identity/src/types.ts";
 
 const apiClient = new EwqweApiClient();
 
 /**
  * Detect whether the browser is running on a mobile device (Android or iOS).
  */
-function isMobileDevice(): boolean {
+export function isMobileDevice(): boolean {
   const ua = navigator.userAgent || "";
   return /android/i.test(ua) || /iphone|ipad|ipod/i.test(ua);
 }
@@ -92,12 +93,26 @@ export async function requestCredentials(
 
 /**
  * W3C Digital Credentials with fallback to OpenID4VP
+ *
+ * On mobile, skip the W3C DC API entirely and use the OpenID4VP same-device
+ * deep-link flow. Android 15+ Chrome supports the Digital Credentials API,
+ * but the system CredentialManager UI is invoked before the wallet can
+ * respond — and wallets whose core library does not yet handle the
+ * "openid4vp" protocol via DCAPI will fail visibly (e.g. "Unsupported
+ * protocol: openid4vp") before the webapp's try/catch fallback can run.
  */
 async function requestWithFallback(
   request: InitTransactionRequest,
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
-  // Try W3C DC API first
+  // On mobile the native deep-link flow is reliable; skip W3C DC to avoid
+  // broken CredentialManager round-trips on Android 15+.
+  if (isMobileDevice()) {
+    logger.log("Mobile device — using OpenID4VP same-device (deep link)");
+    return await requestViaOpenID4VPSameDevice(request, logger);
+  }
+
+  // Desktop: try W3C DC API first (browser-extension wallet)
   try {
     const response = await requestViaW3CDC(request, logger);
     if (response) {
@@ -107,16 +122,7 @@ async function requestWithFallback(
     logger.log("W3C DC failed, trying OpenID4VP fallback", error);
   }
 
-  // Fall back to OpenID4VP:
-  //  - same-device on Android/iOS (deep link)
-  //  - cross-device (QR code) on desktop
-  if (isMobileDevice()) {
-    logger.log(
-      "Mobile device detected — falling back to OpenID4VP same-device",
-    );
-    return await requestViaOpenID4VPSameDevice(request, logger);
-  }
-  logger.log("Desktop detected — falling back to OpenID4VP cross-device (QR)");
+  logger.log("Desktop — falling back to OpenID4VP cross-device (QR)");
   return await requestViaOpenID4VPCrossDevice(request, logger);
 }
 
@@ -718,9 +724,9 @@ export async function sendToBackend(
   // In state-based flows the backend resolves client_id from the stored transaction.
   const client_id = response.state ? undefined : globalThis.location.origin;
 
-  const body = {
+  const body: VerifyRequest = {
     vp_token: response.vp_token,
-    presentation_submission: response.presentation_submission ?? null,
+    presentation_submission: response.presentation_submission,
     state: response.state,
     client_id,
   };

@@ -110,5 +110,8 @@
   "logout": "Abmelden",
   "login_title": "Anmelden",
   "login_subtitle": "Anwendung zur Verifizierung von Nachweisen",
-  "app_name_hint": "Wird in der Navigationsleiste und im Anmeldebildschirm angezeigt."
+  "app_name_hint": "Wird in der Navigationsleiste und im Anmeldebildschirm angezeigt.",
+  "age_over_18_true": "Über 18 — Verifiziert ✓",
+  "age_over_18_false": "NICHT Über 18 — Zugang verweigert ✗",
+  "rows_per_page": "Zeilen"
 }

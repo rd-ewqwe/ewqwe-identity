@@ -15,6 +15,7 @@ import {
   parseAttestation,
 } from "@ewqwe/digital-identity";
 import { requestCredentials, sendToBackend } from "./credentials.ts";
+import { isMobileDevice } from "./credentials.ts";
 
 /**
  * Relying Party Application - Main controller
@@ -23,7 +24,9 @@ export class RelyingPartyApp {
   private logger: DebugLogger;
   private selectedCredentialType: CredentialType = "proof-of-age";
   private selectedClaims: Set<string> = new Set();
-  private selectedProtocol: string = "w3c-dc-fallback";
+  private selectedProtocol: string = isMobileDevice()
+    ? "openid4vp-same-device"
+    : "w3c-dc-fallback";
   private currentRequest: InitTransactionRequest | null = null;
   private currentResponse: OpenID4VPResponse | null = null;
 
@@ -34,6 +37,13 @@ export class RelyingPartyApp {
   initialize(): void {
     this.setupEventListeners();
     this.checkAPISupport();
+    // Sync the <select> element with the JS-computed default (e.g. mobile vs desktop)
+    const protocolSelect = document.getElementById(
+      "protocol-select",
+    ) as HTMLSelectElement | null;
+    if (protocolSelect) {
+      protocolSelect.value = this.selectedProtocol;
+    }
     this.updateProtocolDescription();
     this.renderClaims();
     this.updateProfileInfo();

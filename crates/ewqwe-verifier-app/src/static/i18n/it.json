@@ -110,5 +110,8 @@
   "logout": "Esci",
   "login_title": "Accedi",
   "login_subtitle": "Applicazione di verifica credenziali",
-  "app_name_hint": "Visualizzato nella barra di navigazione e nella schermata di accesso."
+  "app_name_hint": "Visualizzato nella barra di navigazione e nella schermata di accesso.",
+  "age_over_18_true": "Maggiore di 18 anni — Verificato ✓",
+  "age_over_18_false": "NON maggiore di 18 anni — Accesso negato ✗",
+  "rows_per_page": "Righe"
 }

@@ -110,5 +110,8 @@
   "logout": "Logga ut",
   "login_title": "Logga in",
   "login_subtitle": "Applikation för verifiering av legitimation",
-  "app_name_hint": "Visas i navigeringsfältet och på inloggningsskärmen."
+  "app_name_hint": "Visas i navigeringsfältet och på inloggningsskärmen.",
+  "age_over_18_true": "Över 18 år — Verifierad ✓",
+  "age_over_18_false": "INTE över 18 år — Åtkomst nekad ✗",
+  "rows_per_page": "Rader"
 }

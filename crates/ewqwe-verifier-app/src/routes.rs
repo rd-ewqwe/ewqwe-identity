@@ -386,7 +386,10 @@ pub async fn qr_status(
                                         "failed to mark transaction verified; subsequent polls will re-verify"
                                     );
                                 }
-                                HttpResponse::Ok().json(json!({"status": "verified"}))
+                                HttpResponse::Ok().json(json!({
+                                    "status": "verified",
+                                    "age_over_18": result.age_over_18,
+                                }))
                             }
                             Ok(result) => {
                                 tracing::warn!(

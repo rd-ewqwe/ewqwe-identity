@@ -110,5 +110,8 @@
   "logout": "Wyloguj się",
   "login_title": "Zaloguj się",
   "login_subtitle": "Aplikacja weryfikacji poświadczeń",
-  "app_name_hint": "Wyświetlane na pasku nawigacyjnym i na ekranie logowania."
+  "app_name_hint": "Wyświetlane na pasku nawigacyjnym i na ekranie logowania.",
+  "age_over_18_true": "Powyżej 18 lat — Zweryfikowano ✓",
+  "age_over_18_false": "NIE powyżej 18 lat — Odmowa dostępu ✗",
+  "rows_per_page": "Wiersze"
 }
