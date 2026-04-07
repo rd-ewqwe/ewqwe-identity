@@ -181,7 +181,7 @@ async function requestViaOpenID4VPCrossDevice(
   logger.log("OpenID4VP cross-device flow - initializing transaction");
 
   if (request.credential_type) {
-    logger.log(`Request: ${JSON.stringify(request, null, 2)}`);
+    logger.log(`Init Transaction Request: ${JSON.stringify(request, null, 2)}`);
   }
 
   // Step 1: Initialize the transaction on the backend
@@ -265,12 +265,6 @@ function closeQRCodeModal(): void {
     ?.classList.replace("flex", "hidden");
 }
 
-// Copy-icon SVG reused in the QR copy button
-const COPY_ICON_SVG = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-</svg>`;
-
 /**
  * Show the QR code modal (defined as a hidden element in index.html).
  * Dynamic content (badge, wallet name, QR image) is updated on each call.
@@ -353,21 +347,23 @@ function showQRCodeModal(
     document
       .getElementById("qr-copy-btn")
       ?.addEventListener("click", async () => {
-        const copyBtn = document.getElementById(
-          "qr-copy-btn",
-        ) as HTMLElement | null;
-        if (!copyBtn) return;
         try {
           await navigator.clipboard.writeText(
             qrCodeModal.authorizationRequestUri,
           );
-          copyBtn.innerHTML = `
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            Copied!`;
+          document
+            .getElementById("qr-copy-default")
+            ?.classList.replace("flex", "hidden");
+          document
+            .getElementById("qr-copy-success")
+            ?.classList.replace("hidden", "flex");
           setTimeout(() => {
-            copyBtn.innerHTML = `${COPY_ICON_SVG} Copy Link`;
+            document
+              .getElementById("qr-copy-success")
+              ?.classList.replace("flex", "hidden");
+            document
+              .getElementById("qr-copy-default")
+              ?.classList.replace("hidden", "flex");
           }, 2000);
         } catch {
           qrCodeModal.logger?.error("Failed to copy to clipboard");
@@ -482,7 +478,7 @@ async function requestViaOpenID4VPSameDevice(
   logger.log("Initializing OpenID4VP transaction for same-device flow...");
 
   if (request.credential_type) {
-    logger.log(`Request: ${JSON.stringify(request, null, 2)}`);
+    logger.log(`Init Transaction Request: ${JSON.stringify(request, null, 2)}`);
   }
 
   const initResponse = await fetch("/api/openid4vp/init", {
@@ -686,8 +682,8 @@ function simulateCredentialResponse(
 /**
  * Generate demo values for claims
  */
-function getDemoValue(claimId: string): unknown {
-  const demoValues: Record<string, unknown> = {
+function getDemoValue(claimId: string | number): unknown {
+  const demoValues: Record<string | number, unknown> = {
     family_name: "Smith",
     given_name: "John",
     birth_date: "1990-01-15",

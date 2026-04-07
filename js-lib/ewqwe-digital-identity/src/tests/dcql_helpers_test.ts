@@ -30,13 +30,13 @@ import {
   getDefaultAgeVerificationDCQL,
   isValidDCQLQuery,
   parseDCQLQuery,
-} from "./dcql.ts";
+} from "../dcql.ts";
 
 // =============================================================================
 // buildAgeVerificationQuery
 // =============================================================================
 
-Deno.test("buildAgeVerificationQuery – default threshold is 18", () => {
+Deno.test("buildAgeVerificationQuery - default threshold is 18", () => {
   const q = buildAgeVerificationQuery();
   assertStrictEquals(q.credentials.length, 1);
   const cred = q.credentials[0];
@@ -49,14 +49,14 @@ Deno.test("buildAgeVerificationQuery – default threshold is 18", () => {
   assertStrictEquals(claim.intent_to_retain, false);
 });
 
-Deno.test("buildAgeVerificationQuery – custom threshold 21", () => {
+Deno.test("buildAgeVerificationQuery - custom threshold 21", () => {
   const q = buildAgeVerificationQuery(21);
   const claim = q.credentials[0].claims![0];
   assertEquals(claim.path, [EU_AV_NAMESPACE, "age_over_21"]);
   assertEquals(claim.values, [true]);
 });
 
-Deno.test("buildAgeVerificationQuery – produces a valid DCQL query", () => {
+Deno.test("buildAgeVerificationQuery - produces a valid DCQL query", () => {
   const q = buildAgeVerificationQuery(18);
   const result = isValidDCQLQuery(q);
   assertStrictEquals(result.valid, true);
@@ -67,7 +67,7 @@ Deno.test("buildAgeVerificationQuery – produces a valid DCQL query", () => {
 // =============================================================================
 
 Deno.test(
-  "buildAgeVerificationQueryWithFallback – default threshold is 18",
+  "buildAgeVerificationQueryWithFallback - default threshold is 18",
   () => {
     const q = buildAgeVerificationQueryWithFallback();
     assertStrictEquals(q.credentials.length, 2);
@@ -84,7 +84,7 @@ Deno.test(
 );
 
 Deno.test(
-  "buildAgeVerificationQueryWithFallback – credential_sets encodes OR logic",
+  "buildAgeVerificationQueryWithFallback - credential_sets encodes OR logic",
   () => {
     const q = buildAgeVerificationQueryWithFallback();
     assertExists(q.credential_sets);
@@ -95,7 +95,7 @@ Deno.test(
   },
 );
 
-Deno.test("buildAgeVerificationQueryWithFallback – custom threshold 21", () => {
+Deno.test("buildAgeVerificationQueryWithFallback - custom threshold 21", () => {
   const q = buildAgeVerificationQueryWithFallback(21);
   assertEquals(q.credentials[0].claims![0].path, [
     EU_AV_NAMESPACE,
@@ -108,7 +108,7 @@ Deno.test("buildAgeVerificationQueryWithFallback – custom threshold 21", () =>
 });
 
 Deno.test(
-  "buildAgeVerificationQueryWithFallback – produces a valid DCQL query",
+  "buildAgeVerificationQueryWithFallback - produces a valid DCQL query",
   () => {
     const q = buildAgeVerificationQueryWithFallback(18);
     const result = isValidDCQLQuery(q);
@@ -120,7 +120,7 @@ Deno.test(
 // getDefaultAgeVerificationDCQL
 // =============================================================================
 
-Deno.test("getDefaultAgeVerificationDCQL – uses EU PID profile", () => {
+Deno.test("getDefaultAgeVerificationDCQL - uses EU PID profile", () => {
   const q = getDefaultAgeVerificationDCQL();
   assertStrictEquals(q.credentials.length, 1);
   const cred = q.credentials[0];
@@ -130,7 +130,7 @@ Deno.test("getDefaultAgeVerificationDCQL – uses EU PID profile", () => {
   assertEquals(cred.claims![0].path, [EU_PID_NAMESPACE, "age_over_18"]);
 });
 
-Deno.test("getDefaultAgeVerificationDCQL – produces a valid DCQL query", () => {
+Deno.test("getDefaultAgeVerificationDCQL - produces a valid DCQL query", () => {
   const result = isValidDCQLQuery(getDefaultAgeVerificationDCQL());
   assertStrictEquals(result.valid, true);
 });
@@ -139,14 +139,14 @@ Deno.test("getDefaultAgeVerificationDCQL – produces a valid DCQL query", () =>
 // generateNonce
 // =============================================================================
 
-Deno.test("generateNonce – returns a non-empty base64url string", () => {
+Deno.test("generateNonce - returns a non-empty base64url string", () => {
   const nonce = generateNonce();
   assertMatch(nonce, /^[A-Za-z0-9_-]+$/);
   // 32 random bytes → base64url without padding; minimum meaningful length
   assertStrictEquals(nonce.length > 16, true);
 });
 
-Deno.test("generateNonce – returns unique values on each call", () => {
+Deno.test("generateNonce - returns unique values on each call", () => {
   const a = generateNonce();
   const b = generateNonce();
   assertStrictEquals(a === b, false);
@@ -156,18 +156,18 @@ Deno.test("generateNonce – returns unique values on each call", () => {
 // parseDCQLQuery
 // =============================================================================
 
-Deno.test("parseDCQLQuery – round-trips a valid query", () => {
+Deno.test("parseDCQLQuery - round-trips a valid query", () => {
   const q = buildAgeVerificationQuery();
   const parsed = parseDCQLQuery(JSON.stringify(q));
   assertExists(parsed);
   assertEquals(parsed!.credentials[0].id, "eu_av_proof");
 });
 
-Deno.test("parseDCQLQuery – returns null for invalid JSON", () => {
+Deno.test("parseDCQLQuery - returns null for invalid JSON", () => {
   assertStrictEquals(parseDCQLQuery("{not valid json"), null);
 });
 
-Deno.test("parseDCQLQuery – returns null for empty string", () => {
+Deno.test("parseDCQLQuery - returns null for empty string", () => {
   assertStrictEquals(parseDCQLQuery(""), null);
 });
 
@@ -176,7 +176,7 @@ Deno.test("parseDCQLQuery – returns null for empty string", () => {
 // =============================================================================
 
 Deno.test(
-  "extractAgeThreshold – finds threshold in a flat dc+sd-jwt style path",
+  "extractAgeThreshold - finds threshold in a flat dc+sd-jwt style path",
   () => {
     // For dc+sd-jwt the claim path is just ["age_over_18"] (no namespace prefix)
     const q = {
@@ -192,7 +192,7 @@ Deno.test(
   },
 );
 
-Deno.test("extractAgeThreshold – finds threshold 21 in flat path", () => {
+Deno.test("extractAgeThreshold - finds threshold 21 in flat path", () => {
   const q = {
     credentials: [
       {
@@ -205,7 +205,7 @@ Deno.test("extractAgeThreshold – finds threshold 21 in flat path", () => {
   assertStrictEquals(extractAgeThreshold(q), 21);
 });
 
-Deno.test("extractAgeThreshold – returns null for non-age claim path", () => {
+Deno.test("extractAgeThreshold - returns null for non-age claim path", () => {
   const q = {
     credentials: [
       {
@@ -218,7 +218,7 @@ Deno.test("extractAgeThreshold – returns null for non-age claim path", () => {
   assertStrictEquals(extractAgeThreshold(q), null);
 });
 
-Deno.test("extractAgeThreshold – returns null for query with no claims", () => {
+Deno.test("extractAgeThreshold - returns null for query with no claims", () => {
   const q = {
     credentials: [{ id: "x", format: "mso_mdoc" as const }],
   };
@@ -229,20 +229,20 @@ Deno.test("extractAgeThreshold – returns null for query with no claims", () =>
 // determineProfile
 // =============================================================================
 
-Deno.test("determineProfile – proof-of-age → annex-a", () => {
+Deno.test("determineProfile - proof-of-age → annex-a", () => {
   assertStrictEquals(determineProfile("proof-of-age"), "annex-a");
 });
 
-Deno.test("determineProfile – mdl → haip", () => {
+Deno.test("determineProfile - mdl → haip", () => {
   assertStrictEquals(determineProfile("mdl"), "haip");
 });
 
-Deno.test("determineProfile – undefined credential type → haip", () => {
+Deno.test("determineProfile - undefined credential type → haip", () => {
   assertStrictEquals(determineProfile(), "haip");
 });
 
 Deno.test(
-  "determineProfile – explicit profile overrides credential type",
+  "determineProfile - explicit profile overrides credential type",
   () => {
     assertStrictEquals(determineProfile("proof-of-age", "haip"), "haip");
     assertStrictEquals(determineProfile("mdl", "annex-a"), "annex-a");
@@ -253,7 +253,7 @@ Deno.test(
 // buildAuthorizationRequest (same-device)
 // =============================================================================
 
-Deno.test("buildAuthorizationRequest – same-device flow structure", () => {
+Deno.test("buildAuthorizationRequest - same-device flow structure", () => {
   const params = {
     rpDomain: "rp.example.com",
     redirectUri: "https://rp.example.com/cb",
@@ -270,7 +270,7 @@ Deno.test("buildAuthorizationRequest – same-device flow structure", () => {
 });
 
 Deno.test(
-  "buildAuthorizationRequest – embeds correct default age threshold (18)",
+  "buildAuthorizationRequest - embeds correct default age threshold (18)",
   () => {
     const req = buildAuthorizationRequest({
       rpDomain: "rp.example.com",
@@ -284,7 +284,7 @@ Deno.test(
   },
 );
 
-Deno.test("buildAuthorizationRequest – embeds custom age threshold", () => {
+Deno.test("buildAuthorizationRequest - embeds custom age threshold", () => {
   const req = buildAuthorizationRequest({
     rpDomain: "rp.example.com",
     redirectUri: "https://rp.example.com/cb",
@@ -297,7 +297,7 @@ Deno.test("buildAuthorizationRequest – embeds custom age threshold", () => {
   ]);
 });
 
-Deno.test("buildAuthorizationRequest – accepts pre-set nonce and state", () => {
+Deno.test("buildAuthorizationRequest - accepts pre-set nonce and state", () => {
   const req = buildAuthorizationRequest({
     rpDomain: "rp.example.com",
     redirectUri: "https://rp.example.com/cb",
@@ -313,7 +313,7 @@ Deno.test("buildAuthorizationRequest – accepts pre-set nonce and state", () =>
 // =============================================================================
 
 Deno.test(
-  "buildCrossDeviceAuthorizationRequest – cross-device flow structure",
+  "buildCrossDeviceAuthorizationRequest - cross-device flow structure",
   () => {
     const params = {
       rpDomain: "rp.example.com",
@@ -332,7 +332,7 @@ Deno.test(
 );
 
 Deno.test(
-  "buildCrossDeviceAuthorizationRequest – uses fallback query (two credentials)",
+  "buildCrossDeviceAuthorizationRequest - uses fallback query (two credentials)",
   () => {
     const req = buildCrossDeviceAuthorizationRequest({
       rpDomain: "rp.example.com",
@@ -345,7 +345,7 @@ Deno.test(
 );
 
 Deno.test(
-  "buildCrossDeviceAuthorizationRequest – accepts pre-set nonce and state",
+  "buildCrossDeviceAuthorizationRequest - accepts pre-set nonce and state",
   () => {
     const req = buildCrossDeviceAuthorizationRequest({
       rpDomain: "rp.example.com",
@@ -363,7 +363,7 @@ Deno.test(
 // =============================================================================
 
 Deno.test(
-  "buildInitTransactionRequest – builds request for proof-of-age",
+  "buildInitTransactionRequest - builds request for proof-of-age",
   () => {
     const req = buildInitTransactionRequest(
       "https://webapp.example.com",
@@ -387,7 +387,7 @@ Deno.test(
 );
 
 Deno.test(
-  "buildInitTransactionRequest – throws for unknown credential type",
+  "buildInitTransactionRequest - throws for unknown credential type",
   () => {
     assertThrows(
       () =>
@@ -401,15 +401,15 @@ Deno.test(
 );
 
 // =============================================================================
-// isValidDCQLQuery – invalid cases
+// isValidDCQLQuery - invalid cases
 // =============================================================================
 
-Deno.test("isValidDCQLQuery – rejects empty credentials array", () => {
+Deno.test("isValidDCQLQuery - rejects empty credentials array", () => {
   const result = isValidDCQLQuery({ credentials: [] });
   assertStrictEquals(result.valid, false);
 });
 
-Deno.test("isValidDCQLQuery – rejects duplicate credential ids", () => {
+Deno.test("isValidDCQLQuery - rejects duplicate credential ids", () => {
   const result = isValidDCQLQuery({
     credentials: [
       { id: "a", format: "mso_mdoc" },
@@ -420,7 +420,7 @@ Deno.test("isValidDCQLQuery – rejects duplicate credential ids", () => {
 });
 
 Deno.test(
-  "isValidDCQLQuery – rejects credential id with invalid characters",
+  "isValidDCQLQuery - rejects credential id with invalid characters",
   () => {
     const result = isValidDCQLQuery({
       credentials: [{ id: "has space", format: "mso_mdoc" }],
@@ -429,7 +429,7 @@ Deno.test(
   },
 );
 
-Deno.test("isValidDCQLQuery – rejects empty trusted_authorities", () => {
+Deno.test("isValidDCQLQuery - rejects empty trusted_authorities", () => {
   const result = isValidDCQLQuery({
     credentials: [
       {
@@ -442,7 +442,7 @@ Deno.test("isValidDCQLQuery – rejects empty trusted_authorities", () => {
   assertStrictEquals(result.valid, false);
 });
 
-Deno.test("isValidDCQLQuery – rejects claim_sets without claims", () => {
+Deno.test("isValidDCQLQuery - rejects claim_sets without claims", () => {
   const result = isValidDCQLQuery({
     credentials: [
       {
@@ -456,7 +456,7 @@ Deno.test("isValidDCQLQuery – rejects claim_sets without claims", () => {
 });
 
 Deno.test(
-  "isValidDCQLQuery – rejects claim_sets referencing unknown claim id",
+  "isValidDCQLQuery - rejects claim_sets referencing unknown claim id",
   () => {
     const result = isValidDCQLQuery({
       credentials: [
@@ -473,7 +473,7 @@ Deno.test(
 );
 
 Deno.test(
-  "isValidDCQLQuery – rejects credential_sets referencing unknown credential id",
+  "isValidDCQLQuery - rejects credential_sets referencing unknown credential id",
   () => {
     const result = isValidDCQLQuery({
       credentials: [{ id: "c1", format: "mso_mdoc" }],

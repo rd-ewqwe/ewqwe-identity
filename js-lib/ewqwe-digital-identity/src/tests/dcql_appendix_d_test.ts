@@ -9,8 +9,8 @@
  */
 
 import { assertEquals, assertStrictEquals } from "@std/assert";
-import type { DCQLQuery } from "./dcql.ts";
-import { isValidDCQLQuery } from "./dcql.ts";
+import type { DCQLQuery } from "../dcql.ts";
+import { isValidDCQLQuery } from "../dcql.ts";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -32,7 +32,7 @@ function assertValid(query: DCQLQuery): void {
 }
 
 // ---------------------------------------------------------------------------
-// Appendix D §1 – Single mso_mdoc credential (mVRC)
+// Appendix D §1 - Single mso_mdoc credential (mVRC)
 //
 // Requests `vehicle_holder` from namespace `org.iso.7367.1` and
 // `first_name` from namespace `org.iso.18013.5.1`.
@@ -53,7 +53,7 @@ const APPENDIX_D1_SPEC_JSON: DCQLQuery = {
   ],
 };
 
-Deno.test("Appendix D §1 – mVRC single mdoc: parses and is valid", () => {
+Deno.test("Appendix D §1 - mVRC single mdoc: parses and is valid", () => {
   const q = APPENDIX_D1_SPEC_JSON;
   assertValid(q);
   assertStrictEquals(q.credentials.length, 1);
@@ -71,7 +71,7 @@ Deno.test("Appendix D §1 – mVRC single mdoc: parses and is valid", () => {
   assertEquals(claims[1].path, ["org.iso.18013.5.1", "first_name"]);
 });
 
-Deno.test("Appendix D §1 – mVRC single mdoc: round-trips through JSON", () => {
+Deno.test("Appendix D §1 - mVRC single mdoc: round-trips through JSON", () => {
   const rt = roundtrip(APPENDIX_D1_SPEC_JSON);
   assertEquals(rt.credentials[0].claims![0].path, [
     "org.iso.7367.1",
@@ -84,7 +84,7 @@ Deno.test("Appendix D §1 – mVRC single mdoc: round-trips through JSON", () =>
 });
 
 // ---------------------------------------------------------------------------
-// Appendix D §2 – Multiple credentials, all must be returned
+// Appendix D §2 - Multiple credentials, all must be returned
 //
 // `pid` is dc+sd-jwt with identity claims; `mdl` is mso_mdoc.
 // Without credential_sets, every credential in `credentials` must be returned.
@@ -117,7 +117,7 @@ const APPENDIX_D2_SPEC_JSON: DCQLQuery = {
 };
 
 Deno.test(
-  "Appendix D §2 – multiple credentials, all required: structure",
+  "Appendix D §2 - multiple credentials, all required: structure",
   () => {
     const q = APPENDIX_D2_SPEC_JSON;
     assertValid(q);
@@ -139,7 +139,7 @@ Deno.test(
 );
 
 Deno.test(
-  "Appendix D §2 – multiple credentials, all required: round-trips",
+  "Appendix D §2 - multiple credentials, all required: round-trips",
   () => {
     const rt = roundtrip(APPENDIX_D2_SPEC_JSON);
     assertStrictEquals(rt.credentials.length, 2);
@@ -148,7 +148,7 @@ Deno.test(
 );
 
 // ---------------------------------------------------------------------------
-// Appendix D §3 – Complex credential_sets
+// Appendix D §3 - Complex credential_sets
 //
 // pid OR other_pid OR (pid_reduced_cred_1 + pid_reduced_cred_2) must be
 // returned; nice_to_have may optionally be returned.
@@ -220,7 +220,7 @@ const APPENDIX_D3_SPEC_JSON: DCQLQuery = {
   ],
 };
 
-Deno.test("Appendix D §3 – complex credential_sets: structure", () => {
+Deno.test("Appendix D §3 - complex credential_sets: structure", () => {
   const q = APPENDIX_D3_SPEC_JSON;
   assertValid(q);
   assertStrictEquals(q.credentials.length, 5);
@@ -243,7 +243,7 @@ Deno.test("Appendix D §3 – complex credential_sets: structure", () => {
   assertEquals(sets[1].options[0], ["nice_to_have"]);
 });
 
-Deno.test("Appendix D §3 – complex credential_sets: round-trips", () => {
+Deno.test("Appendix D §3 - complex credential_sets: round-trips", () => {
   const rt = roundtrip(APPENDIX_D3_SPEC_JSON);
   assertStrictEquals(rt.credentials.length, 5);
   assertStrictEquals(rt.credential_sets!.length, 2);
@@ -251,7 +251,7 @@ Deno.test("Appendix D §3 – complex credential_sets: round-trips", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Appendix D §4 – ID and address from either mDL or photo_card credential
+// Appendix D §4 - ID and address from either mDL or photo_card credential
 //
 // Either an mDL or photo_card provides the identity portion; the address is
 // optional and can likewise come from either document type.
@@ -321,7 +321,7 @@ const APPENDIX_D4_SPEC_JSON: DCQLQuery = {
   ],
 };
 
-Deno.test("Appendix D §4 – mdl/photo_card: structure", () => {
+Deno.test("Appendix D §4 - mdl/photo_card: structure", () => {
   const q = APPENDIX_D4_SPEC_JSON;
   assertValid(q);
   assertStrictEquals(q.credentials.length, 4);
@@ -341,13 +341,13 @@ Deno.test("Appendix D §4 – mdl/photo_card: structure", () => {
   assertStrictEquals(mdlIdClaims[0].id, "given_name");
 });
 
-Deno.test("Appendix D §4 – mdl/photo_card: round-trips", () => {
+Deno.test("Appendix D §4 - mdl/photo_card: round-trips", () => {
   const rt = roundtrip(APPENDIX_D4_SPEC_JSON);
   assertEquals(rt.credential_sets![0].options, [["mdl-id"], ["photo_card-id"]]);
 });
 
 // ---------------------------------------------------------------------------
-// Appendix D §5 – claim_sets: mandatory + alternatives
+// Appendix D §5 - claim_sets: mandatory + alternatives
 //
 // Requests `last_name` and `date_of_birth` as mandatory, plus either
 // `postal_code` alone or both `locality` and `region`.
@@ -376,7 +376,7 @@ const APPENDIX_D5_SPEC_JSON: DCQLQuery = {
   ],
 };
 
-Deno.test("Appendix D §5 – claim_sets: structure", () => {
+Deno.test("Appendix D §5 - claim_sets: structure", () => {
   const q = APPENDIX_D5_SPEC_JSON;
   assertValid(q);
   assertStrictEquals(q.credentials.length, 1);
@@ -405,7 +405,7 @@ Deno.test("Appendix D §5 – claim_sets: structure", () => {
   assertEquals(cs[1], ["a", "b", "e"]);
 });
 
-Deno.test("Appendix D §5 – claim_sets: round-trips", () => {
+Deno.test("Appendix D §5 - claim_sets: round-trips", () => {
   const rt = roundtrip(APPENDIX_D5_SPEC_JSON);
   assertEquals(rt.credentials[0].claim_sets, [
     ["a", "c", "d", "e"],
@@ -414,7 +414,7 @@ Deno.test("Appendix D §5 – claim_sets: round-trips", () => {
 });
 
 // ---------------------------------------------------------------------------
-// Appendix D §6 – values constraints
+// Appendix D §6 - values constraints
 //
 // `last_name` must be "Doe"; `postal_code` must be "90210" or "90211".
 // ---------------------------------------------------------------------------
@@ -437,7 +437,7 @@ const APPENDIX_D6_SPEC_JSON: DCQLQuery = {
   ],
 };
 
-Deno.test("Appendix D §6 – values constraints: structure", () => {
+Deno.test("Appendix D §6 - values constraints: structure", () => {
   const q = APPENDIX_D6_SPEC_JSON;
   assertValid(q);
   assertStrictEquals(q.credentials.length, 1);
@@ -461,7 +461,7 @@ Deno.test("Appendix D §6 – values constraints: structure", () => {
   assertEquals(claims[3].values, ["90210", "90211"]);
 });
 
-Deno.test("Appendix D §6 – values constraints: round-trips", () => {
+Deno.test("Appendix D §6 - values constraints: round-trips", () => {
   const rt = roundtrip(APPENDIX_D6_SPEC_JSON);
   assertEquals(rt.credentials[0].claims![0].values, ["Doe"]);
   assertEquals(rt.credentials[0].claims![3].values, ["90210", "90211"]);
