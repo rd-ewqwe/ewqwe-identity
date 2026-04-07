@@ -374,10 +374,11 @@ export async function verifyCredential(
 
 /**
  * Send credential to backend for verification
- * This is a placeholder for when the Rust backend is implemented
+ * The backend will proxy the request to the Credential Verifier server
  */
 export async function sendToBackend(
   response: OpenID4VPResponse,
+  originalRequest: OpenID4VPRequest | null,
   logger: DebugLogger,
 ): Promise<VerificationResult> {
   const backendUrl = "/api/verify";
@@ -393,6 +394,8 @@ export async function sendToBackend(
       body: JSON.stringify({
         vp_token: response.vp_token,
         presentation_submission: response.presentation_submission,
+        nonce: response.nonce || originalRequest?.nonce,
+        state: response.state || originalRequest?.state,
       }),
     });
 
@@ -407,14 +410,13 @@ export async function sendToBackend(
 
     return result as VerificationResult;
   } catch (error) {
-    logger.error("Backend verification failed, using local simulation", error);
+    logger.error("Backend verification failed", error);
 
-    // Fall back to local simulation if backend is not available
+    // Return error - don't silently fall back
     return {
       success: false,
-      message:
-        "Backend server not available. The Rust backend will be implemented later.",
-      errors: ["Backend not available - verification simulated locally"],
+      message: "Backend verification failed",
+      errors: [error instanceof Error ? error.message : "Unknown error"],
     };
   }
 }

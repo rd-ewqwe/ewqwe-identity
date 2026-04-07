@@ -9,7 +9,6 @@ import {
   buildPresentationRequest,
   requestCredentials,
   sendToBackend,
-  verifyCredential,
 } from "./credentials.ts";
 
 /**
@@ -293,18 +292,12 @@ export class RelyingPartyApp {
 
       this.currentResponse = response;
 
-      // Verify the credential
-      let verificationResult = await verifyCredential(
+      // Send to backend for verification (proxies to Credential Verifier)
+      const verificationResult = await sendToBackend(
         response,
         this.currentRequest,
         this.logger,
       );
-
-      // Also try to send to backend (will fall back gracefully if not available)
-      const backendResult = await sendToBackend(response, this.logger);
-      if (backendResult.success) {
-        verificationResult = backendResult;
-      }
 
       // Display the result
       this.displayVerificationResult(verificationResult, response);

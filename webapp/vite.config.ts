@@ -9,15 +9,18 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
-    host: '0.0.0.0',
+    host: "0.0.0.0",
     port: 5174,
+    proxy: {
+      "/api": {
+        target: "http://localhost:5175",
+        changeOrigin: true,
+      },
+    },
   },
   css: {
     postcss: {
-      plugins: [
-        tailwindcss as any,
-        autoprefixer as any,
-      ],
+      plugins: [tailwindcss as any, autoprefixer as any],
     },
   },
 });

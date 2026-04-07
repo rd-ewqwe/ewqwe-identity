@@ -5,6 +5,8 @@
  * Compatible with Chrome (chrome.storage) and Firefox (browser.storage).
  */
 
+/// <reference path="./browser.d.ts" />
+
 import type { StoredCredential, CredentialType } from "./types";
 import { generateSampleCredentials } from "./sample-credentials";
 

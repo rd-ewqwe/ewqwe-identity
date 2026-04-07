@@ -1,6 +1,8 @@
 {
   "tasks": {
-    "dev": "deno run -A npm:vite",
+    "dev": "echo 'Start backend first: deno task api, then: deno task vite, open http://localhost:5174'",
+    "vite": "deno run -A npm:vite",
+    "api": "deno run -A server.ts",
     "build": "deno run -A npm:vite build",
     "preview": "deno run -A npm:vite preview"
   },

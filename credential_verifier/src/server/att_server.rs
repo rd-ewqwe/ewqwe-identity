@@ -1,6 +1,9 @@
 use crate::{
     AttResult, AttResultHelper,
-    server::{AttServerParams, endpoints::version_endpoint},
+    server::{
+        AttServerParams,
+        endpoints::{verify_credential_endpoint, version_endpoint},
+    },
 };
 use actix_cors::Cors;
 use actix_identity::IdentityMiddleware;
@@ -86,8 +89,20 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
                     )
                     .build(),
             )
-            .wrap(Cors::permissive())
-            .route("/version", web::get().to(version_endpoint));
+            .wrap(
+                Cors::default()
+                    .allowed_origin("http://localhost:5173")
+                    .allowed_origin("http://localhost:5174")
+                    .allowed_origin("http://localhost:5175")
+                    .allowed_origin("http://127.0.0.1:5173")
+                    .allowed_origin("http://127.0.0.1:5174")
+                    .allowed_origin("http://127.0.0.1:5175")
+                    .allowed_methods(vec!["GET", "POST", "OPTIONS"])
+                    .allowed_headers(vec!["Content-Type", "Authorization"])
+                    .max_age(3600),
+            )
+            .route("/version", web::get().to(version_endpoint))
+            .route("/api/verify", web::post().to(verify_credential_endpoint));
 
         #[cfg(test)]
         let default_scope = default_scope.route(

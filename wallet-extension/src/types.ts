@@ -114,7 +114,8 @@ export type ExtensionMessage =
   | { type: "GET_CREDENTIAL"; id: string }
   | { type: "PRESENT_CREDENTIAL"; request: OpenID4VPRequest }
   | { type: "CREDENTIALS_UPDATED" }
-  | { type: "DC_API_REQUEST"; request: DigitalCredentialRequest };
+  | { type: "DC_API_REQUEST"; request: DigitalCredentialRequest }
+  | { type: "RESET_CREDENTIALS" };
 
 export interface DigitalCredentialRequest {
   protocol: "org-iso-mdoc" | "openid4vp-v1-unsigned";

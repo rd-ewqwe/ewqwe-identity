@@ -7,8 +7,11 @@
  * - Extension lifecycle management
  */
 
+/// <reference path="../src/browser.d.ts" />
+
 import { getCredentialStore } from "../src/store";
 import type {
+  CredentialType,
   ExtensionMessage,
   StoredCredential,
   DCQLQuery,
@@ -24,8 +27,12 @@ console.log("[Wallet Service Worker] Starting...");
  * Handle messages from content scripts and popup
  */
 runtime.onMessage.addListener(
-  (message: ExtensionMessage, sender, sendResponse) => {
-    handleMessage(message, sender)
+  (
+    message: ExtensionMessage,
+    _sender: chrome.runtime.MessageSender,
+    sendResponse: (response?: unknown) => void,
+  ) => {
+    handleMessage(message, _sender)
       .then(sendResponse)
       .catch((error) => {
         console.error("[Wallet] Message handling error:", error);
@@ -149,7 +156,7 @@ async function handleDigitalCredentialRequest(request: {
 
       if (credentialType) {
         // Get all credentials of this type
-        const credentials = store.getByType(credentialType);
+        const credentials = store.getByType(credentialType as CredentialType);
 
         // Filter by requested claims if specified
         const requestedClaims = descriptor.constraints?.fields
@@ -217,18 +224,20 @@ function mapDescriptorToType(descriptorId: string): string | null {
 /**
  * Extension installation handler
  */
-runtime.onInstalled.addListener(async (details) => {
-  console.log("[Wallet] Extension installed:", details.reason);
+runtime.onInstalled.addListener(
+  async (details: chrome.runtime.InstalledDetails) => {
+    console.log("[Wallet] Extension installed:", details.reason);
 
-  if (details.reason === "install") {
-    // Initialize store with sample credentials on first install
-    const store = await getCredentialStore();
-    console.log(
-      "[Wallet] Initialized with credentials:",
-      store.getCountByType(),
-    );
-  }
-});
+    if (details.reason === "install") {
+      // Initialize store with sample credentials on first install
+      const store = await getCredentialStore();
+      console.log(
+        "[Wallet] Initialized with credentials:",
+        store.getCountByType(),
+      );
+    }
+  },
+);
 
 /**
  * Extension startup handler

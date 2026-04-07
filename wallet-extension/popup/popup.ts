@@ -4,6 +4,8 @@
  * Handles the popup UI for credential management and display.
  */
 
+/// <reference path="../src/browser.d.ts" />
+
 import type { StoredCredential, CredentialType } from "../src/types";
 import { CREDENTIAL_TYPE_CONFIGS } from "../src/types";
 

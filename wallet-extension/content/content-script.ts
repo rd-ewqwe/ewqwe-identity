@@ -7,6 +7,8 @@
  * - Communicate with the extension background worker
  */
 
+/// <reference path="../src/browser.d.ts" />
+
 // Cross-browser runtime API
 const runtime =
   typeof browser !== "undefined" ? browser.runtime : chrome.runtime;
