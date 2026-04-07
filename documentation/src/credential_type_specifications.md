@@ -64,7 +64,7 @@ The encoding is specified in prose and tables rather than JSON Schema.
 ## Authoritative Sources
 
 | Standard                  | Description                                | URL/Reference                                                                                                                                                                                           |
-|:--------------------------|:-------------------------------------------|:--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| :------------------------ | :----------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | ISO/IEC 18013-5:2021      | Mobile Driving Licence (mDL) application   | <https://www.iso.org/standard/69084.html>                                                                                                                                                               |
 | CIR 2024/2977             | EU Implementing Regulation on PID and EAA  | <https://data.europa.eu/eli/reg_impl/2024/2977/oj>                                                                                                                                                      |
 | EU ARF Annex 2.02 Topic 3 | PID Rulebook HLRs (PID_04, PID_05, PID_14) | <https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework/blob/main/docs/annexes/annex-2/annex-2.02-high-level-requirements-by-topic.md#a232-topic-3---pid-rulebook> |
@@ -128,7 +128,7 @@ The mDL data model is **fully specified in ISO/IEC 18013-5:2021**. Within the EU
 ### mDL Attributes (ISO/IEC 18013-5 Namespace: `org.iso.18013.5.1`)
 
 | Attribute Identifier     | Description                                       | Presence  | Encoding                               |
-|:-------------------------|:--------------------------------------------------|:----------|:---------------------------------------|
+| :----------------------- | :------------------------------------------------ | :-------- | :------------------------------------- |
 | `family_name`            | Current family name(s) or surname(s)              | Mandatory | `tstr` (UTF-8 string, max 150 chars)   |
 | `given_name`             | Current first name(s), including middle name(s)   | Mandatory | `tstr`                                 |
 | `birth_date`             | Date of birth                                     | Mandatory | `full-date` (RFC 8943, tag 1004)       |
@@ -215,7 +215,7 @@ PID attributes are defined in **CIR 2024/2977** and the **EU ARF PID Rulebook**.
 #### Mandatory Attributes (CIR 2024/2977)
 
 | Data Identifier | ISO Attribute ID | SD-JWT Claim     | Description                      | Encoding (ISO)   | Encoding (SD-JWT)   |
-|:----------------|:-----------------|:-----------------|:---------------------------------|:-----------------|:--------------------|
+| :-------------- | :--------------- | :--------------- | :------------------------------ | :--------------- | :------------------ |
 | `family_name`   | `family_name`    | `family_name`    | Current surname(s)               | `tstr`           | string              |
 | `given_name`    | `given_name`     | `given_name`     | Current first/middle name(s)     | `tstr`           | string              |
 | `birth_date`    | `birth_date`     | `birthdate`      | Date of birth (YYYY-MM-DD)       | `full-date`      | string (ISO 8601-1) |
@@ -225,7 +225,7 @@ PID attributes are defined in **CIR 2024/2977** and the **EU ARF PID Rulebook**.
 #### Optional Attributes (CIR 2024/2977)
 
 | Data Identifier                  | ISO Attribute ID                 | SD-JWT Claim                     | Description                       | Encoding (ISO) | Encoding (SD-JWT) |
-|:---------------------------------|:---------------------------------|:---------------------------------|:----------------------------------|:---------------|:------------------|
+| :------------------------------- | :------------------------------- | :------------------------------- | :-------------------------------- | :------------- | :---------------- |
 | `resident_address`               | `resident_address`               | `address.formatted`              | Full current address              | `tstr`         | string            |
 | `resident_country`               | `resident_country`               | `address.country`                | Country of residence              | `tstr`         | string            |
 | `resident_state`                 | `resident_state`                 | `address.region`                 | State/province                    | `tstr`         | string            |
@@ -244,7 +244,7 @@ PID attributes are defined in **CIR 2024/2977** and the **EU ARF PID Rulebook**.
 #### Mandatory Metadata (CIR 2024/2977)
 
 | Data Identifier     | ISO Attribute ID    | SD-JWT Claim        | Description                         |
-|:--------------------|:--------------------|:--------------------|:------------------------------------|
+| :------------------ | :------------------ | :------------------ | :---------------------------------- |
 | `expiry_date`       | `expiry_date`       | `date_of_expiry`    | Administrative expiry date          |
 | `issuing_authority` | `issuing_authority` | `issuing_authority` | Issuing authority name              |
 | `issuing_country`   | `issuing_country`   | `issuing_country`   | Issuing country (ISO 3166-1 alpha-2)|
@@ -252,7 +252,7 @@ PID attributes are defined in **CIR 2024/2977** and the **EU ARF PID Rulebook**.
 #### Optional Metadata (CIR 2024/2977)
 
 | Data Identifier        | ISO Attribute ID       | SD-JWT Claim           | Description               |
-|:-----------------------|:-----------------------|:-----------------------|:--------------------------|
+| :--------------------- | :--------------------- | :--------------------- | :------------------------ |
 | `document_number`      | `document_number`      | `document_number`      | PID document number       |
 | `issuing_jurisdiction` | `issuing_jurisdiction` | `issuing_jurisdiction` | Jurisdiction (ISO 3166-2) |
 | `issuance_date`        | `issuance_date`        | `date_of_issuance`     | Date of issuance          |
@@ -319,7 +319,7 @@ The configuration in `js-lib/ewqwe-digital-identity/src/config.ts` defines all c
 The [Relying Party Demo Webapp](./demo_webapp.md) currently offers four credential types for selection:
 
 | Credential | Format | Profile |
-|:-----------|:-------|:--------|
+| :--------- | :----- | :------ |
 | Proof of Age | MSO MDOC | Annex A |
 | Mobile Driver's License | MSO MDOC | HAIP |
 | National ID (PID) | MSO MDOC | HAIP |
@@ -330,7 +330,7 @@ The Profile Information section displays both the protocol profile badge (HAIP o
 ### Credential Types Summary
 
 | Type ID               | Name                      | Format      | docType / vct                                      | Age Verification |
-|:----------------------|:--------------------------|:------------|:---------------------------------------------------|:-----------------|
+| :-------------------- | :------------------------ | :---------- | :------------------------------------------------- | :--------------- |
 | `mdl`                 | Mobile Driver's License   | mso_mdoc    | `org.iso.18013.5.1.mDL`                            | ✅ `age_over_18`, `age_over_21` |
 | `national-id`         | National ID (PID)         | mso_mdoc    | `eu.europa.ec.eudi.pid.1`                           | ❌ |
 | `national-id-sd-jwt`  | National ID (PID)         | dc+sd-jwt   | `urn:eudi:pid:1`                                    | ❌ |
@@ -361,7 +361,7 @@ The Profile Information section displays both the protocol profile badge (HAIP o
 The PID docType and namespace values are mandated by the following High-Level Requirements:
 
 | Requirement | Specification                                                                                                                                                                     |
-|:------------|:----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| :---------- | :-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **PID_04**  | "PID Providers SHALL use **eu.europa.ec.eudi.pid.1** as the attestation type for ISO/IEC 18013-5-compliant PIDs."                                                                 |
 | **PID_05**  | "When issuing a PID compliant with [ISO/IEC 18013-5], a PID Provider SHALL use the value **eu.europa.ec.eudi.pid.1** for the identifier of the namespace for the PID attributes." |
 | **PID_14**  | "A PID Provider issuing [SD-JWT VC]-compliant PIDs SHALL include the vct claim... The type indicated by the vct claim SHALL be **urn:eudi:pid:1**"                                |
@@ -403,13 +403,13 @@ The Proof of Age attestation is defined in the **EU Age Verification Profile**. 
 ### Proof of Age Attributes
 
 | Attribute Identifier | Description              | Presence  | Encoding |
-|:---------------------|:-------------------------|:----------|:---------|
+| :------------------- | :----------------------- | :-------- | :------- |
 | `age_over_18`        | Whether holder is over 18| Mandatory | `bool`   |
 
 ### Protocol Stack
 
 | Protocol   | Usage                                         | Specification                         |
-|:-----------|:----------------------------------------------|:--------------------------------------|
+| :--------- | :-------------------------------------------- | :------------------------------------ |
 | Issuance   | OpenID4VCI with `credential_configuration_ids: ["proof_of_age"]` | OpenID for Verifiable Credential Issuance |
 | Presentation (Primary) | W3C Digital Credentials API         | ISO/IEC 18013-7 Annex C               |
 | Presentation (Fallback) | OpenID4VP with `response_mode=direct_post` | OpenID for Verifiable Presentations |
@@ -434,7 +434,7 @@ The Proof of Age attestation is defined in the **EU Age Verification Profile**. 
 ### Document Types
 
 | Format    | Identifier                          |
-|:----------|:------------------------------------|
+| :-------- | :---------------------------------- |
 | mso_mdoc  | `eu.europa.ec.eudi.tax.1`          |
 | dc+sd-jwt | `urn:eu.europa.ec.eudi:tax:1` (vct)|
 
@@ -447,7 +447,7 @@ eu.europa.ec.eudi.tax.1
 ### Claims
 
 | Claim ID                 | Name                     | Description                           |
-|:-------------------------|:-------------------------|:--------------------------------------|
+| :----------------------- | :----------------------- | :------------------------------------ |
 | `tax_number`             | Tax Number               | Tax identification number             |
 | `registered_family_name` | Registered Family Name   | Family name registered with tax authority |
 | `registered_given_name`  | Registered Given Names   | Given names registered with tax authority |
@@ -460,7 +460,7 @@ eu.europa.ec.eudi.tax.1
 ### Document Types
 
 | Format    | Identifier                                            |
-|:----------|:------------------------------------------------------|
+| :-------- | :---------------------------------------------------- |
 | mso_mdoc  | `eu.europa.ec.eudi.pseudonym.age_over_18.1`          |
 | dc+sd-jwt | `urn:eu.europa.ec.eudi:pseudonym_age_over_18:1` (vct)|
 
@@ -473,7 +473,7 @@ eu.europa.ec.eudi.pseudonym.age_over_18.1
 ### Claims
 
 | Claim ID       | Name         | Description              | Encoding       |
-|:---------------|:-------------|:-------------------------|:---------------|
+| :------------- | :----------- | :----------------------- | :------------- |
 | `age_over_18`  | Age Over 18  | Whether holder is over 18| `bool`         |
 
 This credential provides a privacy-preserving pseudonymous attestation of age, disclosing only the `age_over_18` boolean without any identifying information.
@@ -501,7 +501,7 @@ mso_mdoc only.
 ### Claims
 
 | Claim ID               | Name                 | Description                          |
-|:-----------------------|:---------------------|:-------------------------------------|
+| :--------------------- | :------------------- | :----------------------------------- |
 | `resident_address`     | Resident Address     | Full residential address             |
 | `resident_country`     | Resident Country     | Country of residence (ISO 3166-1)    |
 | `resident_city`        | Resident City        | City of residence                    |
@@ -535,7 +535,7 @@ mso_mdoc only.
 ### Claims
 
 | Claim ID             | Name               | Description                          |
-|:---------------------|:-------------------|:-------------------------------------|
+| :------------------- | :----------------- | :----------------------------------- |
 | `family_name`        | Family Name        | Current surname(s)                   |
 | `given_name`         | Given Names        | Current first/middle name(s)         |
 | `birth_date`         | Birth Date         | Date of birth                        |
@@ -568,7 +568,7 @@ mso_mdoc only.
 ### Claims
 
 | Claim ID             | Name               | Description                          |
-|:---------------------|:-------------------|:-------------------------------------|
+| :------------------- | :----------------- | :----------------------------------- |
 | `reservation_number` | Reservation Number | Booking/reservation identifier       |
 | `family_name`        | Family Name        | Passenger surname(s)                 |
 | `given_name`         | Given Names        | Passenger first/middle name(s)       |
@@ -580,7 +580,7 @@ mso_mdoc only.
 ### Document Types
 
 | Format    | Identifier                           |
-|:----------|:-------------------------------------|
+| :-------- | :----------------------------------- |
 | mso_mdoc  | `eu.europa.ec.eudi.iban.1`          |
 | dc+sd-jwt | `urn:eu.europa.ec.eudi:iban:1` (vct)|
 
@@ -593,7 +593,7 @@ eu.europa.ec.eudi.iban.1
 ### Claims
 
 | Claim ID         | Name            | Description                |
-|:-----------------|:----------------|:---------------------------|
+| :--------------- | :-------------- | :------------------------- |
 | `iban`           | IBAN            | International Bank Account Number |
 | `account_holder` | Account Holder  | Name of the account holder |
 | `bic`            | BIC             | Bank Identifier Code       |
@@ -605,7 +605,7 @@ eu.europa.ec.eudi.iban.1
 ### Document Types
 
 | Format    | Identifier                           |
-|:----------|:-------------------------------------|
+| :-------- | :----------------------------------- |
 | mso_mdoc  | `eu.europa.ec.eudi.ehic.1`          |
 | dc+sd-jwt | `urn:eu.europa.ec.eudi:ehic:1` (vct)|
 
@@ -618,7 +618,7 @@ eu.europa.ec.eudi.ehic.1
 ### Claims
 
 | Claim ID              | Name                | Description                          |
-|:----------------------|:--------------------|:-------------------------------------|
+| :-------------------- | :------------------ | :----------------------------------- |
 | `family_name`         | Family Name         | Holder's surname(s)                  |
 | `given_name`          | Given Names         | Holder's first/middle name(s)        |
 | `birth_date`          | Birth Date          | Date of birth                        |
@@ -635,7 +635,7 @@ eu.europa.ec.eudi.ehic.1
 ### Document Types
 
 | Format    | Identifier                           |
-|:----------|:-------------------------------------|
+| :-------- | :----------------------------------- |
 | mso_mdoc  | `eu.europa.ec.eudi.hiid.1`          |
 | dc+sd-jwt | `urn:eu.europa.ec.eudi:hiid:1` (vct)|
 
@@ -648,7 +648,7 @@ eu.europa.ec.eudi.hiid.1
 ### Claims
 
 | Claim ID              | Name                | Description                          |
-|:----------------------|:--------------------|:-------------------------------------|
+| :-------------------- | :------------------ | :----------------------------------- |
 | `family_name`         | Family Name         | Holder's surname(s)                  |
 | `given_name`          | Given Names         | Holder's first/middle name(s)        |
 | `birth_date`          | Birth Date          | Date of birth                        |
@@ -662,7 +662,7 @@ eu.europa.ec.eudi.hiid.1
 ### Document Types
 
 | Format    | Identifier                           |
-|:----------|:-------------------------------------|
+| :-------- | :----------------------------------- |
 | mso_mdoc  | `eu.europa.ec.eudi.pda1.1`          |
 | dc+sd-jwt | `urn:eu.europa.ec.eudi:pda1:1` (vct)|
 
@@ -679,7 +679,7 @@ The Portable Document A1 (PDA1) is a social security coordination document used 
 ### Claims
 
 | Claim ID                 | Name                    | Description                                |
-|:-------------------------|:------------------------|:-------------------------------------------|
+| :----------------------- | :---------------------- | :----------------------------------------- |
 | `family_name`            | Family Name             | Holder's surname(s)                        |
 | `given_name`             | Given Names             | Holder's first/middle name(s)              |
 | `birth_date`             | Birth Date              | Date of birth                              |
@@ -711,7 +711,7 @@ mso_mdoc only.
 ### Claims
 
 | Claim ID       | Name           | Description                     |
-|:---------------|:---------------|:--------------------------------|
+| :------------- | :------------- | :------------------------------ |
 | `family_name`  | Family Name    | Holder's surname(s)             |
 | `given_name`   | Given Names    | Holder's first/middle name(s)   |
 | `loyalty_number` | Loyalty Number | Loyalty programme number      |
@@ -724,7 +724,7 @@ mso_mdoc only.
 ### Document Types
 
 | Format    | Identifier                              |
-|:----------|:----------------------------------------|
+| :-------- | :-------------------------------------- |
 | mso_mdoc  | `eu.europa.ec.eudi.msisdn.1`           |
 | dc+sd-jwt | `urn:eu.europa.ec.eudi:msisdn:1` (vct) |
 
@@ -737,7 +737,7 @@ eu.europa.ec.eudi.msisdn.1
 ### Claims
 
 | Claim ID                 | Name                   | Description                        |
-|:-------------------------|:-----------------------|:-----------------------------------|
+| :----------------------- | :--------------------- | :--------------------------------- |
 | `phone_number`           | Phone Number           | Mobile phone number (MSISDN)       |
 | `registered_family_name` | Registered Family Name | Family name registered with carrier|
 
@@ -748,7 +748,7 @@ eu.europa.ec.eudi.msisdn.1
 ### Document Types
 
 | Format    | Identifier                          |
-|:----------|:------------------------------------|
+| :-------- | :---------------------------------- |
 | mso_mdoc  | `eu.europa.ec.eudi.por.1`          |
 | dc+sd-jwt | `urn:eu.europa.ec.eudi:por:1` (vct)|
 
@@ -761,7 +761,7 @@ eu.europa.ec.eudi.por.1
 ### Claims
 
 | Claim ID                     | Name                       | Description                          |
-|:-----------------------------|:---------------------------|:-------------------------------------|
+| :--------------------------- | :------------------------- | :----------------------------------- |
 | `legal_person_id`            | Legal Person ID            | Identifier of the legal entity       |
 | `legal_person_name`          | Legal Person Name          | Name of the legal entity             |
 | `representative_family_name` | Representative Family Name | Surname of the representative        |
