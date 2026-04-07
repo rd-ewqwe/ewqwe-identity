@@ -119,7 +119,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
                 .to_string_lossy()
                 .to_string(),
         ),
-        attestation_issuer_iss: None,
+        attestation_issuer_certificate: None,
         attestation_issuer_key: None,
     };
 

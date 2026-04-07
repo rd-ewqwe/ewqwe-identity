@@ -726,16 +726,21 @@ function getDemoValue(claimId: string | number): unknown {
  */
 export async function sendToBackend(
   response: OpenID4VPResponse,
-  originalRequest: InitTransactionRequest | null,
+  _originalRequest: InitTransactionRequest | null,
   logger: DebugLogger,
 ): Promise<VerifyResponse> {
   const backendUrl = "/api/verify";
+
+  // When there is no state (DC API same-device flow) the backend cannot look up
+  // the client_id from a stored transaction, so we supply it explicitly.
+  // In state-based flows the backend resolves client_id from the stored transaction.
+  const client_id = response.state ? undefined : globalThis.location.origin;
 
   const body = {
     vp_token: response.vp_token,
     presentation_submission: response.presentation_submission ?? null,
     state: response.state,
-    client_id: originalRequest?.client_id,
+    client_id,
   };
 
   logger.log(`Sending to backend: POST ${backendUrl}`, {
@@ -769,6 +774,7 @@ export async function sendToBackend(
     return {
       success: false,
       message: "Backend verification failed",
+      attestation: "",
       errors: [error instanceof Error ? error.message : "Unknown error"],
     };
   }

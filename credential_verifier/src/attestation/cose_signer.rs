@@ -359,14 +359,16 @@ mod cose_tests {
         let signer = CoseSigner::from_pem(CoseSigningAlgorithm::ES256, TEST_EC_PRIVATE_KEY)
             .expect("failed to create ES256 signer");
 
+        let mut cred_claims = serde_json::Map::new();
+        cred_claims.insert("age_over_18".to_owned(), serde_json::Value::Bool(true));
         let claims = Attestation::new(
             "verifier.example.com",
             "rp.example.com",
             "session-123",
             true,
         )
-        .with_age_over(18)
-        .with_av_namespace("eu.europa.ec.av.1");
+        .with_doc_type("org.iso.18013.5.1.mDL")
+        .with_credential_claims(cred_claims);
 
         let cose_bytes = signer.sign_to_bytes(&claims).expect("failed to sign");
 
@@ -380,11 +382,14 @@ mod cose_tests {
             verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigningAlgorithm::ES256)
                 .expect("failed to verify");
 
-        assert!(verified_claims.age_verified);
-        assert_eq!(verified_claims.age_over, Some(18));
+        assert!(verified_claims.verified);
         assert_eq!(
-            verified_claims.av_namespace,
-            Some("eu.europa.ec.av.1".to_owned())
+            verified_claims.credential_claims.get("age_over_18"),
+            Some(&serde_json::Value::Bool(true))
+        );
+        assert_eq!(
+            verified_claims.doc_type,
+            Some("org.iso.18013.5.1.mDL".to_owned())
         );
     }
 
@@ -408,7 +413,7 @@ mod cose_tests {
             verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigningAlgorithm::RS256)
                 .expect("failed to verify");
 
-        assert!(!verified_claims.age_verified);
+        assert!(!verified_claims.verified);
     }
 
     #[test]

@@ -77,6 +77,14 @@ export {
   buildCrossDeviceAuthorizationRequest,
 } from "./src/dcql.ts";
 
+// === Attestation ===
+export type { AttestationClaims } from "./src/attestation.ts";
+export {
+  parseAttestation,
+  importVerifierPublicKey,
+  verifyAttestation,
+} from "./src/attestation.ts";
+
 // === Config ===
 export {
   PROTOCOL_PROFILES,

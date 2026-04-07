@@ -115,18 +115,18 @@ impl JwtSigner {
     /// # Errors
     ///
     /// Returns an error if signing fails.
-    pub fn sign_to_string(&self, claims: &Attestation) -> AttResult<String> {
+    pub fn sign_to_string(&self, attestation: &Attestation) -> AttResult<String> {
         let mut header = Header::new(self.algorithm.as_jwt_algorithm());
         header.kid = self.key_id.clone();
 
-        jsonwebtoken::encode(&header, claims, &self.encoding_key)
+        jsonwebtoken::encode(&header, attestation, &self.encoding_key)
             .context("failed to sign JWT attestation")
     }
 }
 
 impl super::AttestationSigner for JwtSigner {
-    fn sign(&self, claims: &Attestation) -> AttResult<Vec<u8>> {
-        let jwt = self.sign_to_string(claims)?;
+    fn sign(&self, attestation: &Attestation) -> AttResult<Vec<u8>> {
+        let jwt = self.sign_to_string(attestation)?;
         Ok(jwt.into_bytes())
     }
 
@@ -157,14 +157,16 @@ mod jwt_tests {
         let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, TEST_EC_PRIVATE_KEY)
             .expect("failed to create ES256 signer");
 
+        let mut cred_claims = serde_json::Map::new();
+        cred_claims.insert("age_over_18".to_owned(), serde_json::Value::Bool(true));
         let claims = Attestation::new(
             "verifier.example.com",
             "rp.example.com",
             "session-123",
             true,
         )
-        .with_age_over(18)
-        .with_av_namespace("eu.europa.ec.av.1");
+        .with_doc_type("org.iso.18013.5.1.mDL")
+        .with_credential_claims(cred_claims);
 
         let token = signer.sign_to_string(&claims).expect("failed to sign");
 
@@ -184,11 +186,14 @@ mod jwt_tests {
         let decoded = jsonwebtoken::decode::<Attestation>(&token, &decoding_key, &validation)
             .expect("failed to decode token");
 
-        assert!(decoded.claims.age_verified);
-        assert_eq!(decoded.claims.age_over, Some(18));
+        assert!(decoded.claims.verified);
         assert_eq!(
-            decoded.claims.av_namespace,
-            Some("eu.europa.ec.av.1".to_owned())
+            decoded.claims.credential_claims.get("age_over_18"),
+            Some(&serde_json::Value::Bool(true))
+        );
+        assert_eq!(
+            decoded.claims.doc_type,
+            Some("org.iso.18013.5.1.mDL".to_owned())
         );
     }
 
@@ -222,7 +227,7 @@ mod jwt_tests {
         let decoded = jsonwebtoken::decode::<Attestation>(&token, &decoding_key, &validation)
             .expect("failed to decode token");
 
-        assert!(!decoded.claims.age_verified);
+        assert!(!decoded.claims.verified);
     }
 
     #[test]

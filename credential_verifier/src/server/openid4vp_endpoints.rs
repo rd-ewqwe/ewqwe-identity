@@ -16,6 +16,7 @@
 //! | POST   | `/api/openid4vp/request/{id}`            | Wallet fetches authorization request     |
 //! | GET    | `/api/openid4vp/.well-known/jwks.json`   | Public JWK Set for JAR verification      |
 
+use crate::server::ServerParams;
 use actix_web::{HttpRequest, HttpResponse, web};
 use ewqwe_openid4vp::{
     InitTransactionRequest, OpenID4VPError, OpenID4VPResponse, OpenID4VPService,
@@ -250,15 +251,106 @@ pub async fn get_authorization_request(
     }
 }
 
-/// Return the public JWK Set for JAR signature verification.
-pub async fn get_jwks(service: web::Data<Arc<OpenID4VPService>>) -> HttpResponse {
-    let jwks = match service.get_public_jwk_set() {
-        Ok(jwks) => jwks,
-        Err(e) => return openid4vp_error_response(e),
-    };
+/// Return the public JWK Set.
+///
+/// The JWKS contains two logical groups:
+/// 1. **JAR signing key** (present only in HAIP mode): used by the wallet to verify
+///    signed Authorization Requests (RFC 9101 JARs).
+/// 2. **Attestation verification key**: used by the Relying Party to verify the
+///    signed attestation JWT returned by `POST /api/verify`.  The key is extracted
+///    from `ServerParams::attestation_issuer_certificate` (or the TLS server
+///    certificate when not configured).  The corresponding `kid` value is also
+///    embedded in every attestation JWT header so the RP can look it up by ID.
+pub async fn get_jwks(
+    service: web::Data<Arc<OpenID4VPService>>,
+    server_params: web::Data<Arc<ServerParams>>,
+) -> HttpResponse {
+    let mut keys: Vec<serde_json::Value> = Vec::new();
+
+    // JAR signing key — present in HAIP mode only
+    if let Ok(jar_jwks) = service.get_public_jwk_set() {
+        if let Some(arr) = jar_jwks.get("keys").and_then(|v| v.as_array()) {
+            keys.extend(arr.iter().cloned());
+        }
+    }
+
+    // Attestation verification key (from the issuer certificate)
+    #[cfg(feature = "openssl")]
+    if let Some(att_jwk) = build_attestation_jwk(&server_params) {
+        keys.push(att_jwk);
+    }
+
     HttpResponse::Ok()
         .content_type("application/jwk-set+json")
-        .json(jwks)
+        .json(serde_json::json!({ "keys": keys }))
+}
+
+/// Build a JWK for the attestation signing certificate.
+///
+/// Returns `None` if the certificate cannot be loaded or parsed (non-fatal: the
+/// JWKS will simply not include the attestation key).
+#[cfg(feature = "openssl")]
+fn build_attestation_jwk(server_params: &ServerParams) -> Option<serde_json::Value> {
+    use base64::Engine as _;
+    use openssl::bn::BigNumContext;
+    use openssl::x509::X509;
+
+    let cert_path = server_params.attestation_issuer_certificate_path();
+    let cert_pem = std::fs::read(cert_path)
+        .map_err(|e| warn!(cert_path, %e, "Failed to read attestation issuer certificate for JWKS"))
+        .ok()?;
+    let cert = X509::from_pem(&cert_pem)
+        .map_err(
+            |e| warn!(cert_path, %e, "Failed to parse attestation issuer certificate for JWKS"),
+        )
+        .ok()?;
+    let cert_der = cert
+        .to_der()
+        .map_err(|e| warn!(%e, "Failed to DER-encode attestation issuer certificate for JWKS"))
+        .ok()?;
+
+    // SHA-256 fingerprint of the DER cert → stable, unique kid
+    let fingerprint = openssl::sha::sha256(&cert_der);
+    let kid = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(fingerprint);
+
+    // Extract EC P-256 public key coordinates
+    let pub_key = cert
+        .public_key()
+        .map_err(|e| warn!(%e, "Failed to extract attestation public key"))
+        .ok()?;
+    let ec_key = pub_key
+        .ec_key()
+        .map_err(|e| warn!(%e, "Attestation certificate public key is not EC"))
+        .ok()?;
+
+    let group = ec_key.group();
+    let point = ec_key.public_key();
+    let mut bn_ctx = BigNumContext::new()
+        .map_err(|e| warn!(%e, "BigNumContext creation failed"))
+        .ok()?;
+    let mut x = openssl::bn::BigNum::new().ok()?;
+    let mut y = openssl::bn::BigNum::new().ok()?;
+    point
+        .affine_coordinates_gfp(group, &mut x, &mut y, &mut bn_ctx)
+        .map_err(|e| warn!(%e, "Failed to extract EC coordinates"))
+        .ok()?;
+
+    let x_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(x.to_vec());
+    let y_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(y.to_vec());
+
+    // x5c: standard base64 (not URL-safe) of the raw DER certificate (RFC 7517 §4.7)
+    let x5c = base64::engine::general_purpose::STANDARD.encode(&cert_der);
+
+    Some(serde_json::json!({
+        "kty": "EC",
+        "crv": "P-256",
+        "use": "sig",
+        "alg": "ES256",
+        "kid": kid,
+        "x": x_b64,
+        "y": y_b64,
+        "x5c": [x5c]
+    }))
 }
 
 /// Map OpenID4VP errors to appropriate HTTP responses.

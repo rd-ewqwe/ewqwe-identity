@@ -39,10 +39,12 @@ fn test_signer_trait_implementations() {
 /// Test attestation claims with all optional fields.
 #[test]
 fn test_full_claims() {
+    let mut cred_claims = serde_json::Map::new();
+    cred_claims.insert("age_over_21".to_owned(), serde_json::Value::Bool(true));
     let claims = Attestation::new("verifier.ewqwe.com", "rp.example.com", "txn-abc123", true)
-        .with_age_over(21)
-        .with_av_namespace("eu.europa.ec.av.1")
-        .with_nonce("unique-nonce-from-request");
+        .with_doc_type("org.iso.18013.5.1.mDL")
+        .with_nonce("unique-nonce-from-request")
+        .with_credential_claims(cred_claims);
 
     let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, EC_PRIVATE_KEY)
         .expect("failed to create signer");
@@ -61,9 +63,9 @@ fn test_full_claims() {
     let decoded: serde_json::Value =
         serde_json::from_slice(&payload).expect("failed to parse JSON");
 
-    assert_eq!(decoded["age_verified"], true);
-    assert_eq!(decoded["age_over"], 21);
-    assert_eq!(decoded["av_namespace"], "eu.europa.ec.av.1");
+    assert_eq!(decoded["verified"], true);
+    assert_eq!(decoded["age_over_21"], true);
+    assert_eq!(decoded["doc_type"], "org.iso.18013.5.1.mDL");
     assert_eq!(decoded["nonce"], "unique-nonce-from-request");
 }
 

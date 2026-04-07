@@ -495,16 +495,13 @@ export interface DescriptorMap {
 export interface VerifyResponse {
   success: boolean;
   message: string;
-  claims?: Record<string, unknown>;
   verification_details?: {
     signature_valid: boolean;
     not_expired: boolean;
     issuer_trusted: boolean;
-    timestamp: string;
-    doc_type?: string;
-    namespace?: string;
   };
-  attestation?: string;
+  /** Signed attestation JWT — always present (contains `verified`, `doc_type`, and credential claims). */
+  attestation: string;
   errors?: string[];
 }
 

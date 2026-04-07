@@ -26,8 +26,8 @@ use openssl::{
 
 pub(super) struct MdocVerificationResult {
     pub(super) claims: serde_json::Value,
-    pub(super) doc_type: Option<String>,
-    pub(super) namespace: Option<String>,
+    pub(super) doc_type: String,
+    pub(super) namespace: String,
     pub(super) not_expired: bool,
     pub(super) issuer_trusted: bool,
 }
@@ -145,7 +145,10 @@ pub(super) fn verify_mdoc_presentation(
     let device_key = cose_key_to_public_key(&mso.device_key)?;
     verify_cose_sign1_detached(&device_signature, &device_key, &device_authentication_bytes)?;
 
-    let namespace = decoded.namespaces.keys().next().cloned();
+    let namespace = decoded.namespaces.keys().next().cloned().ok_or_else(|| {
+        // there has to be a namespace
+        AttError::BadRequest("mDoc presentation contains no namespaces".to_string())
+    })?;
     let claims = if decoded.namespaces.len() == 1 {
         let (_, ns_claims) = decoded.namespaces.into_iter().next().unwrap();
         serde_json::Value::Object(ns_claims.into_iter().collect())
@@ -163,7 +166,7 @@ pub(super) fn verify_mdoc_presentation(
 
     Ok(MdocVerificationResult {
         claims,
-        doc_type: Some(doc_type),
+        doc_type,
         namespace,
         not_expired,
         issuer_trusted,
@@ -347,26 +350,26 @@ fn verify_cose_certificate_chain(
     let mut ctx = openssl::x509::X509StoreContext::new()
         .map_err(|e| AttError::Generic(format!("failed to create X509 store context: {e}")))?;
     let verification_result = ctx.init(&store, &leaf, &intermediates, |ctx| ctx.verify_cert());
-    let issuer_trusted = matches!(verification_result, Ok(true));
 
-    if !issuer_trusted {
-        match verification_result {
-            Ok(false) => tracing::warn!(
-                verify_error = ?ctx.error(),
-                verify_depth = ctx.error_depth(),
-                subject = ?leaf.subject_name(),
-                issuer = ?leaf.issuer_name(),
-                "issuerAuth certificate chain failed OpenSSL verification"
-            ),
-            Err(error) => tracing::warn!(
-                error = %error,
-                verify_error = ?ctx.error(),
-                verify_depth = ctx.error_depth(),
-                subject = ?leaf.subject_name(),
-                issuer = ?leaf.issuer_name(),
-                "issuerAuth certificate chain verification errored"
-            ),
-            Ok(true) => {}
+    match verification_result {
+        Ok(true) => {}
+        Ok(false) => {
+            return Err(AttError::BadRequest(format!(
+                "issuerAuth certificate chain failed verification: {} (depth={}, subject={:?}, issuer={:?})",
+                ctx.error(),
+                ctx.error_depth(),
+                leaf.subject_name(),
+                leaf.issuer_name(),
+            )));
+        }
+        Err(e) => {
+            return Err(AttError::Generic(format!(
+                "issuerAuth certificate chain verification error: {e} (openssl={}, depth={}, subject={:?}, issuer={:?})",
+                ctx.error(),
+                ctx.error_depth(),
+                leaf.subject_name(),
+                leaf.issuer_name(),
+            )));
         }
     }
 
@@ -376,7 +379,7 @@ fn verify_cose_certificate_chain(
         ))
     })?;
 
-    Ok((key, issuer_trusted))
+    Ok((key, true))
 }
 
 fn verify_cose_sign1_embedded(cose: &CoseSign1, key: &PKey<Public>) -> Result<(), AttError> {

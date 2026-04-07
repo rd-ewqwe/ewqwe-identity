@@ -11,6 +11,7 @@ import {
   getClaimsForType,
   getDefaultClaims,
   getProfileForType,
+  parseAttestation,
 } from "@ewqwe/digital-identity";
 import { requestCredentials, sendToBackend } from "./credentials.ts";
 
@@ -55,7 +56,7 @@ export class RelyingPartyApp {
           response: OpenID4VPResponse;
         };
         this.logger.log("Restoring verification result from sessionStorage");
-        this.displayVerificationResult(result, response);
+        void this.displayVerificationResult(result, response);
       } catch (e) {
         this.logger.error("Failed to restore verification result", e);
         sessionStorage.removeItem("verificationResult");
@@ -439,7 +440,7 @@ export class RelyingPartyApp {
       });
 
       // Display the result
-      this.displayVerificationResult(verificationResult, response);
+      await this.displayVerificationResult(verificationResult, response);
     } catch (error) {
       this.logger.error("Credential request failed", error);
       this.displayError(
@@ -460,10 +461,10 @@ export class RelyingPartyApp {
    * @param result The result of the verification process, including success status, message, claims, and any errors.
    * @param response The original OpenID4VP response received from the wallet, for debugging purposes.
    */
-  private displayVerificationResult(
+  private async displayVerificationResult(
     result: VerifyResponse,
     response: OpenID4VPResponse,
-  ): void {
+  ): Promise<void> {
     const resultSection = document.getElementById("verification-result");
     const resultIcon = document.getElementById("result-icon");
     const resultTitle = document.getElementById("result-title");
@@ -506,12 +507,38 @@ export class RelyingPartyApp {
       resultTitle.textContent = "Verification Successful";
       resultTitle.setAttribute("class", "result-success");
 
-      // Render claims
-      const claimsHtml = result.claims
-        ? Object.entries(result.claims)
-            .map(([key, value]) => this.renderClaimRow(key, value))
-            .join("")
-        : "";
+      // Render credential claims from the attestation JWT payload;
+      // signature is verified against the key published in the server JWKS.
+      const attestationClaims = await parseAttestation(
+        result.attestation,
+        "/api/openid4vp/.well-known/jwks.json",
+      );
+      this.logger.log(
+        "Parsed and verified attestation claims",
+        attestationClaims,
+      );
+      const reservedKeys = new Set([
+        "iss",
+        "sub",
+        "aud",
+        "exp",
+        "iat",
+        "nbf",
+        "jti",
+        "verified",
+        "nonce",
+        "doc_type",
+        "namespace",
+      ]);
+      const credentialEntries = Object.entries(attestationClaims).filter(
+        ([key]) => !reservedKeys.has(key),
+      );
+      const claimsHtml =
+        credentialEntries.length > 0
+          ? credentialEntries
+              .map(([key, value]) => this.renderClaimRow(key, value))
+              .join("")
+          : "";
 
       resultContent.innerHTML = `
         <div class="bg-green-500/20 border border-green-500/50 rounded-lg p-4 mb-4">
@@ -572,10 +599,11 @@ export class RelyingPartyApp {
   }
 
   private displayError(message: string): void {
-    this.displayVerificationResult(
+    void this.displayVerificationResult(
       {
         success: false,
         message: "Request failed",
+        attestation: "",
         errors: [message],
       },
       {

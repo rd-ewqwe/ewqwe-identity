@@ -75,10 +75,6 @@ pub struct VerifyCredentialResponse {
     /// Human-readable message.
     pub message: String,
 
-    /// Extracted and verified claims (if successful).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub claims: Option<serde_json::Value>,
-
     /// Verification details.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub verification_details: Option<VerificationDetails>,
@@ -108,8 +104,8 @@ pub struct VerificationDetails {
 #[serde(rename_all = "camelCase")]
 #[allow(dead_code)] // Fields are part of credential format spec
 struct VpToken {
-    doc_type: Option<String>,
-    namespace: Option<String>,
+    doc_type: String,
+    namespace: String,
     claims: Option<serde_json::Value>,
     issuer: Option<String>,
     issued_at: Option<String>,
@@ -221,8 +217,8 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                         match sd_jwt::decode_sd_jwt_presentation(encoded_str) {
                             Ok(decoded) => {
                                 let vp_token = VpToken {
-                                    doc_type: Some(decoded.vct.clone()),
-                                    namespace: Some(decoded.vct),
+                                    doc_type: decoded.vct.clone(),
+                                    namespace: decoded.vct.clone(),
                                     claims: Some(serde_json::Value::Object(decoded.claims)),
                                     issuer: Some(decoded.issuer),
                                     issued_at: decoded.issued_at,
@@ -272,8 +268,8 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                                 serde_json::Value::Object(obj)
                             };
                             let vp_token = VpToken {
-                                doc_type: Some(decoded.doc_type),
-                                namespace: Some(first_ns),
+                                doc_type: decoded.doc_type,
+                                namespace: first_ns,
                                 claims: Some(claims),
                                 issuer: Some("mdoc-issuer".to_string()),
                                 issued_at: None,
@@ -417,11 +413,22 @@ pub(crate) async fn verify_credential_endpoint(
             e
         })?;
 
+        if !mdoc_result.issuer_trusted {
+            return Err(AttError::BadRequest(
+                "mDoc issuerAuth certificate chain is not trusted: the issuer CA is not in the trusted certificates directory".to_string(),
+            ));
+        }
+        if !mdoc_result.not_expired {
+            return Err(AttError::BadRequest(
+                "mDoc credential has expired: MSO validUntil is in the past".to_string(),
+            ));
+        }
+
         let verification_result = VerificationResult {
             is_valid: true,
             signature_valid: true,
-            not_expired: mdoc_result.not_expired,
-            issuer_trusted: mdoc_result.issuer_trusted,
+            not_expired: true,
+            issuer_trusted: true,
             errors: Vec::new(),
         };
 
@@ -447,7 +454,8 @@ pub(crate) async fn verify_credential_endpoint(
     // Resolve client_id for the attestation audience.
     // In the DC API (same-device) flow `state` is absent so `transaction` will be
     // `None`; the RP must then supply `client_id` directly in the request body.
-    let effective_client_id = body.client_id
+    let effective_client_id = body
+        .client_id
         .as_deref()
         .or(transaction.as_ref().map(|tx| tx.client_id.as_str()))
         .ok_or_else(|| {
@@ -488,15 +496,14 @@ pub(crate) async fn verify_credential_endpoint(
             attestation_nonce,
             effective_transaction_id,
             &claims,
-            doc_type.as_deref(),
-            namespace.as_deref(),
+            &doc_type,
+            &namespace,
             false,
             &server_params,
         )?;
         return Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
             success: false,
             message: "Credential verification failed".to_string(),
-            claims: None,
             verification_details: Some(VerificationDetails {
                 signature_valid: verification_result.signature_valid,
                 not_expired: verification_result.not_expired,
@@ -526,8 +533,8 @@ pub(crate) async fn verify_credential_endpoint(
         attestation_nonce,
         effective_transaction_id,
         &claims,
-        doc_type.as_deref(),
-        namespace.as_deref(),
+        &doc_type,
+        &namespace,
         true,
         &server_params,
     )?;
@@ -536,7 +543,6 @@ pub(crate) async fn verify_credential_endpoint(
     Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
         success: true,
         message: "Credential verified successfully".to_string(),
-        claims: Some(claims),
         verification_details: Some(VerificationDetails {
             signature_valid: true,
             not_expired: true,
@@ -659,54 +665,36 @@ fn verify_vp_token(
 /// the relying party does not need a separate `VerificationDetails` channel.
 ///
 /// The signing key is read from disk per [`ServerParams::attestation_issuer_key_path`].
-/// The issuer (`iss`) claim is set to [`ServerParams::attestation_issuer_iss`].
+/// The issuer (`iss`) claim is the Subject CN of [`ServerParams::attestation_issuer_certificate`].
+/// The `kid` JWT header is the SHA-256 fingerprint of the certificate so the verifier
+/// can locate the matching public key in the JWKS served at
+/// `/api/openid4vp/.well-known/jwks.json`.
 fn create_attestation(
     client_id: &str,
     nonce: Option<&str>,
     transaction_id: &str,
     claims: &serde_json::Value,
-    doc_type: Option<&str>,
-    namespace: Option<&str>,
+    doc_type: &str,
+    namespace: &str,
     is_verified: bool,
     server_params: &ServerParams,
 ) -> Result<String, AttError> {
     // Only embed credential claims when verification actually succeeded — a failure
     // attestation must not assert anything about the (untrusted) presented claims.
-    let (age_verified, age_over, credential_claims) = if is_verified {
-        let map = claims.as_object().cloned().unwrap_or_default();
-        let age_verified = map
-            .get("age_over_18")
-            .and_then(|v| v.as_bool())
-            .unwrap_or(false);
-        let age_over = if map.get("age_over_21").and_then(|v| v.as_bool()) == Some(true) {
-            Some(21u8)
-        } else if age_verified {
-            Some(18u8)
-        } else {
-            None
-        };
-        (age_verified, age_over, map)
+    let credential_claims = if is_verified {
+        claims.as_object().cloned().unwrap_or_default()
     } else {
-        (false, None, serde_json::Map::new())
+        serde_json::Map::new()
     };
 
-    let mut attestation = Attestation::new(
-        server_params.attestation_issuer_iss(),
-        client_id,
-        transaction_id,
-        age_verified,
-    )
-    .with_credential_claims(credential_claims);
+    let iss = server_params.attestation_issuer_iss()?;
 
-    if let Some(dt) = doc_type {
-        attestation = attestation.with_doc_type(dt);
-    }
-    if let Some(ns) = namespace {
-        attestation = attestation.with_namespace(ns);
-    }
-    if let Some(age) = age_over {
-        attestation = attestation.with_age_over(age);
-    }
+    let mut attestation = Attestation::new(&iss, client_id, transaction_id, is_verified)
+        .with_credential_claims(credential_claims);
+
+    attestation = attestation
+        .with_doc_type(doc_type)
+        .with_namespace(namespace);
     if let Some(n) = nonce {
         attestation = attestation.with_nonce(n);
     }
@@ -718,10 +706,15 @@ fn create_attestation(
         ))
     })?;
 
-    let signer =
+    let mut signer =
         JwtSigner::from_pem(SigningAlgorithm::ES256, &private_key_pem).map_err(|e| {
             AttError::Generic(format!("Failed to create attestation issuer signer: {e}"))
         })?;
+
+    // Include the cert fingerprint as `kid` so the RP can find the right JWKS key.
+    if let Some(kid) = server_params.attestation_issuer_kid() {
+        signer = signer.with_key_id(&kid);
+    }
 
     let token_bytes = signer
         .sign(&attestation)

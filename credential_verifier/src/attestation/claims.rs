@@ -1,21 +1,27 @@
-//! Attestation claims for EU Age Verification.
+//! Attestation for credential verification events.
 //!
 //! Defines the structure of claims included in signed attestations.
 
 use chrono::{DateTime, Duration, Utc};
 use serde::{Deserialize, Serialize};
 
-/// Claims included in a signed age verification attestation.
+/// Claims included in a signed credential verification attestation.
 ///
-/// This structure follows JWT registered claim conventions while adding
-/// custom claims specific to the EU Age Verification profile.
+/// This structure follows JWT registered claim conventions. All credential-specific
+/// claims (age_over_18, given_name, etc.) are stored in the flattened
+/// `credential_claims` map and not as dedicated typed fields — keeping this
+/// struct credential-format-agnostic.
+///
+/// The `verified` claim is the single typed result: `true` means the full
+/// cryptographic and policy verification pipeline succeeded; `false` means it
+/// did not. Credential claims are only populated when `verified` is `true`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Attestation {
     // ============== JWT Registered Claims ==============
     /// Issuer - the credential verifier's identifier (e.g., domain name)
     pub iss: String,
 
-    /// Subject - the session or transaction identifier
+    /// Subject - the transaction identifier that triggered this attestation
     pub sub: String,
 
     /// Audience - the relying party's identifier
@@ -33,25 +39,19 @@ pub struct Attestation {
     /// JWT ID - unique identifier for this attestation
     pub jti: String,
 
-    // ============== EU Age Verification Claims ==============
-    /// Whether the age requirement was met (the main verification result)
-    #[serde(rename = "age_verified")]
-    pub age_verified: bool,
+    // ============== Verification Result ==============
+    /// Whether the full verification pipeline succeeded.
+    ///
+    /// When `false` the `credential_claims` map is empty — the presented
+    /// credential was not trusted enough to assert anything about its content.
+    pub verified: bool,
 
-    /// The age threshold that was verified (e.g., 18, 21)
-    #[serde(rename = "age_over", skip_serializing_if = "Option::is_none")]
-    pub age_over: Option<u8>,
-
-    /// The namespace used for verification (e.g., "eu.europa.ec.av.1")
-    #[serde(rename = "av_namespace", skip_serializing_if = "Option::is_none")]
-    pub av_namespace: Option<String>,
-
-    /// Nonce from the original OpenID4VP request (for binding)
+    /// Nonce from the original OpenID4VP request (for replay prevention)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub nonce: Option<String>,
 
     // ============== Credential Metadata ==============
-    /// The credential document type (e.g. "org.iso.18013.5.1.mDL", "vc+sd-jwt vct")
+    /// The credential document type (e.g. "org.iso.18013.5.1.mDL", SD-JWT `vct`)
     #[serde(skip_serializing_if = "Option::is_none")]
     pub doc_type: Option<String>,
 
@@ -61,10 +61,10 @@ pub struct Attestation {
 
     // ============== Verified Credential Attributes ==============
     /// The verified attribute claims from the presented credential, flattened
-    /// into the attestation JWT. Contains the full set of attributes exactly as
-    /// extracted from the credential (identity fields, age flags, etc.) so the
-    /// relying party receives both the typed attestation result above and the
-    /// raw verified attributes in one tamper-evident token.
+    /// into the attestation JWT at the top level. Only populated when
+    /// `verified` is `true`. The relying party extracts domain-specific claims
+    /// (e.g. `age_over_18`, `given_name`) directly from this map after
+    /// parsing and verifying the attestation JWT signature.
     #[serde(flatten)]
     pub credential_claims: serde_json::Map<String, serde_json::Value>,
 }
@@ -73,40 +73,27 @@ impl Attestation {
     /// Default attestation validity duration (5 minutes).
     pub const DEFAULT_VALIDITY_SECONDS: i64 = 300;
 
-    /// Creates new attestation claims with standard timestamps.
+    /// Creates a new attestation with standard timestamps.
     ///
     /// # Arguments
     ///
     /// * `issuer` - The credential verifier's identifier
     /// * `audience` - The relying party's identifier
-    /// * `session_id` - The session or transaction identifier
-    /// * `age_verified` - Whether the age requirement was met
-    ///
-    /// # Returns
-    ///
-    /// New [`Attestation`] with current timestamps and default validity.
+    /// * `transaction_id` - The verification transaction identifier
+    /// * `verified` - Whether the full verification pipeline succeeded
     #[must_use]
-    pub fn new(issuer: &str, audience: &str, session_id: &str, age_verified: bool) -> Self {
+    pub fn new(issuer: &str, audience: &str, transaction_id: &str, verified: bool) -> Self {
         let now = Utc::now();
-        Self::with_timestamps(issuer, audience, session_id, age_verified, now, None)
+        Self::with_timestamps(issuer, audience, transaction_id, verified, now, None)
     }
 
-    /// Creates attestation claims with custom timestamps and validity.
-    ///
-    /// # Arguments
-    ///
-    /// * `issuer` - The credential verifier's identifier
-    /// * `audience` - The relying party's identifier
-    /// * `session_id` - The session or transaction identifier
-    /// * `age_verified` - Whether the age requirement was met
-    /// * `issued_at` - When the attestation was issued
-    /// * `validity_seconds` - How long the attestation is valid (defaults to 5 minutes)
+    /// Creates an attestation with custom timestamps and validity.
     #[must_use]
     pub fn with_timestamps(
         issuer: &str,
         audience: &str,
-        session_id: &str,
-        age_verified: bool,
+        transaction_id: &str,
+        verified: bool,
         issued_at: DateTime<Utc>,
         validity_seconds: Option<i64>,
     ) -> Self {
@@ -115,34 +102,18 @@ impl Attestation {
 
         Self {
             iss: issuer.to_owned(),
-            sub: session_id.to_owned(),
+            sub: transaction_id.to_owned(),
             aud: audience.to_owned(),
             exp: expiration.timestamp(),
             iat: issued_at.timestamp(),
             nbf: issued_at.timestamp(),
             jti: uuid::Uuid::new_v4().to_string(),
-            age_verified,
-            age_over: None,
-            av_namespace: None,
+            verified,
             nonce: None,
             doc_type: None,
             namespace: None,
             credential_claims: serde_json::Map::new(),
         }
-    }
-
-    /// Sets the age threshold that was verified.
-    #[must_use]
-    pub fn with_age_over(mut self, age: u8) -> Self {
-        self.age_over = Some(age);
-        self
-    }
-
-    /// Sets the EU Age Verification profile namespace (e.g. "eu.europa.ec.av.1").
-    #[must_use]
-    pub fn with_av_namespace(mut self, namespace: &str) -> Self {
-        self.av_namespace = Some(namespace.to_owned());
-        self
     }
 
     /// Sets the credential document type (e.g. "org.iso.18013.5.1.mDL").
@@ -168,8 +139,9 @@ impl Attestation {
 
     /// Attaches all verified attribute claims from the presented credential.
     ///
-    /// These are flattened into the attestation JWT alongside the typed EU AV
-    /// fields, giving the relying party the full set of verified attributes.
+    /// These are flattened into the attestation JWT at the top level so the
+    /// relying party can access them after parsing and verifying the JWT.
+    /// Should only be called when `verified` is `true`.
     #[must_use]
     pub fn with_credential_claims(
         mut self,
@@ -193,33 +165,35 @@ mod claim_tests {
 
     #[test]
     fn test_new_claims() {
-        let claims = Attestation::new(
-            "verifier.example.com",
-            "rp.example.com",
-            "session-123",
-            true,
-        );
+        let attestation =
+            Attestation::new("verifier.example.com", "rp.example.com", "txn-123", true);
 
-        assert_eq!(claims.iss, "verifier.example.com");
-        assert_eq!(claims.aud, "rp.example.com");
-        assert_eq!(claims.sub, "session-123");
-        assert!(claims.age_verified);
-        assert!(claims.is_valid_now());
+        assert_eq!(attestation.iss, "verifier.example.com");
+        assert_eq!(attestation.aud, "rp.example.com");
+        assert_eq!(attestation.sub, "txn-123");
+        assert!(attestation.verified);
+        assert!(attestation.is_valid_now());
     }
 
     #[test]
     fn test_builder_pattern() {
-        let claims = Attestation::new("verifier", "rp", "session", true)
-            .with_age_over(18)
-            .with_av_namespace("eu.europa.ec.av.1")
+        let mut claims = serde_json::Map::new();
+        claims.insert("age_over_18".to_owned(), serde_json::Value::Bool(true));
+        let attestation = Attestation::new("verifier", "rp", "txn-456", true)
             .with_nonce("random-nonce-value")
             .with_doc_type("org.iso.18013.5.1.mDL")
-            .with_namespace("org.iso.18013.5.1");
+            .with_namespace("org.iso.18013.5.1")
+            .with_credential_claims(claims);
 
-        assert_eq!(claims.age_over, Some(18));
-        assert_eq!(claims.av_namespace, Some("eu.europa.ec.av.1".to_owned()));
-        assert_eq!(claims.nonce, Some("random-nonce-value".to_owned()));
-        assert_eq!(claims.doc_type, Some("org.iso.18013.5.1.mDL".to_owned()));
-        assert_eq!(claims.namespace, Some("org.iso.18013.5.1".to_owned()));
+        assert_eq!(attestation.nonce, Some("random-nonce-value".to_owned()));
+        assert_eq!(
+            attestation.doc_type,
+            Some("org.iso.18013.5.1.mDL".to_owned())
+        );
+        assert_eq!(attestation.namespace, Some("org.iso.18013.5.1".to_owned()));
+        assert_eq!(
+            attestation.credential_claims.get("age_over_18"),
+            Some(&serde_json::Value::Bool(true))
+        );
     }
 }

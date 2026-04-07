@@ -26,10 +26,12 @@ pub struct ServerParams {
     #[serde(default)]
     pub trusted_issuer_certs_dir: Option<String>,
 
-    /// Issuer identifier used in the `iss` claim of signed attestation JWTs.
-    /// Defaults to `"credential-verifier"` if not set.
+    /// Path to the PEM certificate whose public key is used to verify signed
+    /// attestation JWTs.  The `iss` claim is set to the CN of the certificate's
+    /// Subject Name.  Resolved relative to the config file directory.
+    /// Defaults to `tls_params.server_certificate` when not set.
     #[serde(default)]
-    pub attestation_issuer_iss: Option<String>,
+    pub attestation_issuer_certificate: Option<String>,
 
     /// Path to the PEM private key used to sign attestation JWTs.
     /// Resolved relative to the config file directory.
@@ -159,6 +161,10 @@ impl ServerParams {
             .unwrap_or(default_dir);
         self.trusted_issuer_certs_dir = Some(resolve_path(base_dir, dir));
 
+        if let Some(cert_path) = &mut self.attestation_issuer_certificate {
+            *cert_path = resolve_path(base_dir, cert_path);
+        }
+
         if let Some(key_path) = &mut self.attestation_issuer_key {
             *key_path = resolve_path(base_dir, key_path);
         }
@@ -172,11 +178,67 @@ impl ServerParams {
             .unwrap_or("issuer_certificates")
     }
 
-    /// Issuer identifier for the `iss` claim in signed attestation JWTs.
-    pub fn attestation_issuer_iss(&self) -> &str {
-        self.attestation_issuer_iss
+    /// Path to the PEM certificate for attestation JWT verification.
+    /// Falls back to [`TlsParams::server_certificate`] when not configured.
+    pub fn attestation_issuer_certificate_path(&self) -> &str {
+        self.attestation_issuer_certificate
             .as_deref()
-            .unwrap_or("credential-verifier")
+            .unwrap_or(self.tls_params.server_certificate.as_str())
+    }
+
+    /// Issuer identifier for the `iss` claim — the CN from the attestation signing certificate.
+    ///
+    /// Reads `attestation_issuer_certificate` (or falls back to
+    /// `tls_params.server_certificate`) and extracts the Subject CN.
+    #[cfg(feature = "openssl")]
+    pub fn attestation_issuer_iss(&self) -> AttResult<String> {
+        use openssl::nid::Nid;
+        use openssl::x509::X509;
+
+        let cert_path = self.attestation_issuer_certificate_path();
+        let cert_pem = std::fs::read(cert_path).map_err(|e| {
+            AttError::Config(format!(
+                "Failed to read attestation issuer certificate '{cert_path}': {e}"
+            ))
+        })?;
+        let cert = X509::from_pem(&cert_pem).map_err(|e| {
+            AttError::Config(format!(
+                "Failed to parse attestation issuer certificate '{cert_path}': {e}"
+            ))
+        })?;
+        cert.subject_name()
+            .entries_by_nid(Nid::COMMONNAME)
+            .next()
+            .and_then(|e| e.data().as_utf8().ok())
+            .map(|cn| cn.to_string())
+            .ok_or_else(|| {
+                AttError::Config(format!(
+                    "No CN found in attestation issuer certificate subject: {cert_path}"
+                ))
+            })
+    }
+
+    /// Fallback `iss` for builds without OpenSSL.
+    #[cfg(not(feature = "openssl"))]
+    pub fn attestation_issuer_iss(&self) -> AttResult<String> {
+        Ok("credential-verifier".to_string())
+    }
+
+    /// RFC 7638 JWK thumbprint of the attestation signing certificate's public key.
+    ///
+    /// Used as the `kid` in both the JWKS and the signed attestation JWT header
+    /// so the verifier can locate the right key without ambiguity.
+    #[cfg(feature = "openssl")]
+    pub fn attestation_issuer_kid(&self) -> Option<String> {
+        use base64::Engine as _;
+        use openssl::x509::X509;
+
+        let cert_path = self.attestation_issuer_certificate_path();
+        let cert_pem = std::fs::read(cert_path).ok()?;
+        let cert = X509::from_pem(&cert_pem).ok()?;
+        let cert_der = cert.to_der().ok()?;
+        let fingerprint = openssl::sha::sha256(&cert_der);
+        Some(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(fingerprint))
     }
 
     /// Path to the PEM private key for signing attestation JWTs.
