@@ -35,6 +35,18 @@ use crate::{
 use crate::config::determine_profile;
 use serde::{Deserialize, Serialize};
 
+/// Generate a compact, URL-safe random token.
+///
+/// Produces 16 random bytes encoded as base64url (no padding), yielding a
+/// 22-character string with 128 bits of entropy — equivalent to a UUID v4
+/// but ~38 % shorter, which matters for QR code complexity.
+fn gen_compact_token() -> String {
+    use base64::Engine as _;
+    let mut buf = [0u8; 16];
+    openssl::rand::rand_bytes(&mut buf).expect("openssl rand_bytes failed");
+    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(buf)
+}
+
 fn compute_jwk_thumbprint_bytes(jwk: &serde_json::Value) -> Option<Vec<u8>> {
     let obj = jwk.as_object()?;
     let canonical = match obj.get("kty")?.as_str()? {
@@ -204,10 +216,10 @@ impl OpenID4VPService {
         let transaction_id = uuid::Uuid::new_v4().to_string();
         let state = request
             .state
-            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+            .unwrap_or_else(gen_compact_token);
         let nonce = request
             .nonce
-            .unwrap_or_else(|| uuid::Uuid::new_v4().to_string());
+            .unwrap_or_else(gen_compact_token);
         let now = chrono::Utc::now().timestamp_millis();
         let expires_at = now + (self.ttl_secs * 1000);
 
@@ -309,7 +321,13 @@ impl OpenID4VPService {
 
         // Generate QR code SVG as a data URL so the frontend can display it
         // directly in an <img src> without any external API dependency.
-        let qr_code_data_url = qrcode::QrCode::new(authorization_request_uri.as_bytes())
+        // EcLevel::L (7 % error correction) produces the fewest modules for a
+        // given payload, making the code easier to scan on low-end cameras.
+        let qr_code_data_url =
+            qrcode::QrCode::with_error_correction_level(
+                authorization_request_uri.as_bytes(),
+                qrcode::EcLevel::L,
+            )
             .ok()
             .map(|code| {
                 use base64::Engine as _;
@@ -703,7 +721,7 @@ impl OpenID4VPService {
         nonce: &str,
         state: &str,
         dcql_query: &DCQLQuery,
-        public_url: &str,
+        _public_url: &str,
     ) -> String {
         if profile == ProfileId::Haip {
             // HAIP: wallet fetches signed JAR from request_uri
@@ -714,18 +732,10 @@ impl OpenID4VPService {
                 urlencoding::encode(request_uri),
             )
         } else {
-            // Annex A: all parameters inline
-            let client_metadata = serde_json::json!({
-                "client_name": "ewQwe Age Verification Demo",
-                "logo_uri": format!("{public_url}/logo.png"),
-                "vp_formats_supported": {
-                    "mso_mdoc": {
-                        "issuerauth_alg_values": [-7, -35, -36],
-                        "deviceauth_alg_values": [-7, -35, -36]
-                    }
-                }
-            });
-
+            // Annex A: all required parameters inline.
+            // client_metadata is intentionally omitted here — it is not required
+            // by Annex A §A.5 and removing it meaningfully reduces QR code
+            // complexity, which improves scanning on low-end mobile cameras.
             let mut params = url::form_urlencoded::Serializer::new(String::new());
             params.append_pair("client_id", client_id);
             params.append_pair("response_type", "vp_token");
@@ -736,10 +746,6 @@ impl OpenID4VPService {
             params.append_pair(
                 "dcql_query",
                 &serde_json::to_string(dcql_query).unwrap_or_default(),
-            );
-            params.append_pair(
-                "client_metadata",
-                &serde_json::to_string(&client_metadata).unwrap_or_default(),
             );
             format!("{}?{}", url_scheme, params.finish())
         }

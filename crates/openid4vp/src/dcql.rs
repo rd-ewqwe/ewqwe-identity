@@ -58,11 +58,15 @@ pub fn build_age_verification_query(age_threshold: Option<u8>) -> DCQLQuery {
                 type_values: None,
             },
             claims: Some(vec![DCQLClaimsQuery {
-                id: Some(claim_id.clone()),
+                // id is omitted: only required when referenced by claim_sets,
+                // which this query does not use.
+                id: None,
                 // Claims Path Pointer for mso_mdoc: [namespace, element] (OpenID4VP §7.2)
                 path: vec![EU_AV_NAMESPACE.into(), claim_id.clone().into()],
                 values: None,
-                intent_to_retain: Some(false),
+                // intent_to_retain is omitted: false ("do not retain") is the
+                // default interpretation when the field is absent.
+                intent_to_retain: None,
             }]),
             claim_sets: None,
             multiple: None,
@@ -93,11 +97,11 @@ pub fn build_age_verification_query_with_fallback(age_threshold: Option<u8>) -> 
                     type_values: None,
                 },
                 claims: Some(vec![DCQLClaimsQuery {
-                    id: Some(claim_id.clone()),
+                    id: None,
                     // Claims Path Pointer for mso_mdoc: [namespace, element] (OpenID4VP §7.2)
                     path: vec![EU_AV_NAMESPACE.into(), claim_id.clone().into()],
                     values: None,
-                    intent_to_retain: Some(false),
+                    intent_to_retain: None,
                 }]),
                 claim_sets: None,
                 multiple: None,
@@ -114,11 +118,11 @@ pub fn build_age_verification_query_with_fallback(age_threshold: Option<u8>) -> 
                     type_values: None,
                 },
                 claims: Some(vec![DCQLClaimsQuery {
-                    id: Some(claim_id.clone()),
+                    id: None,
                     // Claims Path Pointer for mso_mdoc: [namespace, element] (OpenID4VP §7.2)
                     path: vec![ISO_MDL_NAMESPACE.into(), claim_id.clone().into()],
                     values: None,
-                    intent_to_retain: Some(false),
+                    intent_to_retain: None,
                 }]),
                 claim_sets: None,
                 multiple: None,
@@ -152,11 +156,11 @@ pub fn get_default_age_verification_dcql() -> DCQLQuery {
                 type_values: None,
             },
             claims: Some(vec![DCQLClaimsQuery {
-                id: Some("age_over_18".to_string()),
+                id: None,
                 // Claims Path Pointer for mso_mdoc: [namespace, element] (OpenID4VP §7.2)
                 path: vec![EU_PID_NAMESPACE.into(), "age_over_18".into()],
                 values: None,
-                intent_to_retain: Some(false),
+                intent_to_retain: None,
             }]),
             claim_sets: None,
             multiple: None,
@@ -186,10 +190,10 @@ pub fn build_default_dcql_for_credential_type(credential_type: &str) -> DCQLQuer
                     type_values: None,
                 },
                 claims: Some(vec![DCQLClaimsQuery {
-                    id: Some("age_over_18".to_string()),
+                    id: None,
                     path: vec![ISO_MDL_NAMESPACE.into(), "age_over_18".into()],
                     values: None,
-                    intent_to_retain: Some(false),
+                    intent_to_retain: None,
                 }]),
                 claim_sets: None,
                 multiple: None,
@@ -415,14 +419,14 @@ mod tests {
         assert_eq!(query.credentials[0].id, "eu_av_proof");
         assert_eq!(query.credentials[0].format, "mso_mdoc");
         let claims = query.credentials[0].claims.as_ref().unwrap();
-        assert_eq!(claims[0].id.as_deref(), Some("age_over_18"));
+        assert_eq!(claims[0].id, None);
     }
 
     #[test]
     fn test_build_age_verification_query_custom_threshold() {
         let query = build_age_verification_query(Some(21));
         let claims = query.credentials[0].claims.as_ref().unwrap();
-        assert_eq!(claims[0].id.as_deref(), Some("age_over_21"));
+        assert_eq!(claims[0].id, None);
         // Claims Path Pointer: [namespace, element] per §7.2
         assert_eq!(claims[0].path.len(), 2);
         assert_eq!(

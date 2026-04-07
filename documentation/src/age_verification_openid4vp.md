@@ -134,15 +134,17 @@ The `client_id` parameter uses a **scheme prefix** to indicate how the RP is ide
 ### Example Authorization Request (Age Verification Profile compliant)
 
 ```
-av://authorize?
-  response_type=vp_token&
-  response_mode=direct_post&
-  client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fapi%2Fopenid4vp%2Fcallback&
-  response_uri=https%3A%2F%2Frp.example.com%2Fapi%2Fopenid4vp%2Fcallback&
-  nonce=550e8400-e29b-41d4-a716-446655440000&
-  state=7c9e2d8f-3a1b-4e5f-8d7c-9a1b2c3d4e5f&
-  dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22age_attestation%22%2C%22format%22%3A%22mso_mdoc%22%2C%22meta%22%3A%7B%22doctype_value%22%3A%22eu.europa.ec.av.1%22%7D%2C%22claims%22%3A%5B%7B%22namespace%22%3A%22eu.europa.ec.av.1%22%2C%22claim_name%22%3A%22age_over_18%22%7D%5D%7D%5D%7D
+av://?response_type=vp_token
+  &response_mode=direct_post
+  &client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fewqwe_api%2Fopenid4vp%2Fdirect_post
+  &response_uri=https%3A%2F%2Frp.example.com%2Fewqwe_api%2Fopenid4vp%2Fdirect_post
+  &nonce=tMQ3X8j5LwnKpZiHvRqCaA
+  &state=A7kB2mN9xYzL4pWqRsGtUj
+  &dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22eu_av_proof%22%2C%22format%22%3A%22mso_mdoc%22%2C%22meta%22%3A%7B%22doctype_value%22%3A%22eu.europa.ec.av.1%22%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22eu.europa.ec.av.1%22%2C%22age_over_18%22%5D%7D%5D%7D%5D%7D
 ```
+
+> **Note:** `client_metadata` is intentionally omitted — it is not required by Annex A §A.5 and including it would unnecessarily increase QR code complexity.
+> The `nonce` and `state` values are 22-character base64url strings (128 bits of entropy), shorter than UUID v4 while providing equivalent security.
 
 **References:**
 
@@ -200,6 +202,7 @@ The following requirements are **mandatory** when using OpenID4VP for age verifi
 - If present, it is an opaque client-maintained correlation value, not a wallet-generated field.
 - In a delegated architecture, the component that owns the wallet-facing `response_uri` may generate and store this value on behalf of the RP.
 - The verifier in this repository accepts caller-supplied `state` on `/ewqwe_api/openid4vp/init` and otherwise generates a fresh request-id for the delegated flow.
+- The `state` value is a 22-character base64url token (128 bits of entropy). UUID v4 format is not required by the spec.
 
 ### 9) Client authentication is not required
 
@@ -209,51 +212,81 @@ The following requirements are **mandatory** when using OpenID4VP for age verifi
 
 ## Implementation: building the request
 
+## QR code complexity
+
+For cross-device flows the entire `av://` URL is encoded as a QR code. Complex QR codes (many modules) are harder to decode on low-end mobile cameras. This implementation applies every spec-compliant reduction:
+
+| Technique | Detail | Bytes saved |
+|---|---|---|
+| **Error correction level L** | 7 % ECC instead of default M (15 %). Same payload, ~15 % fewer QR modules. | 0 bytes (same URL; fewer modules in the symbol) |
+| **No `client_metadata`** | Optional OpenID4VP field; not required by Annex A §A.5. | ~200 chars |
+| **base64url nonce/state** | 22-char base64url vs. 36-char UUID v4. Same 128 bits of entropy. | ~28 chars |
+| **No `id` in claims queries** | DCQL `DCQLClaimsQuery.id` is only needed when referenced by `claim_sets`; our queries do not use `claim_sets`. | ~20 chars per claim |
+| **No `intent_to_retain`** | Omitting the field is equivalent to `false` (the safe default). | ~26 chars per claim |
+
+### What cannot be reduced further
+
+- **`request_uri` by reference (JAR)**: Would reduce the QR code to two parameters, but Annex A §A.5 **explicitly prohibits** this (`"RP MUST send the request by value"`). The rationale is that JAR only provides security when a RP trust list exists — which does not exist for Age Verification.
+- **`client_id`/`response_uri` duplication**: Both are mandatory. `client_id = redirect_uri:<response_uri>` means they repeat the same URL, but both MUST be present per spec.
+- **`response_type=vp_token`**: Fixed mandatory value; cannot be omitted.
+- **`response_mode=direct_post`**: Fixed mandatory value; cannot be omitted.
+- **DCQL field names**: `credentials`, `format`, `meta`, `doctype_value`, `claims`, `path` are all normative DCQL field names and cannot be shortened.
+- **Namespace strings**: `eu.europa.ec.av.1` appears twice in every DCQL claim path; this is the normative doc-type and namespace value.
+
+### Implementation: building the request
+
 ### TypeScript/JavaScript example (RP side)
 
 ```typescript
 // 1) Generate nonce and, if your RP owns request correlation, state
-const nonce = crypto.randomUUID(); // or a cryptographic random string
-const state = crypto.randomUUID(); // optional but recommended for correlation
+// Use 16 random bytes encoded as base64url (22 chars, 128 bits) — shorter than UUID,
+// same entropy, no format requirement in the spec.
+const randomToken = () => {
+  const bytes = crypto.getRandomValues(new Uint8Array(16));
+  return btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
+};
+const nonce = randomToken();
+const state = randomToken(); // optional but recommended for correlation
 
 // 2) Define the response_uri where the wallet will POST back
-const responseUri = "https://rp.example.com/ewqwe_api/openid4vp/callback";
+const responseUri = "https://rp.example.com/ewqwe_api/openid4vp/direct_post";
 
 // 3) Build the client_id using the redirect_uri scheme
 const clientId = `redirect_uri:${responseUri}`;
 
 // 4) Construct the DCQL query for age verification
-// (see DCQL Age Verification chapter for detailed examples)
+// Omit claims query `id` (only needed with claim_sets — which we don't use).
+// Omit `intent_to_retain` (omitting means "false", the safe default).
 const dcqlQuery = {
   credentials: [
     {
-      id: "age_attestation",
+      id: "eu_av_proof",
       format: "mso_mdoc",
       meta: {
         doctype_value: "eu.europa.ec.av.1",
       },
       claims: [
         {
-          namespace: "eu.europa.ec.av.1",
-          claim_name: "age_over_18",
+          path: ["eu.europa.ec.av.1", "age_over_18"],
         },
       ],
     },
   ],
 };
 
-// 5) Encode the DCQL query as a URL parameter
+// 5) Encode the DCQL query as a URL parameter (compact JSON — no whitespace)
 const dcqlQueryParam = encodeURIComponent(JSON.stringify(dcqlQuery));
 
-// 6) Build the av:// URL
-const avUrl = new URL("av://authorize");
+// 6) Build the av:// URL. No client_metadata — not required by Annex A §A.5.
+const avUrl = new URL("av://");
 avUrl.searchParams.set("response_type", "vp_token");
 avUrl.searchParams.set("response_mode", "direct_post");
 avUrl.searchParams.set("client_id", clientId);
 avUrl.searchParams.set("response_uri", responseUri);
 avUrl.searchParams.set("nonce", nonce);
-avUrl.searchParams.set("dcql_query", dcqlQueryParam);
 avUrl.searchParams.set("state", state); // optional
+avUrl.searchParams.set("dcql_query", dcqlQueryParam);
 
 console.log("Age Verification Request URL:", avUrl.toString());
 
@@ -271,15 +304,17 @@ console.log("Age Verification Request URL:", avUrl.toString());
 ### Example `av://` URL (formatted for readability)
 
 ```
-av://authorize?
-  response_type=vp_token&
-  response_mode=direct_post&
-  client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fapi%2Fopenid4vp%2Fcallback&
-  response_uri=https%3A%2F%2Frp.example.com%2Fapi%2Fopenid4vp%2Fcallback&
-  nonce=550e8400-e29b-41d4-a716-446655440000&
-  state=7c9e2d8f-3a1b-4e5f-8d7c-9a1b2c3d4e5f&
-  dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22age_attestation%22%2C...
+av://?response_type=vp_token
+  &response_mode=direct_post
+  &client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fewqwe_api%2Fopenid4vp%2Fdirect_post
+  &response_uri=https%3A%2F%2Frp.example.com%2Fewqwe_api%2Fopenid4vp%2Fdirect_post
+  &nonce=tMQ3X8j5LwnKpZiHvRqCaA
+  &state=A7kB2mN9xYzL4pWqRsGtUj
+  &dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22eu_av_proof%22%2C...
 ```
+
+> `nonce` and `state` are 22-character base64url strings (128 bits, no UUID format requirement).
+> `client_metadata` is omitted — see [QR code complexity](#qr-code-complexity) for rationale.
 
 ## Implementation: handling the response
 

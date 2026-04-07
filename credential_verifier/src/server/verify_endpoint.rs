@@ -906,65 +906,64 @@ pub(crate) async fn verify_vp_token_for_qr(
 
     let (vp_token, _credential_id) = parse_vp_token(vp_token_str)?;
 
-    let (claims, doc_type, namespace, verification_result) = if let Some(raw_mdoc) =
-        vp_token.raw_mdoc.as_deref()
-    {
-        let mdoc_result = verify_mdoc_presentation(
-            raw_mdoc,
-            &transaction.client_id,
-            &transaction.nonce,
-            &transaction.response_uri,
-            matches!(
-                transaction.response_mode,
-                ewqwe_openid4vp::ResponseMode::DirectPostJwt
-                    | ewqwe_openid4vp::ResponseMode::DcApiJwt
-            ),
-            response_jwk_thumbprint.as_deref(),
-            trusted_cas,
-        )
-        .map_err(|e| {
-            tracing::error!(error = %e, "QR mDoc presentation verification failed");
-            AttError::BadRequest(e.to_string())
-        })?;
+    let (claims, doc_type, namespace, verification_result) =
+        if let Some(raw_mdoc) = vp_token.raw_mdoc.as_deref() {
+            let mdoc_result = verify_mdoc_presentation(
+                raw_mdoc,
+                &transaction.client_id,
+                &transaction.nonce,
+                &transaction.response_uri,
+                matches!(
+                    transaction.response_mode,
+                    ewqwe_openid4vp::ResponseMode::DirectPostJwt
+                        | ewqwe_openid4vp::ResponseMode::DcApiJwt
+                ),
+                response_jwk_thumbprint.as_deref(),
+                trusted_cas,
+            )
+            .map_err(|e| {
+                tracing::error!(error = %e, "QR mDoc presentation verification failed");
+                AttError::BadRequest(e.to_string())
+            })?;
 
-        if !mdoc_result.issuer_trusted {
-            return Err(AttError::BadRequest(
-                "mDoc issuerAuth certificate chain is not trusted: \
+            if !mdoc_result.issuer_trusted {
+                return Err(AttError::BadRequest(
+                    "mDoc issuerAuth certificate chain is not trusted: \
                  the issuer CA is not in the trusted certificates directory"
-                    .to_string(),
-            ));
-        }
-        if !mdoc_result.not_expired {
-            return Err(AttError::BadRequest(
-                "mDoc credential has expired: MSO validUntil is in the past".to_string(),
-            ));
-        }
+                        .to_string(),
+                ));
+            }
+            if !mdoc_result.not_expired {
+                return Err(AttError::BadRequest(
+                    "mDoc credential has expired: MSO validUntil is in the past".to_string(),
+                ));
+            }
 
-        let vr = VerificationResult {
-            is_valid: true,
-            signature_valid: true,
-            not_expired: true,
-            issuer_trusted: true,
-            errors: Vec::new(),
-        };
-        (
-            mdoc_result.claims,
-            mdoc_result.doc_type,
-            mdoc_result.namespace,
-            vr,
-        )
-    } else {
-        let sig_result = if let Some(raw) = vp_token.raw_sd_jwt.as_deref() {
-            verify_sd_jwt_signatures(raw, trusted_cas)
+            let vr = VerificationResult {
+                is_valid: true,
+                signature_valid: true,
+                not_expired: true,
+                issuer_trusted: true,
+                errors: Vec::new(),
+            };
+            (
+                mdoc_result.claims,
+                mdoc_result.doc_type,
+                mdoc_result.namespace,
+                vr,
+            )
         } else {
-            SigVerificationResult::skipped("presentation format not recognized")
+            let sig_result = if let Some(raw) = vp_token.raw_sd_jwt.as_deref() {
+                verify_sd_jwt_signatures(raw, trusted_cas)
+            } else {
+                SigVerificationResult::skipped("presentation format not recognized")
+            };
+            let claims = extract_claims(&vp_token);
+            let doc_type = vp_token.doc_type.clone();
+            let namespace = vp_token.namespace.clone();
+            let vr = verify_vp_token(&vp_token, Some(&transaction.nonce), &sig_result);
+            (claims, doc_type, namespace, vr)
         };
-        let claims = extract_claims(&vp_token);
-        let doc_type = vp_token.doc_type.clone();
-        let namespace = vp_token.namespace.clone();
-        let vr = verify_vp_token(&vp_token, Some(&transaction.nonce), &sig_result);
-        (claims, doc_type, namespace, vr)
-    };
 
     if !verification_result.is_valid {
         return Ok(QrVerificationOutcome {
@@ -1034,10 +1033,10 @@ fn extract_age_over_18_claim(claims: &serde_json::Value) -> Option<bool> {
     // Try one level deep inside namespace objects (mDoc structure)
     if let Some(obj) = claims.as_object() {
         for ns_val in obj.values() {
-            if let Some(val) = ns_val.get("age_over_18") {
-                if let Some(b) = val.as_bool() {
-                    return Some(b);
-                }
+            if let Some(val) = ns_val.get("age_over_18")
+                && let Some(b) = val.as_bool()
+            {
+                return Some(b);
             }
         }
     }
