@@ -86,7 +86,13 @@ export async function requestCredentials(
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
   // Check for native API support
-  if (typeof globalThis.DigitalCredential !== "undefined") {
+  // Note: Currently disabled because no native provider is registered.
+  // Chrome's Digital Credentials API requires OS-level credential providers,
+  // which browser extensions cannot implement. We skip the native API and
+  // go directly to the extension-based postMessage approach.
+  const useNativeAPI = false; // Set to true to test native API
+
+  if (useNativeAPI && typeof globalThis.DigitalCredential !== "undefined") {
     try {
       logger.log(
         "Requesting credentials via native Digital Credentials API",
