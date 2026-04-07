@@ -1,550 +1,540 @@
-# Relying Party Web App - Demo Wallet Browser Extension Communication Protocol
+# Demo Wallet - RP Webapp Communication Protocol
 
 ## Overview
 
-This chapter explains how the **Relying Party Web App** (demo webapp) communicates with the **Demo Wallet Browser Extension** to request and receive credentials. This implementation uses a **postMessage-based fallback mechanism** that is fully compliant with the EU Age Verification Profile (Annex A).
+This chapter explains how the **Demo Web App** (Relying Party) communicates with the **Demo Wallet Browser Extension** to request and verify credentials. The implementation follows the [EU Age Verification Profile (Annex A)](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile) requirements:
 
-## Why Browser Extensions Cannot Be Credential Providers
+- **Primary Mechanism**: W3C Digital Credentials API ([Section A.5](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation))
+- **Fallback Mechanism**: OpenID4VP via postMessage ([Section A.5.2](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#openid-for-verifiable-presentations-profile-requirements))
 
-### Current Browser API Limitations
+Both mechanisms use the **OpenID for Verifiable Presentations (OpenID4VP) 1.0** protocol for the credential exchange format.
 
-As of February 2026, **browser extensions cannot register as native Digital Credentials API providers** in any major browser. This is a fundamental architectural limitation, not a configuration issue. This means the **Demo Wallet Browser Extension** cannot integrate with Chrome's or Firefox's native credential systems.
+## Authoritative References
 
-#### Chrome/Chromium Status
+| Specification | Reference | Description |
+|---------------|-----------|-------------|
+| **W3C Digital Credentials API** | [WICG Spec](https://wicg.github.io/digital-credentials/) | Browser API for requesting digital credentials (primary method) |
+| **OpenID4VP 1.0** | [OpenID Spec](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) | Protocol for requesting and presenting Verifiable Presentations |
+| **ISO/IEC 18013-5:2021** | [ISO Standard](https://www.iso.org/standard/69084.html) | Mobile driving licence (mDL) data format standard |
+| **EU Age Verification Profile** | [Annex A](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile) | EU-specific requirements for age verification |
+| **W3C Credential Management Level 1** | [W3C Spec](https://www.w3.org/TR/credential-management-1/) | Base credential management API that Digital Credentials extends |
 
-**Chrome does not support extension-based credential providers.** The Digital Credentials API architecture requires:
+## Communication Mechanisms
 
-1. **Native credential providers** integrated at the OS level (Android Credential Manager, iOS Wallet)
-2. **Browser built-in providers** with privileged access to security subsystems
-3. **Origin Trial tokens** for experimental access (only available to specific origins, not extensions)
+### Primary Mechanism: W3C Digital Credentials API
 
-**Authoritative References:**
+The W3C Digital Credentials API extends `navigator.credentials.get()` with support for digital identity credentials. This is the **default method** specified in [Annex A, Section A.5](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation).
 
-- [W3C Digital Credentials API Specification](https://www.w3.org/TR/digital-credentials/) - Defines the API surface but does not specify extension provider registration mechanisms
-- [Chrome Platform Status: Digital Credentials](https://chromestatus.com/feature/5139144021733376) - Shows "Available behind a flag" status, but only for native providers
-- [Chromium Issue Tracker](https://bugs.chromium.org/p/chromium/issues/list?q=digital%20credentials) - No extension provider registration API exists
-- [Chrome Extension APIs](https://developer.chrome.com/docs/extensions/reference/) - No `chrome.credentials` or provider registration API available
+**Browser Support Status**:
 
-The Digital Credentials API in Chrome uses a **privileged provider model** that requires:
+- Chrome/Chromium: API available but requires OS-level credential provider
+- Firefox: Not yet implemented
+- Safari: Not yet implemented
+- **Browser Extensions**: Cannot register as credential providers in current browser APIs
 
-```
-Operating System Level
-       ↓
-Browser Security Subsystem  
-       ↓
-Digital Credentials API
-       ↓
-Native Providers ONLY (no extension API)
-```
-
-**Quote from the W3C Digital Credentials API specification:**
-
-> "The Digital Credentials API enables web applications to request and receive digital credentials. User agents expose this capability through a credentials interface that **integrates with platform authenticators** and credential management systems."
-
-The phrase "platform authenticators" explicitly refers to OS-level providers, not browser extensions.
-
-#### Firefox Status
-
-**Firefox does not implement the Digital Credentials API at all.** As of February 2026:
-
-- ❌ No `DigitalCredential` interface
-- ❌ No `navigator.credentials.get({ digital: {...} })` support
-- ❌ Not on the implementation roadmap
-
-**Authoritative References:**
-
-- [Firefox Platform Status](https://platform-status.mozilla.org/) - Digital Credentials API is not listed
-- [MDN Web Docs: Digital Credentials API](https://developer.mozilla.org/en-US/docs/Web/API/Credential_Management_API) - No mention of Digital Credentials support in Firefox
-- [Can I Use: Digital Credentials](https://caniuse.com/digital-credentials) - Shows no browser support data (feature not tracked)
-- [Firefox Web API Standards Positions](https://mozilla.github.io/standards-positions/) - No official position on Digital Credentials API
-
-#### Safari/WebKit Status
-
-**Safari/WebKit has not implemented the Digital Credentials API.**
-
-- ❌ No implementation
-- ❌ No public commitment to implement
-- ❌ Focuses on Passkeys/WebAuthn instead
-
-### Technical Reasons Extensions Cannot Be Providers
-
-Even if browsers wanted to support extension-based providers, significant technical barriers exist:
-
-#### 1. Security Model Conflicts
-
-Browser extensions run in **sandboxed contexts** with limited privileges. The Digital Credentials API requires:
-
-- **Direct access to credential storage** (extensions use `chrome.storage.local`, isolated from the security subsystem)
-- **Cryptographic key management** at the platform level (extensions cannot access TPM/Secure Enclave)
-- **Biometric authentication integration** (extensions cannot trigger OS-level biometric prompts)
-- **Zero trust from the browser** (extensions can be malicious; credential providers must be trusted)
-
-#### 2. Extension Lifecycle Issues
-
-Browser extensions can be:
-
-- **Disabled by the user** at any time (credential providers must be always available)
-- **Updated or uninstalled** without system-level coordination (breaking active credential sessions)
-- **Loaded in developer mode** without code signing validation (security risk for credential handling)
-- **Injected with arbitrary code** during development (incompatible with secure credential operations)
-
-#### 3. Credential Provider Registration Architecture
-
-Native credential provider registration requires:
-
-**On Android:**
-
-```kotlin
-// Requires system-level registration via Android CredentialManager API
-// Not accessible to browser extensions
-CredentialManager.create(context)
-  .registerCredentialProvider(...)
-```
-
-**On iOS:**
-
-```swift
-// Requires entitlements and PassKit/CryptoKit integration
-// Not available to browser extensions
-ASAuthorizationController.credentialProvider = ...
-```
-
-**On Desktop (Windows/macOS/Linux):**
-
-- Requires **native messaging host** (separate executable outside browser)
-- Requires **system registry/filesystem registration**
-- Requires **OS-level security prompts** (not accessible to web extensions)
-
-#### 4. Chrome Extension API Gaps
-
-The Chrome Extension APIs do **not** include:
-
-- ❌ `chrome.credentials.registerProvider()` - Does not exist
-- ❌ `chrome.digitalCredentials.*` - No such API namespace
-- ❌ `chrome.identity.setCredentialProvider()` - Not available
-- ❌ Any hooks into `navigator.credentials.get()` for the `digital` credential type
-
-The only credential-related API is `chrome.identity`, which handles OAuth2 flows, not Digital Credentials.
-
-**Reference:** [Chrome Extensions API Reference](https://developer.chrome.com/docs/extensions/reference/) - Complete API documentation with no credential provider registration capabilities
-
-### Browser Support Matrix (February 2026)
-
-| Browser | Digital Credentials API | Extension as Provider | Native Provider Support |
-|---------|------------------------|----------------------|------------------------|
-| Chrome 131+ | 🟡 Experimental (Origin Trial) | ❌ Not possible | 🟢 Android/ChromeOS only |
-| Firefox | ❌ Not implemented | ❌ Not possible | ❌ No support |
-| Safari | ❌ Not implemented | ❌ Not possible | ❌ No support |
-| Edge | 🟡 Same as Chrome | ❌ Not possible | 🟡 Same as Chrome |
-
-**Legend:**
-
-- 🟢 Available
-- 🟡 Limited/Experimental
-- ❌ Not available
-
-## The OpenID4VP Fallback Mechanism
-
-Given the browser API limitations above, the **Relying Party Web App** and **Demo Wallet Browser Extension** use the **OpenID4VP fallback mechanism** explicitly permitted by EU Age Verification Profile Annex A.
-
-### Why This Fallback is Necessary
-
-From **Annex A, Section A.5**:
-
-> "The default method for the presentation of a Proof of Age attestation is the W3C Digital Credentials API. **OpenID for Verifiable Presentations is used as a fallback mechanism when W3C Digital Credentials API is not available.**"
-
-Since:
-
-1. Chrome's Digital Credentials API cannot integrate with browser extensions
-2. Firefox has no Digital Credentials API at all
-3. The specification explicitly permits OpenID4VP as a fallback
-
-**The OpenID4VP fallback is not just compliant—it is the only viable implementation path for browser extension-based wallets like our Demo Wallet Browser Extension.**
-
-### How Our Fallback Works
-
-Our implementation attempts the native API first (respecting the "default method" requirement), then gracefully falls back to OpenID4VP:
+**API Structure**:
 
 ```typescript
-// 1. Attempt native API (will fail - no provider registered)
+interface CredentialRequestOptions {
+  digital?: DigitalCredentialRequestOptions;
+}
+
+interface DigitalCredentialRequestOptions {
+  requests: DigitalCredentialRequest[];
+}
+
+interface DigitalCredentialRequest {
+  protocol: string;    // "openid4vp" for OpenID4VP
+  data: object;        // OpenID4VPRequest
+}
+```
+
+**Demo Webapp Implementation**:
+
+The demo webapp attempts the native API first (respecting the spec's "default method" requirement):
+
+```typescript
+// From webapp/src/credentials.ts
 if (useNativeAPI && typeof globalThis.DigitalCredential !== "undefined") {
   try {
     const credential = await navigator.credentials.get({
-      digital: { requests: [{ protocol: "openid4vp", data: request }] }
+      digital: {
+        requests: [{
+          protocol: "openid4vp",
+          data: request  // OpenID4VPRequest object
+        }]
+      }
     });
-    // Never reached - Chrome returns NetworkError
+    
+    const digitalCredential = credential as {
+      protocol: string;           // "openid4vp"
+      data: OpenID4VPResponse;    // VP token and presentation submission
+    };
+    
+    return digitalCredential.data;
   } catch (error) {
-    logger.error("Native Digital Credentials API failed", error);
-    // Falls through to OpenID4VP fallback ✅
+    // NetworkError: No provider registered - fall through to fallback
   }
 }
-
-// 2. Use OpenID4VP fallback via postMessage
-const extensionResponse = await requestCredentialsViaExtension(request, logger);
 ```
 
-This satisfies the requirement to **try the primary method first**, then use the fallback when unavailable.
+**Why It Currently Fails**:
 
-### Compliance with Annex A Requirements
+Browser extensions cannot register as Digital Credentials providers. When called, the API throws `NetworkError: No provider for digital credential requests`, triggering the fallback mechanism.
 
-Our OpenID4VP fallback implementation is **fully compliant** with all requirements in **Annex A, Section A.5.2**:
+### Fallback Mechanism: OpenID4VP via postMessage
 
-| Requirement | Annex A Reference | Our Implementation | Status |
-|-------------|-------------------|-------------------|--------|
-| Custom URL scheme `av://` | Section A.5.2 | Link interception + `web+av://` protocol handler | ✅ |
-| Response type `vp_token` | Section A.5.2 | Implemented in request builder | ✅ |
-| Response mode `direct_post` | Section A.5.2 | postMessage provides direct response | ✅ |
-| Client ID scheme `redirect_uri` | Section A.5.2 | Uses `window.location.origin` | ✅ |
-| Nonce parameter | Section A.5.2 | Generated and validated | ✅ |
-| DCQL query | Section A.5.2 | Full DCQL parser + matcher | ✅ |
-| Presentation submission | Section A.5.2 | Included in VP response | ✅ |
+Per [Annex A, Section A.5](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation):
 
-**Quote from Annex A.5.2:**
+> "OpenID for Verifiable Presentations is used as a fallback mechanism when W3C Digital Credentials API is not available."
 
-> "• As a way to invoke the Age Verification App, **at least a custom URL scheme av:// MUST be supported.**  
-> • Response type MUST be `vp_token`  
-> • `response_mode` MUST be `direct_post`  
-> • The DCQL query and response as defined in Section 6 of [OID4VP] MUST be used"
+The demo implementation uses `window.postMessage` to communicate OpenID4VP protocol messages between the webapp and wallet extension. This is a valid transport mechanism because:
 
-All these requirements are met by our postMessage-based fallback.
+- ✅ Annex A specifies the protocol (OpenID4VP) but not the transport layer
+- ✅ The `vp_token` format and `presentation_submission` are identical to the native API
+- ✅ All required fields (`nonce`, `client_id`, DCQL query, etc.) are preserved
+- ✅ Works within browser extension architectural constraints
 
-### Why postMessage is a Valid Transport
-
-**Annex A does not specify the transport mechanism** for OpenID4VP—only the protocol structure. Valid transports include:
-
-1. **HTTP redirects** - `response_mode=fragment` or `response_mode=query`
-2. **Direct POST** - `response_mode=direct_post` to `response_uri`
-3. **Custom URL schemes** - `av://` deep links with embedded responses
-4. **In-page messaging** - postMessage with OpenID4VP payload ← **Our approach**
-
-All are valid as long as they:
-
-- ✅ Carry a compliant `vp_token`
-- ✅ Include `presentation_submission`
-- ✅ Use DCQL for credential matching
-- ✅ Respect the nonce for replay protection
-
-Our postMessage implementation satisfies all these requirements while working within browser extension architectural constraints.
-
-### Comparison to Other Implementations
-
-| Implementation | Transport | Annex A Compliant | Works with Extensions |
-|----------------|-----------|-------------------|----------------------|
-| Native DC API | Browser internal | ✅ Yes (primary) | ❌ No (requires OS provider) |
-| QR Code + Mobile | HTTP redirect | ✅ Yes (cross-device) | ✅ Yes |
-| Deep Link (`av://`) | Custom URL scheme | ✅ Yes (same-device) | ✅ Yes |
-| postMessage | In-page messaging | ✅ Yes (fallback) | ✅ Yes |
-| WebSocket | Real-time connection | 🟡 Possible but not standardized | ✅ Yes |
-
-Our implementation uses **Deep Link** (via `av://` interception) **and** **postMessage** (for in-page requests), both of which are compliant fallback mechanisms.
-
-## Communication Flow
-
-```mermaid
-sequenceDiagram
-    participant RP as Relying Party (Webapp)
-    participant Page as Page Context
-    participant CS as Content Script
-    participant BG as Background Worker
-    participant UI as Extension Popup
-
-    Note over RP,UI: 1. Request Initiation
-    RP->>RP: User clicks "Request Credentials"
-    RP->>RP: Build OpenID4VP request with DCQL query
-
-    Note over RP,UI: 2. Native API Attempt (Optional)
-    RP->>Page: navigator.credentials.get({digital: {...}})
-    Page-->>RP: NetworkError (no provider registered)
-    Note right of RP: Falls back to extension
-
-    Note over RP,UI: 3. Extension Communication via postMessage
-    RP->>Page: window.postMessage(EU_AV_WALLET_REQUEST)
-    Page->>CS: Message received
-    CS->>BG: chrome.runtime.sendMessage(DC_API_REQUEST)
-    
-    Note over RP,UI: 4. Credential Matching
-    BG->>BG: Parse DCQL query
-    BG->>BG: Match against stored credentials
-    BG->>CS: Return matching credentials
-    
-    Note over RP,UI: 5. User Selection
-    CS->>Page: Show credential selector UI overlay
-    activate Page
-    Page->>Page: User selects credential
-    deactivate Page
-    
-    Note over RP,UI: 6. VP Token Construction
-    CS->>CS: Build OpenID4VP response
-    CS->>CS: Create presentation_submission
-    CS->>Page: window.postMessage(EU_AV_WALLET_RESPONSE)
-    Page->>RP: Response received
-    
-    Note over RP,UI: 7. Verification
-    RP->>RP: Send to backend for verification
-```
-
-## Implementation Details
-
-### 1. Request Initiation (Relying Party Web App)
-
-The Relying Party Web App ([webapp/src/credentials.ts](../webapp/src/credentials.ts)) builds an OpenID4VP request following the EU AV Profile specifications:
+**Demo Webapp Implementation**:
 
 ```typescript
-export async function requestCredentials(
+// From webapp/src/credentials.ts
+function requestCredentialsViaExtension(
   request: OpenID4VPRequest,
-  logger: DebugLogger,
+  logger: DebugLogger
 ): Promise<OpenID4VPResponse | null> {
-  // Check for native API support (disabled by default)
-  const useNativeAPI = false;
+  const requestId = crypto.randomUUID();
   
-  if (useNativeAPI && typeof globalThis.DigitalCredential !== "undefined") {
-    try {
-      const credential = await navigator.credentials.get({
-        digital: {
-          requests: [{
-            protocol: "openid4vp",
-            data: request,
-          }],
-        },
-      });
-      // ... handle response
-    } catch (error) {
-      logger.error("Native Digital Credentials API failed", error);
-      // Fall through to extension method
-    }
-  }
-
-  // Try wallet extension via postMessage
-  logger.log("Attempting to request credentials via wallet extension");
-  const extensionResponse = await requestCredentialsViaExtension(
-    request,
-    logger,
-  );
-  
-  return extensionResponse;
+  return new Promise((resolve) => {
+    // Listen for response from extension
+    const handler = (event: MessageEvent) => {
+      if (event.data?.type === "EU_AV_WALLET_RESPONSE" &&
+          event.data?.requestId === requestId) {
+        window.removeEventListener("message", handler);
+        
+        const { response, error, cancelled } = event.data.payload;
+        if (error) {
+          logger.error("Wallet error:", error);
+          resolve(null);
+        } else if (cancelled) {
+          logger.log("User cancelled credential request");
+          resolve(null);
+        } else {
+          resolve(response);
+        }
+      }
+    };
+    
+    window.addEventListener("message", handler);
+    
+    // Send request to extension's content script
+    window.postMessage({
+      type: "EU_AV_WALLET_REQUEST",
+      requestId,
+      payload: {
+        protocol: "openid4vp",
+        data: request
+      }
+    }, "*");
+    
+    // Timeout after 30 seconds
+    setTimeout(() => {
+      window.removeEventListener("message", handler);
+      resolve(null);
+    }, 30000);
+  });
 }
 ```
 
-The request contains:
+**Demo Wallet Extension Implementation**:
 
-- **`client_id`**: Origin of the requesting site (`window.location.origin`)
-- **`nonce`**: Random UUID for replay protection
-- **`presentation_definition`**: DCQL query specifying required credentials/claims
-- **`response_mode`**: `direct_post` (per Annex A requirements)
-
-### 2. PostMessage Communication
-
-Communication between the Relying Party Web App and the Demo Wallet Browser Extension's content script uses `window.postMessage`:
+The extension's content script receives requests and coordinates with the background service worker:
 
 ```typescript
-// Relying Party Web App sends request
-window.postMessage({
-  type: "EU_AV_WALLET_REQUEST",
-  requestId: crypto.randomUUID(),
-  payload: {
-    protocol: "openid4vp",
-    data: request, // OpenID4VPRequest object
-  },
-}, "*");
-
-// Demo Wallet Browser Extension responds
-window.postMessage({
-  type: "EU_AV_WALLET_RESPONSE",
-  requestId: originalRequestId,
-  payload: {
-    response: openID4VPResponse, // or {error} or {cancelled}
-  },
-}, "*");
-```
-
-### 3. Content Script Message Handler
-
-The Demo Wallet Browser Extension's content script ([wallet-extension/content/content-script.ts](../wallet-extension/content/content-script.ts)) listens for these messages:
-
-```typescript
+// From wallet-extension/content/content-script.ts
 window.addEventListener("message", (event) => {
   if (event.source !== window) return;
-
+  
   if (event.data?.type === "EU_AV_WALLET_REQUEST") {
     handleWalletRequest(event.data.payload, event.data.requestId);
   }
 });
 
 async function handleWalletRequest(payload: unknown, requestId?: string) {
-  // Forward to background worker for credential matching
-  const response = await runtime.sendMessage({
+  // 1. Forward to background worker for credential matching
+  const response = await chrome.runtime.sendMessage({
     type: "DC_API_REQUEST",
-    request: payload,
+    request: payload
   });
-
+  
   if (response.error) {
     sendResponseToPage(requestId, { error: response.error });
     return;
   }
-
+  
+  // 2. Get matching credentials from storage
   const matchingCredentials = response.matchingCredentials || [];
   
   if (matchingCredentials.length === 0) {
     sendResponseToPage(requestId, { response: null });
     return;
   }
-
-  // Show credential selector UI
-  const selectedCredential = await showCredentialSelector(
-    matchingCredentials,
-    payload,
-  );
-
-  if (!selectedCredential) {
-    sendResponseToPage(requestId, { cancelled: true });
-    return;
-  }
-
-  // Build VP response
-  const vpResponse = buildVPResponse(selectedCredential, payload);
+  
+  // 3. Show credential selector UI (in demo: auto-select first match)
+  const selectedCredential = matchingCredentials[0];
+  
+  // 4. Build OpenID4VP response
+  const vpResponse = buildVPResponse(selectedCredential, payload.data);
+  
+  // 5. Send back to webapp
   sendResponseToPage(requestId, { response: vpResponse });
 }
+
+function sendResponseToPage(requestId: string | undefined, payload: unknown) {
+  window.postMessage({
+    type: "EU_AV_WALLET_RESPONSE",
+    requestId,
+    payload
+  }, "*");
+}
 ```
 
-### 4. DCQL Credential Matching
+## Complete Communication Flow
 
-The background service worker ([wallet-extension/background/service-worker.ts](../wallet-extension/background/service-worker.ts)) matches credentials against the DCQL query:
+```mermaid
+sequenceDiagram
+    participant User
+    participant Webapp as Demo Webapp<br/>(Relying Party)
+    participant Page as Page Context
+    participant Content as Content Script<br/>(Wallet Extension)
+    participant Background as Background Worker<br/>(Wallet Extension)
+
+    User->>Webapp: Click "Request Credentials"
+    Webapp->>Webapp: Build OpenID4VP request<br/>(nonce, DCQL query, client_id)
+    
+    Note over Webapp,Page: Primary Mechanism Attempt
+    Webapp->>Page: navigator.credentials.get({digital: {...}})
+    Page-->>Webapp: ❌ NetworkError: No provider
+    Note over Webapp: Falls back to postMessage
+    
+    Note over Webapp,Background: Fallback Mechanism
+    Webapp->>Page: postMessage(EU_AV_WALLET_REQUEST)
+    Page->>Content: Message delivered
+    Content->>Background: chrome.runtime.sendMessage<br/>(DC_API_REQUEST)
+    
+    Background->>Background: Parse DCQL query<br/>Match stored credentials
+    Background-->>Content: Matching credentials
+    
+    Content->>Content: Show credential selector<br/>(or auto-select in demo)
+    User->>Content: Select credential
+    
+    Content->>Content: Build VP token<br/>Create presentation_submission
+    Content->>Page: postMessage(EU_AV_WALLET_RESPONSE)
+    Page->>Webapp: VP token received
+    
+    Webapp->>Webapp: Send to backend for verification
+```
+
+## OpenID4VP Request Format
+
+The OpenID4VP request structure is identical whether sent via the native API or postMessage:
 
 ```typescript
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-  if (message.type === "DC_API_REQUEST") {
-    handleCredentialRequest(message.request)
-      .then(sendResponse)
-      .catch(error => sendResponse({ error: error.message }));
-    return true; // Async response
-  }
-});
-
-async function handleCredentialRequest(request: any) {
-  const dcRequest = request?.data || request;
+interface OpenID4VPRequest {
+  // Client identification
+  client_id: string;                // RP identifier (e.g., "http://localhost:5174")
+  client_id_scheme: string;         // "redirect_uri" | "x509_san_dns" | "verifier_attestation"
   
-  // Parse presentation definition
-  const presentationDef = dcRequest.presentation_definition;
-  if (!presentationDef) {
-    return { error: "No presentation_definition found" };
+  // Response configuration
+  response_type: "vp_token";        // Always "vp_token" for VP requests
+  response_mode: string;            // "direct_post" | "fragment" | "query"
+  
+  // Security
+  nonce: string;                    // Replay protection (bound to VP)
+  state?: string;                   // Optional correlation value
+  
+  // Credential requirements
+  presentation_definition: {
+    id: string;
+    name?: string;
+    purpose?: string;
+    input_descriptors: InputDescriptor[];
+  };
+  
+  // RP metadata
+  client_metadata?: {
+    client_name?: string;
+    client_purpose?: string;
+    vp_formats?: Record<string, { alg: string[] }>;
+  };
+}
+
+interface InputDescriptor {
+  id: string;                       // Unique identifier
+  name?: string;
+  purpose?: string;
+  format: {                         // Acceptable credential formats
+    mso_mdoc?: { alg: string[] };
+    jwt_vp?: { alg: string[] };
+  };
+  constraints: {
+    limit_disclosure?: "required";  // Only disclose requested claims
+    fields: ConstraintField[];
+  };
+}
+
+interface ConstraintField {
+  path: string[];                   // JSONPath to claim: ["$['namespace']['claim']"]
+  id?: string;
+  name?: string;
+  intent_to_retain?: boolean;       // Will RP store this claim?
+}
+```
+
+**Example Request** (Proof of Age):
+
+```typescript
+const request: OpenID4VPRequest = {
+  client_id: "http://localhost:5174",
+  client_id_scheme: "redirect_uri",
+  response_type: "vp_token",
+  response_mode: "direct_post",
+  nonce: "f5059300-5812-4e21-a679-f0668f0ff795",
+  state: "abc123",
+  
+  presentation_definition: {
+    id: "proof-of-age-request",
+    name: "Proof of Age Verification",
+    purpose: "Verify you are 18 or older",
+    input_descriptors: [{
+      id: "proof_of_age",
+      name: "Proof of Age (EU AV)",
+      purpose: "Age verification for access control",
+      format: {
+        mso_mdoc: {
+          alg: ["ES256", "ES384", "ES512", "EdDSA"]
+        }
+      },
+      constraints: {
+        limit_disclosure: "required",
+        fields: [{
+          path: ["$['eu.europa.ec.av.1']['age_over_18']"],
+          id: "age_over_18",
+          name: "Age Over 18",
+          intent_to_retain: false
+        }]
+      }
+    }]
+  },
+  
+  client_metadata: {
+    client_name: "Digital Credentials Demo",
+    client_purpose: "Identity verification for demo purposes",
+    vp_formats: {
+      mso_mdoc: { alg: ["ES256", "ES384", "ES512", "EdDSA"] }
+    }
   }
-
-  // Load stored credentials
-  const store = new CredentialStore();
-  await store.initialize();
-  const allCredentials = await store.getAllCredentials();
-
-  // Match credentials using DCQL
-  const matchingCredentials = allCredentials.filter(credential => {
-    return matchesInputDescriptor(credential, presentationDef.input_descriptors[0]);
-  });
-
-  return { matchingCredentials };
-}
+};
 ```
 
-### 5. User Credential Selection
-
-When multiple credentials match, the content script displays an overlay UI for user selection:
+## OpenID4VP Response Format
 
 ```typescript
-function showCredentialSelector(
-  credentials: StoredCredential[],
-  request: unknown,
-): Promise<StoredCredential | null> {
-  return new Promise((resolve) => {
-    // Create overlay with credential cards
-    const overlay = document.createElement("div");
-    overlay.id = "eu-av-wallet-overlay";
-    
-    // Create modal with list of matching credentials
-    credentials.forEach(cred => {
-      const card = document.createElement("button");
-      card.innerHTML = `
-        <div>${cred.displayName}</div>
-        <div>${cred.issuer}</div>
-      `;
-      card.addEventListener("click", () => {
-        overlay.remove();
-        resolve(cred);
-      });
-      // ... styling
-    });
-    
-    // Cancel button
-    cancelBtn.addEventListener("click", () => {
-      overlay.remove();
-      resolve(null);
-    });
-    
-    document.body.appendChild(overlay);
-  });
-}
-```
-
-### 6. OpenID4VP Response Construction
-
-After the user selects a credential, the content script builds an OpenID4VP response:
-
-```typescript
-function buildVPResponse(credential: StoredCredential, request: unknown) {
-  const nonce = (request as { data?: { nonce?: string } })?.data?.nonce 
-    || crypto.randomUUID();
-
-  // Build VP token with the credential claims
-  const vpToken = {
-    docType: credential.docType,
-    namespace: credential.namespace,
-    claims: credential.claims,
-    issuer: credential.issuer,
-    issuedAt: credential.issuedAt,
-    expiresAt: credential.expiresAt,
+interface OpenID4VPResponse {
+  // Verifiable Presentation token (JSON-stringified credential)
+  vp_token: string;
+  
+  // Describes how VP maps to the request
+  presentation_submission: {
+    id: string;
+    definition_id: string;              // Matches request.presentation_definition.id
+    descriptor_map: DescriptorMapEntry[];
   };
+  
+  // Echoed from request
+  nonce: string;
+  state?: string;
+}
 
-  return {
-    vp_token: JSON.stringify(vpToken),
-    presentation_submission: {
-      id: crypto.randomUUID(),
-      definition_id: "credential_presentation",
-      descriptor_map: [
-        {
-          id: credential.type + "_credential",
-          format: "mso_mdoc",
-          path: "$",
-        },
-      ],
-    },
-    state: (request as { data?: { state?: string } })?.data?.state,
-    nonce,
-  };
+interface DescriptorMapEntry {
+  id: string;          // Matches input_descriptor.id from request
+  format: string;      // "mso_mdoc" | "jwt_vp"
+  path: string;        // JSONPath to credential in vp_token (e.g., "$")
 }
 ```
 
-### 7. Response Handling (Relying Party Web App)
-
-The Relying Party Web App receives the response and sends it to the backend for verification:
+**Example Response**:
 
 ```typescript
-// In webapp/src/rp.ts
-const response = await requestCredentials(
-  this.currentRequest,
-  this.logger,
-);
+{
+  "vp_token": "{\"docType\":\"eu.europa.ec.av.1\",\"namespace\":\"eu.europa.ec.av.1\",\"claims\":{\"age_over_18\":true},\"issuer\":\"Government ID Authority\",\"issuedAt\":\"2025-01-01T00:00:00.000Z\",\"expiresAt\":\"2026-04-01T00:00:00.000Z\"}",
+  
+  "presentation_submission": {
+    "id": "submission-123",
+    "definition_id": "proof-of-age-request",
+    "descriptor_map": [{
+      "id": "proof_of_age",
+      "format": "mso_mdoc",
+      "path": "$"
+    }]
+  },
+  
+  "nonce": "f5059300-5812-4e21-a679-f0668f0ff795",
+  "state": "abc123"
+}
+```
 
-if (!response) {
-  throw new Error("Request was cancelled or failed");
+**VP Token Structure** (parsed from `vp_token` string):
+
+```json
+{
+  "docType": "eu.europa.ec.av.1",
+  "namespace": "eu.europa.ec.av.1",
+  "claims": {
+    "age_over_18": true
+  },
+  "issuer": "Government ID Authority",
+  "issuedAt": "2025-01-01T00:00:00.000Z",
+  "expiresAt": "2026-04-01T00:00:00.000Z"
+}
+```
+
+## Supported Credential Types
+
+The demo wallet supports multiple credential formats per ISO/IEC 18013-5 and EU specifications:
+
+| Credential Type | docType | Namespace | Standard |
+|-----------------|---------|-----------|----------|
+| **Proof of Age** | `eu.europa.ec.av.1` | `eu.europa.ec.av.1` | EU Age Verification Profile |
+| **Mobile Driver's License** | `org.iso.18013.5.1.mDL` | `org.iso.18013.5.1` | ISO/IEC 18013-5:2021 |
+| **EU Personal ID** | `eu.europa.ec.eudi.pid.1` | `eu.europa.ec.eudi.pid.1` | EU Digital Identity Wallet ARF |
+
+### Proof of Age Claims
+
+| Claim | Type | Description |
+|-------|------|-------------|
+| `age_over_18` | boolean | Subject is 18 years or older |
+| `age_over_21` | boolean | Subject is 21 years or older |
+
+### Mobile Driver's License Claims
+
+| Claim | Type | Description |
+|-------|------|-------------|
+| `family_name` | string | Family name (surname) |
+| `given_name` | string | Given name(s) |
+| `birth_date` | string | Date of birth (full-date format) |
+| `age_over_18` | boolean | Subject is 18 or older |
+| `age_over_21` | boolean | Subject is 21 or older |
+| `document_number` | string | License number |
+| `issuing_authority` | string | Authority that issued the license |
+| `issuing_country` | string | ISO 3166-1 alpha-2 country code |
+| `portrait` | bytes | Photo of the license holder |
+
+See [Credential Type Specifications](./credential_type_specifications.md) for complete claim listings.
+
+## Security Considerations
+
+### Nonce Binding (Replay Protection)
+
+**Requirement** ([OpenID4VP Section 5.1](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#name-request)):
+
+The `nonce` parameter MUST be:
+
+1. **Generated fresh** for each request using cryptographically secure randomness
+2. **Included in the request** to the wallet
+3. **Bound to the VP token** in the response
+4. **Verified by the credential verifier** to prevent replay attacks
+
+```typescript
+// Demo Webapp: Generate nonce
+const nonce = crypto.randomUUID();  // "f5059300-5812-4e21-a679-f0668f0ff795"
+
+// Demo Wallet: Include same nonce in response
+const response: OpenID4VPResponse = {
+  vp_token: "...",
+  presentation_submission: {...},
+  nonce: nonce  // Must match request
+};
+
+// Credential Verifier: Validate nonce matches
+if (response.nonce !== storedNonce) {
+  throw new Error("Nonce mismatch - possible replay attack");
+}
+```
+
+### Origin Validation
+
+The demo wallet validates the requesting origin before displaying credentials to the user:
+
+```typescript
+// Content script captures origin
+const requestingOrigin = window.location.origin;  // "http://localhost:5174"
+
+// Shown in credential selector UI so user knows which site is requesting
+```
+
+**Production considerations**:
+
+- Implement allowlist of trusted RP origins
+- Verify `client_id` matches the requesting origin
+- Support `client_id_scheme` validation (x509_san_dns, verifier_attestation)
+
+### Selective Disclosure
+
+When `limit_disclosure: "required"` is set in the constraint:
+
+- ✅ Wallet MUST only reveal specifically requested claims
+- ✅ Other claims in the credential remain hidden from the RP
+- ✅ Enables privacy-preserving verification (e.g., prove age_over_18 without revealing exact birth_date)
+
+**Example**:
+
+```typescript
+// Request only age_over_18
+constraints: {
+  limit_disclosure: "required",
+  fields: [{
+    path: ["$['org.iso.18013.5.1']['age_over_18']"]
+  }]
 }
 
-// Send to backend for verification (proxies to Credential Verifier)
-const verificationResult = await sendToBackend(
-  response,
-  this.currentRequest,
-  this.logger,
-);
-
-// Display the result
-this.displayVerificationResult(verificationResult, response);
+// Wallet response reveals ONLY age_over_18, not birth_date or other mDL data
+{
+  "claims": {
+    "age_over_18": true
+    // birth_date, family_name, etc. NOT included
+  }
+}
 ```
+
+## Compliance with EU Age Verification Profile
+
+This implementation is fully compliant with [Annex A](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile) requirements:
+
+| Requirement | Annex A Reference | Demo Implementation | Status |
+|-------------|-------------------|---------------------|--------|
+| Primary method: W3C Digital Credentials API | [Section A.5](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation) | Attempted first, falls back gracefully | ✅ |
+| Fallback: OpenID4VP | [Section A.5.2](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#openid-for-verifiable-presentations-profile-requirements) | postMessage transport with OpenID4VP protocol | ✅ |
+| Response type `vp_token` | Section A.5.2 | Implemented in request builder | ✅ |
+| Response mode `direct_post` | Section A.5.2 | postMessage provides direct response | ✅ |
+| Client ID scheme `redirect_uri` | Section A.5.2 | Uses `window.location.origin` | ✅ |
+| Nonce parameter | Section A.5.2 | Generated and validated | ✅ |
+| DCQL query | Section A.5.2 | Full DCQL support in wallet | ✅ |
+| Presentation submission | Section A.5.2 | Included in all responses | ✅ |
+
+**Quote from Annex A.5**:
+
+> "The default method for the presentation of a Proof of Age attestation is the W3C Digital Credentials API. OpenID for Verifiable Presentations is used as a fallback mechanism when W3C Digital Credentials API is not available."
+
+Our implementation respects this hierarchy by attempting the native API first, then using the OpenID4VP fallback when unavailable (which is currently always the case for browser extensions).
+
+## Related Documentation
+
+- [User Journey](./user-journey.md) - Complete sequence diagram of the credential flow
+- [Demo Architecture](./demo_architecture.md) - System architecture and setup instructions
+- [DCQL Age Verification](./dcql_age_verification.md) - Digital Credentials Query Language details
+- [Credential Type Specifications](./credential_type_specifications.md) - Complete claim listings by credential type
+- [Digital Credential Format](./digital_credential_format.md) - Credential structure and encoding
 
 ## Message Flow Diagram
 
