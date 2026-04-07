@@ -18,11 +18,13 @@ pub struct ServerParams {
     pub tls_params: TlsParams,
     pub default_username: Option<String>,
     pub openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig,
-    /// PEM file paths for trusted credential-issuer CA certificates.
+    /// Directory containing trusted credential-issuer CA certificates (PEM files).
+    /// All `*.pem` files in this directory are loaded as trusted CA certificates.
     /// Credentials whose issuer JWT `x5c` chain or mDoc `issuerAuth` chain
-    /// terminates at one of these CAs are considered trustworthy.
+    /// terminates at a CA in this directory are considered trustworthy.
+    /// Defaults to `issuer_certificates/` in the same directory as the config file.
     #[serde(default)]
-    pub trusted_issuer_certs: Vec<String>,
+    pub trusted_issuer_certs_dir: Option<String>,
 }
 
 impl ServerParams {
@@ -138,10 +140,21 @@ impl ServerParams {
             haip_config.x509_key_path = resolve_path(base_dir, &haip_config.x509_key_path);
         }
 
-        // Resolve trusted issuer certificate paths
-        for cert_path in &mut self.trusted_issuer_certs {
-            *cert_path = resolve_path(base_dir, cert_path);
-        }
+        // Resolve trusted issuer certificates directory (default: issuer_certificates/)
+        let default_dir = "issuer_certificates";
+        let dir = self
+            .trusted_issuer_certs_dir
+            .as_deref()
+            .unwrap_or(default_dir);
+        self.trusted_issuer_certs_dir = Some(resolve_path(base_dir, dir));
+    }
+}
+
+impl ServerParams {
+    pub fn trusted_issuer_certs_dir(&self) -> &str {
+        self.trusted_issuer_certs_dir
+            .as_deref()
+            .unwrap_or("issuer_certificates")
     }
 }
 
@@ -183,11 +196,7 @@ client_ca_cert_chain = "certs/client-ca.pem"
 
 [openid4vp_config]
 transaction_ttl_secs = 300
-
-trusted_issuer_certs = [
-    "issuers/ca-01.pem",
-    "issuers/ca-02.pem",
-]
+trusted_issuer_certs_dir = "issuers"
 
 [openid4vp_config.haip_config]
 x509_cert_path = "certs/server.fullchain.pem"
@@ -221,11 +230,8 @@ x509_key_path = "certs/server.key.pem"
             temp_dir.join("certs/server.fullchain.pem")
         );
         assert_eq!(
-            params.trusted_issuer_certs,
-            vec![
-                temp_dir.join("issuers/ca-01.pem").display().to_string(),
-                temp_dir.join("issuers/ca-02.pem").display().to_string(),
-            ]
+            params.trusted_issuer_certs_dir(),
+            temp_dir.join("issuers").display().to_string()
         );
 
         fs::remove_dir_all(&temp_dir).expect("failed to remove temp config directory");

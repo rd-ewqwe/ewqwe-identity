@@ -11,8 +11,6 @@ This architecture provides several key benefits:
 - **Standards Compliance**: Implements OpenID4VP, W3C Digital Credentials, and ISO/IEC 18013-5 (mDoc) standards
 - **Auditability**: Comprehensive logging and telemetry for compliance and debugging
 
-> **Note**: The current implementation is under active development and not yet final. Some features and APIs may change before the 1.0 release.
-
 ## Server Architecture
 
 The credential verifier is built using Rust with the Actix-web framework and consists of several key components:
@@ -24,41 +22,16 @@ flowchart LR
     TLS[TLS Authentication]
     VP[VP Token Verification]
     Sign[Attestation Signing]
-    Redis[(Redis Session Storage)]
-    
+    Store[(Transaction Store<br/>SQLite / PostgreSQL / Redis)]
+
     RP -->|HTTPS POST<br/>/api/verify| Verifier
     Verifier --> TLS
     Verifier --> VP
     Verifier --> Sign
-    Verifier --> Redis
-    
+    Verifier --> Store
+
     style Verifier fill:#7c3aed
-    style Redis fill:#dc2626
-```
-
-## Cryptographic Operations
-
-The verifier handles the complex cryptographic operations:
-
-```mermaid
-flowchart TB
-    Request[Incoming Request<br/>POST /api/verify]
-    Parse[Parse VP Token]
-    Verify[Verify Credential<br/>- Signature validation<br/>- Issuer trust check<br/>- Expiration check<br/>- Nonce validation]
-    Sign[Sign Attestation<br/>JWT with ES256/RS256]
-    Response[Return Attestation<br/>+ Verification Details]
-    
-    Request --> Parse
-    Parse --> Verify
-    Verify -->|Valid| Sign
-    Verify -->|Invalid| Error[Return Error<br/>+ Details]
-    Sign --> Response
-    
-    Session[(Redis Sessions)]
-    Verify -.-> Session
-    
-    style Verify fill:#7c3aed
-    style Sign fill:#6d28d9
+    style Store fill:#dc2626
 ```
 
 ## Verification Process
@@ -67,33 +40,28 @@ The server performs the following verification steps:
 
 1. **Parse VP Token**: Deserialize the credential presentation (DCQL-wrapped mDoc CBOR, SD-JWT VC compact serialisation, or direct JSON)
 2. **Claim Extraction**: Extract selectively-disclosed claims from SD-JWT disclosures or mDoc namespaced elements
-3. **Expiration Check**: Verify `exp` timestamp in SD-JWT payload
-4. **Nonce Binding**: The `state` from the request is used to look up the server-stored `OpenID4VPTransaction` nonce, which is compared against the nonce embedded in the KB-JWT of the SD-JWT VC presentation — this prevents replay attacks since the nonce never travels in the request body
-5. **Cryptographic Signature Verification** (SD-JWT VC):
-   - **Issuer JWT signature**: The `x5c` header provides the leaf certificate; its public key verifies the issuer JWT via `jsonwebtoken`. Supports ES256, ES384, RS256, RS384, RS512.
-   - **Issuer trust**: The leaf certificate is validated against the trusted issuer CA certificates configured in `ServerParams::trusted_issuer_certs` using OpenSSL X.509 chain verification.
-   - **KB-JWT holder signature**: The holder's public key is extracted from the `cnf.jwk` claim in the issuer payload. EC (P-256/P-384/P-521), RSA, and EdDSA key types are supported.
+3. **Expiration Check**: Verify `exp` timestamp (SD-JWT payload) or MSO `validUntil` / `validFrom` (mDoc)
+4. **Nonce Binding**: The `state` from the request is used to look up the server-stored `OpenID4VPTransaction` nonce, which is compared against the nonce embedded in the KB-JWT (SD-JWT VC) or the reconstructed `SessionTranscript` (mDoc) — this prevents replay attacks since the nonce never travels in the request body
+5. **Cryptographic Signature Verification**:
+   - **SD-JWT VC issuer JWT**: The `x5c` JWT header (mandatory per HAIP §2 and OpenID4VP §6.1.1) provides the leaf certificate; its public key verifies the issuer JWT via `jsonwebtoken`. Supports ES256, ES384, RS256, RS384, RS512. Presentations without `x5c` are rejected.
+   - **SD-JWT VC issuer trust**: The leaf `x5c` certificate is validated against the trusted issuer CA directory using OpenSSL X.509 chain verification.
+   - **SD-JWT VC KB-JWT holder signature**: The holder's public key is extracted from the `cnf.jwk` claim in the issuer payload. EC (P-256/P-384/P-521), RSA, and EdDSA key types are supported.
+   - **mDoc IssuerAuth COSE_Sign1**: The MSO is verified against the issuer certificate chain from the `x5chain` COSE header using OpenSSL.
+   - **mDoc IssuerSigned digests**: Each disclosed `IssuerSignedItem` is verified against the SHA-256 digests in the MSO `valueDigests`.
+   - **mDoc DeviceSignature COSE_Sign1**: The device signature is verified with the device public key from `deviceKeyInfo.deviceKey` in the MSO, over `DeviceAuthenticationBytes` bound to the reconstructed OpenID4VP `SessionTranscript`.
 6. **Attestation Signing**: Generate an ES256-signed JWT attestation confirming verification
-
-> **Remaining limitations:**
->
-> - **mDoc signatures**: MSO COSE_Sign1 signature verification for mDoc presentations is not yet implemented.
-> - **SD-JWT without x5c**: If the issuer JWT has no `x5c` header, the issuer public key cannot be obtained and signature verification is skipped.
-> - **Trusted-issuer CA list**: Currently configured as a static set of PEM files in `credential-server.toml`. Production deployments should integrate with dynamic trust sources (ETSI Trusted Lists, OpenID Federation, or X.509 AKI per OpenID4VP §6.1.1).
 
 ## Installation and Configuration
 
 ### Prerequisites
 
 - **Rust** 1.75 or later
-- **Redis** 6.0 or later (for session storage)
 - **OpenSSL** 3.0+ or **rustls** (for TLS)
+- A **transaction store** backend (see below) — SQLite in-memory is the default and requires no external dependencies
 
 ### Building from Source
 
 ```bash
-# Clone the repository
-git clone https://github.com/your-org/ewqwe-identity.git
 cd ewqwe-identity/credential_verifier
 
 # Build with default features (OpenSSL TLS backend)
@@ -103,81 +71,98 @@ cargo build --release --features openssl
 cargo build --release --features rustls
 ```
 
-The compiled binary will be located at `target/release/credential-verifier`.
+### Transaction Store
 
-### Runtime Dependencies
+The server uses a pluggable transaction store to manage OpenID4VP sessions. Configure it under `[openid4vp_config.transaction_store]` in `credential-server.toml`:
 
-#### Redis Server
+| Backend | TOML `backend` value | Notes |
+| :------ | :------------------- | :---- |
+| SQLite in-memory | `"sqlite_memory"` (default) | No external dependency; state lost on restart; suitable for single-instance dev/test |
+| SQLite file | `"sqlite_file"` | Persists across restarts; suitable for single-instance production |
+| PostgreSQL | `"postgres"` | Suitable for multi-instance / HA deployments |
+| Redis | `"redis"` | TTL-native expiry; no cleanup thread; recommended for distributed / HA deployments |
 
-The server requires a running Redis instance for session management:
+```toml
+# Default — no configuration block needed
+# [openid4vp_config.transaction_store]
+# backend = "sqlite_memory"
 
-```bash
-# macOS (Homebrew)
-brew install redis
-brew services start redis
+# Single-instance production
+# [openid4vp_config.transaction_store]
+# backend = "sqlite_file"
+# path    = "/var/lib/ewqwe/transactions.db"
 
-# Linux (systemd)
-sudo systemctl start redis
+# Distributed / HA — PostgreSQL
+# [openid4vp_config.transaction_store]
+# backend = "postgres"
+# url     = "postgres://user:pass@localhost/ewqwe"
 
-# Docker
-docker run -d -p 6379:6379 redis:alpine
+# Distributed / HA — Redis
+# [openid4vp_config.transaction_store]
+# backend = "redis"
+# url     = "redis://127.0.0.1:6379"
 ```
 
-By default, the server connects to Redis at `redis://127.0.0.1:6379`. This can be configured in the server initialization code.
+For resilient multi-instance deployments, use Redis or PostgreSQL so that any server node can look up a session created by another node.
 
-**Production Checklist**:
+### Trusted Issuer CA Certificates
 
-- ✅ Use production TLS certificates from trusted CA
-- ✅ Configure Redis with authentication and TLS
-- ✅ Enable mTLS for client authentication
-- ✅ Set up proper logging aggregation (ELK, Datadog, etc.)
-- ✅ Implement rate limiting and DDoS protection
-- ✅ Regular security audits and dependency updates
-- ✅ Monitor with health checks and alerting
-- ✅ Configure firewall rules to restrict access
+Place all trusted issuer CA PEM files in a single directory and point `trusted_issuer_certs_dir` at it. All `*.pem` files in the directory are loaded at startup as trusted CA certificates.
 
-**Systemd Service Example** (`/etc/systemd/system/credential-verifier.service`):
-
-```ini
-[Unit]
-Description=ewQwe Credential Verifier Server
-After=network.target redis.service
-
-[Service]
-Type=simple
-User=ewqwe
-WorkingDirectory=/opt/credential-verifier
-Environment=RUST_LOG=info
-Environment=REDIS_URL=redis://127.0.0.1:6379
-ExecStart=/opt/credential-verifier/credential-verifier
-Restart=on-failure
-RestartSec=10
-
-[Install]
-WantedBy=multi-user.target
+```toml
+# credential-server.toml
+trusted_issuer_certs_dir = "issuer_certificates"   # relative to config file
 ```
 
-### Monitoring and Observability
+If `trusted_issuer_certs_dir` is omitted, the server looks for a directory named `issuer_certificates/` next to the configuration file. If that directory does not exist, no issuer CAs are trusted and all presentations will have `issuer_trusted = false`.
 
-**Key Metrics to Monitor**:
+### TLS Configuration
 
-- Request rate and latency for `/api/verify` endpoint
-- Verification success/failure rates
-- TLS handshake errors
-- Redis connection pool status
-- Memory and CPU usage
+```toml
+[tls_params]
+server_private_key  = "certs/server.key.pem"      # PKCS#8 PEM
+server_certificate  = "certs/server.cert.pem"     # X.509 PEM
+server_ca_chain     = "certs/ca.chain.pem"        # CA chain PEM
+# client_ca_cert_chain = "certs/client-ca.pem"   # Uncomment for mTLS
+```
 
-### Configuration Parameters
+All paths are resolved relative to the config file directory.
 
-TODO  Replace with actual config.toml or env vars
+### HAIP and x509_san_dns Client ID
 
-#### TLS Parameters
+For the HAIP profile (`x509_san_dns:` `client_id` scheme), configure the server's full certificate chain for use in JAR `x5c` headers:
 
-TODO  Replace with actual config.toml or env vars
+```toml
+[openid4vp_config.haip_config]
+x509_cert_path = "certs/server.fullchain.pem"   # leaf + intermediate + root
+x509_key_path  = "certs/server.key.pem"
+```
 
-### Example Configuration
+### Full Example Configuration
 
-TODO  Replace with actual config.toml or env vars
+```toml
+host_name = "0.0.0.0"
+host_port = 9443
+default_username = "demo-user"
+trusted_issuer_certs_dir = "issuer_certificates"
+
+[tls_params]
+server_private_key    = "certs/server.key.pem"
+server_certificate    = "certs/server.cert.pem"
+server_ca_chain       = "certs/ca.chain.pem"
+client_ca_cert_chain  = "certs/client-ca.pem"
+
+[openid4vp_config]
+transaction_ttl_secs  = 300
+
+[openid4vp_config.transaction_store]
+backend = "redis"
+url     = "redis://127.0.0.1:6379"
+
+[openid4vp_config.haip_config]
+x509_cert_path = "certs/server.fullchain.pem"
+x509_key_path  = "certs/server.key.pem"
+```
 
 ### Test Certificates
 
@@ -188,26 +173,41 @@ For development and testing, pre-generated certificates are available:
 
 ⚠️ **Never use test certificates in production environments.**
 
+### Systemd Service Example
+
+```ini
+[Unit]
+Description=ewQwe Credential Verifier Server
+After=network.target
+
+[Service]
+Type=simple
+User=ewqwe
+WorkingDirectory=/opt/credential-verifier
+Environment=RUST_LOG=info
+ExecStart=/opt/credential-verifier/credential-verifier
+Restart=on-failure
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+```
+
 ## Logging and Telemetry
 
-The credential verifier uses the `ewqwe_logging` crate for comprehensive observability, supporting multiple backends:
+The credential verifier uses the `ewqwe_logging` crate for structured observability, supporting:
 
 - **Console Output**: Structured logs with optional ANSI colors
 - **File Logging**: Daily rolling file appender
 - **Syslog**: Unix/macOS/Linux system logging
 - **OpenTelemetry (OTLP)**: Distributed tracing and metrics
 
-### Basic Logging Setup
+Configure log level via the `RUST_LOG` environment variable:
 
-TODO  Replace with actual config.toml or env vars
-
-### Advanced Telemetry Configuration
-
-TODO  Replace with actual config.toml or env vars
-
-### Log Levels
-
-TODO  Replace with actual config.toml or env vars
+```bash
+RUST_LOG=info cargo run                # info and above
+RUST_LOG=credential_verifier=debug     # debug for this crate only
+```
 
 ### Key Log Events
 
@@ -222,31 +222,26 @@ The server emits structured logs for:
 Example log output:
 
 ```
-2026-02-01T12:00:00.123Z INFO credential_verifier::server: Server listening on 0.0.0.0:8443
-2026-02-01T12:00:15.456Z INFO credential_verifier::endpoints: VP Token received length=2048
-2026-02-01T12:00:15.460Z DEBUG credential_verifier::endpoints: Parsing VP token
-2026-02-01T12:00:15.462Z INFO credential_verifier::endpoints: VP Token parsed doc_type="org.iso.18013.5.1.mDL"
-2026-02-01T12:00:15.465Z INFO credential_verifier::endpoints: Verification successful sig=true expired=false trusted=true
-2026-02-01T12:00:15.468Z INFO credential_verifier::attestation: Signing attestation algorithm=ES256
+2026-02-01T12:00:00.123Z INFO  credential_verifier::server: Server listening on 0.0.0.0:9443
+2026-02-01T12:00:15.456Z INFO  credential_verifier::endpoints: VP Token received length=2048
+2026-02-01T12:00:15.460Z DEBUG credential_verifier::endpoints: parsing VP token
+2026-02-01T12:00:15.462Z DEBUG credential_verifier::endpoints: mDoc decoded doc_type="org.iso.18013.5.1.mDL" namespaces=1
+2026-02-01T12:00:15.465Z INFO  credential_verifier::endpoints: credential verified doc_type=Some("org.iso.18013.5.1.mDL")
+2026-02-01T12:00:15.468Z INFO  credential_verifier::attestation: signing attestation algorithm=ES256
 ```
 
-## TLS Authentication Mechanisms
-
-The server supports both standard TLS and mutual TLS (mTLS) authentication.
+## TLS Authentication
 
 ### Standard TLS (Server Authentication)
 
-TODO  Replace with actual config.toml or env vars
+Requires `server_private_key`, `server_certificate`, and `server_ca_chain` in `[tls_params]`.
 
 ### Mutual TLS (mTLS)
 
-TODO  Replace with actual config.toml or env vars
-
-With mTLS:
+Add `client_ca_cert_chain` to `[tls_params]`. With mTLS:
 
 - Clients must present valid certificates signed by the client CA
-- Server extracts and validates client certificates on connection
-- Client identity can be used for authorization decisions
+- The server rejects connections without a valid client certificate
 
 ### Certificate Formats
 
@@ -258,9 +253,7 @@ All certificates must be in **PEM format**:
 
 ## API Endpoints
 
-The server exposes the following REST API endpoints:
-
-### `POST /api/verify` - Verify Credential
+### `POST /api/verify` — Verify Credential
 
 Verifies a Verifiable Presentation (VP) token from a user's wallet and returns a signed attestation if valid.
 
@@ -275,7 +268,7 @@ Verifies a Verifiable Presentation (VP) token from a user's wallet and returns a
 }
 ```
 
-> **Note**: `presentation_submission` is **optional** and typically `null` when the wallet uses DCQL queries (OpenID4VP Section 8.1). With DCQL, the `vp_token` is a JSON object where keys are credential IDs from the query.
+> **Note**: `presentation_submission` is **optional** and typically `null` when the wallet uses DCQL queries (OpenID4VP §8.1). With DCQL, the `vp_token` is a JSON object where keys are credential IDs from the query.
 >
 > The `state` field is **required** for transaction binding: the server looks up the original `OpenID4VPTransaction` by state and compares the stored transaction context against the presentation proof. For SD-JWT VC that means comparing the stored nonce against the KB-JWT nonce. For `mso_mdoc` that means rebuilding the OpenID4VP handover from the stored `client_id`, `nonce`, and `response_uri` before verifying `deviceAuth.deviceSignature`.
 
@@ -322,9 +315,9 @@ Verifies a Verifiable Presentation (VP) token from a user's wallet and returns a
 }
 ```
 
-### `GET /version` - Server Version
+### `GET /version` — Server Version
 
-Returns the server version information. Requires valid session authentication.
+Returns the server version information.
 
 **Response**:
 
@@ -336,79 +329,68 @@ Returns the server version information. Requires valid session authentication.
 
 ## Security Considerations
 
-### Current Implementation Status
-
-#### 1. Nonce Replay Prevention ✅
+### Nonce Replay Prevention ✅
 
 The nonce used for replay prevention is looked up **server-side** from the `OpenID4VPTransaction` store. The `verify_credential_endpoint` receives the `state` field from the request, loads the stored transaction, and compares the stored nonce against the holder-binding proof in the presentation. The nonce is never taken from the HTTP request body.
-
-The `state` value itself follows the OAuth/OpenID4VP model: it is an opaque client-maintained correlation value. In this repository the wallet-facing client is the delegated verifier service behind `/api/openid4vp/init`, so it may generate the `state` itself. If the RP wants to own `state`, it can now supply one in `InitTransactionRequest` and the service preserves it verbatim.
 
 **Flow**:
 
 1. `init_transaction()` stores a fresh nonce in the `OpenID4VPTransaction`
-2. The wallet binds this nonce into the holder-binding proof of the presentation
+2. The wallet binds this nonce into the holder-binding proof (KB-JWT nonce for SD-JWT VC; `SessionTranscript` for mDoc)
 3. `verify_credential_endpoint` looks up the transaction by `state` and retrieves the stored nonce plus the original OpenID4VP request context
 4. The verifier compares that stored context against the presentation proof — mismatch leads to verification failure
 5. After a successful verification, the transaction is consumed so the VP token is single-use
 
-#### 2. Cryptographic Signature Verification
+### Cryptographic Signature Verification
 
 | Signature | Algorithm | Key Source | Crate | Status |
-|-----------|-----------|------------|-------|--------|
-| SD-JWT VC issuer JWT | ES256/ES384/RS256/RS384/RS512 | `x5c` leaf certificate | `jsonwebtoken` v9 | ✅ Implemented |
-| KB-JWT holder binding | ES256/RS256/EdDSA | `cnf.jwk` claim in issuer payload | `jsonwebtoken` v9 | ✅ Implemented |
-| mDoc IssuerAuth / DeviceSignature | ES256 / ES384 / ES512 | X.509 chain in `issuerAuth`, device key in MSO `deviceKeyInfo.deviceKey` | `coset` + `openssl` | ✅ Implemented |
+| :-------- | :-------- | :--------- | :---- | :----- |
+| SD-JWT VC issuer JWT | ES256/ES384/RS256/RS384/RS512 | `x5c` leaf certificate (required) | `jsonwebtoken` v9 | ✅ |
+| KB-JWT holder binding | ES256/RS256/EdDSA | `cnf.jwk` claim in issuer payload | `jsonwebtoken` v9 | ✅ |
+| mDoc `issuerAuth` COSE_Sign1 | ES256/ES384/ES512/RS256 | X.509 chain in `x5chain` COSE header | `coset` + `openssl` | ✅ |
+| mDoc `deviceSignature` COSE_Sign1 | ES256/ES384/ES512/RS256 | Device public key in MSO `deviceKeyInfo.deviceKey` | `coset` + `openssl` | ✅ |
 
-**SD-JWT VC**: The JWT header `x5c` provides the leaf certificate. Its public key is extracted via `openssl` and used with `jsonwebtoken::decode()` for signature verification. The `cnf.jwk` claim in the issuer payload provides the holder's public key for KB-JWT verification. EC, RSA, and EdDSA key types are supported.
+**SD-JWT VC**: The JWT header **must** contain `x5c` (required by HAIP §2 and OpenID4VP §6.1.1). Presentations without `x5c` are rejected — the issuer key cannot be obtained by any other means in this profile. The `cnf.jwk` claim provides the holder's public key for KB-JWT verification.
 
-**mDoc**: The verifier now performs the full wallet-facing checks needed for `mso_mdoc` presentations in this flow:
+**mDoc**: Full verification is performed:
 
-- verifies the `issuerAuth` `COSE_Sign1` signature
-- validates the `issuerAuth` X.509 chain against `trusted_issuer_certs`
-- parses the MobileSecurityObject and validates `valueDigests` against each disclosed `IssuerSignedItem`
-- reconstructs the OpenID4VP `SessionTranscript` / `OpenID4VPHandover` from `client_id`, `nonce`, `response_uri`, and the response-encryption JWK thumbprint when `direct_post.jwt` is used
-- verifies `deviceAuth.deviceSignature` with the device public key from `deviceKeyInfo.deviceKey`
+- `issuerAuth` COSE_Sign1 signature verified against the X.509 chain in the `x5chain` COSE header
+- All `IssuerSignedItem` SHA-256 digests validated against MSO `valueDigests`
+- `SessionTranscript` / `OpenID4VPHandover` reconstructed from `client_id`, `nonce`, `response_uri`, and the response-encryption JWK thumbprint (when `direct_post.jwt` is used)
+- `deviceAuth.deviceSignature` COSE_Sign1 verified with the device key from MSO `deviceKeyInfo.deviceKey` over `DeviceAuthenticationBytes = Tag(24, bstr(.cbor DeviceAuthentication))`
 
-Current limitation: `deviceAuth.deviceMac` is still rejected; the verifier currently supports `deviceSignature`-based holder binding.
+Current limitation: `deviceAuth.deviceMac` is rejected; only `deviceSignature`-based holder binding is supported.
 
-#### 3. Trusted-Issuer List
+### Trusted-Issuer CA Directory
 
-The `trusted_issuer_certs` configuration parameter in `credential-server.toml` specifies PEM files for trusted issuer CA certificates. The leaf certificate from the SD-JWT `x5c` header is validated against this list using OpenSSL X.509 chain verification.
+The `trusted_issuer_certs_dir` configuration parameter specifies a directory of PEM files. All `*.pem` files are loaded as trusted CA certificates at request time using OpenSSL X.509 chain verification with the `PARTIAL_CHAIN` flag (allows validation against intermediate CAs, not only root CAs).
 
-Currently configured with two test issuer CAs from the Android wallet test suites:
-
-- `av_issuer_ca01.pem` — Age Verification Issuer CA 01 (CN=Age Verification Issuer CA 01, C=AV)
-- `pidissuerca02_eu.pem` — PID Issuer CA 02 (CN=PID Issuer CA 02, O=EUDI Wallet Reference Implementation, C=EU)
-
-OpenID4VP 1.0 section 6.1.1 defines three trust mechanisms:
+OpenID4VP 1.0 §6.1.1 defines three trust mechanisms:
 
 | Mechanism | Type | Description |
-|-----------|------|-------------|
+| :-------- | :--- | :---------- |
 | `aki` | X.509 Authority Key Identifier | Match issuer cert chain against known AKIs |
 | `etsi_tl` | ETSI Trusted List (TS 119 612) | EU Member State official trust lists (LOTL) |
 | `openid_federation` | OpenID Federation Entity | Federation-based trust chains |
 
-The type definitions for these mechanisms already exist in `crates/openid4vp/src/types.rs` (`TrustedAuthority`, `TrustedAuthorityType`).
+The type definitions for these mechanisms already exist in `crates/openid4vp/src/types.rs` (`TrustedAuthority`, `TrustedAuthorityType`). Production deployments should integrate with dynamic trust sources (ETSI Trusted Lists, OpenID Federation) rather than relying solely on the static certificate directory.
 
-**No central Age Verification issuer registry exists yet.** The EU LOTL covers eIDAS services but not AV-specific credential issuers. The Age Verification Profile uses the `redirect_uri` client_id scheme precisely because no issuer trust framework is established yet.
-
-For production, integrate with dynamic trust sources (ETSI Trusted Lists, OpenID Federation) rather than relying solely on the static certificate list.
+**Note**: No central Age Verification issuer registry exists yet. The EU LOTL covers eIDAS services but not AV-specific credential issuers. The Age Verification Profile uses the `redirect_uri` `client_id` scheme precisely because no issuer trust framework is established yet.
 
 ### Production Checklist
 
-- [x] ~~Fix nonce replay: use server-stored nonce, not client-supplied~~
-- [x] ~~Implement SD-JWT VC issuer JWT signature verification~~
-- [x] ~~Implement KB-JWT holder signature verification~~
-- [x] ~~Add trusted-issuer CA certificate configuration~~
-- [x] ~~Implement mDoc IssuerAuth signature verification~~
-- [x] ~~Implement mDoc DeviceSignature verification bound to OpenID4VPHandover~~
-- [x] ~~Consume verified transactions so the verifier endpoint is one-shot~~
+- [x] ~~Nonce replay prevention: server-stored nonce, not client-supplied~~
+- [x] ~~SD-JWT VC issuer JWT signature verification~~
+- [x] ~~KB-JWT holder signature verification~~
+- [x] ~~Trusted-issuer CA certificate configuration~~
+- [x] ~~mDoc IssuerAuth COSE_Sign1 signature verification~~
+- [x] ~~mDoc IssuerSigned digest verification~~
+- [x] ~~mDoc DeviceSignature verification bound to OpenID4VPHandover~~
+- [x] ~~Consume verified transactions (single-use VP tokens)~~
 - [ ] Replace test certificates with production certificates from trusted CA
-- [ ] Configure production Redis with authentication and TLS
+- [ ] Configure production Redis or PostgreSQL for HA transaction storage
 - [ ] Enable mTLS for client authentication
 - [ ] Implement `deviceAuth.deviceMac` verification when that proof mode is needed
-- [ ] Handle SD-JWT VCs without `x5c` header (e.g. issuer key lookup by `kid`)
 - [ ] Integrate with dynamic trust sources (ETSI Trusted Lists, OpenID Federation)
 - [ ] Implement credential revocation checking (CRLs or OCSP)
 - [ ] Set up centralized logging/monitoring (ELK, Datadog, etc.)
@@ -417,19 +399,10 @@ For production, integrate with dynamic trust sources (ETSI Trusted Lists, OpenID
 - [ ] Use proper secret management (HashiCorp Vault, etc.) for private keys
 - [ ] Regular security audits and dependency updates
 - [ ] Disaster recovery and backup procedures
--
-
-## Getting Help
-
-For issues, questions, or contributions:
-
-- **GitHub Issues**: [Report bugs or request features](https://github.com/your-org/ewqwe-identity/issues)
-- **Documentation**: [Full technical documentation](https://your-docs-site.dev)
-- **Community**: Join our discussion forums
 
 ## Related Documentation
 
 - [User Journey - Sequence Diagram](./user-journey.md) - Complete credential flow
-- [Components Architecture](./architecture.md) - System architecture overview
+- [Credential Specifications](./credential_specifications.md) - Credential format reference
 - [DCQL Age Verification](./dcql_age_verification.md) - Query language for credential requests
-- [Digital Credential Format](./digital_credential_format.md) - Credential format specifications
+- [Digital Credential Browser Storage](./digital_credentials_browser_storage.md) - Browser credential storage

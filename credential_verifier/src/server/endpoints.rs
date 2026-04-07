@@ -344,18 +344,15 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                         "presentation is base64-encoded mDoc"
                     );
 
-                    let decode_error_msg;
                     match mdoc_decoder::decode_mdoc_presentation(encoded_str) {
                         Ok(decoded) => {
                             tracing::debug!(doc_type = %decoded.doc_type, namespaces = decoded.namespaces.len(), "mDoc decoded");
 
-                            // Capture the first namespace key before we consume the map
-                            let first_ns = decoded
-                                .namespaces
-                                .keys()
-                                .next()
-                                .cloned()
-                                .unwrap_or_else(|| decoded.doc_type.clone());
+                            // An mDoc MUST contain at least one namespace (ISO 18013-5 §8.3.2)
+                            let first_ns =
+                                decoded.namespaces.keys().next().cloned().ok_or_else(|| {
+                                    AttError::BadRequest("mDoc contains no namespaces".to_string())
+                                })?;
 
                             // Flatten all namespaced claims into a single JSON object.
                             // One namespace → flat; multiple → nested by namespace.
@@ -387,54 +384,11 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), AttEr
                             return Ok((vp_token, Some(credential_id.clone())));
                         }
                         Err(e) => {
-                            tracing::warn!(error = %e, "mDoc CBOR decode failed");
-                            decode_error_msg = e.to_string();
+                            return Err(AttError::BadRequest(format!(
+                                "mDoc CBOR decode failed: {e}"
+                            )));
                         }
                     }
-
-                    // Fallback: CBOR decoding failed — determine type from credential_id
-                    let (doc_type, namespace) = if credential_id.contains("age")
-                        || credential_id.contains("av")
-                    {
-                        (
-                            "eu.europa.ec.av.1".to_string(),
-                            "eu.europa.ec.av.1".to_string(),
-                        )
-                    } else if credential_id.contains("mdl") {
-                        (
-                            "org.iso.18013.5.1.mDL".to_string(),
-                            "org.iso.18013.5.1".to_string(),
-                        )
-                    } else if credential_id.contains("national") || credential_id.contains("pid") {
-                        (
-                            "eu.europa.ec.eudi.pid.1".to_string(),
-                            "eu.europa.ec.eudi.pid.1".to_string(),
-                        )
-                    } else {
-                        (credential_id.clone(), credential_id.clone())
-                    };
-
-                    let fallback_claims = serde_json::json!({
-                        "_note": "mDoc CBOR decoding failed — raw presentation could not be parsed",
-                        "_error": decode_error_msg,
-                        "_credential_id": credential_id,
-                        "_doc_type": &doc_type,
-                        "_presentation_length": encoded_str.len()
-                    });
-
-                    let vp_token = VpToken {
-                        doc_type: Some(doc_type),
-                        namespace: Some(namespace),
-                        claims: Some(fallback_claims),
-                        issuer: Some("unknown".to_string()),
-                        issued_at: None,
-                        expires_at: None,
-                        nonce: None,
-                        raw_sd_jwt: None,
-                        raw_mdoc: Some(encoded_str.to_string()),
-                        issuer_signed: None,
-                    };
-                    return Ok((vp_token, Some(credential_id.clone())));
                 } else if presentation.is_object() {
                     // It's already a JSON object - try to parse as VpToken
                     tracing::debug!("presentation is JSON object");
@@ -488,16 +442,19 @@ pub(crate) async fn version_endpoint(_req: HttpRequest) -> Result<HttpResponse, 
 /// holder signature are verified using the `jsonwebtoken` crate. The
 /// issuer's public key is extracted from the `x5c` JWT header, and the
 /// holder's public key from the `cnf.jwk` claim in the issuer payload.
+/// SD-JWT VC issuers MUST include an `x5c` header per the HAIP profile;
+/// presentations without `x5c` are rejected.
 ///
-/// mDoc MSO COSE_Sign1 signature verification is not yet implemented.
+/// For mDoc presentations the full COSE_Sign1 issuer signature (IssuerAuth)
+/// and device signature (DeviceSignature) are verified using `coset` and
+/// `openssl`, including reconstruction of the OpenID4VP SessionTranscript.
 ///
 /// # Trusted-issuer list
 ///
-/// When the issuer JWT header contains `x5c`, the leaf certificate is
-/// validated against the trusted issuer CA certificates loaded from
-/// `ServerParams::trusted_issuer_certs`. If no `x5c` header is present
-/// the signature is still verified (the public key comes from the JWT
-/// header algorithm) but issuer trust is not established.
+/// Trusted issuer CA certificates are loaded from the directory configured
+/// in `ServerParams::trusted_issuer_certs_dir`. The leaf certificate from
+/// the SD-JWT `x5c` header or the mDoc `issuerAuth` x5chain is validated
+/// against that directory using OpenSSL X.509 chain verification.
 pub(crate) async fn verify_credential_endpoint(
     _req: HttpRequest,
     body: web::Json<VerifyCredentialRequest>,
@@ -561,7 +518,7 @@ pub(crate) async fn verify_credential_endpoint(
             raw_mdoc,
             tx,
             response_jwk_thumbprint.as_deref(),
-            &server_params.trusted_issuer_certs,
+            server_params.trusted_issuer_certs_dir(),
         )
         .map_err(|e| {
             tracing::error!(error = %e, "mDoc presentation verification failed");
@@ -584,7 +541,7 @@ pub(crate) async fn verify_credential_endpoint(
         )
     } else {
         let sig_result = if let Some(raw) = vp_token.raw_sd_jwt.as_deref() {
-            verify_sd_jwt_signatures(raw, &server_params.trusted_issuer_certs)
+            verify_sd_jwt_signatures(raw, server_params.trusted_issuer_certs_dir())
         } else {
             SigVerificationResult::skipped("presentation format not recognized")
         };
@@ -685,7 +642,7 @@ fn verify_mdoc_presentation(
     encoded: &str,
     transaction: &OpenID4VPTransaction,
     response_jwk_thumbprint: Option<&[u8]>,
-    trusted_ca_paths: &[String],
+    trusted_certs_dir: &str,
 ) -> Result<MdocVerificationResult, AttError> {
     let decoded = mdoc_decoder::decode_mdoc_presentation(encoded)
         .map_err(|e| AttError::BadRequest(format!("mDoc CBOR decode failed: {e}")))?;
@@ -721,7 +678,7 @@ fn verify_mdoc_presentation(
     )?;
     let issuer_chain = extract_x5chain_from_cose(&issuer_auth)?;
     let (issuer_key, issuer_trusted) =
-        verify_cose_certificate_chain(&issuer_chain, trusted_ca_paths)?;
+        verify_cose_certificate_chain(&issuer_chain, trusted_certs_dir)?;
     verify_cose_sign1_embedded(&issuer_auth, &issuer_key)?;
 
     let mso = parse_mobile_security_object(
@@ -872,7 +829,7 @@ fn extract_x5chain_from_cose(cose: &CoseSign1) -> Result<Vec<Vec<u8>>, AttError>
 
 fn verify_cose_certificate_chain(
     cert_chain: &[Vec<u8>],
-    trusted_ca_paths: &[String],
+    trusted_certs_dir: &str,
 ) -> Result<(PKey<Public>, bool), AttError> {
     let leaf = cert_chain.first().ok_or_else(|| {
         AttError::BadRequest("issuerAuth x5chain does not contain a leaf certificate".to_string())
@@ -880,7 +837,7 @@ fn verify_cose_certificate_chain(
     let leaf = X509::from_der(leaf)
         .map_err(|e| AttError::BadRequest(format!("failed to parse issuer leaf cert: {e}")))?;
 
-    let trusted_cas = load_trusted_issuer_certs(trusted_ca_paths);
+    let trusted_cas = load_trusted_issuer_certs(trusted_certs_dir);
     let mut store_builder = openssl::x509::store::X509StoreBuilder::new().map_err(|e| {
         AttError::Generic(format!("failed to create X509 trust store builder: {e}"))
     })?;
@@ -1568,25 +1525,49 @@ impl SigVerificationResult {
     }
 }
 
-/// Load trusted issuer CA certificates from PEM files on disk.
+/// Load trusted issuer CA certificates from all `*.pem` files in a directory.
 ///
-/// Returns an `openssl::x509::X509` vector. Files that cannot be read or
-/// parsed are logged and silently skipped so that a single bad file does not
-/// prevent the server from starting.
-fn load_trusted_issuer_certs(paths: &[String]) -> Vec<openssl::x509::X509> {
+/// Returns an `openssl::x509::X509` vector. If the directory does not exist
+/// or cannot be read, an empty vector is returned with a log message.
+/// Individual files that cannot be read or parsed are logged and skipped.
+fn load_trusted_issuer_certs(dir: &str) -> Vec<openssl::x509::X509> {
+    let dir_path = std::path::Path::new(dir);
+    if !dir_path.is_dir() {
+        tracing::debug!(
+            dir,
+            "trusted issuer certificates directory not found, no CAs loaded"
+        );
+        return Vec::new();
+    }
+    let entries = match std::fs::read_dir(dir_path) {
+        Ok(e) => e,
+        Err(e) => {
+            tracing::warn!(dir, error = %e, "failed to read trusted issuer certificates directory");
+            return Vec::new();
+        }
+    };
     let mut certs = Vec::new();
-    for path in paths {
-        match std::fs::read(path) {
+    for entry in entries.flatten() {
+        let entry_path = entry.path();
+        if entry_path.extension().and_then(|e| e.to_str()) != Some("pem") {
+            continue;
+        }
+        let path_str = entry_path.display().to_string();
+        match std::fs::read(&entry_path) {
             Ok(pem) => match openssl::x509::X509::stack_from_pem(&pem) {
                 Ok(parsed) => {
                     for cert in parsed {
-                        tracing::debug!(path, subject = ?cert.subject_name(), "loaded trusted issuer CA");
+                        tracing::debug!(path = %path_str, subject = ?cert.subject_name(), "loaded trusted issuer CA");
                         certs.push(cert);
                     }
                 }
-                Err(e) => tracing::warn!(path, error = %e, "failed to parse trusted issuer cert"),
+                Err(e) => {
+                    tracing::warn!(path = %path_str, error = %e, "failed to parse trusted issuer cert")
+                }
             },
-            Err(e) => tracing::warn!(path, error = %e, "failed to read trusted issuer cert"),
+            Err(e) => {
+                tracing::warn!(path = %path_str, error = %e, "failed to read trusted issuer cert")
+            }
         }
     }
     certs
@@ -1596,12 +1577,13 @@ fn load_trusted_issuer_certs(paths: &[String]) -> Vec<openssl::x509::X509> {
 ///
 /// Given `raw` = `<issuer-jwt>~<disc1>~…~[kb-jwt]`:
 ///
-/// 1. **Issuer JWT** — decode the JWT header; if `x5c` is present, extract
-///    the leaf certificate, validate it against `trusted_ca_paths`, and
-///    derive the public key. Verify the JWT signature with `jsonwebtoken`.
-/// 2. **KB-JWT** — extract the holder public key from the `cnf.jwk` claim in
-///    the issuer JWT payload, then verify the KB-JWT signature.
-fn verify_sd_jwt_signatures(raw: &str, trusted_ca_paths: &[String]) -> SigVerificationResult {
+/// 1. **Issuer JWT** — the JWT header MUST contain `x5c` (required by HAIP §2 and
+///    OpenID4VP §6.1.1). The leaf certificate is extracted and validated against the
+///    trusted CA directory; its public key verifies the issuer JWT via `jsonwebtoken`.
+///    Presentations without `x5c` are rejected.
+/// 2. **KB-JWT** — the holder public key from the `cnf.jwk` claim in the issuer
+///    payload verifies the KB-JWT signature.
+fn verify_sd_jwt_signatures(raw: &str, trusted_certs_dir: &str) -> SigVerificationResult {
     let mut errors: Vec<String> = Vec::new();
 
     // --- split into issuer JWT and remaining elements ---
@@ -1633,7 +1615,7 @@ fn verify_sd_jwt_signatures(raw: &str, trusted_ca_paths: &[String]) -> SigVerifi
 
     // --- extract issuer public key ---
     // Prefer x5c (DER-encoded certificate chain in the JWT header).
-    let trusted_cas = load_trusted_issuer_certs(trusted_ca_paths);
+    let trusted_cas = load_trusted_issuer_certs(trusted_certs_dir);
     let (issuer_decoding_key, issuer_trusted) = match &header.x5c {
         Some(x5c) if !x5c.is_empty() => match extract_key_from_x5c(x5c, &trusted_cas, alg) {
             Ok((key, trusted)) => (key, trusted),
@@ -1649,8 +1631,11 @@ fn verify_sd_jwt_signatures(raw: &str, trusted_ca_paths: &[String]) -> SigVerifi
             }
         },
         _ => {
-            errors.push("issuer JWT has no x5c header; issuer trust cannot be established".into());
-            // Without x5c we cannot obtain the public key — skip issuer sig verification.
+            // HAIP §2 and OpenID4VP §6.1.1 require `x5c` in the issuer JWT header.
+            // Without it we cannot obtain the issuer public key — reject the presentation.
+            errors.push(
+                "issuer JWT is missing the required x5c header; presentation rejected".into(),
+            );
             return SigVerificationResult {
                 issuer_sig_valid: false,
                 kb_sig_valid: false,
@@ -1721,8 +1706,7 @@ fn extract_key_from_x5c(
         .decode(&x5c[0])
         .map_err(|e| format!("base64 decode of x5c[0] failed: {e}"))?;
     let leaf = X509::from_der(&leaf_der).map_err(|e| format!("DER parse of x5c[0] failed: {e}"))?;
-    tracing::info!(subject = ?leaf.subject_name(), "loaded leaf certificate from x5c[0]");
-    tracing::info!(issuer = ?leaf.issuer_name(), "leaf certificate issuer");
+    tracing::debug!(subject = ?leaf.subject_name(),issuer = ?leaf.issuer_name(), "loaded leaf certificate from x5c[0]");
 
     // Build an X509 store from the trusted CA certs and verify the leaf.
     let mut store_builder = openssl::x509::store::X509StoreBuilder::new()

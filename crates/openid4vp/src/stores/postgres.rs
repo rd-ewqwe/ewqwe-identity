@@ -1,4 +1,9 @@
 //! PostgreSQL-backed transaction store.
+//!
+//! A test store can instantiated using
+//! ```shell
+//! docker run --name postgres_ewqwe -e POSTGRES_USER=ewqwe -e POSTGRES_PASSWORD=ewqwe -e POSTGRES_DB=ewqwe -p 5432:5432  -d postgres
+//! ```
 
 use async_trait::async_trait;
 
@@ -26,18 +31,25 @@ impl PostgresTransactionStore {
 
     async fn migrate(&self) -> OpenID4VPResult<()> {
         sqlx::query(
-            r#"CREATE TABLE IF NOT EXISTS openid4vp_transactions (
+            "CREATE TABLE IF NOT EXISTS openid4vp_transactions (
                 id          TEXT        PRIMARY KEY NOT NULL,
                 state       TEXT        NOT NULL,
                 expires_at  BIGINT      NOT NULL,
                 data        JSONB       NOT NULL
-            );
-            CREATE UNIQUE INDEX IF NOT EXISTS idx_openid4vp_transactions_state_unique
-                ON openid4vp_transactions (state);"#,
+            )",
         )
         .execute(&self.pool)
         .await
         .map_err(|e| OpenID4VPError::Internal(format!("Postgres migration failed: {e}")))?;
+
+        sqlx::query(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_openid4vp_transactions_state_unique \
+             ON openid4vp_transactions (state)",
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(|e| OpenID4VPError::Internal(format!("Postgres migration failed: {e}")))?;
+
         Ok(())
     }
 }

@@ -113,16 +113,12 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
                     .to_string(),
             }),
         },
-        trusted_issuer_certs: vec![
+        trusted_issuer_certs_dir: Some(
             cargo_manifest_dir
-                .join("src/tests/certificates/trusted_issuers/av_issuer_ca01.pem")
+                .join("src/tests/certificates/trusted_issuers")
                 .to_string_lossy()
                 .to_string(),
-            cargo_manifest_dir
-                .join("src/tests/certificates/trusted_issuers/pidissuerca02_eu.pem")
-                .to_string_lossy()
-                .to_string(),
-        ],
+        ),
     };
 
     start_test_server(server_params).await
