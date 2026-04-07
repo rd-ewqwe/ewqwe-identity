@@ -1,12 +1,12 @@
 /**
- * @ewqwe/identity-backend — Transaction Store
+ * @ewqwe/digital-identity-backend — Transaction Store
  *
  * In-memory storage for OpenID4VP transactions with TTL-based cleanup.
  * Replace with Redis or a database for production use.
  */
 
 import type { OpenID4VPTransaction } from "./types.ts";
-import type { TransactionStatus } from "@ewqwe/identity-front";
+import type { TransactionStatus } from "@ewqwe/digital-identity";
 
 export class TransactionStore {
   private store = new Map<string, OpenID4VPTransaction>();

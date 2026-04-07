@@ -1,5 +1,5 @@
 /**
- * @ewqwe/identity-front — Type Definitions
+ * @ewqwe/digital-identity — Type Definitions
  *
  * Shared types for OpenID4VP, DCQL, credential formats, and protocol profiles.
  * Browser-compatible — no server-side APIs. Used by both front-end and back-end.

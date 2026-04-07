@@ -3,12 +3,12 @@ import type {
   OpenID4VPRequest,
   OpenID4VPResponse,
   VerifyResponse,
-} from "./types.ts";
+} from "@ewqwe/digital-identity";
 import {
   getClaimsForType,
   getDefaultClaims,
   getProfileForType,
-} from "./config.ts";
+} from "@ewqwe/digital-identity";
 import {
   buildPresentationRequest,
   requestCredentials,
@@ -105,7 +105,7 @@ export class RelyingPartyApp {
 
     const descriptions: Record<string, string> = {
       "w3c-dc-fallback":
-        "Tries W3C Digital Credentials API first, falls back to OpenID4VP QR code if unavailable",
+        "Tries W3C Digital Credentials API first, falls back to OpenID4VP if unavailable",
       "w3c-dc": "Uses navigator.credentials.get() with the wallet extension",
       "openid4vp-cross-device":
         "OpenID4VP 1.0 cross-device flow - scan QR code with mobile wallet (EUDI Wallet)",

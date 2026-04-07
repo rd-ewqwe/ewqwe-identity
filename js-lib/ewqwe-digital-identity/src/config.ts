@@ -1,5 +1,5 @@
 /**
- * @ewqwe/identity-front — Protocol & Credential Configuration
+ * @ewqwe/digital-identity — Protocol & Credential Configuration
  *
  * Defines protocol profiles (HAIP, Annex A), credential type specifications
  * (mDL, PID, Proof of Age), and helper functions for querying them.

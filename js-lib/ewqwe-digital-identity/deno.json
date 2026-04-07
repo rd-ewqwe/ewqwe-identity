@@ -1,5 +1,5 @@
 {
-  "name": "@ewqwe/identity-front",
+  "name": "@ewqwe/digital-identity",
   "version": "0.1.0",
   "exports": "./mod.ts",
   "compilerOptions": {

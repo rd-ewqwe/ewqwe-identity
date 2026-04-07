@@ -1,5 +1,5 @@
 /**
- * @ewqwe/identity-backend — Cryptographic Operations
+ * @ewqwe/digital-identity-backend — Cryptographic Operations
  *
  * PEM parsing, X.509 certificate handling, JAR signing (RFC 9101),
  * and JWE decryption for HAIP direct_post.jwt responses.

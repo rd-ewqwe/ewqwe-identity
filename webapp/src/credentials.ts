@@ -6,9 +6,9 @@ import type {
   InputDescriptor,
   ConstraintField,
   VerifyResponse,
-} from "./types.ts";
+} from "@ewqwe/digital-identity";
 import type { DebugLogger } from "./debug.ts";
-import { CREDENTIAL_TYPES, PROTOCOL_PROFILES } from "./config.ts";
+import { CREDENTIAL_TYPES, PROTOCOL_PROFILES } from "@ewqwe/digital-identity";
 
 /**
  * Detect whether the browser is running on a mobile device (Android or iOS).
@@ -69,7 +69,7 @@ export function buildPresentationRequest(
   };
 
   return {
-    client_id: window.location.origin,
+    client_id: globalThis.location.origin,
     client_id_scheme: profile?.clientIdScheme || "redirect_uri",
     response_type: "vp_token",
     response_mode: profile?.responseMode || "direct_post",
@@ -850,79 +850,6 @@ function getDemoValue(claimId: string): unknown {
 
   return demoValues[claimId] ?? `Demo ${claimId}`;
 }
-
-// /**
-//  * Verify the received credential
-//  * In production, this would send the credential to a backend server for verification
-//  */
-// export async function verifyCredential(
-//   response: OpenID4VPResponse,
-//   originalRequest: OpenID4VPRequest,
-//   logger: DebugLogger,
-// ): Promise<VerificationResult> {
-//   logger.log("Verifying credential", { response, originalRequest });
-
-//   // In a real implementation, this would:
-//   // 1. Send the vp_token to a backend server
-//   // 2. The server would verify the cryptographic signatures
-//   // 3. Check the credential against trusted issuers
-//   // 4. Validate the nonce matches the original request
-//   // 5. Return the verification result
-
-//   // For demo purposes, we'll simulate the verification
-//   try {
-//     // Parse the VP token (may be JSON string or base64 encoded)
-//     let vpToken: Record<string, unknown>;
-//     try {
-//       // First try parsing as JSON directly
-//       vpToken = JSON.parse(response.vp_token);
-//     } catch {
-//       // Fall back to base64 decoding
-//       const vpTokenJson = atob(response.vp_token);
-//       vpToken = JSON.parse(vpTokenJson);
-//     }
-
-//     logger.log("Decoded VP token", vpToken);
-
-//     // Extract claims - handle both mDoc format and direct claims
-//     const claims =
-//       vpToken.claims ||
-//       vpToken.issuerSigned?.nameSpaces?.["org.iso.18013.5.1"] ||
-//       vpToken.issuerSigned?.nameSpaces?.["eu.europa.ec.av.1"] ||
-//       {};
-
-//     // Simulate backend verification
-//     const verificationDetails = {
-//       signatureValid: true,
-//       notExpired: true,
-//       issuerTrusted: true,
-//       timestamp: new Date().toISOString(),
-//     };
-
-//     // Simulate a small delay for "verification"
-//     await new Promise((resolve) => setTimeout(resolve, 500));
-
-//     logger.success("Credential verified successfully", {
-//       claims,
-//       verificationDetails,
-//     });
-
-//     return {
-//       success: true,
-//       message: "Credential verified successfully",
-//       claims,
-//       verificationDetails,
-//     };
-//   } catch (error) {
-//     logger.error("Verification failed", error);
-
-//     return {
-//       success: false,
-//       message: "Failed to verify credential",
-//       errors: [error instanceof Error ? error.message : "Unknown error"],
-//     };
-//   }
-// }
 
 /**
  * Send credential to backend for verification

@@ -348,6 +348,30 @@ deno task vite
    - Select verification protocol
    - Request credentials from the wallet
 
+### Debugging Chrome on Android Studio Emulator
+
+When testing the webapp with mobile wallets on the Android Studio Emulator, you can view Chrome's console logs using Chrome DevTools Remote Debugging:
+
+1. **Enable USB Debugging on Emulator**: The Android Studio Emulator has USB debugging enabled by default
+2. **Open Chrome on the Emulator**: Launch Chrome and navigate to your webapp (e.g., via ngrok HTTPS URL)
+3. **Access Remote Debugging**:
+   - On your development machine, open Chrome
+   - Navigate to `chrome://inspect/#devices`
+   - Wait for the emulator device to appear (may take a few seconds)
+4. **Inspect the Page**:
+   - Under your emulator device, you'll see a list of open Chrome tabs
+   - Click **"inspect"** next to the webapp tab
+   - A DevTools window opens showing the console, network traffic, and DOM inspector
+
+This is particularly useful for:
+
+- Debugging OpenID4VP protocol flows
+- Viewing network requests to your backend API
+- Inspecting QR code scanning and deep link behavior
+- Troubleshooting JavaScript errors in the mobile browser
+
+> **Tip**: Console logs, network requests, and JavaScript errors from the emulator's Chrome will appear in real-time in the DevTools window on your development machine, just like debugging a local webpage.
+
 ## API Endpoints
 
 ### OpenID4VP Endpoints (Cross-Device Flow)

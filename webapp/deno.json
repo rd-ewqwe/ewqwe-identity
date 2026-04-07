@@ -12,8 +12,8 @@
     "jsxImportSource": "react"
   },
   "imports": {
-    "@ewqwe/identity-front": "../js-lib/ewqwe-identity-front/mod.ts",
-    "@ewqwe/identity-backend": "../js-lib/ewqwe-identity-backend/mod.ts",
+    "@ewqwe/digital-identity": "../js-lib/ewqwe-digital-identity/mod.ts",
+    "@ewqwe/digital-identity-backend": "../js-lib/ewqwe-digital-identity-backend/mod.ts",
     "autoprefixer": "npm:autoprefixer@^10.4.0",
     "jose": "npm:jose@^5.9.6",
     "postcss": "npm:postcss@^8.4.0",

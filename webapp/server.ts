@@ -21,11 +21,11 @@ import {
   ExpiredError,
   BadRequestError,
   VerifierError,
-} from "@ewqwe/identity-backend";
+} from "@ewqwe/digital-identity-backend";
 import type {
   InitTransactionRequest,
   VerifyRequest,
-} from "@ewqwe/identity-backend";
+} from "@ewqwe/digital-identity-backend";
 
 // ============================================================================
 // Configuration (from environment)

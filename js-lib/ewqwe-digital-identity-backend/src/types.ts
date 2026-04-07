@@ -1,8 +1,8 @@
 /**
- * @ewqwe/identity-backend — Server-Side Type Definitions
+ * @ewqwe/digital-identity-backend — Server-Side Type Definitions
  *
  * Types and interfaces used exclusively by the OpenID4VP backend service.
- * Shared types (DCQL, VerifyResponse, etc.) are re-exported from @ewqwe/identity-front.
+ * Shared types (DCQL, VerifyResponse, etc.) are re-exported from @ewqwe/digital-identity.
  *
  * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html
  */
@@ -13,7 +13,7 @@ import type {
   ProfileId,
   TransactionStatus,
   VerifyResponse,
-} from "@ewqwe/identity-front";
+} from "@ewqwe/digital-identity";
 
 // ============================================================================
 // Configuration

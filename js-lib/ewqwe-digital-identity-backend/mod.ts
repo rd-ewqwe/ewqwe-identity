@@ -1,16 +1,16 @@
 /**
- * @ewqwe/identity-backend
+ * @ewqwe/digital-identity-backend
  *
  * Server-side OpenID4VP service for the ewqwe EU Age Verification system.
  * Handles JAR signing, JWE decryption, transaction management, and
  * credential verification delegation.
  *
- * Depends on `@ewqwe/identity-front` for shared types and DCQL utilities.
+ * Depends on `@ewqwe/digital-identity` for shared types and DCQL utilities.
  *
  * @module
  */
 
-// === Re-export shared types from @ewqwe/identity-front ===
+// === Re-export shared types from @ewqwe/digital-identity ===
 export type {
   DCQLClaimsQuery,
   DCQLCredentialQuery,
@@ -22,7 +22,7 @@ export type {
   TransactionStatusResult,
   InitTransactionResponse,
   VerifyResponse,
-} from "@ewqwe/identity-front";
+} from "@ewqwe/digital-identity";
 
 // Re-export DCQL utilities consumers may need
 export {
@@ -30,7 +30,7 @@ export {
   determineProfile,
   getDefaultAgeVerificationDCQL,
   generateNonce,
-} from "@ewqwe/identity-front";
+} from "@ewqwe/digital-identity";
 
 // === Backend-only types ===
 export type {

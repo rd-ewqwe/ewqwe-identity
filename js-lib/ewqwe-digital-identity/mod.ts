@@ -1,5 +1,5 @@
 /**
- * @ewqwe/identity-front
+ * @ewqwe/digital-identity
  *
  * Shared types, DCQL utilities, and protocol configuration for the
  * ewqwe EU Age Verification system.

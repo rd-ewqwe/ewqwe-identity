@@ -1,5 +1,5 @@
 /**
- * @ewqwe/identity-backend — OpenID4VP Service
+ * @ewqwe/digital-identity-backend — OpenID4VP Service
  *
  * Orchestrates OpenID4VP transaction lifecycle:
  *   1. Initialize transactions (build DCQL, generate IDs, build auth request URIs)
@@ -14,12 +14,15 @@
  * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html
  */
 
-import type { DCQLQuery, TransactionStatusResult } from "@ewqwe/identity-front";
+import type {
+  DCQLQuery,
+  TransactionStatusResult,
+} from "@ewqwe/digital-identity";
 import {
   convertPresentationDefinitionToDCQL,
   determineProfile,
   getDefaultAgeVerificationDCQL,
-} from "@ewqwe/identity-front";
+} from "@ewqwe/digital-identity";
 
 import type {
   AuthorizationRequestResult,
@@ -35,7 +38,7 @@ import type {
 import type {
   InitTransactionResponse,
   VerifyResponse,
-} from "@ewqwe/identity-front";
+} from "@ewqwe/digital-identity";
 import {
   buildPublicJwkSet,
   decryptJweResponse,

@@ -1,5 +1,5 @@
 /**
- * @ewqwe/identity-front — DCQL Query Utilities
+ * @ewqwe/digital-identity — DCQL Query Utilities
  *
  * Functions to build, parse, and convert DCQL (Digital Credentials Query Language)
  * queries for EU Age Verification and OpenID4VP presentations.
