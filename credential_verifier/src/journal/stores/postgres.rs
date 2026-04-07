@@ -315,8 +315,8 @@ impl JournalStore for PostgresJournalStore {
         let offset = i64::from(offset);
         let rows: Vec<PgRowTuple> = sqlx::query_as(&format!(
             "SELECT {SELECT_COLS} FROM journal_entries \
-             WHERE qrcode_app_user_id IS NOT NULL \
-               AND ($1 IS NULL OR qrcode_app_user_id = $1) \
+             WHERE (qrcode_app_user_id IS NOT NULL OR qrcode_app_user_email IS NOT NULL) \
+               AND ($1::text IS NULL OR qrcode_app_user_id = $1 OR qrcode_app_user_email = $1) \
                AND ($2 IS NULL OR created_at >= $2) \
                AND ($3 IS NULL OR created_at <= $3) \
              ORDER BY created_at DESC LIMIT $4 OFFSET $5"

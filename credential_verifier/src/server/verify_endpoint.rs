@@ -876,6 +876,8 @@ pub(crate) struct QrVerificationOutcome {
     #[allow(dead_code)]
     pub namespace: String,
     pub errors: Vec<String>,
+    /// Value of the `age_over_18` claim from the presented credential, if present.
+    pub age_over_18: Option<bool>,
 }
 
 /// Verify a VP token presented via the Verifier App QR (`direct_post`) flow.
@@ -970,6 +972,7 @@ pub(crate) async fn verify_vp_token_for_qr(
             doc_type,
             namespace,
             errors: verification_result.errors,
+            age_over_18: None,
         });
     }
 
@@ -979,7 +982,7 @@ pub(crate) async fn verify_vp_token_for_qr(
         username,
         "QR credential verification succeeded"
     );
-    let _ = claims; // claims available for future use (e.g. richer journal entries)
+    let age_over_18 = extract_age_over_18_claim(&claims);
 
     if let Some(journal_store) = journal {
         let summary = serde_json::json!({
@@ -1015,5 +1018,28 @@ pub(crate) async fn verify_vp_token_for_qr(
         doc_type,
         namespace,
         errors: Vec::new(),
+        age_over_18,
     })
+}
+
+/// Extract the `age_over_18` boolean claim from a credential claims JSON value.
+///
+/// Handles both flat SD-JWT style (`{"age_over_18": true}`) and namespace-nested
+/// mDoc style (`{"eu.europa.ec.av.1": {"age_over_18": true}}`).
+fn extract_age_over_18_claim(claims: &serde_json::Value) -> Option<bool> {
+    // Try top-level key first (SD-JWT / flat structure)
+    if let Some(val) = claims.get("age_over_18") {
+        return val.as_bool();
+    }
+    // Try one level deep inside namespace objects (mDoc structure)
+    if let Some(obj) = claims.as_object() {
+        for ns_val in obj.values() {
+            if let Some(val) = ns_val.get("age_over_18") {
+                if let Some(b) = val.as_bool() {
+                    return Some(b);
+                }
+            }
+        }
+    }
+    None
 }

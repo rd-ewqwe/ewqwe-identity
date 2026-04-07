@@ -40,6 +40,7 @@ impl VerifierCredentialVerifier for QrCredentialVerifierImpl {
                 success: outcome.success,
                 doc_type: outcome.doc_type,
                 errors: outcome.errors,
+                age_over_18: outcome.age_over_18,
             }),
             Err(e) => Err(e.to_string()),
         }
