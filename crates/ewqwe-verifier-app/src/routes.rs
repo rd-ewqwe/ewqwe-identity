@@ -530,9 +530,17 @@ pub async fn admin_journal(
 // ─── Static UI ───────────────────────────────────────────────────────────────
 
 static UI_INDEX: &[u8] = include_bytes!("static/index.html");
+static APP_JS: &[u8] = include_bytes!("static/app.js");
+static FAVICON_B64: &[u8] = include_bytes!("static/favicon_b64.txt");
 static I18N_EN: &[u8] = include_bytes!("static/i18n/en.json");
 static I18N_DE: &[u8] = include_bytes!("static/i18n/de.json");
 static I18N_FR: &[u8] = include_bytes!("static/i18n/fr.json");
+static I18N_IT: &[u8] = include_bytes!("static/i18n/it.json");
+static I18N_ES: &[u8] = include_bytes!("static/i18n/es.json");
+static I18N_SV: &[u8] = include_bytes!("static/i18n/sv.json");
+static I18N_PL: &[u8] = include_bytes!("static/i18n/pl.json");
+static I18N_CS: &[u8] = include_bytes!("static/i18n/cs.json");
+static I18N_HR: &[u8] = include_bytes!("static/i18n/hr.json");
 static LOGO_PNG: &[u8] = include_bytes!("static/logo.png");
 
 /// Serve the embedded SPA.
@@ -541,6 +549,22 @@ pub async fn ui_index() -> HttpResponse {
     HttpResponse::Ok()
         .content_type("text/html; charset=utf-8")
         .body(UI_INDEX)
+}
+
+/// `GET /verifier_app/app.js` — embedded application JavaScript.
+pub async fn app_js() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("application/javascript; charset=utf-8")
+        .insert_header(("Cache-Control", "public, max-age=3600"))
+        .body(APP_JS)
+}
+
+/// `GET /verifier_app/favicon_b64.txt` — base64-encoded ewqwe favicon data URL.
+pub async fn favicon_b64() -> HttpResponse {
+    HttpResponse::Ok()
+        .content_type("text/plain; charset=utf-8")
+        .insert_header(("Cache-Control", "public, max-age=86400"))
+        .body(FAVICON_B64)
 }
 
 /// `GET /verifier_app/logo.png` — embedded ewqwe logo.
@@ -558,6 +582,12 @@ pub async fn get_i18n(query: web::Query<I18nQuery>) -> HttpResponse {
     let (bytes, lang) = match query.lang.as_deref().unwrap_or("en") {
         "de" => (I18N_DE, "de"),
         "fr" => (I18N_FR, "fr"),
+        "it" => (I18N_IT, "it"),
+        "es" => (I18N_ES, "es"),
+        "sv" => (I18N_SV, "sv"),
+        "pl" => (I18N_PL, "pl"),
+        "cs" => (I18N_CS, "cs"),
+        "hr" => (I18N_HR, "hr"),
         _ => (I18N_EN, "en"),
     };
     HttpResponse::Ok()
@@ -627,9 +657,6 @@ pub async fn update_settings(
     }
     if let Some(ref name) = body.app_name {
         let name = name.trim().to_string();
-        if name.is_empty() {
-            return bad_request("app_name must not be empty");
-        }
         if let Err(e) = store.set_setting("app_name", &name).await {
             return internal_error(&e.to_string());
         }

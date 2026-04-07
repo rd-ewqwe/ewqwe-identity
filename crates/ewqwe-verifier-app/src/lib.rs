@@ -77,6 +77,8 @@ pub fn configure_routes(cfg: &mut web::ServiceConfig) {
         .route("/ui", web::get().to(routes::ui_index))
         .route("/ui/", web::get().to(routes::ui_index))
         .route("/logo.png", web::get().to(routes::logo_png))
+        .route("/app.js", web::get().to(routes::app_js))
+        .route("/favicon_b64.txt", web::get().to(routes::favicon_b64))
         // ── Setup (no auth) ────────────────────────────────────────────────
         .route("/api/setup/bootstrap", web::post().to(routes::bootstrap))
         .route("/api/setup/status", web::get().to(routes::setup_status))

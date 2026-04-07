@@ -10,14 +10,23 @@ The Verifier App is an embedded, session-authenticated web application served di
 │                                                                          │
 │   GET  /verifier_app/                     → embedded SPA (index.html)   │
 │   GET  /verifier_app/ui                   → same SPA (alias)            │
+│   GET  /verifier_app/app.js               → embedded SPA JavaScript     │
+│   GET  /verifier_app/logo.png             → embedded logo               │
+│   GET  /verifier_app/favicon_b64.txt      → base64 logo data URL        │
+│   GET  /verifier_app/api/i18n?lang=<code> → locale strings (JSON)       │
 │   POST /verifier_app/api/setup/bootstrap  → one-time admin creation     │
 │   GET  /verifier_app/api/setup/status     → bootstrap status (public)   │
 │   POST /verifier_app/api/auth/login                                      │
+│   POST /verifier_app/api/auth/logout                                     │
+│   GET  /verifier_app/api/auth/me                                         │
 │   POST /verifier_app/api/qr/generate      → OpenID4VP QR transaction    │
 │   GET  /verifier_app/api/qr/{id}/status                                 │
 │   GET  /verifier_app/api/settings         → public app settings         │
-│   GET  /verifier_app/api/admin/users      → (admin role only)           │
 │   PUT  /verifier_app/api/admin/settings   → (admin role only)           │
+│   GET  /verifier_app/api/admin/users      → (admin role only)           │
+│   POST /verifier_app/api/admin/users      → (admin role only)           │
+│   PUT  /verifier_app/api/admin/users/{id} → (admin role only)           │
+│   DELETE /verifier_app/api/admin/users/{id} → (admin role only)         │
 │   GET  /verifier_app/api/admin/journal    → (admin role only)           │
 └─────────────────────────────────────────────────────────────────────────┘
 ```
@@ -33,8 +42,8 @@ Add the following section to `credential-server.toml`:
 ```toml
 [verifier_app]
 enabled = true
-app_name = "My Age Verifier"          # optional display name
-# logo_url = "https://example.com/logo.png"   # optional logo
+app_name = "ACME.eu"                   # optional company name (default: ACME.eu)
+# logo_url = "https://example.com/logo.png"   # optional logo (URL or base64 data URL)
 # session_secret_key = "<128 hex chars>"       # recommended for production
 ```
 
@@ -145,7 +154,7 @@ The first account created via bootstrap is always an admin with `is_superadmin =
 ## Generating a QR Code
 
 1. Sign in at `https://<server>/verifier_app/`.
-2. Select the **Credential Type** from the dropdown (Proof of Age, mDL, or National ID).
+2. On the **Home** page, select the **Credential Type** from the dropdown (Proof of Age, mDL, or National ID).
 3. Click **Generate QR Code**.
 4. A QR code is displayed for the selected credential type. The holder scans it with their digital wallet; the status badge updates automatically every 2 seconds:
 
@@ -157,7 +166,11 @@ The first account created via bootstrap is always an admin with `is_superadmin =
 | `failed` | Presentation was rejected |
 | `expired` | Transaction timed out (default TTL: 300 s) |
 
-1. Once `verified`, click **New QR Code** to start another session.
+1. Once `verified`, click **New Verification** to start another session, or **Cancel** to return to the credential type selection.
+
+### Single-Credential Verifiers
+
+When a user has only one allowed credential type (or the server is configured with a single type), the credential type dropdown and cancel button are hidden and the QR code is generated automatically on page load.
 
 The credential type determines the OpenID4VP profile used:
 
@@ -188,15 +201,27 @@ This allows an admin to, for example, let one operator verify only proof-of-age 
 
 ---
 
+## Admin: Settings
+
+Navigate to **Settings** (admin only) to configure:
+
+- **Company Name** — displayed in the navigation bar and login screen (default: "ACME.eu").
+- **Logo URL** — HTTPS URL or a `data:image/png;base64,…` data URL. When blank, the built-in ewQwe logo is used.
+- **Language** — choose a specific UI language or use the browser default.
+- **Credential Claims** — configure which PID (National ID) and mDL (Driver's License) claims to request. Claims configuration is stored in the browser's `localStorage`.
+
+---
+
 ## Admin: Journal
 
 Navigate to **Journal** (admin only) to browse the verification audit log. Each entry is attributed to the Verifier App user who initiated the transaction.
 
-Available filter:
+Available filters:
 
-- **User ID** — show entries belonging to a specific operator.
+- **Verifier** — show entries belonging to a specific operator.
+- **From / To** — date range filter.
 
-Entries are paginated (20 per page). The journal backend must be enabled in the credential-server configuration (see `[journal]` section).
+Entries are paginated (50 per page). The journal backend must be enabled in the credential-server configuration (see `[journal]` section).
 
 ---
 
@@ -215,9 +240,21 @@ Supported language codes:
 | `en` | English (default) |
 | `de` | German |
 | `fr` | French |
+| `it` | Italian |
+| `es` | Spanish |
+| `sv` | Swedish |
+| `pl` | Polish |
+| `cs` | Czech |
+| `hr` | Croatian |
+
+### Language Detection
+
+By default the app detects the browser's language (`navigator.language`) and uses the closest supported locale, falling back to English. Users can override this in the **Settings** page by choosing a specific language from the dropdown, or selecting **Default (browser language)** to restore automatic detection.
+
+The language preference is stored in `localStorage` (`verifier_app_lang`) and persists across sessions.
 
 Locale files are embedded in the binary at compile time from  
-`credential_verifier/src/verifier_app/static/i18n/`.
+`crates/ewqwe-verifier-app/src/static/i18n/`.
 
 ---
 
@@ -319,9 +356,18 @@ crates/ewqwe-verifier-app/src/
 │   ├── postgres.rs   — PostgreSQL backend
 │   └── mysql.rs      — MySQL / MariaDB backend
 └── static/
-    ├── index.html    — embedded SPA (compiled into binary)
+    ├── index.html    — embedded SPA HTML (compiled into binary)
+    ├── app.js        — embedded SPA JavaScript (compiled into binary)
+    ├── logo.png      — embedded ewQwe logo
+    ├── favicon_b64.txt — base64 logo data URL (default branding)
     └── i18n/
-        ├── en.json
-        ├── de.json
-        └── fr.json
+        ├── en.json   — English
+        ├── de.json   — German
+        ├── fr.json   — French
+        ├── it.json   — Italian
+        ├── es.json   — Spanish
+        ├── sv.json   — Swedish
+        ├── pl.json   — Polish
+        ├── cs.json   — Czech
+        └── hr.json   — Croatian
 ```

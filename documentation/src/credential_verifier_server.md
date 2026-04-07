@@ -595,6 +595,7 @@ If the head changes concurrently (e.g., another request completed first), the ap
 ## Related Documentation
 
 - [User Journey - Sequence Diagram](./user-journey.md) - Complete credential flow
+- [Verifier App](./qrcode_app.md) - Built-in web UI for credential verification operators
 - [Credential Specifications](./credential_specifications.md) - Credential format reference
 - [DCQL Age Verification](./dcql_age_verification.md) - Query language for credential requests
 - [Digital Credential Browser Storage](./digital_credentials_browser_storage.md) - Browser credential storage

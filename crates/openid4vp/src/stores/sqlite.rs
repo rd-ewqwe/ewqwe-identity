@@ -22,9 +22,13 @@ impl SqliteTransactionStore {
         let options = SqliteConnectOptions::from_str(url)
             .map_err(|e| OpenID4VPError::Config(format!("SQLite URL parse error: {e}")))?
             .shared_cache(true);
-        let pool = sqlx::SqlitePool::connect_with(options).await.map_err(|e| {
-            OpenID4VPError::Config(format!("Cannot open SQLite in-memory store: {e}"))
-        })?;
+        let pool = sqlx::sqlite::SqlitePoolOptions::new()
+            .min_connections(1)
+            .connect_with(options)
+            .await
+            .map_err(|e| {
+                OpenID4VPError::Config(format!("Cannot open SQLite in-memory store: {e}"))
+            })?;
         let store = Self {
             pool,
             _ttl_secs: ttl_secs,
