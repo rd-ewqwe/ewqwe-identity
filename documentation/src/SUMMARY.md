@@ -2,7 +2,7 @@
 
 [Introduction](introduction.md)
 
-- [User Journey - Sequence Diagram](./user-journey.md)
+- [Digital Credential User Journey](./user-journey.md)
 - [The ewQwe Credential Verifier](./credential_verifier_server.md)
 - [The Demo Architecture](./demo_architecture.md)
 - [Age Verification App on Android](./av_wallet_android_studio.md)

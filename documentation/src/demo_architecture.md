@@ -4,13 +4,13 @@
 
 This demonstration system showcases a complete credential verification flow using three main components:
 
-1. **Demo Wallets**:
+1. **Relying Party Demo Webapp** - A reference implementation of a Relying Party (RP) web application that requests and verifies credentials from users.
+2. **ewQwe Credential Verifier Server** - A production-ready backend service that performs cryptographic verification on behalf of Relying Parties.
+3. **Demo Wallets**:
 
    1. Age Verification Mobile App - A mobile application that acts as a wallet on Android devices, allowing users to manage and present age verification credentials on . Emulator for testing and development purposes.
    2. EUDI Wallet - A reference implementation of a mobile wallet based on the EU Digital Identity (EUDI) specifications and HAIP profile. The wallet runs in the Android Studio Emulator for testing and development purposes.
    3. Browser Extension - A browser extension that acts as the user's digital wallet, demonstrating the (future) W3C Digital Credentials API for web applications.
-2. **Relying Party Demo Webapp** - A reference implementation of a Relying Party (RP) web application that requests and verifies credentials from users.
-3. **ewQwe Credential Verifier Server** - A production-ready backend service that performs cryptographic verification on behalf of Relying Parties.
 
 The demo wallets and webapp work together to demonstrate the complete end-to-end flow of credential presentation and verification. The webapp serves as both a functional demonstration and a **starting point for Relying Parties** who want to implement credential verification in their own web applications.
 

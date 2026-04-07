@@ -1,6 +1,6 @@
-# User Journey
+# The User Journey
 
-This page describes the end-to-end **digital credential verification user journey** in the EU Digital Identity ecosystem, and how a Relying Party (RP) can request and validate a **verifiable presentation** from a user’s wallet.
+This page describes the end-to-end **digital credential verification user journey** in the EU Digital Identity ecosystem and how a Relying Party (RP - you!) can request and validate a **verifiable presentation** from a user’s wallet, such as a proof of age credential.
 
 Because real-world interoperability today is primarily based on **OpenID4VP** (with the **W3C Digital Credentials API** as a browser-native option when available), the journey is presented in two concrete profiles:
 
@@ -17,7 +17,7 @@ In the **EU Digital Identity** ecosystem, real-world interoperability for presen
 
 ### Recommended approach
 
-- **Prefer the W3C Digital Credentials API when available**: use the browser’s credentials interface (`navigator.credentials.get()`) for the smoothest, most “web-native” flow.
+- **Use the W3C Digital Credentials API when available**: use the browser’s credentials interface (`navigator.credentials.get()`) for the smoothest, most “web-native” flow.
 - **Fallback to OpenID4VP when the W3C API is not available**: use the standardized OpenID4VP presentation flows (same-device deep link or cross-device QR code, with `direct_post` / `direct_post.jwt`) to stay compatible with EU wallet implementations.
 
 This “use the browser API when possible, otherwise use OpenID4VP” strategy matches the **EU Age Verification Profile (Annex A)** guidance for age-verification presentations and keeps the RP aligned with the European Digital Identity ecosystem as browser support for the W3C API matures (see [EU Age Verification Profile — Annex A](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/), and [OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)).
