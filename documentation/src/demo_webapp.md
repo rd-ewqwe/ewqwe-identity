@@ -24,23 +24,18 @@ This implementation is compatible with:
 
 ```mermaid
 flowchart TB
-    subgraph Frontend["Frontend (TypeScript/Vite)"]
+    subgraph Webapp["Demo Webapp (TypeScript/Vite + Deno)"]
         UI[User Interface]
         CredConfig[Credential Configuration<br/>- Select credential types<br/>- Choose required claims<br/>- Set verification policies]
         Protocol[Protocol Handler<br/>- W3C DC API + fallback<br/>- W3C DC only<br/>- OpenID4VP QR code<br/>- Simulated mode]
         QRModal[QR Code Modal<br/>for cross-device flow]
+        APIServer[API Server<br/>server.ts<br/>OpenID4VP sessions]
     end
-    
-    subgraph Backend["Backend (Deno)"]
-        APIServer[API Server<br/>server.ts]
-        TxStore[Transaction Store<br/>OpenID4VP sessions]
-        TLSClient[TLS Client<br/>CA certificates for mTLS]
-    end
-    
+
     subgraph MobileWallet["Mobile Wallet (EUDI/Other)"]
         WalletApp[Wallet App<br/>Android/iOS]
     end
-    
+
     UI --> CredConfig
     CredConfig --> Protocol
     Protocol -->|W3C DC| BrowserExt[Browser Extension]
@@ -48,13 +43,10 @@ flowchart TB
     QRModal -.->|Scan QR| WalletApp
     WalletApp -->|POST direct_post| APIServer
     Protocol -->|Poll status| APIServer
-    APIServer --> TxStore
     Protocol -->|POST /api/verify| APIServer
-    APIServer --> TLSClient
-    TLSClient -->|HTTPS| CredVerifier[ewQwe Credential Verifier]
-    
-    style Frontend fill:#7c3aed
-    style Backend fill:#6d28d9
+    APIServer -->|HTTPS| CredVerifier[ewQwe Credential Verifier]
+
+    style Webapp fill:#7c3aed
     style MobileWallet fill:#059669
 ```
 
@@ -148,29 +140,27 @@ The implementation follows the EUDI Wallet specifications for HAIP, and the EU A
 sequenceDiagram
     participant U as User
     participant W as Webapp
-    participant B as Backend
+    participant V as ewQwe Credential Verifier
     participant M as EUDI Wallet
-    
+
     U->>W: Click "Request Credentials"
-    W->>B: POST /api/openid4vp/init
-    B-->>W: {transaction_id, authorization_request_uri}
+    W->>W: Initialize transaction
     W->>U: Display QR Code (contains request_uri)
-    
+
     U->>M: Scan QR Code
-    M->>B: GET /api/openid4vp/request/{id}
-    B-->>M: Signed JWT (JAR) with DCQL query
+    M->>W: GET /api/openid4vp/request/{id}
+    W-->>M: Signed JWT (JAR) with DCQL query
     M->>U: Show credential sharing prompt
     U->>M: Approve sharing
-    M->>B: POST /api/openid4vp/direct_post (vp_token)
-    B-->>M: 200 OK
-    
+    M->>W: POST /api/openid4vp/direct_post (vp_token)
+    W-->>M: 200 OK
+
     loop Poll for response
-        W->>B: GET /api/openid4vp/status/{id}
-        B-->>W: {status: "received", vp_token, ...}
+        W->>W: GET /api/openid4vp/status/{id}
     end
-    
-    W->>B: POST /api/verify
-    B-->>W: Verification result
+
+    W->>V: POST /api/verify (vp_token)
+    V-->>W: Signed attestation
     W->>U: Display verified claims
 ```
 
@@ -180,28 +170,26 @@ sequenceDiagram
 sequenceDiagram
     participant U as User
     participant W as Webapp
-    participant B as Backend
+    participant V as ewQwe Credential Verifier
     participant M as AV Wallet
-    
+
     U->>W: Click "Request Credentials"
-    W->>B: POST /api/openid4vp/init
-    B-->>W: {transaction_id, authorization_request_uri}
+    W->>W: Initialize transaction
     W->>U: Display QR Code (contains ALL params inline)
-    
+
     U->>M: Scan QR Code
     Note over M: Parse params from URL directly<br/>(no HTTP fetch needed)
     M->>U: Show credential sharing prompt
     U->>M: Approve sharing
-    M->>B: POST /api/openid4vp/direct_post (vp_token)
-    B-->>M: 200 OK
-    
+    M->>W: POST /api/openid4vp/direct_post (vp_token)
+    W-->>M: 200 OK
+
     loop Poll for response
-        W->>B: GET /api/openid4vp/status/{id}
-        B-->>W: {status: "received", vp_token, ...}
+        W->>W: GET /api/openid4vp/status/{id}
     end
-    
-    W->>B: POST /api/verify
-    B-->>W: Verification result
+
+    W->>V: POST /api/verify (vp_token)
+    V-->>W: Signed attestation
     W->>U: Display verified claims
 ```
 
@@ -221,31 +209,29 @@ When using OpenID4VP same-device mode, the webapp uses a deep link to trigger th
 sequenceDiagram
     participant U as User
     participant W as Webapp (Mobile Browser)
-    participant B as Backend
+    participant V as ewQwe Credential Verifier
     participant M as Wallet App
-    
+
     U->>W: Click "Request Credentials"
-    W->>B: POST /api/openid4vp/init
-    B-->>W: {transaction_id, deep_link_uri}
+    W->>W: Initialize transaction
     W->>U: Display "Open Wallet" button
-    
+
     U->>W: Click "Open EUDI Wallet"
     W->>M: Deep link (openid4vp://...)
-    M->>B: GET /api/openid4vp/request/{id}
-    B-->>M: Authorization Request (JSON)
+    M->>W: GET /api/openid4vp/request/{id}
+    W-->>M: Authorization Request (JSON)
     M->>U: Show credential sharing prompt
     U->>M: Approve sharing
-    M->>B: POST /api/openid4vp/direct_post (vp_token)
-    B-->>M: 200 OK
-    
+    M->>W: POST /api/openid4vp/direct_post (vp_token)
+    W-->>M: 200 OK
+
     Note over W: (User switches back to browser)
     loop Poll for response
-        W->>B: GET /api/openid4vp/status/{id}
-        B-->>W: {status: "received", vp_token, ...}
+        W->>W: GET /api/openid4vp/status/{id}
     end
-    
-    W->>B: POST /api/verify
-    B-->>W: Verification result
+
+    W->>V: POST /api/verify (vp_token)
+    V-->>W: Signed attestation
     W->>U: Display verified claims
 ```
 
@@ -256,45 +242,6 @@ sequenceDiagram
 Before setting up the demo system, ensure you have the following installed:
 
 - **Deno** 1.40 or later - [Install Deno](https://deno.land/manual/getting_started/installation)
-
-### Using with EUDI Wallet (Android)
-
-To test with the EUDI Wallet reference implementation:
-
-1. Download the EUDI Wallet app from [GitHub Releases](https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/releases)
-2. Install the APK on your Android device
-3. Set up the wallet with a PID (Personal Identification Data) from the issuer
-
-#### HTTPS Requirement (Important)
-
-Android blocks cleartext HTTP traffic by default. The EUDI Wallet will fail to connect to an HTTP server with the error: **"ClearText HTTP traffic not permitted"**.
-
-**Solution: Use a tunneling service like ngrok to expose your local server over HTTPS:**
-
-```bash
-# Install ngrok (if not already installed)
-brew install ngrok  # macOS
-# or download from https://ngrok.com/download
-
-# Start the webapp first
-cd webapp
-deno task dev
-
-# In another terminal, create an HTTPS tunnel to the API server (port 5175)
-ngrok http 5175
-```
-
-ngrok will display a forwarding URL like `https://abc123.ngrok.io`. Use this as your `PUBLIC_URL`:
-
-```bash
-# Set the PUBLIC_URL to the ngrok HTTPS URL
-export PUBLIC_URL="https://abc123.ngrok.io"
-deno task dev
-```
-
-Now when you scan the QR code or tap the deep link, the EUDI Wallet will be able to connect via HTTPS.
-
-> **Note**: The free tier of ngrok provides a random URL that changes each time. For persistent testing, consider ngrok's paid tier or alternatives like [Cloudflare Tunnel](https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/).
 
 ### Start the Demo Webapp
 
@@ -311,14 +258,21 @@ cd webapp
 
 #### Start the Development Server
 
-The webapp requires two processes: the frontend (Vite dev server) and the backend API server.
+The webapp requires three processes running concurrently:
 
 ```bash
-# Terminal 1: Start the backend API server
+# Terminal 1 — ewQwe Credential Verifier (port 9443, HTTPS)
+cd credential_verifier
+RUST_LOG=info \
+X509_CERT_PATH=src/tests/certificates/ec/ewqwe.server.fullchain.pem \
+X509_KEY_PATH=src/tests/certificates/ec/ewqwe.server.key.pem \
+cargo run --features openssl
+
+# Terminal 2 — Webapp API server (port 5175)
 cd webapp
 deno task api
 
-# Terminal 2: Start the frontend Vite dev server
+# Terminal 3 — Webapp Vite dev server (port 5174, HTTPS)
 cd webapp
 deno task vite
 ```
@@ -327,7 +281,7 @@ deno task vite
 
 > Install the Demo Wallet Browser Extension first, as described in the [Demo Wallet Browser Extension](./demo_wallet_extension.md) chapter.
 
-1. Open your browser to [http://localhost:5174](http://localhost:5174)
+1. Open your browser to [https://localhost:5174](https://localhost:5174)
 2. You should see the Relying Party demo interface
 3. The page will allow you to:
    - Select credential types (mDL, Proof of Age, National ID)
@@ -340,7 +294,7 @@ deno task vite
 When testing the webapp with mobile wallets on the Android Studio Emulator, you can view Chrome's console logs using Chrome DevTools Remote Debugging:
 
 1. **Enable USB Debugging on Emulator**: The Android Studio Emulator has USB debugging enabled by default
-2. **Open Chrome on the Emulator**: Launch Chrome and navigate to your webapp (e.g., via ngrok HTTPS URL)
+2. **Open Chrome on the Emulator**: Launch Chrome and navigate to `https://ewqwe.local:5174`
 3. **Access Remote Debugging**:
    - On your development machine, open Chrome
    - Navigate to `chrome://inspect/#devices`
@@ -408,6 +362,5 @@ interface InitTransactionResponse {
 
 | Variable | Default | Description |
 | -------- | ------- | ----------- |
-| `PUBLIC_URL` | `http://localhost:5175` | Public URL for OpenID4VP callbacks (must be accessible from mobile) |
 | `CREDENTIAL_VERIFIER_URL` | `https://127.0.0.1:9443` | URL of the Credential Verifier server |
-| `CA_CERT_PATH` | `../credential_verifier/.../ewqwe.chain.pem` | CA certificate for TLS to Credential Verifier |
+| `CA_CERT_PATH` | `../credential_verifier/src/tests/certificates/ec/ewqwe.chain.pem` | CA certificate for TLS to Credential Verifier |

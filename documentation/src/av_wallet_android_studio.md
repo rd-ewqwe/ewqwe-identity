@@ -19,7 +19,7 @@ The [AV App Android source code](https://github.com/eu-digital-identity-wallet/a
 > These are **two separate wallet applications** with fundamentally different profiles:
 >
 > | Feature | Age Verification App | EUDI Wallet |
-> |---------|---------------------|-------------|
+> | ------- | -------------------- | ----------- |
 > | **Profile** | Annex A (Age Verification) | HAIP (High Assurance) |
 > | **Client ID Scheme** | `redirect_uri` | `x509_san_dns`, `x509_hash` |
 > | **JAR (Signed Requests)** | Not required | Required (JWT with `x5c` header) |
@@ -30,6 +30,77 @@ The [AV App Android source code](https://github.com/eu-digital-identity-wallet/a
 > | **PAR / DPoP** | Disabled | Supported |
 >
 > If your Relying Party targets the **EUDI Wallet** using `x509_san_dns` with signed JARs, see the [EUDI Wallet guide](./eudi_wallet_android_studio.md) instead.
+
+## ewQwe Demo Setup
+
+> **⚠️ FOR TESTING ONLY** — The ewQwe fork contains a TLS bypass (trust-all certificates) strictly for local development. This **must not** be used in production.
+
+This section describes how to run the **ewQwe fork** of the AV App together with the ewQwe Relying Party Demo Webapp for end-to-end Annex A testing on a local Android emulator.
+
+**Repository**: <https://github.com/bgrieder/av-app-android-wallet-ui>
+
+### Prerequisites
+
+- Android Studio installed (see [EUDI Wallet guide — Installing Android Studio](./eudi_wallet_android_studio.md#installing-android-studio))
+- ewQwe Demo Webapp running (see [Demo Webapp](./demo_webapp.md))
+- ewQwe Credential Verifier running on port 9443
+
+> **Tip**: Use the same `EUDI_Dev_Device` emulator as the HAIP wallet. Both wallet apps can be installed simultaneously on the same emulator, and `ewqwe.local` will already be mapped to the host machine if you previously ran `./start_ewqwe_eudi_emulator.sh` from the HAIP repo. See the [EUDI Wallet ewQwe Demo Setup](./eudi_wallet_android_studio.md#ewqwe-demo-setup) for emulator setup instructions.
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/bgrieder/av-app-android-wallet-ui.git
+cd av-app-android-wallet-ui
+```
+
+### Step 2: Build and Run the App
+
+1. Open the project in Android Studio
+2. Select the `app` module and the `EUDI_Dev_Device` emulator (or any emulator with `ewqwe.local` mapped)
+3. Select the `devDebug` build variant (**Build → Select Build Variant**)
+4. Click **Run** (▶️) to deploy and start the AV App
+
+### Step 3: Initialize Documents
+
+Once the app is running:
+
+1. Follow the on-screen prompts to create a **PIN code**
+2. Obtain a Proof of Age credential from the dev issuer (`https://test.issuer.dev.ageverification.dev`)
+
+### Step 4: Open the Relying Party Demo Webapp
+
+1. Open **Chrome** on the Android emulator
+2. Navigate to `https://ewqwe.local:5174`
+3. Proceed past the certificate warning (expected — the demo uses a self-signed certificate)
+4. The Demo Webapp should load
+
+### Step 5: Request Proof of Age
+
+1. From the webapp, select **"Proof of Age"** (Annex A profile) and initiate a credential request
+2. This displays a QR code or deep link that opens the AV App
+3. Thanks to the TLS trust bypass, the wallet accepts the self-signed certificate and proceeds
+4. Approve the credential sharing in the wallet
+5. The webapp displays the verified age verification result
+
+### Security Bypass (Technical Details)
+
+The ewQwe fork adds a custom `HttpClient` configuration in `NetworkModule.kt` that trusts all TLS certificates and skips hostname verification:
+
+```kotlin
+val trustAllCerts = arrayOf<TrustManager>(
+    object : X509TrustManager {
+        override fun checkClientTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+        override fun checkServerTrusted(chain: Array<out X509Certificate>?, authType: String?) {}
+        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+    }
+)
+// HttpClient configured with sslManager using trustAllCerts + HostnameVerifier { _, _ -> true }
+```
+
+The Annex A profile uses `redirect_uri` as client ID scheme — no x5c certificate chain or Reader Trust Store is involved, so no reader trust bypass is needed (unlike the HAIP wallet).
+
+---
 
 ## Quick Start: Download APK Directly (No Build Required)
 
@@ -65,7 +136,7 @@ This means:
 
 The `client_id` in your Authorization Request must be the literal `redirect_uri:` prefix followed by the `response_uri`:
 
-```
+```text
 client_id=redirect_uri:https://your-rp.example.com/openid4vp/callback
 response_uri=https://your-rp.example.com/openid4vp/callback
 ```
@@ -75,7 +146,7 @@ response_uri=https://your-rp.example.com/openid4vp/callback
 The AV App registers the following URL schemes for deep-linking (same-device flow):
 
 | Scheme | Variable | Purpose |
-|--------|----------|---------|
+| ------ | -------- | ------- |
 | `av://` | `AV_SCHEME` | Primary AV App scheme |
 | `avsp://` | `AVSP_SCHEME` | AV Service Provider scheme |
 | `openid4vp://` | `OPENID4VP_SCHEME` | Standard OpenID4VP scheme |
@@ -84,7 +155,7 @@ The AV App registers the following URL schemes for deep-linking (same-device flo
 
 For same-device flows, construct a deep link URL using one of these schemes:
 
-```
+```text
 av://?client_id=redirect_uri:https://rp.example.com/cb&response_uri=https://rp.example.com/cb&...
 ```
 
@@ -121,7 +192,7 @@ cd av-app-android-wallet-ui
 The AV App has two build flavors:
 
 | Flavor | Issuer URL | Purpose |
-|--------|-----------|---------|
+| ------ | --------- | ------- |
 | `dev` | `https://test.issuer.dev.ageverification.dev` | Development / testing |
 | `demo` | `https://issuer.ageverification.dev` | Demo environment |
 
@@ -227,14 +298,14 @@ Logs from the AV App can be viewed using Logcat in Android Studio, identical to 
 
 Filter by the `EudiWallet` tag to see wallet-core events:
 
-```
+```text
 tag:EudiWallet
 ```
 
 ## Key Differences from the EUDI Wallet (Summary)
 
 | Aspect | AV App (Annex A) | EUDI Wallet (HAIP) |
-|--------|-----------------|-------------------|
+| ------ | --------------- | ----------------- |
 | **Trust model** | No trust lists needed; `redirect_uri` identifies the RP | Requires root CA in Reader Trust Store |
 | **Request signing** | Plain query parameters | Signed JAR with `x5c` certificate chain |
 | **Certificate requirements** | Standard HTTPS (any CA) | Specific CA must be trusted by wallet |

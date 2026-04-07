@@ -17,7 +17,7 @@ The [EUDI Android Wallet source code](https://github.com/eu-digital-identity-wal
 > There are **two separate wallet applications** with different purposes:
 >
 > | Wallet | Profile | Client ID Schemes | Credentials | URL Scheme |
-> |--------|---------|-------------------|-------------|------------|
+> | ------- | -------- | ------------------ | ------------ | ----------- |
 > | **EUDI Wallet** | HAIP (High Assurance) | `x509_san_dns`, `x509_hash` | PID, mDL, various | `eudi-openid4vp://` |
 > | **Age Verification App** | Annex A | `redirect_uri` | Proof of Age only | `av://` |
 >
@@ -30,6 +30,91 @@ The [EUDI Android Wallet source code](https://github.com/eu-digital-identity-wal
 > 3. Add your verifier's root CA certificate to the wallet's [Reader Trust Store](#adding-trusted-verifier-certificates)
 >
 > See the [User Journey](./user-journey.md) for a detailed comparison of both profiles.
+
+## ewQwe Demo Setup
+
+> **⚠️ FOR TESTING ONLY** — The ewQwe fork contains security bypasses (TLS trust-all, soft reader trust store) that are strictly for local development. These modifications **must not** be used in production.
+
+This section describes how to run the **ewQwe fork** of the EUDI Wallet together with the ewQwe Relying Party Demo Webapp for end-to-end HAIP testing on a local Android emulator.
+
+**Repository**: <https://github.com/bgrieder/android-eudi-haip-wallet/>
+
+### ewQwe Demo Prerequisites
+
+- Android Studio installed (see [Installing Android Studio](#installing-android-studio))
+- ewQwe Demo Webapp running (see [Demo Webapp](./demo_webapp.md))
+- ewQwe Credential Verifier running on port 9443
+
+### Step 1: Clone the Repository
+
+```bash
+git clone https://github.com/bgrieder/android-eudi-haip-wallet.git
+cd android-eudi-haip-wallet
+```
+
+### Step 2: Create and Start the Emulator
+
+Run the provided setup script from the project root. The script requires a rootable (Google APIs, non-Play Store) system image:
+
+```bash
+./start_ewqwe_eudi_emulator.sh
+```
+
+**What this script does:**
+
+1. Installs the correct Android system image if not already present
+2. Creates a custom AVD named `EUDI_Dev_Device` (Pixel 6 Pro profile)
+3. Enables hardware keyboard passthrough for typing on the emulator
+4. Starts the emulator with `-writable-system` (required for host mapping)
+5. **Maps `ewqwe.local` inside the emulator to your machine's LAN IP address** — this allows the wallet to reach your local dev servers
+
+> To map `ewqwe.local` manually (if you already have a running emulator):
+>
+> ```bash
+> adb root && adb shell "echo '10.0.2.2  ewqwe.local' >> /etc/hosts"
+> ```
+
+### Step 3: Build and Run the App
+
+1. Open the project in Android Studio
+2. Select the `app` module and the `EUDI_Dev_Device` emulator
+3. Click **Run** (▶️) to deploy and start the EUDI Wallet app
+
+### Step 4: Initialize Documents
+
+Once the app is running on the emulator:
+
+1. Follow the on-screen prompts to create a **PIN code**
+2. Tap the **"+"** icon and select **"Add a Document from List"**
+3. Select both **"mDL (MSO MDOC)"** and **"PID (MSO MDOC)"** from the `https://euidw.dev` issuer
+4. When prompted for the country, select **"Form EU"**
+5. Fill in the test form, submit it, and authorize the issuance
+
+### Step 5: Open the Relying Party Demo Webapp
+
+1. Open **Chrome** on the Android emulator
+2. Navigate to `https://ewqwe.local:5174`
+3. Proceed past the certificate warning (expected — the demo uses a self-signed certificate)
+4. The Demo Webapp should load
+
+### Step 6: Request HAIP Credentials
+
+1. From the webapp, select a HAIP credential type (mDL or National ID) and initiate a request
+2. This triggers a deep link that opens the EUDI Wallet
+3. Thanks to the TLS and reader trust bypasses, the wallet accepts the self-signed certificate chain and proceeds
+4. Approve the credential sharing in the wallet
+5. The webapp displays the verified claims
+
+### Security Bypasses (Technical Details)
+
+The ewQwe fork includes two trust bypasses to interoperate with self-signed development certificates:
+
+| Bypass | File | What it does |
+| ------- | ----- | ------------ |
+| **TLS trust-all** | `network-logic/.../di/NetworkModule.kt` | `X509TrustManager` that skips all certificate validation, allowing HTTPS connections to self-signed servers |
+| **Soft Reader Trust Store** | `core-logic/.../util/SoftReaderTrustStore.kt` | Returns `true` for all x5c chain validations instead of checking against trusted IACAs; logs a warning |
+
+---
 
 ## Quick Start: Download APK Directly (No Build Required)
 
@@ -51,6 +136,7 @@ This guide also explains how to build the wallet from source if you need to modi
 
 ## Table of Contents
 
+- [ewQwe Demo Setup](#ewqwe-demo-setup)
 - [HAIP Profile Requirements](#haip-profile-requirements)
 - [Prerequisites](#prerequisites)
 - [Installing Android Studio](#installing-android-studio)
@@ -74,7 +160,7 @@ The EUDI Wallet implements the **High Assurance Interoperability Profile (HAIP)*
 The EUDI Wallet only accepts these client identifier schemes:
 
 | Scheme | Format | Trust Verification |
-|--------|--------|-------------------|
+| ------- | ------- | ------------------ |
 | `x509_san_dns` | `x509_san_dns:<DNS>` | Verifier's certificate must have a `dNSName` SAN matching the client ID (e.g. `x509_san_dns:ewqwe.local` for the demo certs) |
 | `x509_hash` | `x509_hash:sha-256:base64url_encoded_hash` | Verifier's certificate must match the hash |
 
@@ -222,7 +308,7 @@ After installation completes:
 
 ## Cloning and Building the EUDI Wallet
 
-### Step 1: Clone the Repository
+### Step 1: Clone the wallet Repository
 
 ```bash
 git clone https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui.git
@@ -377,7 +463,7 @@ After enabling Developer Mode:
 ### Key Developer Options
 
 | Option | Description |
-|--------|-------------|
+| ------- | ------------ |
 | **USB debugging** | Required for connecting to Android Studio |
 | **Install via USB** | Allow APK installation over USB |
 | **Stay awake** | Screen stays on while charging (useful during development) |
@@ -471,7 +557,7 @@ This is the most common method for debugging webapps:
 2. Navigate to your webapp URL
 3. On your **Mac**, open Chrome and go to:
 
-   ```
+   ```text
    chrome://inspect/#devices
    ```
 
@@ -516,7 +602,7 @@ If your webapp runs inside an Android app's WebView:
 ### Debugging Tips
 
 | Scenario | Solution |
-|----------|----------|
+| --------- | --------- |
 | Device not appearing | Ensure USB debugging is enabled; try different USB cable |
 | Slow connection | Use USB 3.0 port; close unnecessary DevTools panels |
 | Cannot inspect HTTPS | Ensure valid/trusted certificates or use `--ignore-certificate-errors` |
@@ -548,7 +634,7 @@ adb logcat | grep -iE "eudi|openid4vp|presentation|mdoc|wallet"
 
 When using the `x509_san_dns` client ID scheme for OpenID4VP, the EUDI Wallet validates the verifier's x5c certificate chain against a built-in **Reader Trust Store**. By default, this trust store only contains EU PID Issuer CA certificates (e.g., `pidissuerca02_eu`, `dc4eu`, `r45_staging`). If your verifier uses a certificate signed by a different CA — such as Let's Encrypt — the wallet will reject the request with:
 
-```
+```text
 CERTIFICATE_PATH_ERROR: Trust anchor for certification path not found.
 Invalid resolution: InvalidJarJwt(cause=Untrusted x5c)
 ```
@@ -595,7 +681,7 @@ openssl x509 -in resources-logic/src/main/res/raw/isrg_root_x1.pem -noout -subje
 
 Edit the `WalletCoreConfigImpl.kt` for your build flavor (e.g., `demo`):
 
-```
+```text
 core-logic/src/demo/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
 ```
 
@@ -627,7 +713,6 @@ configureReaderTrustStore(
 This will build and install the updated wallet on your connected emulator or device. The wallet will now accept verifier certificates signed by Let's Encrypt.
 
 > **Note**: If you use a different CA (e.g., your own self-signed root CA), follow the same steps: place your root CA `.pem` file in `resources-logic/src/main/res/raw/` and add its resource reference to `configureReaderTrustStore()`. Only **root CA** certificates need to be added — intermediates are validated through the x5c chain provided in the JAR JWT header.
-
 > **Source**: [EUDI Wallet Configuration Guide](https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/blob/main/wiki/configuration.md)
 
 ## Troubleshooting
@@ -636,7 +721,7 @@ This will build and install the updated wallet on your connected emulator or dev
 
 #### Gradle Sync Failed
 
-```
+```text
 Error: Could not find com.android.tools.build:gradle:X.X.X
 ```
 

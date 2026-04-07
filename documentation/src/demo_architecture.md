@@ -4,13 +4,17 @@
 
 This demonstration system showcases a complete credential verification flow using three main components:
 
-1. **Demo Wallet Browser Extension** - A browser extension that acts as the user's digital wallet, securely storing verifiable credentials (Proof of Age, Driver's License, National ID cards, etc.)
-2. **Sample Demo Webapp** - A reference implementation of a Relying Party (RP) web application that requests and verifies credentials from users
-3. **ewQwe Credential Verifier Server** - A production-ready backend service that performs cryptographic verification on behalf of RPs
+1. **Demo Wallets**:
 
-The demo wallet and webapp work together to demonstrate the complete end-to-end flow of credential presentation and verification. The webapp serves as both a functional demonstration and a **starting point for Relying Parties** who want to implement credential verification in their own web applications.
+   1. Age Verification Mobile App - A mobile application that acts as a wallet on Android devices, allowing users to manage and present age verification credentials on . Emulator for testing and development purposes.
+   2. EUDI Wallet - A reference implementation of a mobile wallet based on the EU Digital Identity (EUDI) specifications and HAIP profile. The wallet runs in the Android Studio Emulator for testing and development purposes.
+   3. Browser Extension - A browser extension that acts as the user's digital wallet, demonstrating the (future) W3C Digital Credentials API for web applications.
+2. **Relying Party Demo Webapp** - A reference implementation of a Relying Party (RP) web application that requests and verifies credentials from users.
+3. **ewQwe Credential Verifier Server** - A production-ready backend service that performs cryptographic verification on behalf of Relying Parties.
 
-> **Source Code**: The webapp code is available on GitHub for developers to use as a reference implementation. (GitHub repository details to be provided)
+The demo wallets and webapp work together to demonstrate the complete end-to-end flow of credential presentation and verification. The webapp serves as both a functional demonstration and a **starting point for Relying Parties** who want to implement credential verification in their own web applications.
+
+> **Source Code**: The wallets and relying party webapp source codes are available on GitHub for developers to use as a reference implementation. (GitHub repository details to be provided)
 
 ## System Architecture
 
@@ -69,13 +73,13 @@ flowchart TB
 
 - ✅ Redis responding to `redis-cli ping`
 - ✅ Credential Verifier listening on <https://127.0.0.1:9443>
-- ✅ Webapp frontend accessible at <http://localhost:5174>
+- ✅ Webapp frontend accessible at <https://localhost:5174>
 - ✅ Webapp backend API proxied through Vite
 - ✅ Wallet extension loaded in browser toolbar
 
 ### Test the Complete Flow
 
-1. **Open the Demo Webapp**: Navigate to [http://localhost:5174](http://localhost:5174)
+1. **Open the Demo Webapp**: Navigate to [https://localhost:5174](https://localhost:5174)
 
 2. **Configure a Request**:
    - Select credential type (e.g., "Proof of Age")
@@ -104,7 +108,7 @@ flowchart TB
 
 | Component                  | Port  | Protocol | Description                                      |
 |----------------------------|-------|----------|--------------------------------------------------|
-| Webapp Frontend (Vite)     | 5174  | HTTP     | Demo RP web interface + proxy to backend API     |
+| Webapp Frontend (Vite)     | 5174  | HTTPS    | Demo RP web interface + proxy to backend API     |
 | Webapp Backend (Deno)      | 5175  | HTTP     | API server (proxied via Vite)                    |
 | Credential Verifier (Rust) | 9443  | HTTPS    | Verification server with TLS                     |
 | Redis                      | 6379  | TCP      | Session storage for Credential Verifier          |
@@ -172,17 +176,24 @@ redis-server
 
 # Terminal 2: Credential Verifier (Rust)
 cd credential_verifier
-RUST_LOG=info cargo run --features openssl
+RUST_LOG=info \
+X509_CERT_PATH=src/tests/certificates/ec/ewqwe.server.fullchain.pem \
+X509_KEY_PATH=src/tests/certificates/ec/ewqwe.server.key.pem \
+cargo run --features openssl
 
-# Terminal 3: Webapp (Deno - frontend + backend)
+# Terminal 3 — Webapp API server (port 5175)
 cd webapp
-deno task dev
+deno task api
+
+# Terminal 4 — Webapp Vite dev server (port 5174, HTTPS)
+cd webapp
+deno task vite
 
 # Browser: Install/load Demo Wallet extension
 # - From Chrome Web Store: Search "ewQwe Demo Wallet"
 # - Or load unpacked from wallet-extension/dist/
 
-# Open: http://localhost:5174
+# Open: https://localhost:5174
 ```
 
 **Alternative**: Use the provided shell script or tmux session for one-command startup.

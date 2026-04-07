@@ -12,7 +12,7 @@ Both mechanisms use the **OpenID for Verifiable Presentations (OpenID4VP) 1.0** 
 ## Authoritative References
 
 | Specification | Reference | Description |
-|---------------|-----------|-------------|
+| ------------- | --------- | ----------- |
 | **W3C Digital Credentials API** | [WICG Spec](https://wicg.github.io/digital-credentials/) | Browser API for requesting digital credentials (primary method) |
 | **OpenID4VP 1.0** | [OpenID Spec](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) | Protocol for requesting and presenting Verifiable Presentations |
 | **ISO/IEC 18013-5:2021** | [ISO Standard](https://www.iso.org/standard/69084.html) | Mobile driving licence (mDL) data format standard |
@@ -242,7 +242,7 @@ The OpenID4VP request structure is identical whether sent via the native API or 
 **Key Request Parameters**:
 
 | Parameter | Type | Required | Description |
-|-----------|------|----------|-------------|
+| --------- | ---- | -------- | ----------- |
 | `client_id` | string | ✓ | RP identifier (format depends on `client_id_scheme`) |
 | `client_id_scheme` | string | ✓ | How to validate client_id: `"redirect_uri"` (Annex A) \| `"x509_san_dns"` (HAIP) |
 | `response_type` | string | ✓ | Always `"vp_token"` for credential presentations |
@@ -259,7 +259,7 @@ The OpenID4VP request structure is identical whether sent via the native API or 
 The webapp uses two profiles that affect how requests are formatted:
 
 | Aspect | HAIP Profile (mDL, PID) | Annex A Profile (Proof of Age) |
-|--------|------------------------|-------------------------------|
+| ------ | ---------------------- | ----------------------------- |
 | **Client ID Format** | `x509_san_dns:<DNS>` (e.g. `x509_san_dns:ewqwe.local` for the demo) | `redirect_uri:https://host/callback` |
 | **Request Delivery** | `request_uri` → wallet fetches signed JAR | All parameters inline in URL (no `request_uri`) |
 | **Request Format** | Signed JAR (JWT with x5c) | Plain URL parameters (redirect_uri forbids signing) |
@@ -398,7 +398,7 @@ interface DescriptorMapEntry {
 The demo wallet supports multiple credential formats following international and EU standards:
 
 | Credential Type | docType | Namespace | Standard |
-|-----------------|---------|-----------|----------|
+| --------------- | ------- | --------- | -------- |
 | **Proof of Age** | `eu.europa.ec.av.1` | `eu.europa.ec.av.1` | EU Age Verification Profile |
 | **Mobile Driver's License** | `org.iso.18013.5.1.mDL` | `org.iso.18013.5.1` | ISO/IEC 18013-5:2021 |
 | **EU Personal ID** | `eu.europa.ec.eudi.pid.1` | `eu.europa.ec.eudi.pid.1` | EU Digital Identity Wallet ARF |
@@ -487,7 +487,7 @@ constraints: {
 This implementation is fully compliant with [Annex A](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile) requirements:
 
 | Requirement | Annex A Reference | Demo Implementation | Status |
-|-------------|-------------------|---------------------|--------|
+| ----------- | ----------------- | ------------------- | ------ |
 | Primary method: W3C Digital Credentials API | [Section A.5](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation) | Attempted first, falls back gracefully | ✅ |
 | Fallback: OpenID4VP | [Section A.5.2](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#openid-for-verifiable-presentations-profile-requirements) | postMessage transport with OpenID4VP protocol | ✅ |
 | Response type `vp_token` | Section A.5.2 | Implemented in request builder | ✅ |
@@ -540,7 +540,7 @@ sequenceDiagram
   Note over RP: 9. Send VP token to backend<br/>for verification
 ```
 
-## Security Considerations
+## Webapp -> Wallet: Security Considerations
 
 ### Message Origin Validation
 
@@ -601,7 +601,7 @@ This is **exactly the behavior** prescribed by Annex A for scenarios where the p
 
 ### Detailed Compliance Matrix
 
-### Detailed Compliance Matrix
+### The Webapp -> Wallet Detailed Compliance Matrix
 
 #### ✅ Requirement: Primary Method (W3C Digital Credentials API)
 
@@ -1011,7 +1011,7 @@ npm run build
 
 Check browser console for detailed message logs:
 
-```
+```text
 [EU AV Wallet] Content script loaded
 [EU AV Wallet] Setting up protocol handler and message listener
 [EU AV Wallet] Received message: EU_AV_WALLET_REQUEST
