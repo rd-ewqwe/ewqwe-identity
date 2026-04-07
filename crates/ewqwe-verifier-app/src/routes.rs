@@ -1,12 +1,13 @@
 //! HTTP route handlers for the Verifier App.
 
-use std::sync::Arc;
-
 use actix_identity::Identity;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use chrono::{DateTime, Utc};
-use ewqwe_openid4vp::{InitTransactionRequest, OpenID4VPService, ProfileId};
+use ewqwe_openid4vp::{InitTransactionRequest, OpenID4VPService, determine_profile, get_credential_type};
+use serde::Deserialize;
 use serde_json::json;
+use std::sync::Arc;
+use tracing::info;
 use uuid::Uuid;
 
 use crate::{
@@ -20,7 +21,6 @@ use crate::{
     },
     qr_user_map::QrUserMap,
 };
-use serde::Deserialize;
 
 // ─── Error helpers ────────────────────────────────────────────────────────────
 
@@ -63,7 +63,9 @@ async fn current_user(
     identity: Option<Identity>,
     store: &DynVerifierAppStore,
 ) -> Option<UserResponse> {
+    info!("Verifier App: session user lookup {}", identity.is_some());
     let id = identity?.id().ok()?;
+    info!(user_id = %id, "Verifier App: session user lookup");
     match store.get_user_by_id(&id).await {
         Ok(Some(user)) if user.is_active => Some(UserResponse::from(user)),
         _ => None,
@@ -112,6 +114,7 @@ pub async fn bootstrap(
         last_name: body.last_name.clone(),
         role: VerifierAppRole::Admin,
         is_superadmin: true,
+        allowed_credential_types: Vec::new(),
     };
 
     let user = match store.create_user(&record).await {
@@ -200,35 +203,76 @@ pub async fn me(
 
 /// `POST /verifier_app/api/qr/generate`
 ///
-/// Initiates an Annex-A OpenID4VP age-verification transaction and returns the
+/// Initiates an OpenID4VP credential verification transaction and returns the
 /// QR code data URL together with the transaction ID for status polling.
+///
+/// Accepts an optional `credential_type` in the JSON body: `"proof-of-age"`
+/// (default), `"mdl"`, or `"national-id"`.  The profile (AnnexA / HAIP) is
+/// determined automatically from the credential type.
 pub async fn generate_qr(
     req: HttpRequest,
     identity: Option<Identity>,
     store: web::Data<Arc<DynVerifierAppStore>>,
     service: web::Data<Arc<OpenID4VPService>>,
     qr_map: web::Data<Arc<QrUserMap>>,
+    config: web::Data<Arc<VerifierAppConfig>>,
+    body: web::Json<crate::models::GenerateQrRequest>,
 ) -> HttpResponse {
+    info!("Verifier App: QR generation requested");
+
     let user = match current_user(identity, &store).await {
         Some(u) => u,
         None => return unauthorized(),
     };
 
+    // Resolve credential type (default: proof-of-age).
+    let credential_type = body
+        .credential_type
+        .as_deref()
+        .unwrap_or("proof-of-age");
+
+    // Validate the credential type is known.
+    if get_credential_type(credential_type).is_none() {
+        return bad_request(&format!("unknown credential type: {credential_type}"));
+    }
+
+    // ── Permission check ───────────────────────────────────────────────
+    // First check the server-level allowed types, then the user-level list.
+    if !config.allowed_credential_types.is_empty()
+        && !config.allowed_credential_types.iter().any(|t| t == credential_type)
+    {
+        return bad_request(&format!(
+            "credential type '{credential_type}' is not enabled on this server"
+        ));
+    }
+    if !user.allowed_credential_types.is_empty()
+        && !user.allowed_credential_types.iter().any(|t| t == credential_type)
+    {
+        return HttpResponse::Forbidden().json(json!({
+            "error": format!("you are not allowed to request '{credential_type}' credentials")
+        }));
+    }
+
+    info!(user_id = %user.id, credential_type = %credential_type,
+          "Verifier App: generating QR transaction");
+
     // Build the public URL the wallet will use for `response_uri`.
-    // We derive it from the incoming request so no extra config is required.
-    let public_url = {
+    let public_url = config.public_url.clone().unwrap_or_else(|| {
         let conn = req.connection_info();
         format!("{}://{}", conn.scheme(), conn.host())
-    };
+    });
+
+    // Determine profile from credential type.
+    let profile = determine_profile(Some(credential_type), None);
 
     let init_req = InitTransactionRequest {
         public_url,
-        profile: Some(ProfileId::AnnexA),
-        dcql_query: None, // use default age-verification DCQL
+        profile: Some(profile),
+        dcql_query: None, // use default DCQL for the credential type
         nonce: None,
         state: None,
         client_metadata: None,
-        credential_type: None,
+        credential_type: Some(credential_type.to_string()),
         transaction_data: None,
     };
 
@@ -253,6 +297,7 @@ pub async fn generate_qr(
     tracing::info!(
         user_id = %user.id,
         transaction_id = %resp.transaction_id,
+        credential_type = %credential_type,
         "Verifier App: QR transaction created"
     );
 
@@ -373,6 +418,7 @@ pub async fn create_user(
         last_name: body.last_name.clone(),
         role: body.role.clone().unwrap_or_default(),
         is_superadmin: false,
+        allowed_credential_types: body.allowed_credential_types.clone().unwrap_or_default(),
     };
 
     match store.create_user(&record).await {
@@ -415,6 +461,7 @@ pub async fn update_user(
         role: body.role.clone(),
         is_active: body.is_active,
         password_hash,
+        allowed_credential_types: body.allowed_credential_types.clone(),
     };
 
     match store.update_user(&user_id, &changes).await {
@@ -553,7 +600,11 @@ pub async fn get_settings(
         Ok(v) => v.or_else(|| config.logo_url.clone()),
         Err(_) => config.logo_url.clone(),
     };
-    HttpResponse::Ok().json(json!({ "app_name": app_name, "logo_url": logo_url }))
+    HttpResponse::Ok().json(json!({
+        "app_name": app_name,
+        "logo_url": logo_url,
+        "allowed_credential_types": config.allowed_credential_types,
+    }))
 }
 
 /// Body for `PUT /verifier_app/api/admin/settings`.

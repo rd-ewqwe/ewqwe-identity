@@ -28,4 +28,5 @@ tracing = { workspace = true }
 uuid = { workspace = true }
 
 [dev-dependencies]
+tokio = { workspace = true }
 toml = { workspace = true }

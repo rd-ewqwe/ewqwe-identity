@@ -46,7 +46,7 @@ impl FromStr for VerifierAppRole {
 // ============================================================================
 
 /// A Verifier App user account, as stored in the database.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VerifierAppUser {
     pub id: String,
     pub email: String,
@@ -59,6 +59,12 @@ pub struct VerifierAppUser {
     /// Marks the first admin created by the bootstrap endpoint.
     /// Superadmin accounts cannot be deleted via the UI.
     pub is_superadmin: bool,
+    /// Credential types this user is allowed to request.
+    ///
+    /// Empty means all types are allowed.
+    /// Valid values: `"proof-of-age"`, `"mdl"`, `"national-id"`.
+    #[serde(default)]
+    pub allowed_credential_types: Vec<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -77,6 +83,7 @@ pub struct UserResponse {
     pub role: VerifierAppRole,
     pub is_active: bool,
     pub is_superadmin: bool,
+    pub allowed_credential_types: Vec<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -91,6 +98,7 @@ impl From<VerifierAppUser> for UserResponse {
             role: u.role,
             is_active: u.is_active,
             is_superadmin: u.is_superadmin,
+            allowed_credential_types: u.allowed_credential_types,
             created_at: u.created_at,
             updated_at: u.updated_at,
         }
@@ -111,6 +119,8 @@ pub struct NewUserRecord {
     pub last_name: Option<String>,
     pub role: VerifierAppRole,
     pub is_superadmin: bool,
+    /// Credential types this user is allowed to request (empty = all).
+    pub allowed_credential_types: Vec<String>,
 }
 
 /// Partial update applied by [`crate::db::VerifierAppStore::update_user`].
@@ -124,6 +134,8 @@ pub struct UserChanges {
     pub is_active: Option<bool>,
     /// Pre-hashed password (argon2id).  `None` = no password change.
     pub password_hash: Option<String>,
+    /// Credential types this user is allowed to request.  `None` = no change.
+    pub allowed_credential_types: Option<Vec<String>>,
 }
 
 // ============================================================================
@@ -154,6 +166,8 @@ pub struct CreateUserRequest {
     pub first_name: Option<String>,
     pub last_name: Option<String>,
     pub role: Option<VerifierAppRole>,
+    /// Credential types this user is allowed to request.  Empty = all.
+    pub allowed_credential_types: Option<Vec<String>>,
 }
 
 /// Body for `PUT /verifier_app/api/admin/users/{id}`.
@@ -164,13 +178,17 @@ pub struct UpdateUserRequest {
     pub role: Option<VerifierAppRole>,
     pub is_active: Option<bool>,
     pub new_password: Option<String>,
+    /// Credential types this user is allowed to request.  `null` = no change.
+    pub allowed_credential_types: Option<Vec<String>>,
 }
 
 /// Body for `POST /verifier_app/api/qr/generate`.
 #[derive(Debug, Deserialize, Default)]
 pub struct GenerateQrRequest {
-    /// Reserved for future multi-profile support. Currently only `"annex_a"` is supported.
-    pub profile: Option<String>,
+    /// Credential type to request: `"proof-of-age"`, `"mdl"`, or `"national-id"`.
+    ///
+    /// Defaults to `"proof-of-age"` when absent.
+    pub credential_type: Option<String>,
 }
 
 /// Query parameters for `GET /verifier_app/api/admin/journal`.

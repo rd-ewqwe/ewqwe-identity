@@ -21,6 +21,12 @@ pub enum VerifierAppDbBackend {
         /// `postgres://user:password@host/db` style connection URL.
         url: String,
     },
+
+    /// MySQL / MariaDB.
+    Mysql {
+        /// `mysql://user:password@host/db` style connection URL.
+        url: String,
+    },
 }
 
 /// Top-level configuration section for the Verifier App.
@@ -31,7 +37,9 @@ pub enum VerifierAppDbBackend {
 /// [verifier_app]
 /// enabled = true
 /// app_name = "My Age Verifier"
-/// # session_secret_key = "<128 hex chars = 64 bytes>"   # stable sessions across restarts
+/// # public_url = "https://verifier.example.com:9443"
+/// # allowed_credential_types = ["proof-of-age", "mdl", "national-id"]
+/// # session_secret = "<128 hex chars = 64 bytes>"   # stable sessions across restarts
 ///
 /// # Database backend (default: sqlite_memory):
 /// backend = "sqlite_memory"
@@ -43,6 +51,10 @@ pub enum VerifierAppDbBackend {
 /// # PostgreSQL (HA / multi-instance):
 /// # backend = "postgres"
 /// # url     = "postgres://ewqwe:ewqwe@localhost/ewqwe"
+///
+/// # MySQL / MariaDB:
+/// # backend = "mysql"
+/// # url     = "mysql://ewqwe:ewqwe@localhost/ewqwe"
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct VerifierAppConfig {
@@ -59,6 +71,22 @@ pub struct VerifierAppConfig {
     /// Optional URL for a custom logo shown in the UI header.
     #[serde(default)]
     pub logo_url: Option<String>,
+
+    /// Public base URL used to construct the `response_uri` for OpenID4VP
+    /// wallet callbacks (e.g. `"https://verifier.example.com:9443"`).
+    ///
+    /// When absent, the URL is derived from the incoming HTTP request, which
+    /// works for simple setups but fails behind reverse proxies or when the
+    /// server binds to `0.0.0.0`.
+    #[serde(default)]
+    pub public_url: Option<String>,
+
+    /// Credential types that verifier users are allowed to request.
+    ///
+    /// Valid values: `"proof-of-age"`, `"mdl"`, `"national-id"`.
+    /// When empty or absent, all credential types are allowed.
+    #[serde(default)]
+    pub allowed_credential_types: Vec<String>,
 
     /// Hex-encoded secret used to sign and encrypt session cookies.
     ///
@@ -90,7 +118,7 @@ mod tests {
             enabled = true
             app_name = "My Verifier App"
             logo_url = "https://example.com/logo.png"
-            session_secret_key = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
+            session_secret = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 
             [db]
             backend = "sqlite_file"
@@ -108,6 +136,8 @@ mod tests {
             config.session_secret.as_deref(),
             Some("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
         );
+        assert!(config.public_url.is_none());
+        assert!(config.allowed_credential_types.is_empty());
 
         match config.db {
             VerifierAppDbBackend::SqliteFile { path } => {
@@ -115,5 +145,43 @@ mod tests {
             }
             _ => panic!("Expected SqliteFile backend"),
         }
+    }
+
+    #[test]
+    fn test_toml_mysql_backend() {
+        let toml_str = r#"
+            enabled = true
+
+            [db]
+            backend = "mysql"
+            url = "mysql://ewqwe:ewqwe@localhost/ewqwe"
+        "#;
+
+        let config: VerifierAppConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        match config.db {
+            VerifierAppDbBackend::Mysql { url } => {
+                assert_eq!(url, "mysql://ewqwe:ewqwe@localhost/ewqwe");
+            }
+            _ => panic!("Expected Mysql backend"),
+        }
+    }
+
+    #[test]
+    fn test_toml_public_url_and_credential_types() {
+        let toml_str = r#"
+            enabled = true
+            public_url = "https://verifier.example.com:9443"
+            allowed_credential_types = ["proof-of-age", "mdl"]
+
+            [db]
+            backend = "sqlite_memory"
+        "#;
+
+        let config: VerifierAppConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        assert_eq!(
+            config.public_url.as_deref(),
+            Some("https://verifier.example.com:9443")
+        );
+        assert_eq!(config.allowed_credential_types, vec!["proof-of-age", "mdl"]);
     }
 }

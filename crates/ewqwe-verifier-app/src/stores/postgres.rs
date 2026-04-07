@@ -7,7 +7,7 @@ use std::str::FromStr as _;
 use crate::{
     db::VerifierAppStore,
     error::{VerifierAppError, VerifierAppResult},
-    models::{NewUserRecord, VerifierAppRole, VerifierAppUser, UserChanges},
+    models::{NewUserRecord, UserChanges, VerifierAppRole, VerifierAppUser},
 };
 
 // ============================================================================
@@ -46,6 +46,7 @@ impl PostgresVerifierAppStore {
                 role           TEXT NOT NULL DEFAULT 'verifier',
                 is_active      BOOLEAN NOT NULL DEFAULT TRUE,
                 is_superadmin  BOOLEAN NOT NULL DEFAULT FALSE,
+                allowed_credential_types TEXT,
                 created_at     TIMESTAMPTZ NOT NULL,
                 updated_at     TIMESTAMPTZ NOT NULL
             );
@@ -87,11 +88,22 @@ impl PostgresVerifierAppStore {
         role: String,
         is_active: bool,
         is_superadmin: bool,
+        allowed_credential_types: Option<String>,
         created_at: DateTime<Utc>,
         updated_at: DateTime<Utc>,
     ) -> VerifierAppResult<VerifierAppUser> {
         let role = VerifierAppRole::from_str(&role)
             .map_err(|e| VerifierAppError::Storage(format!("invalid role in db: {e}")))?;
+
+        let allowed_credential_types = allowed_credential_types
+            .filter(|s| !s.is_empty())
+            .map(|s| {
+                s.split(',')
+                    .map(|t| t.trim().to_string())
+                    .collect::<Vec<_>>()
+            })
+            .unwrap_or_default();
+
         Ok(VerifierAppUser {
             id,
             email,
@@ -101,6 +113,7 @@ impl PostgresVerifierAppStore {
             role,
             is_active,
             is_superadmin,
+            allowed_credential_types,
             created_at,
             updated_at,
         })
@@ -120,12 +133,13 @@ type UserRow = (
     String,
     bool,
     bool,
+    Option<String>,
     DateTime<Utc>,
     DateTime<Utc>,
 );
 
 const SELECT_COLS: &str = "id, email, password_hash, first_name, last_name, \
-    role, is_active, is_superadmin, created_at, updated_at";
+    role, is_active, is_superadmin, allowed_credential_types, created_at, updated_at";
 
 #[async_trait]
 impl VerifierAppStore for PostgresVerifierAppStore {
@@ -139,11 +153,16 @@ impl VerifierAppStore for PostgresVerifierAppStore {
 
     async fn create_user(&self, record: &NewUserRecord) -> VerifierAppResult<VerifierAppUser> {
         let now = Utc::now();
+        let allowed = if record.allowed_credential_types.is_empty() {
+            None
+        } else {
+            Some(record.allowed_credential_types.join(","))
+        };
         sqlx::query(
             "INSERT INTO qrcode_app_users \
              (id, email, password_hash, first_name, last_name, role, \
-              is_active, is_superadmin, created_at, updated_at) \
-             VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7, $8, $8)",
+              is_active, is_superadmin, allowed_credential_types, created_at, updated_at) \
+             VALUES ($1, $2, $3, $4, $5, $6, TRUE, $7, $8, $9, $9)",
         )
         .bind(&record.id)
         .bind(&record.email)
@@ -152,6 +171,7 @@ impl VerifierAppStore for PostgresVerifierAppStore {
         .bind(&record.last_name)
         .bind(record.role.as_str())
         .bind(record.is_superadmin)
+        .bind(&allowed)
         .bind(now)
         .execute(&self.pool)
         .await
@@ -181,8 +201,8 @@ impl VerifierAppStore for PostgresVerifierAppStore {
         .await
         .map_err(|e| VerifierAppError::Storage(format!("get_user_by_email: {e}")))?;
 
-        row.map(|(id, email, ph, fn_, ln, role, ia, isa, ca, ua)| {
-            Self::parse_row(id, email, ph, fn_, ln, role, ia, isa, ca, ua)
+        row.map(|(id, email, ph, fn_, ln, role, ia, isa, act, ca, ua)| {
+            Self::parse_row(id, email, ph, fn_, ln, role, ia, isa, act, ca, ua)
         })
         .transpose()
     }
@@ -196,8 +216,8 @@ impl VerifierAppStore for PostgresVerifierAppStore {
         .await
         .map_err(|e| VerifierAppError::Storage(format!("get_user_by_id: {e}")))?;
 
-        row.map(|(id, email, ph, fn_, ln, role, ia, isa, ca, ua)| {
-            Self::parse_row(id, email, ph, fn_, ln, role, ia, isa, ca, ua)
+        row.map(|(id, email, ph, fn_, ln, role, ia, isa, act, ca, ua)| {
+            Self::parse_row(id, email, ph, fn_, ln, role, ia, isa, act, ca, ua)
         })
         .transpose()
     }
@@ -218,13 +238,17 @@ impl VerifierAppStore for PostgresVerifierAppStore {
             .map_err(|e| VerifierAppError::Storage(format!("list_users: {e}")))?;
 
         rows.into_iter()
-            .map(|(id, email, ph, fn_, ln, role, ia, isa, ca, ua)| {
-                Self::parse_row(id, email, ph, fn_, ln, role, ia, isa, ca, ua)
+            .map(|(id, email, ph, fn_, ln, role, ia, isa, act, ca, ua)| {
+                Self::parse_row(id, email, ph, fn_, ln, role, ia, isa, act, ca, ua)
             })
             .collect()
     }
 
-    async fn update_user(&self, id: &str, changes: &UserChanges) -> VerifierAppResult<VerifierAppUser> {
+    async fn update_user(
+        &self,
+        id: &str,
+        changes: &UserChanges,
+    ) -> VerifierAppResult<VerifierAppUser> {
         let current = self
             .get_user_by_id(id)
             .await?
@@ -244,19 +268,29 @@ impl VerifierAppStore for PostgresVerifierAppStore {
             .password_hash
             .as_deref()
             .or(current.password_hash.as_deref());
+        let allowed = changes
+            .allowed_credential_types
+            .as_ref()
+            .unwrap_or(&current.allowed_credential_types);
+        let allowed_str = if allowed.is_empty() {
+            None
+        } else {
+            Some(allowed.join(","))
+        };
         let now = Utc::now();
 
         sqlx::query(
             "UPDATE qrcode_app_users SET \
              first_name=$1, last_name=$2, role=$3, is_active=$4, \
-             password_hash=$5, updated_at=$6 \
-             WHERE id=$7",
+             password_hash=$5, allowed_credential_types=$6, updated_at=$7 \
+             WHERE id=$8",
         )
         .bind(first_name)
         .bind(last_name)
         .bind(role.as_str())
         .bind(is_active)
         .bind(password_hash)
+        .bind(&allowed_str)
         .bind(now)
         .bind(id)
         .execute(&self.pool)

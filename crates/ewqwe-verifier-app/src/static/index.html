@@ -335,7 +335,7 @@
         </div>
         <h1 id="login-title" class="text-2xl font-bold mb-1">Sign In</h1>
         <p id="login-subtitle" class="text-white/55 text-sm mb-7">
-          Age Verification Dashboard
+          Credential Verification Dashboard
         </p>
 
         <form
@@ -499,11 +499,25 @@
         >
           <!-- QR + status -->
           <div class="glass p-6 w-full max-w-sm text-center">
-            <h2 class="text-lg font-bold mb-4">Age Verification QR</h2>
+            <h2 id="qr-title" class="text-lg font-bold mb-4">
+              Credential Verification QR
+            </h2>
+
+            <!-- Credential type selector -->
+            <div id="qr-type-selector" class="mb-4">
+              <label class="block text-sm text-white/60 mb-1 text-left"
+                >Credential Type</label
+              >
+              <select id="qr-credential-type" class="form-input text-sm">
+                <option value="proof-of-age">Proof of Age (EU AV)</option>
+                <option value="mdl">Mobile Driver's License (mDL)</option>
+                <option value="national-id">National ID (EU PID)</option>
+              </select>
+            </div>
 
             <div id="qr-area-empty" class="">
               <p class="text-white/55 text-sm mb-4">
-                Generate a QR code for the user to scan with their EU Wallet.
+                Generate a QR code for the user to scan with their wallet.
               </p>
               <button
                 onclick="generateQR()"
@@ -533,7 +547,7 @@
                 Waiting for scan…
               </div>
               <p class="text-white/45 text-xs">
-                Scan with your EU Digital Identity Wallet
+                Scan with your digital identity wallet
               </p>
               <button onclick="resetQR()" class="btn-ghost text-sm">
                 New QR Code
@@ -557,9 +571,9 @@
                   d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
                 />
               </svg>
-              <p class="text-green-300 font-bold text-xl">Age Verified ✓</p>
+              <p class="text-green-300 font-bold text-xl">Verified ✓</p>
               <p class="text-white/55 text-sm">
-                The user meets the age requirement.
+                The credential was successfully verified.
               </p>
               <button onclick="resetQR()" class="btn-primary mt-2">
                 New Verification
@@ -815,6 +829,40 @@
             />
             <label for="mu-active" class="text-sm text-white/70">Active</label>
           </div>
+          <div>
+            <label class="block text-sm text-white/70 mb-1"
+              >Allowed Credential Types</label
+            >
+            <p class="text-xs text-white/40 mb-2">
+              Leave all unchecked to allow every type.
+            </p>
+            <div id="mu-cred-types" class="flex flex-wrap gap-3">
+              <label class="flex items-center gap-1 text-sm text-white/70">
+                <input
+                  type="checkbox"
+                  value="proof-of-age"
+                  class="mu-cred-cb w-4 h-4 accent-brand-indigo"
+                />
+                Proof of Age
+              </label>
+              <label class="flex items-center gap-1 text-sm text-white/70">
+                <input
+                  type="checkbox"
+                  value="mdl"
+                  class="mu-cred-cb w-4 h-4 accent-brand-indigo"
+                />
+                mDL
+              </label>
+              <label class="flex items-center gap-1 text-sm text-white/70">
+                <input
+                  type="checkbox"
+                  value="national-id"
+                  class="mu-cred-cb w-4 h-4 accent-brand-indigo"
+                />
+                National ID (PID)
+              </label>
+            </div>
+          </div>
           <p id="mu-error" class="text-red-400 text-sm hidden"></p>
           <div class="flex gap-3 mt-1">
             <button type="submit" class="btn-primary flex-1">Save</button>
@@ -843,6 +891,7 @@
         user: null, // { id, email, role, ... }
         bootstrapped: false,
         appName: "Verifier App",
+        allowedCredentialTypes: [], // server-level allowed types
         qrTxId: null,
         qrPollTimer: null,
         journalOffset: 0,
@@ -1002,6 +1051,13 @@
         if (settingsRes.ok && settingsRes.data?.app_name) {
           applyAppName(settingsRes.data.app_name);
         }
+        if (
+          settingsRes.ok &&
+          Array.isArray(settingsRes.data?.allowed_credential_types)
+        ) {
+          state.allowedCredentialTypes =
+            settingsRes.data.allowed_credential_types;
+        }
 
         state.bootstrapped =
           statusRes.ok && statusRes.data?.bootstrapped === true;
@@ -1013,6 +1069,7 @@
 
         if (meRes.ok && meRes.data?.id) {
           state.user = meRes.data;
+          filterCredentialTypeDropdown();
           showPage("dashboard");
         } else {
           showPage("login");
@@ -1030,6 +1087,7 @@
         const r = await api("POST", "/auth/login", { email, password });
         if (r.ok) {
           state.user = r.data;
+          filterCredentialTypeDropdown();
           showPage("dashboard");
         } else {
           err.textContent = r.data?.error || "Invalid credentials";
@@ -1089,6 +1147,40 @@
       }
 
       // ── QR Generation & Polling ────────────────────────────────────────
+
+      /** Filter the credential-type dropdown based on server + user permissions */
+      function filterCredentialTypeDropdown() {
+        const select = document.getElementById("qr-credential-type");
+        if (!select) return;
+        const serverTypes = state.allowedCredentialTypes;
+        const userTypes = state.user?.allowed_credential_types;
+        // If both lists are empty, show all options (no restrictions)
+        if (
+          (!serverTypes || serverTypes.length === 0) &&
+          (!userTypes || userTypes.length === 0)
+        )
+          return;
+        const options = Array.from(select.options);
+        options.forEach((opt) => {
+          const allowed =
+            (serverTypes.length === 0 || serverTypes.includes(opt.value)) &&
+            (!userTypes ||
+              userTypes.length === 0 ||
+              userTypes.includes(opt.value));
+          opt.disabled = !allowed;
+          opt.hidden = !allowed;
+        });
+        // If current selection is now hidden, pick first visible
+        if (select.selectedOptions[0]?.hidden) {
+          const first = options.find((o) => !o.hidden);
+          if (first) select.value = first.value;
+        }
+        // If only one option visible, hide the selector entirely
+        const visible = options.filter((o) => !o.hidden);
+        const container = document.getElementById("qr-type-selector");
+        if (container && visible.length <= 1) container.classList.add("hidden");
+      }
+
       function qrArea(name) {
         ["empty", "loading", "code", "verified", "failed"].forEach((n) => {
           const el = document.getElementById("qr-area-" + n);
@@ -1114,7 +1206,9 @@
 
       function resetQR() {
         stopQrPoll();
-        qrArea("empty");
+        const sel = document.getElementById("qr-type-selector");
+        if (sel) sel.classList.remove("hidden");
+        generateQR();
       }
 
       async function generateQR() {
@@ -1122,13 +1216,22 @@
         const btn = document.getElementById("qr-generate-btn");
         if (btn) btn.disabled = true;
 
-        const r = await api("POST", "/qr/generate");
+        const credType =
+          document.getElementById("qr-credential-type")?.value ||
+          "proof-of-age";
+        const r = await api("POST", "/qr/generate", {
+          credential_type: credType,
+        });
         if (!r.ok) {
           toast("Failed to generate QR: " + (r.data?.error || r.status), "err");
           qrArea("empty");
           if (btn) btn.disabled = false;
           return;
         }
+
+        // Hide the type selector while a QR is active.
+        const sel = document.getElementById("qr-type-selector");
+        if (sel) sel.classList.add("hidden");
 
         state.qrTxId = r.data.transaction_id;
         const img = document.getElementById("qr-img");
@@ -1162,7 +1265,7 @@
         ) {
           stopQrPoll();
           qrArea("verified");
-          toast("Age verification successful!");
+          toast("Verification successful!");
         } else if (
           status === "failed" ||
           status === "rejected" ||
@@ -1223,6 +1326,9 @@
         document.getElementById("mu-password-wrap").style.display = "";
         document.getElementById("mu-role").value = "verifier";
         document.getElementById("mu-active-wrap").classList.add("hidden");
+        document
+          .querySelectorAll(".mu-cred-cb")
+          .forEach((cb) => (cb.checked = false));
         document.getElementById("mu-error").classList.add("hidden");
         document.getElementById("modal-user").classList.remove("hidden");
       }
@@ -1240,6 +1346,10 @@
         document.getElementById("mu-role").value = u.role || "verifier";
         document.getElementById("mu-active-wrap").classList.remove("hidden");
         document.getElementById("mu-active").checked = u.is_active !== false;
+        const userCreds = u.allowed_credential_types || [];
+        document.querySelectorAll(".mu-cred-cb").forEach((cb) => {
+          cb.checked = userCreds.includes(cb.value);
+        });
         document.getElementById("mu-error").classList.add("hidden");
         document.getElementById("modal-user").classList.remove("hidden");
       }
@@ -1269,6 +1379,9 @@
               document.getElementById("mu-first").value.trim() || null,
             last_name: document.getElementById("mu-last").value.trim() || null,
             role: document.getElementById("mu-role").value,
+            allowed_credential_types: Array.from(
+              document.querySelectorAll(".mu-cred-cb:checked"),
+            ).map((cb) => cb.value),
           };
           const r = await api("POST", "/admin/users", body);
           if (r.ok) {
@@ -1287,6 +1400,9 @@
             role: document.getElementById("mu-role").value,
             is_active: document.getElementById("mu-active").checked,
             new_password: password.length >= 12 ? password : null,
+            allowed_credential_types: Array.from(
+              document.querySelectorAll(".mu-cred-cb:checked"),
+            ).map((cb) => cb.value),
           };
           const r = await api("PUT", `/admin/users/${state.editUserId}`, body);
           if (r.ok) {

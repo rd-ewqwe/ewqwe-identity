@@ -71,7 +71,7 @@ Key parameters:
 ### Cargo Workspace Structure
 
 - **Root workspace** (`Cargo.toml`): Defines shared dependencies via `[workspace.dependencies]`
-- **Members**: `credential_verifier`, `crates/logging`, `crates/openid4vp`, `crates/ewqwe-digital-identity`, `crates/ewqwe-digital-credential`
+- **Members**: `credential_verifier`, `crates/logging`, `crates/openid4vp`, `crates/ewqwe-digital-identity`, `crates/ewqwe-digital-credential`, `crates/ewqwe-verifier-app`
 - All members use `workspace = true` for version, edition, rust-version, authors, license
 
 ### Credential Building and Verification Library (`crates/ewqwe-digital-credential`)
@@ -386,6 +386,11 @@ let verified = verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigning
 | Wallet main logic              | [wallet-extension/src/wallet.ts](wallet-extension/src/wallet.ts)                                                         |
 | RP credential handling         | [webapp/src/credentials.ts](webapp/src/credentials.ts)                                                                   |
 | ISO credential configs         | [webapp/src/config.ts](webapp/src/config.ts)                                                                             |
+| Verifier App crate             | [crates/ewqwe-verifier-app/](crates/ewqwe-verifier-app/)                                                                 |
+| Verifier App routes            | [crates/ewqwe-verifier-app/src/routes.rs](crates/ewqwe-verifier-app/src/routes.rs)                                       |
+| Verifier App stores            | [crates/ewqwe-verifier-app/src/stores/](crates/ewqwe-verifier-app/src/stores/)                                           |
+| Verifier App SPA               | [crates/ewqwe-verifier-app/src/static/index.html](crates/ewqwe-verifier-app/src/static/index.html)                       |
+| Verifier App documentation     | [documentation/src/qrcode_app.md](documentation/src/qrcode_app.md)                                                       |
 | Standards documentation        | [documentation/](documentation/)                                                                                         |
 
 ## Standards Compliance

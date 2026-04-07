@@ -5,8 +5,8 @@ use async_trait::async_trait;
 use crate::{
     config::{VerifierAppConfig, VerifierAppDbBackend},
     error::VerifierAppResult,
-    models::{NewUserRecord, VerifierAppUser, UserChanges},
-    stores::{PostgresVerifierAppStore, SqliteVerifierAppStore},
+    models::{NewUserRecord, UserChanges, VerifierAppUser},
+    stores::{MysqlVerifierAppStore, PostgresVerifierAppStore, SqliteVerifierAppStore},
 };
 
 // ============================================================================
@@ -34,7 +34,11 @@ pub trait VerifierAppStore: Send + Sync {
     async fn list_users(&self, active_only: bool) -> VerifierAppResult<Vec<VerifierAppUser>>;
 
     /// Apply partial changes to a user and return the updated record.
-    async fn update_user(&self, id: &str, changes: &UserChanges) -> VerifierAppResult<VerifierAppUser>;
+    async fn update_user(
+        &self,
+        id: &str,
+        changes: &UserChanges,
+    ) -> VerifierAppResult<VerifierAppUser>;
 
     /// Permanently remove a user from the database.
     ///
@@ -56,6 +60,7 @@ pub trait VerifierAppStore: Send + Sync {
 pub enum DynVerifierAppStore {
     Sqlite(SqliteVerifierAppStore),
     Postgres(PostgresVerifierAppStore),
+    Mysql(MysqlVerifierAppStore),
 }
 
 impl DynVerifierAppStore {
@@ -76,6 +81,10 @@ impl DynVerifierAppStore {
                 let store = PostgresVerifierAppStore::new(url).await?;
                 Ok(Self::Postgres(store))
             }
+            VerifierAppDbBackend::Mysql { url } => {
+                let store = MysqlVerifierAppStore::new(url).await?;
+                Ok(Self::Mysql(store))
+            }
         }
     }
 }
@@ -90,6 +99,7 @@ impl VerifierAppStore for DynVerifierAppStore {
         match self {
             Self::Sqlite(s) => s.user_count().await,
             Self::Postgres(s) => s.user_count().await,
+            Self::Mysql(s) => s.user_count().await,
         }
     }
 
@@ -97,6 +107,7 @@ impl VerifierAppStore for DynVerifierAppStore {
         match self {
             Self::Sqlite(s) => s.create_user(record).await,
             Self::Postgres(s) => s.create_user(record).await,
+            Self::Mysql(s) => s.create_user(record).await,
         }
     }
 
@@ -104,6 +115,7 @@ impl VerifierAppStore for DynVerifierAppStore {
         match self {
             Self::Sqlite(s) => s.get_user_by_email(email).await,
             Self::Postgres(s) => s.get_user_by_email(email).await,
+            Self::Mysql(s) => s.get_user_by_email(email).await,
         }
     }
 
@@ -111,6 +123,7 @@ impl VerifierAppStore for DynVerifierAppStore {
         match self {
             Self::Sqlite(s) => s.get_user_by_id(id).await,
             Self::Postgres(s) => s.get_user_by_id(id).await,
+            Self::Mysql(s) => s.get_user_by_id(id).await,
         }
     }
 
@@ -118,13 +131,19 @@ impl VerifierAppStore for DynVerifierAppStore {
         match self {
             Self::Sqlite(s) => s.list_users(active_only).await,
             Self::Postgres(s) => s.list_users(active_only).await,
+            Self::Mysql(s) => s.list_users(active_only).await,
         }
     }
 
-    async fn update_user(&self, id: &str, changes: &UserChanges) -> VerifierAppResult<VerifierAppUser> {
+    async fn update_user(
+        &self,
+        id: &str,
+        changes: &UserChanges,
+    ) -> VerifierAppResult<VerifierAppUser> {
         match self {
             Self::Sqlite(s) => s.update_user(id, changes).await,
             Self::Postgres(s) => s.update_user(id, changes).await,
+            Self::Mysql(s) => s.update_user(id, changes).await,
         }
     }
 
@@ -132,6 +151,7 @@ impl VerifierAppStore for DynVerifierAppStore {
         match self {
             Self::Sqlite(s) => s.delete_user(id).await,
             Self::Postgres(s) => s.delete_user(id).await,
+            Self::Mysql(s) => s.delete_user(id).await,
         }
     }
 
@@ -139,6 +159,7 @@ impl VerifierAppStore for DynVerifierAppStore {
         match self {
             Self::Sqlite(s) => s.get_setting(key).await,
             Self::Postgres(s) => s.get_setting(key).await,
+            Self::Mysql(s) => s.get_setting(key).await,
         }
     }
 
@@ -146,6 +167,7 @@ impl VerifierAppStore for DynVerifierAppStore {
         match self {
             Self::Sqlite(s) => s.set_setting(key, value).await,
             Self::Postgres(s) => s.set_setting(key, value).await,
+            Self::Mysql(s) => s.set_setting(key, value).await,
         }
     }
 }

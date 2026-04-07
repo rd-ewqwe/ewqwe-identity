@@ -302,10 +302,17 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         let app = if let Some(ref session_key) = verifier_app_session_key {
             let verifier_app_scope = web::scope("/verifier_app")
                 .wrap(IdentityMiddleware::default())
-                .wrap(SessionMiddleware::new(
-                    CookieSessionStore::default(),
-                    session_key.clone(),
-                ))
+                .wrap(
+                    SessionMiddleware::builder(CookieSessionStore::default(), session_key.clone())
+                        // Use a unique name to prevent conflicts with any other "id" cookie
+                        // that may be stored at Path=/ from a previous run or other middleware.
+                        .cookie_name("verifier_app_session".to_string())
+                        // Scope the cookie to this sub-path so it is only sent to
+                        // /verifier_app/* requests and is never confused with cookies
+                        // from other scopes.
+                        .cookie_path("/verifier_app".to_string())
+                        .build(),
+                )
                 .configure(ewqwe_verifier_app::configure_routes);
             app.service(verifier_app_scope)
         } else {
