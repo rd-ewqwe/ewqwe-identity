@@ -1,14 +1,11 @@
 import type {
+  InitTransactionRequest,
   OpenID4VPRequest,
   OpenID4VPResponse,
-  PresentationDefinition,
   PresentationSubmission,
-  InputDescriptor,
-  ConstraintField,
   VerifyResponse,
 } from "@ewqwe/digital-identity";
 import type { DebugLogger } from "./debug.ts";
-import { CREDENTIAL_TYPES, PROTOCOL_PROFILES } from "@ewqwe/digital-identity";
 
 /**
  * Detect whether the browser is running on a mobile device (Android or iOS).
@@ -18,75 +15,36 @@ function isMobileDevice(): boolean {
   return /android/i.test(ua) || /iphone|ipad|ipod/i.test(ua);
 }
 
-/**
- * Build an OpenID4VP presentation request
- */
-export function buildPresentationRequest(
-  credentialType: string,
-  selectedClaims: string[],
-  _protocol: string,
-): OpenID4VPRequest {
-  const config = CREDENTIAL_TYPES[credentialType];
-  if (!config) {
-    throw new Error(`Unknown credential type: ${credentialType}`);
+function uuidv4(): string {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
+    return crypto.randomUUID();
   }
+  console.error("crypto.randomUUID is not supported in this environment");
+  throw new Error("crypto.randomUUID is not supported in this environment");
+}
 
-  const profile = PROTOCOL_PROFILES[config.profile];
-  const nonce = crypto.randomUUID();
-  const state = crypto.randomUUID();
-
-  // Build constraint fields from selected claims
-  const fields: ConstraintField[] = selectedClaims.map((claimId) => {
-    const claim = config.claims.find((c) => c.id === claimId);
-    return {
-      path: [`$['${config.namespace}']['${claimId}']`],
-      id: claimId,
-      name: claim?.name || claimId,
-      intent_to_retain: false,
-    };
-  });
-
-  const inputDescriptor: InputDescriptor = {
-    id: `${credentialType}_credential`,
-    name: config.name,
-    purpose: `We need to verify your ${config.name.toLowerCase()}`,
-    format: {
-      mso_mdoc: {
-        alg: ["ES256", "ES384", "ES512", "EdDSA"],
-      },
-    },
-    constraints: {
-      limit_disclosure: "required",
-      fields,
-    },
-  };
-
-  const presentationDefinition: PresentationDefinition = {
-    id: crypto.randomUUID(),
-    name: `${config.name} Verification`,
-    purpose: `Verify identity using ${config.name}`,
-    input_descriptors: [inputDescriptor],
-  };
-
-  return {
-    client_id: globalThis.location.origin,
-    client_id_scheme: profile?.clientIdScheme || "redirect_uri",
-    response_type: "vp_token",
-    response_mode: profile?.responseMode || "direct_post",
-    nonce,
-    state,
-    presentation_definition: presentationDefinition,
-    client_metadata: {
-      client_name: "Digital Credentials Demo",
-      client_purpose: "Identity verification for demo purposes",
-      vp_formats: {
-        mso_mdoc: { alg: ["ES256", "ES384", "ES512", "EdDSA"] },
-        jwt_vp: { alg: ["ES256", "ES384", "ES512", "EdDSA"] },
-      },
-    },
-    // Include credential type for profile determination on backend
-    credential_type: credentialType,
-  } as OpenID4VPRequest & { credential_type: string };
+/**
+ * Safely parse a presentation_submission that may arrive as a JSON string
+ * (wallet form-post) or already as an object from an earlier JSON.parse.
+ * Never throws — returns null if unparseable.
+ */
+function parsePresentationSubmission(
+  value: unknown,
+): PresentationSubmission | null {
+  if (!value) return null;
+  if (typeof value === "object") return value as PresentationSubmission;
+  if (typeof value === "string") {
+    try {
+      return JSON.parse(value) as PresentationSubmission;
+    } catch {
+      console.warn("Failed to parse presentation_submission:", value);
+      return null;
+    }
+  }
+  return null;
 }
 
 /**
@@ -96,7 +54,7 @@ export function buildPresentationRequest(
  * @param logger Debug logger
  */
 export async function requestCredentials(
-  request: OpenID4VPRequest,
+  request: InitTransactionRequest,
   protocol: string,
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
@@ -130,7 +88,7 @@ export async function requestCredentials(
  * W3C Digital Credentials with fallback to OpenID4VP
  */
 async function requestWithFallback(
-  request: OpenID4VPRequest,
+  request: InitTransactionRequest,
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
   // Try W3C DC API first
@@ -160,13 +118,24 @@ async function requestWithFallback(
  * Request via W3C Digital Credentials API (native API + extension)
  */
 async function requestViaW3CDC(
-  request: OpenID4VPRequest,
+  request: InitTransactionRequest,
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
-  // Try native Digital Credentials API first
+  // Build an OpenID4VP Authorization Request from the InitTransactionRequest.
+  // The W3C DC API passes this directly to the wallet as the `data` field.
+  const dcApiRequest: OpenID4VPRequest = {
+    client_id: globalThis.location.origin,
+    client_id_scheme: "redirect_uri",
+    response_type: "vp_token",
+    response_mode: "direct_post",
+    nonce: request.nonce ?? crypto.randomUUID(),
+    dcql_query: request.dcql_query,
+    client_metadata: request.client_metadata,
+  };
+
   logger.log(
     "Requesting credentials via native Digital Credentials API",
-    request,
+    dcApiRequest,
   );
 
   const credential = await navigator.credentials.get({
@@ -174,7 +143,7 @@ async function requestViaW3CDC(
       requests: [
         {
           protocol: "openid4vp",
-          data: request,
+          data: dcApiRequest,
         },
       ],
     },
@@ -205,40 +174,20 @@ async function requestViaW3CDC(
  * 4. Return the VP token once received
  */
 async function requestViaOpenID4VPCrossDevice(
-  request: OpenID4VPRequest & { credential_type?: string },
+  request: InitTransactionRequest,
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
   logger.log("OpenID4VP cross-device flow - initializing transaction");
 
-  // Build the init request - supports both DCQL and legacy presentation_definition
-  // The backend will convert presentation_definition to DCQL if needed
-  const initRequest: {
-    dcql_query?: unknown;
-    presentation_definition?: unknown;
-    nonce?: string;
-    client_metadata?: unknown;
-    credential_type?: string;
-  } = {
-    nonce: request.nonce,
-    client_metadata: request.client_metadata,
-  };
-
-  // Include credential_type for profile determination on backend
   if (request.credential_type) {
-    initRequest.credential_type = request.credential_type;
     logger.log(`Credential type: ${request.credential_type}`);
-  }
-
-  // If we have a presentation_definition, include it (backend will convert to DCQL)
-  if (request.presentation_definition) {
-    initRequest.presentation_definition = request.presentation_definition;
   }
 
   // Step 1: Initialize the transaction on the backend
   const initResponse = await fetch("/api/openid4vp/init", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(initRequest),
+    body: JSON.stringify(request),
   });
 
   if (!initResponse.ok) {
@@ -292,9 +241,7 @@ async function requestViaOpenID4VPCrossDevice(
     return {
       vp_token: response.vp_token,
       presentation_submission:
-        typeof response.presentation_submission === "string"
-          ? JSON.parse(response.presentation_submission)
-          : response.presentation_submission,
+        parsePresentationSubmission(response.presentation_submission) ?? null,
       state: response.state,
     };
   } catch (error) {
@@ -533,7 +480,7 @@ function pollForWalletResponse(
  * This is suitable for mobile browsers where the wallet app is installed.
  */
 async function requestViaOpenID4VPSameDevice(
-  request: OpenID4VPRequest & { credential_type?: string },
+  request: InitTransactionRequest,
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
   logger.log("OpenID4VP same-device flow requested");
@@ -541,33 +488,14 @@ async function requestViaOpenID4VPSameDevice(
   // Step 1: Initialize the transaction on the backend
   logger.log("Initializing OpenID4VP transaction for same-device flow...");
 
-  // Build the init request - supports both DCQL and legacy presentation_definition
-  const initRequest: {
-    dcql_query?: unknown;
-    presentation_definition?: unknown;
-    nonce?: string;
-    mode?: string;
-    credential_type?: string;
-  } = {
-    nonce: request.nonce,
-    mode: "same-device",
-  };
-
-  // Include credential_type for profile determination on backend
   if (request.credential_type) {
-    initRequest.credential_type = request.credential_type;
     logger.log(`Credential type: ${request.credential_type}`);
-  }
-
-  // If we have a presentation_definition, include it (backend will convert to DCQL)
-  if (request.presentation_definition) {
-    initRequest.presentation_definition = request.presentation_definition;
   }
 
   const initResponse = await fetch("/api/openid4vp/init", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(initRequest),
+    body: JSON.stringify(request),
   });
 
   if (!initResponse.ok) {
@@ -614,7 +542,8 @@ async function requestViaOpenID4VPSameDevice(
     return {
       vp_token: pollResponse.vp_token,
       presentation_submission:
-        pollResponse.presentation_submission as PresentationSubmission,
+        parsePresentationSubmission(pollResponse.presentation_submission) ??
+        null,
       state: pollResponse.state,
     };
   } catch (error) {
@@ -668,9 +597,8 @@ function showSameDeviceModal(
           Click the button below to open your EUDI Wallet app and share your credentials.
         </p>
         
-        <a 
+        <button
           id="open-wallet-btn"
-          href="${deepLinkUri}"
           style="
             display: inline-block;
             background: #3b82f6;
@@ -682,10 +610,12 @@ function showSameDeviceModal(
             text-decoration: none;
             margin-bottom: 16px;
             transition: background 0.2s;
+            border: none;
+            cursor: pointer;
           "
         >
           Open EUDI Wallet
-        </a>
+        </button>
         
         <div style="
           margin-top: 20px;
@@ -741,7 +671,10 @@ function showSameDeviceModal(
     });
   }
 
-  // Log when wallet link is clicked
+  // Open the wallet deep link without navigating the current page.
+  // For custom URI schemes (av://, openid4vp://) window.location.href triggers the
+  // app on mobile without leaving the page. For https:// authorization-request
+  // URIs, window.open opens a new tab so the RP page stays alive.
   const openBtn = document.getElementById("open-wallet-btn");
   if (openBtn) {
     openBtn.addEventListener("click", () => {
@@ -749,6 +682,16 @@ function showSameDeviceModal(
         deepLinkUri,
         transactionId,
       });
+      if (
+        deepLinkUri.startsWith("https://") ||
+        deepLinkUri.startsWith("http://")
+      ) {
+        globalThis.open(deepLinkUri, "_blank", "noopener,noreferrer");
+      } else {
+        // Custom scheme (av://, openid4vp://) — triggers wallet app on mobile,
+        // does NOT navigate away from the RP page.
+        globalThis.location.href = deepLinkUri;
+      }
     });
   }
 }
@@ -768,56 +711,40 @@ function hideSameDeviceModal(): void {
  * In production, this would be replaced by actual Digital Credentials API integration
  */
 function simulateCredentialResponse(
-  request: OpenID4VPRequest,
+  request: InitTransactionRequest,
   logger: DebugLogger,
 ): OpenID4VPResponse {
   logger.log("Simulating credential response");
 
-  // Extract requested claims from the presentation definition
+  // Extract requested claims from the DCQL query
   const requestedClaims: Record<string, unknown> = {};
-  const inputDescriptor = request.presentation_definition?.input_descriptors[0];
+  const credentialQuery = request.dcql_query?.credentials[0];
+  const claimIds =
+    credentialQuery?.claims?.map((c) => c.id ?? c.path[c.path.length - 1]) ??
+    [];
 
-  if (inputDescriptor?.constraints?.fields) {
-    inputDescriptor.constraints.fields.forEach((field) => {
-      const claimId = field.id || field.path[0].match(/\['([^']+)'\]$/)?.[1];
-      if (claimId) {
-        // Generate demo values
-        requestedClaims[claimId] = getDemoValue(claimId);
-      }
-    });
-  }
+  claimIds.forEach((claimId) => {
+    if (claimId) requestedClaims[claimId] = getDemoValue(claimId);
+  });
 
-  // Create a simulated VP token (in real implementation, this would be a signed JWT or CBOR)
+  const namespace =
+    credentialQuery?.claims?.[0]?.path[0] ?? "org.iso.18013.5.1";
+
   const vpToken = {
-    docType: inputDescriptor?.format?.mso_mdoc
-      ? "org.iso.18013.5.1.mDL"
-      : "VerifiableCredential",
+    docType: credentialQuery?.meta?.doctype_value ?? "VerifiableCredential",
     issuerSigned: {
       nameSpaces: {
-        "org.iso.18013.5.1": requestedClaims,
+        [namespace]: requestedClaims,
       },
     },
     deviceSigned: {
-      deviceAuth: {
-        deviceSignature: btoa(crypto.randomUUID()),
-      },
+      deviceAuth: { deviceSignature: btoa(uuidv4()) },
     },
   };
 
   const response: OpenID4VPResponse = {
     vp_token: btoa(JSON.stringify(vpToken)),
-    presentation_submission: {
-      id: crypto.randomUUID(),
-      definition_id: request.presentation_definition?.id ?? "default",
-      descriptor_map: [
-        {
-          id: inputDescriptor?.id || "credential",
-          format: "mso_mdoc",
-          path: "$",
-        },
-      ],
-    },
-    state: request.state,
+    presentation_submission: null,
   };
 
   logger.log("Simulated response generated", response);
@@ -857,31 +784,39 @@ function getDemoValue(claimId: string): unknown {
  */
 export async function sendToBackend(
   response: OpenID4VPResponse,
-  originalRequest: OpenID4VPRequest | null,
+  originalRequest: InitTransactionRequest | null,
   logger: DebugLogger,
 ): Promise<VerifyResponse> {
   const backendUrl = "/api/verify";
 
-  logger.log(`Sending credential to backend: ${backendUrl}`);
+  const body = {
+    vp_token: response.vp_token,
+    presentation_submission: response.presentation_submission ?? null,
+    nonce: originalRequest?.nonce,
+    state: response.state,
+  };
+
+  logger.log(`Sending to backend: POST ${backendUrl}`, {
+    vp_token_length: body.vp_token?.length,
+    has_presentation_submission: body.presentation_submission !== null,
+    nonce: body.nonce,
+    state: body.state,
+  });
 
   try {
     const fetchResponse = await fetch(backendUrl, {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        vp_token: response.vp_token,
-        presentation_submission: response.presentation_submission,
-        nonce: originalRequest?.nonce,
-        state: response.state || originalRequest?.state,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
 
+    logger.log(`Backend responded: HTTP ${fetchResponse.status}`);
+
     if (!fetchResponse.ok) {
-      throw new Error(
-        `Backend returned ${fetchResponse.status}: ${fetchResponse.statusText}`,
-      );
+      const errText = await fetchResponse
+        .text()
+        .catch(() => fetchResponse.statusText);
+      throw new Error(`Backend returned ${fetchResponse.status}: ${errText}`);
     }
 
     const result = await fetchResponse.json();
@@ -890,8 +825,6 @@ export async function sendToBackend(
     return result as VerifyResponse;
   } catch (error) {
     logger.error("Backend verification failed", error);
-
-    // Return error - don't silently fall back
     return {
       success: false,
       message: "Backend verification failed",

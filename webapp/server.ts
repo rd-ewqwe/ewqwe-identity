@@ -99,6 +99,10 @@ async function proxyToVerifier(
     `[Server] Proxied ${req.method} ${upstreamPath} → ${upstream.status}`,
   );
 
+  // Buffer the body fully before responding — streaming upstream.body directly
+  // causes AbortError when Vite's HTTP proxy closes the connection prematurely.
+  const body = await upstream.arrayBuffer();
+
   // Build proxied response with CORS
   const respHeaders = new Headers();
   for (const [k, v] of upstream.headers.entries()) {
@@ -108,7 +112,7 @@ async function proxyToVerifier(
     respHeaders.set(k, v);
   }
 
-  return new Response(upstream.body, {
+  return new Response(body, {
     status: upstream.status,
     statusText: upstream.statusText,
     headers: respHeaders,

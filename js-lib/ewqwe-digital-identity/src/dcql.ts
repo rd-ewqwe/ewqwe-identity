@@ -11,11 +11,14 @@
  */
 
 import type {
+  CredentialType,
   DCQLClaimsQuery,
   DCQLCredentialQuery,
   DCQLCredentialSetQuery,
   DCQLQuery,
+  InitTransactionRequest,
 } from "./types.ts";
+import { CREDENTIAL_TYPES } from "./config.ts";
 
 // =============================================================================
 // Constants — Namespaces and Document Types
@@ -203,6 +206,58 @@ export function convertPresentationDefinitionToDCQL(
   }
 
   return { credentials };
+}
+
+/**
+ * Build an `InitTransactionRequest` directly from a credential type and
+ * selected claims — the canonical way to initialize an OpenID4VP transaction.
+ *
+ * Builds a **DCQL query** directly (never a legacy `PresentationDefinition`),
+ * so no server-side conversion is required.
+ *
+ * @param credentialType - The type of credential to request
+ * @param selectedClaims - Array of claim IDs to include (e.g. `["age_over_18"]`)
+ * @returns `InitTransactionRequest` ready to POST to `/api/openid4vp/init`
+ */
+export function buildInitTransactionRequest(
+  credentialType: CredentialType,
+  selectedClaims: string[],
+): InitTransactionRequest {
+  const config = CREDENTIAL_TYPES[credentialType];
+  if (!config) {
+    throw new Error(`Unknown credential type: ${credentialType}`);
+  }
+
+  // Build DCQL Claims Path Pointers: [namespace, element] per OpenID4VP §7.2
+  const claims: DCQLClaimsQuery[] = selectedClaims.map((claimId) => ({
+    id: claimId,
+    path: [config.namespace, claimId],
+    intent_to_retain: false,
+  }));
+
+  const dcqlQuery: DCQLQuery = {
+    credentials: [
+      {
+        id: `${credentialType}_credential`,
+        format: "mso_mdoc",
+        meta: { doctype_value: config.docType },
+        claims,
+      },
+    ],
+  };
+
+  return {
+    dcql_query: dcqlQuery,
+    nonce: generateNonce(),
+    credential_type: credentialType,
+    client_metadata: {
+      client_name: "Digital Credentials Demo",
+      client_purpose: "Identity verification for demo purposes",
+      vp_formats: {
+        mso_mdoc: { alg: ["ES256", "ES384", "ES512", "EdDSA"] },
+      },
+    },
+  };
 }
 
 /**

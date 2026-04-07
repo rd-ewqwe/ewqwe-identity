@@ -21,7 +21,7 @@ use crate::{
         DecryptedWalletResponse, JarKeyMaterial, JarPayload, JweKeyMaterial, build_public_jwk_set,
         decrypt_jwe_response, initialize_jar_key, initialize_jwe_key, sign_jar,
     },
-    dcql::{convert_presentation_definition_to_dcql, get_default_age_verification_dcql},
+    dcql::get_default_age_verification_dcql,
     error::{OpenID4VPError, OpenID4VPResult},
     transaction::TransactionStore,
     types::{
@@ -170,12 +170,6 @@ impl OpenID4VPService {
         // Resolve DCQL query
         let dcql_query = if let Some(q) = request.dcql_query {
             q
-        } else if let Some(pd) = request.presentation_definition {
-            convert_presentation_definition_to_dcql(&pd).ok_or_else(|| {
-                OpenID4VPError::BadRequest(
-                    "Failed to convert presentation_definition to DCQL".into(),
-                )
-            })?
         } else {
             get_default_age_verification_dcql()
         };
@@ -543,7 +537,6 @@ mod tests {
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
-            presentation_definition: None,
             nonce: Some("test-nonce-123".to_string()),
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
@@ -575,7 +568,6 @@ mod tests {
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
-            presentation_definition: None,
             nonce: None,
             client_metadata: None,
             profile: Some(ProfileId::Haip),
@@ -604,7 +596,6 @@ mod tests {
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
-            presentation_definition: None,
             nonce: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
@@ -633,7 +624,6 @@ mod tests {
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
-            presentation_definition: None,
             nonce: None,
             client_metadata: None,
             profile: Some(ProfileId::Haip),
@@ -660,7 +650,6 @@ mod tests {
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
-            presentation_definition: None,
             nonce: None,
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),
@@ -687,7 +676,6 @@ mod tests {
         let request = InitTransactionRequest {
             public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
-            presentation_definition: None,
             nonce: Some("test-nonce".to_string()),
             client_metadata: None,
             profile: Some(ProfileId::AnnexA),

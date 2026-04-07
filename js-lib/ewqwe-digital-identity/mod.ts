@@ -44,6 +44,8 @@ export type {
   // W3C Digital Credentials API
   DigitalCredentialRequest,
   DigitalCredential,
+  // Transaction init (frontend → RP backend)
+  InitTransactionRequest,
 } from "./src/types.ts";
 
 // === DCQL ===
@@ -58,6 +60,7 @@ export {
   // Query builders
   buildAgeVerificationQuery,
   buildAgeVerificationQueryWithFallback,
+  buildInitTransactionRequest,
   getDefaultAgeVerificationDCQL,
   convertPresentationDefinitionToDCQL,
   determineProfile,

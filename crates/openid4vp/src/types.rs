@@ -378,19 +378,18 @@ pub struct OpenID4VPTransaction {
 /// The RP sends this to the credential verifier to start a new transaction.
 /// `public_url` tells the verifier which URL the wallet should use for
 /// `response_uri` and `request_uri` (since the RP proxies wallet traffic).
+///
+/// The frontend counterpart is `InitTransactionRequest` in `@ewqwe/digital-identity`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct InitTransactionRequest {
     /// **Required**: The RP's public URL that the wallet will interact with.
     /// Used to construct `response_uri` and `request_uri`.
     pub public_url: String,
 
-    /// Explicit DCQL query. If omitted, a default age verification query is used.
+    /// DCQL query specifying the credentials to request.
+    /// If omitted, a default age verification query is used.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub dcql_query: Option<DCQLQuery>,
-
-    /// Legacy presentation_definition (will be converted to DCQL).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub presentation_definition: Option<serde_json::Value>,
 
     /// Optional nonce (auto-generated if omitted).
     #[serde(skip_serializing_if = "Option::is_none")]

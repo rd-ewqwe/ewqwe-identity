@@ -1,29 +1,27 @@
 import type { DebugLogger } from "./debug.ts";
 import type {
-  OpenID4VPRequest,
+  CredentialType,
+  InitTransactionRequest,
   OpenID4VPResponse,
   VerifyResponse,
 } from "@ewqwe/digital-identity";
 import {
+  buildInitTransactionRequest,
   getClaimsForType,
   getDefaultClaims,
   getProfileForType,
 } from "@ewqwe/digital-identity";
-import {
-  buildPresentationRequest,
-  requestCredentials,
-  sendToBackend,
-} from "./credentials.ts";
+import { requestCredentials, sendToBackend } from "./credentials.ts";
 
 /**
  * Relying Party Application - Main controller
  */
 export class RelyingPartyApp {
   private logger: DebugLogger;
-  private selectedCredentialType: string = "mdl";
+  private selectedCredentialType: CredentialType = "proof-of-age";
   private selectedClaims: Set<string> = new Set();
   private selectedProtocol: string = "w3c-dc-fallback";
-  private currentRequest: OpenID4VPRequest | null = null;
+  private currentRequest: InitTransactionRequest | null = null;
   private currentResponse: OpenID4VPResponse | null = null;
 
   constructor(logger: DebugLogger) {
@@ -34,7 +32,7 @@ export class RelyingPartyApp {
     this.setupEventListeners();
     this.checkAPISupport();
     this.renderClaims();
-    this.updateRequestPreview();
+    this.updatePresentationRequest();
     this.updateProfileInfo();
 
     // Initialize with default claims
@@ -42,6 +40,24 @@ export class RelyingPartyApp {
       this.selectedClaims.add(claim);
     });
     this.updateClaimsUI();
+
+    // Restore any verification result that survived a page navigation
+    // (same-device flow can trigger a brief page reload when the wallet
+    // uses an https:// authorization-request URI as the deep link).
+    const saved = sessionStorage.getItem("verificationResult");
+    if (saved) {
+      try {
+        const { result, response } = JSON.parse(saved) as {
+          result: VerifyResponse;
+          response: OpenID4VPResponse;
+        };
+        this.logger.log("Restoring verification result from sessionStorage");
+        this.displayVerificationResult(result, response);
+      } catch (e) {
+        this.logger.error("Failed to restore verification result", e);
+        sessionStorage.removeItem("verificationResult");
+      }
+    }
   }
 
   private setupEventListeners(): void {
@@ -49,7 +65,7 @@ export class RelyingPartyApp {
     document.querySelectorAll(".credential-type-btn").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         const target = e.currentTarget as HTMLElement;
-        const type = target.dataset.type;
+        const type = target.dataset.type as CredentialType | undefined;
         if (type) {
           this.selectCredentialType(type);
         }
@@ -61,8 +77,9 @@ export class RelyingPartyApp {
       .getElementById("protocol-select")
       ?.addEventListener("change", (e) => {
         this.selectedProtocol = (e.target as HTMLSelectElement).value;
+        console.log("Selected protocol:", this.selectedProtocol);
         this.updateProtocolDescription();
-        this.updateRequestPreview();
+        this.updatePresentationRequest();
       });
 
     // Initialize protocol description
@@ -118,7 +135,7 @@ export class RelyingPartyApp {
     descEl.textContent = descriptions[this.selectedProtocol] || "";
   }
 
-  private selectCredentialType(type: string): void {
+  private selectCredentialType(type: CredentialType): void {
     this.selectedCredentialType = type;
     this.selectedClaims.clear();
 
@@ -136,7 +153,7 @@ export class RelyingPartyApp {
       this.selectedClaims.add(claim);
     });
     this.updateClaimsUI();
-    this.updateRequestPreview();
+    this.updatePresentationRequest();
     this.updateProfileInfo();
 
     this.logger.log(`Selected credential type: ${type}`);
@@ -215,7 +232,7 @@ export class RelyingPartyApp {
           this.selectedClaims.delete(target.value);
         }
         this.updateClaimsUI();
-        this.updateRequestPreview();
+        this.updatePresentationRequest();
       });
     });
   }
@@ -235,15 +252,14 @@ export class RelyingPartyApp {
     });
   }
 
-  private updateRequestPreview(): void {
+  private updatePresentationRequest(): void {
     const requestJson = document.getElementById("request-json");
     if (!requestJson) return;
 
     try {
-      const request = buildPresentationRequest(
+      const request = buildInitTransactionRequest(
         this.selectedCredentialType,
         Array.from(this.selectedClaims),
-        this.selectedProtocol,
       );
       this.currentRequest = request;
       requestJson.textContent = JSON.stringify(request, null, 2);
@@ -341,10 +357,15 @@ export class RelyingPartyApp {
       );
 
       // Request credentials
+      this.logger.log("Calling requestCredentials…");
       const response = await requestCredentials(
         this.currentRequest,
         this.selectedProtocol,
         this.logger,
+      );
+      this.logger.log(
+        "requestCredentials returned",
+        response ? "response" : "null",
       );
 
       if (!response) {
@@ -354,11 +375,16 @@ export class RelyingPartyApp {
       this.currentResponse = response;
 
       // Send to backend for verification (proxies to Credential Verifier)
+      this.logger.log("Sending to backend for verification…");
       const verificationResult = await sendToBackend(
         response,
         this.currentRequest,
         this.logger,
       );
+      this.logger.log("Backend verification result", {
+        success: verificationResult.success,
+        message: verificationResult.message,
+      });
 
       // Display the result
       this.displayVerificationResult(verificationResult, response);
@@ -384,8 +410,32 @@ export class RelyingPartyApp {
     const rawResponse = document.getElementById("raw-response");
     const verificationDetails = document.getElementById("verification-details");
 
-    if (!resultSection || !resultIcon || !resultTitle || !resultContent) return;
+    if (!resultSection || !resultIcon || !resultTitle || !resultContent) {
+      this.logger.error(
+        "displayVerificationResult: one or more required DOM elements not found",
+        {
+          resultSection: !!resultSection,
+          resultIcon: !!resultIcon,
+          resultTitle: !!resultTitle,
+          resultContent: !!resultContent,
+        },
+      );
+      return;
+    }
 
+    // Persist so the result survives an accidental page reload
+    try {
+      sessionStorage.setItem(
+        "verificationResult",
+        JSON.stringify({ result, response }),
+      );
+    } catch {
+      /* storage full or private browsing */
+    }
+
+    this.logger.log("Displaying verification result", {
+      success: result.success,
+    });
     resultSection.classList.remove("hidden");
     resultSection.scrollIntoView({ behavior: "smooth" });
 
@@ -514,9 +564,10 @@ export class RelyingPartyApp {
   }
 
   private resetUI(): void {
+    sessionStorage.removeItem("verificationResult");
     document.getElementById("verification-result")?.classList.add("hidden");
     document.getElementById("debug-result")?.classList.add("hidden");
     this.currentResponse = null;
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    globalThis.scrollTo({ top: 0, behavior: "smooth" });
   }
 }

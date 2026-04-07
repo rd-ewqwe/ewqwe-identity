@@ -13,6 +13,7 @@
 
 import type {
   ClaimDefinition,
+  CredentialType,
   CredentialTypeConfig,
   ProfileId,
   ProtocolProfile,
@@ -79,7 +80,7 @@ export const PROTOCOL_PROFILES: Record<ProfileId, ProtocolProfile> = {
  * - PID: EU ARF Annex 2.02 Topic 3 (PID_04, PID_05)
  * - Proof of Age: EU Age Verification Profile (https://ageverification.dev)
  */
-export const CREDENTIAL_TYPES: Record<string, CredentialTypeConfig> = {
+export const CREDENTIAL_TYPES: Record<CredentialType, CredentialTypeConfig> = {
   mdl: {
     id: "mdl",
     name: "Mobile Driver's License",
@@ -226,7 +227,7 @@ export const CREDENTIAL_TYPES: Record<string, CredentialTypeConfig> = {
 /**
  * Get default selected claims for a credential type (first 5 claims).
  */
-export function getDefaultClaims(credentialType: string): string[] {
+export function getDefaultClaims(credentialType: CredentialType): string[] {
   const config = CREDENTIAL_TYPES[credentialType];
   if (!config) return [];
   return config.claims.slice(0, 5).map((c) => c.id);
@@ -235,7 +236,9 @@ export function getDefaultClaims(credentialType: string): string[] {
 /**
  * Get claim definitions for a credential type.
  */
-export function getClaimsForType(credentialType: string): ClaimDefinition[] {
+export function getClaimsForType(
+  credentialType: CredentialType,
+): ClaimDefinition[] {
   return CREDENTIAL_TYPES[credentialType]?.claims || [];
 }
 
@@ -243,7 +246,7 @@ export function getClaimsForType(credentialType: string): ClaimDefinition[] {
  * Get the protocol profile for a credential type.
  */
 export function getProfileForType(
-  credentialType: string,
+  credentialType: CredentialType,
 ): ProtocolProfile | null {
   const config = CREDENTIAL_TYPES[credentialType];
   if (!config) return null;
@@ -253,7 +256,7 @@ export function getProfileForType(
 /**
  * Get the profile ID for a credential type.
  */
-export function getProfileIdForType(credentialType: string): ProfileId {
+export function getProfileIdForType(credentialType: CredentialType): ProfileId {
   const config = CREDENTIAL_TYPES[credentialType];
   return config?.profile || "haip";
 }

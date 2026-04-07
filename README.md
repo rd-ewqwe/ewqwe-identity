@@ -12,7 +12,7 @@ This project contains a browser extension wallet, a Relying Party web App, and a
 
 - [Deno](https://deno.land/) v1.40 or later
 
-### Running the Web App (RP)
+[text](https://meet.google.com/qrk-rnjv-kap?authuser%3D1%26hs%3D122%26ijlm%3D1772011860195)### Running the Web App (RP)
 
 Open two terminal windows:
 
@@ -46,7 +46,7 @@ The verifier may also need a reverse proxy (e.g. Nginx):
 docker run --name ewqwe_proxy -p 4343:443 bgrieder/ewqwe_nginx
 ```
 
-Then run the verifier with:
+Then run the verifier with
 
 ```bash
 cd credential_verifier

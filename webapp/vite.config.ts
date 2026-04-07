@@ -1,7 +1,8 @@
-import { defineConfig } from "npm:vite@^5.4.0";
-import tailwindcss from "npm:tailwindcss@^3.4.0";
-import autoprefixer from "npm:autoprefixer@^10.4.0";
+import { defineConfig } from "vite";
+import tailwindcss from "tailwindcss";
+import autoprefixer from "autoprefixer";
 import * as path from "node:path";
+import basicSsl from "@vitejs/plugin-basic-ssl";
 
 export default defineConfig({
   root: ".",
@@ -24,6 +25,8 @@ export default defineConfig({
       "/api": {
         target: "http://localhost:5175",
         changeOrigin: true,
+        timeout: 30000,
+        proxyTimeout: 30000,
       },
     },
   },
@@ -32,4 +35,14 @@ export default defineConfig({
       plugins: [tailwindcss as any, autoprefixer as any],
     },
   },
+  plugins: [
+    basicSsl({
+      /** name of certification */
+      name: "test",
+      /** custom trust domains */
+      domains: ["*.custom.com"],
+      /** custom certification directory */
+      certDir: "/Users/.../.devServer/cert",
+    }),
+  ],
 });
