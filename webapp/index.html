@@ -34,8 +34,11 @@
           <!-- Credential Type Selection -->
           <div class="mb-6">
             <label class="block text-sm font-medium text-gray-300 mb-3">Credential Type</label>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <button class="credential-type-btn active" data-type="mdl">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <button class="credential-type-btn active relative" data-type="mdl">
+                <a href="https://www.iso.org/standard/69084.html" target="_blank" rel="noopener noreferrer" class="absolute top-2 right-2 text-gray-500/60 hover:text-blue-400 transition-colors text-sm z-10" aria-label="Learn more about ISO 18013-5" onclick="event.stopPropagation();">
+                  ⓘ
+                </a>
                 <div class="flex items-center">
                   <div class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mr-3">
                     <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -48,7 +51,10 @@
                   </div>
                 </div>
               </button>
-              <button class="credential-type-btn" data-type="national-id">
+              <button class="credential-type-btn relative" data-type="national-id">
+                <a href="https://data.europa.eu/eli/reg_impl/2024/2977/oj" target="_blank" rel="noopener noreferrer" class="absolute top-2 right-2 text-gray-500/60 hover:text-green-400 transition-colors text-sm z-10" aria-label="Learn more about EU PID Regulation" onclick="event.stopPropagation();">
+                  ⓘ
+                </a>
                 <div class="flex items-center">
                   <div class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mr-3">
                     <svg class="w-5 h-5 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,7 +63,23 @@
                   </div>
                   <div class="text-left">
                     <div class="font-medium">National ID</div>
-                    <div class="text-sm text-gray-400">Government-issued ID</div>
+                    <div class="text-sm text-gray-400">EU PID</div>
+                  </div>
+                </div>
+              </button>
+              <button class="credential-type-btn relative" data-type="proof-of-age">
+                <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile" target="_blank" rel="noopener noreferrer" class="absolute top-2 right-2 text-gray-500/60 hover:text-purple-400 transition-colors text-sm z-10" aria-label="Learn more about EU Age Verification Profile" onclick="event.stopPropagation();">
+                  ⓘ
+                </a>
+                <div class="flex items-center">
+                  <div class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mr-3">
+                    <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                    </svg>
+                  </div>
+                  <div class="text-left">
+                    <div class="font-medium">Proof of Age</div>
+                    <div class="text-sm text-gray-400">EU Age Verification</div>
                   </div>
                 </div>
               </button>
