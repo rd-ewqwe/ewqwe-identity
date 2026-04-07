@@ -12,92 +12,7 @@
  * - EU Age Verification Profile: https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile
  */
 
-// ============================================================================
-// DCQL (Digital Credentials Query Language) — OpenID4VP 1.0 §6
-// ============================================================================
-
-/** A single claim constraint in a DCQL credential query. */
-export interface DCQLClaimsQuery {
-  /** Claim identifier (for referencing in claim_sets). */
-  id?: string;
-  /** Path to the claim — e.g. ["age_over_18"] for mso_mdoc. */
-  path: string[];
-  /** Namespace for mso_mdoc claims (e.g. "eu.europa.ec.av.1"). */
-  namespace?: string;
-  /** Expected values — if provided, claim must match one of these. */
-  values?: unknown[];
-  /** Whether to retain this claim after verification. */
-  intent_to_retain?: boolean;
-}
-
-/**
- * A single credential query in DCQL.
- *
- * Format identifiers per the OpenID4VP 1.0 spec (Appendix B):
- * - `"mso_mdoc"` — ISO/IEC 18013-5 Mobile Documents (§B.2)
- * - `"dc+sd-jwt"` — IETF SD-JWT VC (§B.3), canonical since Nov 2024
- *   (was `"vc+sd-jwt"` before Nov 2024; both SHOULD be accepted per
- *   draft-ietf-oauth-sd-jwt-vc-08 §3.2.1)
- * - `"jwt_vc_json"` — W3C VC signed as JWT (§B.1.3.1)
- * - `"ldp_vc"` — W3C VC with Linked Data Proofs (§B.1.3.2)
- *
- * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B
- * @see https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.1
- */
-export interface DCQLCredentialQuery {
-  /** Unique identifier for this credential query. */
-  id: string;
-  /**
-   * Credential format identifier.
-   *
-   * `"mso_mdoc"` is for ISO/IEC 18013-5 Mobile Documents (mDL/mDoc).
-   *
-   * `"sd-jwt"` formats are for IETF SD-JWT Verifiable Credentials.  The current
-   * IANA-registered identifier for SD-JWT VC is `"dc+sd-jwt"` (application/dc+sd-jwt),
-   * which is the canonical name to use going forward. The older `"vc+sd-jwt"`
-   * SHOULD also be accepted during the transitional period per draft-ietf-oauth-sd-jwt-vc-08 §3.2.1.
-   *
-   * `"jwt_vc_json"` is for W3C Verifiable Credentials signed as JWT without JSON-LD.
-   *
-   * `"ldp_vc"` is for W3C Verifiable Credentials with Linked Data Proofs.
-   */
-  format: "mso_mdoc" | "dc+sd-jwt" | "vc+sd-jwt" | "jwt_vc_json" | "ldp_vc";
-  /** Format-specific metadata. */
-  meta?: {
-    /** Document type for mso_mdoc (e.g. "org.iso.18013.5.1.mDL"). */
-    doctype_value?: string;
-    /** Verifiable Credential Type values for dc+sd-jwt / vc+sd-jwt. */
-    vct_values?: string[];
-    /** Type values for jwt_vc_json / ldp_vc. */
-    type_values?: string[][];
-  };
-  /** Claims to request from the credential. */
-  claims?: DCQLClaimsQuery[];
-  /** Named subsets of claims; the wallet picks one set. */
-  claim_sets?: string[][];
-  /** Allow the wallet to return multiple matching credentials. */
-  multiple?: boolean;
-  /** Require cryptographic holder binding in the presentation. */
-  require_cryptographic_holder_binding?: boolean;
-}
-
-/** A credential set defining alternatives (OR logic). */
-export interface DCQLCredentialSetQuery {
-  /** Which credential query options satisfy this set. */
-  options: string[][];
-  /** Whether this credential set is required (default: true). */
-  required?: boolean;
-  /** Human-readable purpose for this credential set. */
-  purpose?: string;
-}
-
-/** The complete DCQL query structure — OpenID4VP 1.0 §6. */
-export interface DCQLQuery {
-  /** Array of credential queries. */
-  credentials: DCQLCredentialQuery[];
-  /** Optional credential sets for defining alternatives. */
-  credential_sets?: DCQLCredentialSetQuery[];
-}
+import type { DCQLQuery } from "./dcql.ts";
 
 // ============================================================================
 // Protocol Profiles
@@ -210,26 +125,32 @@ export interface OpenID4VPRequest {
    * the wire (e.g. `x509_san_dns:rp.example.com`).
    */
   client_id_scheme?: ClientIdScheme;
+
   /** REQUIRED. Must be `"vp_token"` for VP-only requests (§5.6). */
   response_type: "vp_token";
+
   /**
    * REQUIRED. How the wallet returns the Authorization Response (§5.2).
    * Defaults to `"fragment"` when absent.
    */
   response_mode?: ResponseMode;
+
   /** REQUIRED. Fresh, random nonce binding the presentation to this request (§5.2). */
   nonce: string;
+
   /**
    * REQUIRED when no Holder Binding proof is requested (§5.3), recommended
    * otherwise for session fixation protection (§14.2).
    */
   state?: string;
+
   /**
    * Redirect URI for `fragment` / `query` response modes.
    * MUST NOT be present when `response_mode` is `direct_post` or
    * `direct_post.jwt` — use `response_uri` instead (§8.2).
    */
   redirect_uri?: string;
+
   /**
    * DCQL credential query (§6, §5.1).
    *
@@ -238,6 +159,7 @@ export interface OpenID4VPRequest {
    * present, but not both.
    */
   dcql_query?: DCQLQuery;
+
   /** Verifier metadata forwarded to the wallet (§5.1). */
   client_metadata?: SimpleClientMetadata;
 }
@@ -272,6 +194,7 @@ export interface OpenID4VPResponse {
    * obtain the credential ID → presentations mapping.
    */
   vp_token: string;
+
   /**
    * @deprecated Not part of OpenID4VP 1.0 DCQL responses.
    * Only present for backward-compatibility with wallets using the legacy
@@ -279,6 +202,7 @@ export interface OpenID4VPResponse {
    * responses.
    */
   presentation_submission?: PresentationSubmission | null;
+
   /** Echoes the `state` from the Authorization Request (§8.2). */
   state?: string;
 }

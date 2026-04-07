@@ -11,11 +11,6 @@
 
 // === Types ===
 export type {
-  // DCQL types
-  DCQLClaimsQuery,
-  DCQLCredentialQuery,
-  DCQLCredentialSetQuery,
-  DCQLQuery,
   // Protocol profiles
   ProfileId,
   ClientIdScheme,
@@ -48,6 +43,14 @@ export type {
   InitTransactionRequest,
 } from "./src/types.ts";
 
+export type {
+  // DCQL types
+  DCQLClaimsQuery,
+  DCQLCredentialQuery,
+  DCQLCredentialSetQuery,
+  DCQLQuery,
+} from "./src/dcql.ts";
+
 // === DCQL ===
 export {
   // Constants
@@ -62,7 +65,6 @@ export {
   buildAgeVerificationQueryWithFallback,
   buildInitTransactionRequest,
   getDefaultAgeVerificationDCQL,
-  convertPresentationDefinitionToDCQL,
   determineProfile,
   // Utilities
   generateNonce,

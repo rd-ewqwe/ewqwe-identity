@@ -10,13 +10,7 @@
  * @see https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile
  */
 
-import type {
-  CredentialType,
-  DCQLClaimsQuery,
-  DCQLCredentialQuery,
-  DCQLQuery,
-  InitTransactionRequest,
-} from "./types.ts";
+import type { CredentialType, InitTransactionRequest } from "./types.ts";
 import { CREDENTIAL_TYPES } from "./config.ts";
 
 // =============================================================================
@@ -40,6 +34,93 @@ export const EU_PID_NAMESPACE = "eu.europa.ec.eudi.pid.1";
 
 /** EU PID document type. */
 export const EU_PID_DOCTYPE = "eu.europa.ec.eudi.pid.1";
+
+// ============================================================================
+// DCQL (Digital Credentials Query Language) — OpenID4VP 1.0 §6
+// ============================================================================
+
+/** A single claim constraint in a DCQL credential query. */
+export interface DCQLClaimsQuery {
+  /** Claim identifier (for referencing in claim_sets). */
+  id?: string;
+  /** Path to the claim — e.g. ["age_over_18"] for mso_mdoc. */
+  path: string[];
+  /** Namespace for mso_mdoc claims (e.g. "eu.europa.ec.av.1"). */
+  namespace?: string;
+  /** Expected values — if provided, claim must match one of these. */
+  values?: unknown[];
+  /** Whether to retain this claim after verification. */
+  intent_to_retain?: boolean;
+}
+
+/**
+ * A single credential query in DCQL.
+ *
+ * Format identifiers per the OpenID4VP 1.0 spec (Appendix B):
+ * - `"mso_mdoc"` — ISO/IEC 18013-5 Mobile Documents (§B.2)
+ * - `"dc+sd-jwt"` — IETF SD-JWT VC (§B.3), canonical since Nov 2024
+ *   (was `"vc+sd-jwt"` before Nov 2024; both SHOULD be accepted per
+ *   draft-ietf-oauth-sd-jwt-vc-08 §3.2.1)
+ * - `"jwt_vc_json"` — W3C VC signed as JWT (§B.1.3.1)
+ * - `"ldp_vc"` — W3C VC with Linked Data Proofs (§B.1.3.2)
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-B
+ * @see https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html#section-3.2.1
+ */
+export interface DCQLCredentialQuery {
+  /** Unique identifier for this credential query. */
+  id: string;
+  /**
+   * Credential format identifier.
+   *
+   * `"mso_mdoc"` is for ISO/IEC 18013-5 Mobile Documents (mDL/mDoc).
+   *
+   * `"sd-jwt"` formats are for IETF SD-JWT Verifiable Credentials.  The current
+   * IANA-registered identifier for SD-JWT VC is `"dc+sd-jwt"` (application/dc+sd-jwt),
+   * which is the canonical name to use going forward. The older `"vc+sd-jwt"`
+   * SHOULD also be accepted during the transitional period per draft-ietf-oauth-sd-jwt-vc-08 §3.2.1.
+   *
+   * `"jwt_vc_json"` is for W3C Verifiable Credentials signed as JWT without JSON-LD.
+   *
+   * `"ldp_vc"` is for W3C Verifiable Credentials with Linked Data Proofs.
+   */
+  format: "mso_mdoc" | "dc+sd-jwt" | "vc+sd-jwt" | "jwt_vc_json" | "ldp_vc";
+  /** Format-specific metadata. */
+  meta?: {
+    /** Document type for mso_mdoc (e.g. "org.iso.18013.5.1.mDL"). */
+    doctype_value?: string;
+    /** Verifiable Credential Type values for dc+sd-jwt / vc+sd-jwt. */
+    vct_values?: string[];
+    /** Type values for jwt_vc_json / ldp_vc. */
+    type_values?: string[][];
+  };
+  /** Claims to request from the credential. */
+  claims?: DCQLClaimsQuery[];
+  /** Named subsets of claims; the wallet picks one set. */
+  claim_sets?: string[][];
+  /** Allow the wallet to return multiple matching credentials. */
+  multiple?: boolean;
+  /** Require cryptographic holder binding in the presentation. */
+  require_cryptographic_holder_binding?: boolean;
+}
+
+/** A credential set defining alternatives (OR logic). */
+export interface DCQLCredentialSetQuery {
+  /** Which credential query options satisfy this set. */
+  options: string[][];
+  /** Whether this credential set is required (default: true). */
+  required?: boolean;
+  /** Human-readable purpose for this credential set. */
+  purpose?: string;
+}
+
+/** The complete DCQL query structure — OpenID4VP 1.0 §6. */
+export interface DCQLQuery {
+  /** Array of credential queries. */
+  credentials: DCQLCredentialQuery[];
+  /** Optional credential sets for defining alternatives. */
+  credential_sets?: DCQLCredentialSetQuery[];
+}
 
 // =============================================================================
 // Query Builder Functions
@@ -138,73 +219,6 @@ export function getDefaultAgeVerificationDCQL(): DCQLQuery {
       },
     ],
   };
-}
-
-/**
- * Convert a legacy PresentationDefinition to a DCQL query.
- *
- * The frontend builds paths in bracket notation: $['namespace']['claim_name']
- * For mso_mdoc DCQL, the path must be exactly [namespace, claim_name].
- */
-export function convertPresentationDefinitionToDCQL(
-  // deno-lint-ignore no-explicit-any
-  presentationDefinition: any,
-): DCQLQuery {
-  const credentials: DCQLCredentialQuery[] = [];
-
-  if (presentationDefinition?.input_descriptors) {
-    for (const descriptor of presentationDefinition.input_descriptors) {
-      const doctype =
-        descriptor.format?.mso_mdoc?.doctype ||
-        descriptor.meta?.doctype_value ||
-        EU_PID_DOCTYPE;
-
-      const credential: DCQLCredentialQuery = {
-        id: descriptor.id || crypto.randomUUID(),
-        format: "mso_mdoc",
-        meta: { doctype_value: doctype },
-        claims: [],
-      };
-
-      if (descriptor.constraints?.fields) {
-        for (const field of descriptor.constraints.fields) {
-          if (field.path && field.path.length > 0) {
-            const pathStr: string = field.path[0];
-
-            // Parse bracket notation: $['eu.europa.ec.av.1']['age_over_18']
-            const bracketMatch = pathStr.match(
-              /^\$?\[['"]([^'"]+)['"]\]\[['"]([^'"]+)['"]\]$/,
-            );
-            if (bracketMatch) {
-              credential.claims!.push({
-                path: [bracketMatch[1], bracketMatch[2]],
-              });
-            } else {
-              // Dot notation or plain: $.age_over_18
-              const claimName = pathStr.replace(/^\$\.?/, "");
-              if (claimName) {
-                credential.claims!.push({ path: [doctype, claimName] });
-              }
-            }
-          }
-        }
-      }
-
-      // Use the namespace from the first claim as the authoritative doctype
-      if (credential.claims!.length > 0) {
-        const firstNamespace = credential.claims![0].path[0];
-        credential.meta = { doctype_value: firstNamespace };
-      }
-
-      credentials.push(credential);
-    }
-  }
-
-  if (credentials.length === 0) {
-    return getDefaultAgeVerificationDCQL();
-  }
-
-  return { credentials };
 }
 
 /**

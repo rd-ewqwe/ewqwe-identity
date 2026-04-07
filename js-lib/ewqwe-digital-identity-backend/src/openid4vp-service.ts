@@ -19,7 +19,6 @@ import type {
   TransactionStatusResult,
 } from "@ewqwe/digital-identity";
 import {
-  convertPresentationDefinitionToDCQL,
   determineProfile,
   getDefaultAgeVerificationDCQL,
 } from "@ewqwe/digital-identity";
@@ -159,10 +158,6 @@ export class OpenID4VPService {
     let dcqlQuery: DCQLQuery;
     if (request.dcql_query) {
       dcqlQuery = request.dcql_query;
-    } else if (request.presentation_definition) {
-      dcqlQuery = convertPresentationDefinitionToDCQL(
-        request.presentation_definition,
-      );
     } else {
       dcqlQuery = getDefaultAgeVerificationDCQL();
     }
