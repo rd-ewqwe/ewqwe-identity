@@ -1,9 +1,9 @@
 # Digital Credentials Authentication Project
 
-This project contains a browser extension wallet, a Relying Party webapp, and a Rust credential verifier for demonstrating W3C Digital Credentials:
+This project contains a browser extension wallet, a Relying Party web App, and a Rust credential verifier for demonstrating W3C Digital Credentials:
 
 1. **Wallet Extension** (`/wallet-extension`) - A browser extension implementing the Age Verification App Instance (AVI)
-2. **Webapp** (`/webapp`) - A Relying Party demo that requests and verifies credentials
+2. **Web App** (`/web App`) - A Relying Party demo that requests and verifies credentials
 3. **Credential Verifier** (`/credential_verifier`) - Rust backend that verifies presentations and issues attestations
 
 ## Quick Start
@@ -12,21 +12,21 @@ This project contains a browser extension wallet, a Relying Party webapp, and a 
 
 - [Deno](https://deno.land/) v1.40 or later
 
-### Running the Webapp (RP)
+### Running the Web App (RP)
 
 Open two terminal windows:
 
-**Terminal 1 - Webapp API (port 8000):**
+**Terminal 1 - Web App API (port 8000):**
 
 ```bash
-cd webapp
+cd web App
 deno task api
 ```
 
-**Terminal 2 - Webapp UI (port 5174):**
+**Terminal 2 - Web App UI (port 5174):**
 
 ```bash
-cd webapp
+cd web App
 deno task vite
 ```
 
@@ -84,7 +84,7 @@ ewqwe-auth/
 │   ├── content/
 │   ├── popup/
 │   └── src/
-├── webapp/                 # Relying Party demo application
+├── web App/                 # Relying Party demo application
 │   ├── deno.json
 │   ├── server.ts
 │   ├── vite.config.ts
