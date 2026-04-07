@@ -190,15 +190,28 @@ async function requestViaOpenID4VPCrossDevice(
 ): Promise<OpenID4VPResponse | null> {
   logger.log("OpenID4VP cross-device flow - initializing transaction");
 
+  // Build the init request - supports both DCQL and legacy presentation_definition
+  // The backend will convert presentation_definition to DCQL if needed
+  const initRequest: {
+    dcql_query?: unknown;
+    presentation_definition?: unknown;
+    nonce?: string;
+    client_metadata?: unknown;
+  } = {
+    nonce: request.nonce,
+    client_metadata: request.client_metadata,
+  };
+
+  // If we have a presentation_definition, include it (backend will convert to DCQL)
+  if (request.presentation_definition) {
+    initRequest.presentation_definition = request.presentation_definition;
+  }
+
   // Step 1: Initialize the transaction on the backend
   const initResponse = await fetch("/api/openid4vp/init", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      presentation_definition: request.presentation_definition,
-      nonce: request.nonce,
-      client_metadata: request.client_metadata,
-    }),
+    body: JSON.stringify(initRequest),
   });
 
   if (!initResponse.ok) {
@@ -481,14 +494,26 @@ async function requestViaOpenID4VPSameDevice(
   // Step 1: Initialize the transaction on the backend
   logger.log("Initializing OpenID4VP transaction for same-device flow...");
 
+  // Build the init request - supports both DCQL and legacy presentation_definition
+  const initRequest: {
+    dcql_query?: unknown;
+    presentation_definition?: unknown;
+    nonce?: string;
+    mode?: string;
+  } = {
+    nonce: request.nonce,
+    mode: "same-device",
+  };
+
+  // If we have a presentation_definition, include it (backend will convert to DCQL)
+  if (request.presentation_definition) {
+    initRequest.presentation_definition = request.presentation_definition;
+  }
+
   const initResponse = await fetch("/api/openid4vp/init", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      presentation_definition: request.presentation_definition,
-      nonce: request.nonce,
-      mode: "same-device",
-    }),
+    body: JSON.stringify(initRequest),
   });
 
   if (!initResponse.ok) {

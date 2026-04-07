@@ -1,5 +1,8 @@
 /// <reference lib="deno.ns" />
 
+// Import jose for JWT signing (JAR - JWT Secured Authorization Request)
+import * as jose from "https://deno.land/x/jose@v5.9.6/index.ts";
+
 /**
  * EU Age Verification Webapp - Backend Server
  *
@@ -7,6 +10,11 @@
  * 1. Handles /api/* endpoints (Vite proxies these here)
  * 2. Proxies verification requests to the Credential Verifier server
  * 3. Manages OpenID4VP cross-device presentation transactions
+ *
+ * OpenID4VP Implementation:
+ * - Uses DCQL (Digital Credentials Query Language) for credential queries
+ * - Returns JAR (JWT Secured Authorization Request) per RFC 9101
+ * - Supports cross-device flow with QR codes and same-device flow with deep links
  */
 
 const SERVER_PORT = 5175; // Backend API port (Vite proxies /api/* here)
@@ -16,6 +24,31 @@ const CREDENTIAL_VERIFIER_URL =
 // Public URL for OpenID4VP callbacks (must be accessible from mobile devices)
 const PUBLIC_URL =
   Deno.env.get("PUBLIC_URL") || `http://localhost:${SERVER_PORT}`;
+
+// ============================================================================
+// JAR Signing Key (for JWT Secured Authorization Requests)
+// ============================================================================
+
+// Generate an ephemeral EC key pair for signing JARs
+// In production, this should be loaded from secure storage and have a stable key ID
+let jarSigningKey: jose.KeyLike;
+let jarSigningKeyJwk: jose.JWK;
+const JAR_KEY_ID = "ewqwe-jar-key-1";
+
+async function initializeJarSigningKey() {
+  const { privateKey } = await jose.generateKeyPair("ES256", {
+    extractable: true,
+  });
+  jarSigningKey = privateKey;
+  jarSigningKeyJwk = await jose.exportJWK(privateKey);
+  jarSigningKeyJwk.kid = JAR_KEY_ID;
+  jarSigningKeyJwk.use = "sig";
+  jarSigningKeyJwk.alg = "ES256";
+  console.log(`[JAR] Generated ephemeral signing key: ${JAR_KEY_ID}`);
+}
+
+// Initialize the signing key at startup
+await initializeJarSigningKey();
 
 // Load CA certificate for TLS connection to Credential Verifier
 const CA_CERT_PATH =
@@ -46,6 +79,41 @@ const httpClient = caCert
 // ============================================================================
 
 /**
+ * DCQL (Digital Credentials Query Language) types
+ * See: https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#dcql
+ */
+interface DCQLClaimsQuery {
+  id?: string;
+  path: string[];
+  values?: unknown[];
+  intent_to_retain?: boolean;
+}
+
+interface DCQLCredentialQuery {
+  id: string;
+  format: "mso_mdoc" | "dc+sd-jwt" | "jwt_vc_json";
+  meta?: {
+    doctype_value?: string; // For mso_mdoc
+    vct_values?: string[]; // For sd-jwt
+  };
+  claims?: DCQLClaimsQuery[];
+  claim_sets?: string[][];
+  multiple?: boolean;
+  require_cryptographic_holder_binding?: boolean;
+}
+
+interface DCQLCredentialSetQuery {
+  options: string[][];
+  required?: boolean;
+  purpose?: string;
+}
+
+interface DCQLQuery {
+  credentials: DCQLCredentialQuery[];
+  credential_sets?: DCQLCredentialSetQuery[];
+}
+
+/**
  * Represents an OpenID4VP presentation transaction (cross-device flow)
  * Based on the EUDI Verifier Endpoint implementation
  */
@@ -56,12 +124,29 @@ interface OpenID4VPTransaction {
   createdAt: number;
   expiresAt: number;
   status: "pending" | "received" | "verified" | "error";
-  authorizationRequest: OpenID4VPAuthorizationRequest;
+  dcqlQuery: DCQLQuery;
+  clientId: string;
+  responseUri: string;
   walletResponse?: WalletDirectPostResponse;
   verificationResult?: VerifyResponse;
   errorMessage?: string;
+  clientMetadata?: ClientMetadata;
 }
 
+interface ClientMetadata {
+  client_name?: string;
+  logo_uri?: string;
+  vp_formats?: {
+    mso_mdoc?: { alg: string[] };
+    "dc+sd-jwt"?: {
+      "sd-jwt_alg_values"?: string[];
+      "kb-jwt_alg_values"?: string[];
+    };
+  };
+  jwks?: { keys: jose.JWK[] };
+}
+
+// Keep the old interface for backward compatibility during transition
 interface OpenID4VPAuthorizationRequest {
   client_id: string;
   client_id_scheme: string;
@@ -76,18 +161,22 @@ interface OpenID4VPAuthorizationRequest {
 
 interface WalletDirectPostResponse {
   vp_token: string;
-  presentation_submission: string;
+  presentation_submission?: string;
   state: string;
 }
 
 interface InitTransactionRequest {
-  presentation_definition: unknown;
+  /** DCQL query (preferred) */
+  dcql_query?: DCQLQuery;
+  /** Legacy presentation_definition (will be converted to DCQL) */
+  presentation_definition?: unknown;
   nonce?: string;
-  client_metadata?: unknown;
+  client_metadata?: ClientMetadata;
 }
 
 interface InitTransactionResponse {
   transaction_id: string;
+  client_id: string;
   request_uri: string;
   authorization_request_uri: string;
   /** Alias for authorization_request_uri, used by same-device flow */
@@ -187,12 +276,18 @@ async function handleApiRequest(req: Request): Promise<Response> {
 
   // Get the authorization request (wallet fetches this via request_uri)
   // Note: EUDI Wallet may use either GET or POST (request_uri_method)
+  // Returns a signed JWT (JAR) per RFC 9101
   if (
     path.startsWith("/api/openid4vp/request/") &&
     (req.method === "GET" || req.method === "POST")
   ) {
     const transactionId = path.replace("/api/openid4vp/request/", "");
-    return handleGetAuthorizationRequest(transactionId, corsHeaders, req);
+    return await handleGetAuthorizationRequest(transactionId, corsHeaders, req);
+  }
+
+  // Public JWK Set endpoint (for JAR signature verification)
+  if (path === "/api/openid4vp/.well-known/jwks.json" && req.method === "GET") {
+    return await handleGetPublicJwkSet(corsHeaders);
   }
 
   // ============================================================================
@@ -328,12 +423,39 @@ async function handleVerifyCredential(
 // ============================================================================
 
 /**
+ * Serve the public JWK Set for JAR signature verification
+ */
+async function handleGetPublicJwkSet(
+  corsHeaders: Record<string, string>,
+): Promise<Response> {
+  console.log("[OpenID4VP] Serving public JWK Set");
+
+  // Export the public key
+  const publicKeyJwk = { ...jarSigningKeyJwk };
+  delete publicKeyJwk.d; // Remove private key component
+  publicKeyJwk.kid = JAR_KEY_ID;
+  publicKeyJwk.use = "sig";
+  publicKeyJwk.alg = "ES256";
+
+  const jwks = {
+    keys: [publicKeyJwk],
+  };
+
+  return new Response(JSON.stringify(jwks), {
+    headers: {
+      "Content-Type": "application/jwk-set+json",
+      ...corsHeaders,
+    },
+  });
+}
+
+/**
  * Initialize an OpenID4VP transaction for cross-device presentation
  * Compatible with EUDI Wallet (Android/iOS) reference implementation
  *
  * The wallet will:
  * 1. Scan the QR code containing the authorization_request_uri
- * 2. Fetch the authorization request from request_uri
+ * 2. Fetch the authorization request from request_uri (returns signed JAR)
  * 3. POST the VP token to response_uri (direct_post)
  */
 async function handleInitOpenID4VPTransaction(
@@ -358,30 +480,42 @@ async function handleInitOpenID4VPTransaction(
     // Build the response_uri where wallet will POST the VP token
     const responseUri = `${PUBLIC_URL}/api/openid4vp/direct_post`;
 
-    // Build the request_uri where wallet will fetch the full authorization request
+    // Build the request_uri where wallet will fetch the full authorization request (JAR)
     const requestUri = `${PUBLIC_URL}/api/openid4vp/request/${transactionId}`;
 
-    // For client_id_scheme: "redirect_uri", the client_id MUST equal the response_uri
-    // See OpenID4VP spec section on redirect_uri client_id scheme
-    const clientId = responseUri;
+    // Client ID - using pre-registered scheme for simplicity
+    // In production, use x509_san_dns with proper certificates
+    const clientId = `pre-registered:ewqwe-age-verification`;
 
-    // Build the authorization request
-    const authorizationRequest: OpenID4VPAuthorizationRequest = {
-      client_id: clientId,
-      client_id_scheme: "redirect_uri",
-      response_type: "vp_token",
-      response_mode: "direct_post",
-      response_uri: responseUri,
-      nonce,
-      state,
-      presentation_definition: body.presentation_definition,
-      client_metadata: body.client_metadata || {
-        client_name: "EwQwE Age Verification Demo",
-        logo_uri: `${PUBLIC_URL}/logo.png`,
-        vp_formats: {
-          mso_mdoc: { alg: ["ES256", "ES384", "ES512"] },
-        },
+    // Convert presentation_definition to DCQL query if needed, or use dcql_query directly
+    let dcqlQuery: DCQLQuery;
+    if (body.dcql_query) {
+      dcqlQuery = body.dcql_query;
+    } else if (body.presentation_definition) {
+      // Convert legacy presentation_definition to DCQL
+      dcqlQuery = convertPresentationDefinitionToDCQL(
+        body.presentation_definition,
+      );
+    } else {
+      // Default: request age_over_18 from EU PID
+      dcqlQuery = getDefaultAgeVerificationDCQL();
+    }
+
+    // Build client metadata with public key for JAR verification
+    const publicKey = await jose.exportJWK(
+      await jose.importJWK({ ...jarSigningKeyJwk, d: undefined }, "ES256"),
+    );
+    publicKey.kid = JAR_KEY_ID;
+    publicKey.use = "sig";
+    publicKey.alg = "ES256";
+
+    const clientMetadata: ClientMetadata = body.client_metadata || {
+      client_name: "EwQwE Age Verification Demo",
+      logo_uri: `${PUBLIC_URL}/logo.png`,
+      vp_formats: {
+        mso_mdoc: { alg: ["ES256", "ES384", "ES512"] },
       },
+      jwks: { keys: [publicKey] },
     };
 
     // Store the transaction
@@ -392,7 +526,10 @@ async function handleInitOpenID4VPTransaction(
       createdAt: now,
       expiresAt,
       status: "pending",
-      authorizationRequest,
+      dcqlQuery,
+      clientId,
+      responseUri,
+      clientMetadata,
     };
     transactions.set(transactionId, transaction);
 
@@ -400,21 +537,23 @@ async function handleInitOpenID4VPTransaction(
       `[OpenID4VP] Transaction created: ${transactionId.slice(0, 8)}...`,
     );
     console.log(`[OpenID4VP] State: ${state.slice(0, 8)}...`);
+    console.log(`[OpenID4VP] Client ID: ${clientId}`);
     console.log(`[OpenID4VP] Response URI: ${responseUri}`);
     console.log(`[OpenID4VP] Request URI: ${requestUri}`);
+    console.log(`[OpenID4VP] DCQL Query:`, JSON.stringify(dcqlQuery, null, 2));
 
     // Build the authorization request URI for the QR code
     // EUDI Wallet supports: openid4vp://, mdoc-openid4vp://, haip-vp://
-    // For redirect_uri scheme, client_id must match response_uri
     const authorizationRequestUri = `openid4vp://?client_id=${encodeURIComponent(clientId)}&request_uri=${encodeURIComponent(requestUri)}`;
 
     console.log(
-      `[OpenID4VP] Authorization Request URI: ${authorizationRequestUri.slice(0, 80)}...`,
+      `[OpenID4VP] Authorization Request URI: ${authorizationRequestUri.slice(0, 100)}...`,
     );
     console.log("=".repeat(60) + "\n");
 
     const response: InitTransactionResponse = {
       transaction_id: transactionId,
+      client_id: clientId,
       request_uri: requestUri,
       authorization_request_uri: authorizationRequestUri,
       // Include deep_link_uri as an alias for same-device flow
@@ -441,16 +580,92 @@ async function handleInitOpenID4VPTransaction(
 }
 
 /**
+ * Convert legacy presentation_definition to DCQL query format
+ */
+function convertPresentationDefinitionToDCQL(
+  // deno-lint-ignore no-explicit-any
+  presentationDefinition: any,
+): DCQLQuery {
+  // Basic conversion - extract input_descriptors and convert to DCQL credentials
+  const credentials: DCQLCredentialQuery[] = [];
+
+  if (presentationDefinition?.input_descriptors) {
+    for (const descriptor of presentationDefinition.input_descriptors) {
+      const credential: DCQLCredentialQuery = {
+        id: descriptor.id || crypto.randomUUID(),
+        format: "mso_mdoc", // Default to mso_mdoc for EU PID
+        meta: {
+          doctype_value: "eu.europa.ec.eudi.pid.1", // EU PID doctype
+        },
+        claims: [],
+      };
+
+      // Convert constraints.fields to claims
+      if (descriptor.constraints?.fields) {
+        for (const field of descriptor.constraints.fields) {
+          if (field.path && field.path.length > 0) {
+            // Parse JSONPath like "$.age_over_18" to DCQL path ["eu.europa.ec.eudi.pid.1", "age_over_18"]
+            const pathStr = field.path[0];
+            const claimName = pathStr.replace(/^\$\.?/, "");
+            if (claimName) {
+              credential.claims!.push({
+                path: ["eu.europa.ec.eudi.pid.1", claimName],
+              });
+            }
+          }
+        }
+      }
+
+      credentials.push(credential);
+    }
+  }
+
+  // If no credentials were extracted, use default
+  if (credentials.length === 0) {
+    return getDefaultAgeVerificationDCQL();
+  }
+
+  return { credentials };
+}
+
+/**
+ * Get default DCQL query for age verification (age_over_18 from EU PID)
+ */
+function getDefaultAgeVerificationDCQL(): DCQLQuery {
+  return {
+    credentials: [
+      {
+        id: "eu-pid-age-verification",
+        format: "mso_mdoc",
+        meta: {
+          doctype_value: "eu.europa.ec.eudi.pid.1",
+        },
+        claims: [
+          {
+            path: ["eu.europa.ec.eudi.pid.1", "age_over_18"],
+          },
+        ],
+      },
+    ],
+  };
+}
+
+/**
  * Get the authorization request for a transaction
  * The wallet fetches this via the request_uri in the QR code
+ *
+ * IMPORTANT: Returns a signed JWT (JAR - JWT Secured Authorization Request) per RFC 9101
+ * Content-Type: application/oauth-authz-req+jwt
  */
-function handleGetAuthorizationRequest(
+async function handleGetAuthorizationRequest(
   transactionId: string,
   corsHeaders: Record<string, string>,
   req: Request,
-): Response {
+): Promise<Response> {
   console.log("\n" + "=".repeat(60));
-  console.log("[OpenID4VP] === WALLET FETCHING AUTHORIZATION REQUEST ===");
+  console.log(
+    "[OpenID4VP] === WALLET FETCHING AUTHORIZATION REQUEST (JAR) ===",
+  );
   console.log(`[OpenID4VP] Transaction ID: ${transactionId.slice(0, 8)}...`);
   console.log(`[OpenID4VP] Method: ${req.method}`);
   console.log(`[OpenID4VP] Accept: ${req.headers.get("accept")}`);
@@ -479,15 +694,94 @@ function handleGetAuthorizationRequest(
     });
   }
 
-  console.log(`[OpenID4VP] Returning authorization request:`);
-  console.log(JSON.stringify(transaction.authorizationRequest, null, 2));
-  console.log("=".repeat(60) + "\n");
+  try {
+    // Build the JWT claims for the authorization request
+    const now = Math.floor(Date.now() / 1000);
+    const exp = Math.floor(transaction.expiresAt / 1000);
 
-  // Return the authorization request as JSON
-  // Note: In production, this should be a signed JWT (JAR - JWT Secured Authorization Request)
-  return new Response(JSON.stringify(transaction.authorizationRequest), {
-    headers: { "Content-Type": "application/json", ...corsHeaders },
-  });
+    // Get the public key for client_metadata.jwks
+    const publicKeyJwk = { ...jarSigningKeyJwk };
+    delete publicKeyJwk.d; // Remove private key component
+    publicKeyJwk.kid = JAR_KEY_ID;
+    publicKeyJwk.use = "sig";
+    publicKeyJwk.alg = "ES256";
+
+    // Build client_metadata with the public key
+    const clientMetadata = {
+      client_name:
+        transaction.clientMetadata?.client_name ||
+        "EwQwE Age Verification Demo",
+      logo_uri:
+        transaction.clientMetadata?.logo_uri || `${PUBLIC_URL}/logo.png`,
+      vp_formats: transaction.clientMetadata?.vp_formats || {
+        mso_mdoc: { alg: ["ES256", "ES384", "ES512"] },
+      },
+      jwks: { keys: [publicKeyJwk] },
+    };
+
+    // Build the JWT payload (authorization request claims)
+    // Per OpenID4VP and EUDI Wallet expectations
+    const jwtPayload: jose.JWTPayload = {
+      // Standard JWT claims
+      iss: transaction.clientId,
+      aud: "https://self-issued.me/v2", // Self-issued OP v2
+      iat: now,
+      exp: exp,
+
+      // OpenID4VP required claims
+      client_id: transaction.clientId,
+      client_id_scheme: "pre-registered",
+      response_type: "vp_token",
+      response_mode: "direct_post",
+      response_uri: transaction.responseUri,
+      state: transaction.state,
+      nonce: transaction.nonce,
+
+      // DCQL query (the credential request)
+      dcql_query: transaction.dcqlQuery,
+
+      // Client metadata
+      client_metadata: clientMetadata,
+    };
+
+    console.log(`[OpenID4VP] Building JAR with claims:`);
+    console.log(JSON.stringify(jwtPayload, null, 2));
+
+    // Sign the JWT (JAR)
+    const jwt = await new jose.SignJWT(jwtPayload)
+      .setProtectedHeader({
+        alg: "ES256",
+        typ: "oauth-authz-req+jwt",
+        kid: JAR_KEY_ID,
+      })
+      .sign(jarSigningKey);
+
+    console.log(
+      `[OpenID4VP] Generated JAR (first 100 chars): ${jwt.slice(0, 100)}...`,
+    );
+    console.log("=".repeat(60) + "\n");
+
+    // Return the signed JWT with proper content-type
+    // RFC 9101: application/oauth-authz-req+jwt
+    return new Response(jwt, {
+      headers: {
+        "Content-Type": "application/oauth-authz-req+jwt",
+        ...corsHeaders,
+      },
+    });
+  } catch (error) {
+    console.error("[OpenID4VP] Error creating JAR:", error);
+    return new Response(
+      JSON.stringify({
+        error: "Failed to create authorization request",
+        message: error instanceof Error ? error.message : "Unknown error",
+      }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      },
+    );
+  }
 }
 
 /**

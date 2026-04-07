@@ -73,10 +73,19 @@ When using OpenID4VP cross-device mode, the webapp implements the cross-device f
 1. **Initialize Transaction**: Frontend requests a new transaction from the backend
 2. **Display QR Code**: A modal shows a QR code containing the authorization request URI
 3. **Wallet Scans QR**: User scans the QR code with their mobile wallet (e.g., EUDI Wallet)
-4. **Wallet Fetches Request**: Wallet fetches the full authorization request from `request_uri`
+4. **Wallet Fetches Request**: Wallet fetches the full authorization request from `request_uri` (returns a signed JWT - JAR)
 5. **User Approves**: User reviews and approves the credential sharing request
 6. **Wallet POSTs Response**: Wallet sends the VP token to `response_uri` (direct_post)
 7. **Frontend Receives Result**: Frontend polls for status and receives the VP token
+
+#### Technical Details
+
+The implementation follows the EUDI Wallet specifications:
+
+- **JAR (JWT Secured Authorization Request)**: The `/api/openid4vp/request/{id}` endpoint returns a signed JWT per [RFC 9101](https://www.rfc-editor.org/rfc/rfc9101.html) with content-type `application/oauth-authz-req+jwt`
+- **DCQL Query**: Uses [DCQL (Digital Credentials Query Language)](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#dcql) instead of presentation_definition
+- **ES256 Signing**: The JAR is signed with an ephemeral EC P-256 key using ES256 algorithm
+- **Client ID Scheme**: Uses `pre-registered` scheme for the client_id
 
 ```mermaid
 sequenceDiagram
@@ -92,7 +101,7 @@ sequenceDiagram
     
     U->>M: Scan QR Code
     M->>B: GET /api/openid4vp/request/{id}
-    B-->>M: Authorization Request (JSON)
+    B-->>M: Signed JWT (JAR) with DCQL query
     M->>U: Show credential sharing prompt
     U->>M: Approve sharing
     M->>B: POST /api/openid4vp/direct_post (vp_token)

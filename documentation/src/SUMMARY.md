@@ -5,6 +5,7 @@
 - [User Journey - Sequence Diagram](./user-journey.md)
 - [The EwQwE Credential Verifier](./credential_verifier_server.md)
 - [The Demo Architecture](./demo_architecture.md)
+- [EUDI Wallet on Android Studio](./eudi_wallet_android_studio.md)
 - [The Demo Wallet Browser Extension](./demo_wallet_extension.md)
 - [The Relying Party Demo Web Application](./demo_webapp.md)
 - [The Webapp -> Wallet Communication Protocol](./webapp_wallet_communication.md)
