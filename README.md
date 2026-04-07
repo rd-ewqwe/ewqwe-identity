@@ -38,6 +38,14 @@ See [wallet-extension/README.md](wallet-extension/README.md) for build and insta
 
 The verifier requires Redis running at `redis://127.0.0.1:6379`.
 
+The verifier may also need a reverse proxy (e.g. Nginx):
+
+```sh
+docker run --name ewqwe_proxy -p 4343:443 bgrieder/ewqwe_nginx
+```
+
+Then run the verifier with:
+
 ```bash
 cd credential_verifier
 cargo run --features openssl
@@ -74,7 +82,7 @@ sequenceDiagram
 
 ## Project Structure
 
-```
+```text
 ewqwe-auth/
 ├── opus.md                 # Project requirements
 ├── README.md               # This file
