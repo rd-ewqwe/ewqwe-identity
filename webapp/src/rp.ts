@@ -163,28 +163,35 @@ export class RelyingPartyApp {
         name: "Digital Credentials API",
         supported: typeof globalThis.DigitalCredential !== "undefined",
         icon: "🔐",
+        infoUrl: "https://www.w3.org/TR/digital-credentials/",
       },
       {
         name: "Credential Management",
         supported: "credentials" in navigator,
         icon: "📋",
+        infoUrl: "https://developer.mozilla.org/docs/Web/API/Credential_Management_API",
       },
       {
         name: "Secure Context",
-        supported: window.isSecureContext,
+        supported: globalThis.isSecureContext,
         icon: "🔒",
+        infoUrl: "https://developer.mozilla.org/docs/Web/Security/Secure_Contexts",
       },
       {
         name: "Crypto API",
         supported: typeof crypto !== "undefined" && typeof crypto.randomUUID === "function",
         icon: "🔑",
+        infoUrl: "https://developer.mozilla.org/docs/Web/API/Crypto",
       },
     ];
 
     statusEl.innerHTML = checks
       .map(
         (check) => `
-        <div class="bg-white/5 rounded-lg p-3 text-center">
+        <div class="bg-white/5 rounded-lg p-3 text-center relative">
+          <a href="${check.infoUrl}" target="_blank" rel="noopener noreferrer" class="absolute top-2 right-2 text-gray-500/60 hover:text-gray-400 transition-colors text-xs" aria-label="Learn more about ${check.name}">
+            ⓘ
+          </a>
           <div class="text-2xl mb-1">${check.icon}</div>
           <div class="text-xs text-gray-400">${check.name}</div>
           <div class="${check.supported ? "text-green-400" : "text-amber-400"} text-sm font-medium">

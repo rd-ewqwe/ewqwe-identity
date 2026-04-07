@@ -83,7 +83,7 @@ export interface DescriptorMap {
 }
 
 // Credential types for display
-export type CredentialType = "mdl" | "national-id";
+export type CredentialType = "mdl" | "national-id" | "proof-of-age";
 
 export interface ClaimDefinition {
   id: string;
