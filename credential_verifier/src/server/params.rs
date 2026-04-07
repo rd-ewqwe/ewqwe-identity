@@ -231,7 +231,7 @@ x509_key_path = "certs/server.key.pem"
         );
         assert_eq!(
             params.trusted_issuer_certs_dir(),
-            temp_dir.join("issuers").display().to_string()
+            temp_dir.join("issuer_certificates").display().to_string()
         );
 
         fs::remove_dir_all(&temp_dir).expect("failed to remove temp config directory");
