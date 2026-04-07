@@ -2,6 +2,7 @@
 set -euo pipefail
 
 # The router must be configured to forward ports 80 to 4080 and 443 to 4043 on the host running this container.
+# Once the ACME protocol has run, the port 80 should be closed again to prevent abuse.
 # The image must be built with `docker build -t ewqwe-reverse-proxy .` from the reverse-proxy directory.
 
 mkdir -p /etc/letsencrypt/
