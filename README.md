@@ -1,9 +1,10 @@
 # Digital Credentials Authentication Project
 
-This project contains two web applications for demonstrating W3C Digital Credentials:
+This project contains a browser extension wallet, a Relying Party webapp, and a Rust credential verifier for demonstrating W3C Digital Credentials:
 
-1. **Wallet** (`/wallet`) - A digital wallet application that manages verifiable credentials
+1. **Wallet Extension** (`/wallet-extension`) - A browser extension implementing the Age Verification App Instance (AVI)
 2. **Webapp** (`/webapp`) - A Relying Party demo that requests and verifies credentials
+3. **Credential Verifier** (`/credential_verifier`) - Rust backend that verifies presentations and issues attestations
 
 ## Quick Start
 
@@ -11,43 +12,49 @@ This project contains two web applications for demonstrating W3C Digital Credent
 
 - [Deno](https://deno.land/) v1.40 or later
 
-### Running Both Applications
+### Running the Webapp (RP)
 
 Open two terminal windows:
 
-**Terminal 1 - Wallet (port 5173):**
-```bash
-cd wallet
-deno task dev
-```
+**Terminal 1 - Webapp API (port 8000):**
 
-**Terminal 2 - Webapp (port 5174):**
 ```bash
 cd webapp
-deno task dev
+deno task api
+```
+
+**Terminal 2 - Webapp UI (port 5174):**
+
+```bash
+cd webapp
+deno task vite
+```
+
+### Running the Wallet Extension
+
+See [wallet-extension/README.md](wallet-extension/README.md) for build and installation steps.
+
+### Running the Credential Verifier (Rust)
+
+The verifier requires Redis running at `redis://127.0.0.1:6379`.
+
+```bash
+cd credential_verifier
+cargo run --features openssl
 ```
 
 ## Architecture
 
-```
-┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
-│   Attestation   │     │     Wallet      │     │   Relying       │
-│    Provider     │────▶│   Application   │◀────│     Party       │
-│      (AP)       │     │    (Holder)     │     │     (RP)        │
-└─────────────────┘     └─────────────────┘     └─────────────────┘
-                              │                         │
-                              │    W3C Digital          │
-                              │  Credentials API        │
-                              ▼                         ▼
-                        ┌─────────────────────────────────┐
-                        │        Browser / User Agent      │
-                        └─────────────────────────────────┘
-                                        │
-                                        ▼
-                        ┌─────────────────────────────────┐
-                        │      Backend Verification       │
-                        │         (Rust - TBD)            │
-                        └─────────────────────────────────┘
+```mermaid
+%%{init: {'theme': 'base', 'themeVariables': { 'background': '#ffffff' }}}%%
+sequenceDiagram
+    participant RP as Relying Party (RP)
+    participant Wallet as Wallet Extension (AVI)
+    participant Verifier as Credential Verifier (Rust)
+    RP->>Wallet: (1) Request proof of age
+    Wallet-->>RP: (2) VP Token (presentation)
+    RP->>Verifier: (3) Send VP Token for verification
+    Verifier-->>RP: (4) Return signed attestation (proof is valid)
 ```
 
 ## Technology Stack
@@ -56,7 +63,7 @@ deno task dev
 - **Build Tool**: Vite
 - **Language**: TypeScript
 - **Styling**: Tailwind CSS
-- **Backend**: Rust (to be developed)
+- **Backend**: Rust (credential verifier)
 
 ## Standards Implemented
 
@@ -69,48 +76,27 @@ deno task dev
 
 ```
 ewqwe-auth/
-├── opus.md              # Project requirements
-├── README.md            # This file
-├── wallet/              # Digital Wallet application
+├── opus.md                 # Project requirements
+├── README.md               # This file
+├── wallet-extension/       # Browser extension wallet (AVI)
+│   ├── manifest.json
+│   ├── background/
+│   ├── content/
+│   ├── popup/
+│   └── src/
+├── webapp/                 # Relying Party demo application
 │   ├── deno.json
+│   ├── server.ts
 │   ├── vite.config.ts
 │   ├── index.html
-│   ├── README.md
 │   └── src/
-│       ├── main.ts
-│       ├── wallet.ts
-│       ├── store.ts
-│       ├── types.ts
-│       ├── debug.ts
-│       └── styles.css
-└── webapp/              # Relying Party demo application
-    ├── deno.json
-    ├── vite.config.ts
-    ├── index.html
-    ├── README.md
+└── credential_verifier/    # Rust verifier backend
+    ├── Cargo.toml
     └── src/
-        ├── main.ts
-        ├── rp.ts
-        ├── credentials.ts
-        ├── config.ts
-        ├── types.ts
-        ├── debug.ts
-        └── styles.css
 ```
 
-## Future Work
+## Current Capabilities
 
-### Rust Backend
-
-A Rust backend server will be developed to:
-- Verify cryptographic signatures on credentials
-- Validate credential issuers against trusted lists
-- Check credential revocation status
-- Provide secure nonce generation and validation
-
-### Additional Features
-
-- Cross-device credential presentation
-- Credential issuance flow
-- Multiple wallet provider support
-- Enhanced security features
+- Same-device and cross-device OpenID4VP flows
+- Browser extension wallet with sample credentials
+- Rust verifier with attestation signing
