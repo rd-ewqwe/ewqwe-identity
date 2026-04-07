@@ -2,7 +2,7 @@
  * @ewqwe/digital-identity — Type Definitions
  *
  * Shared types for OpenID4VP, DCQL, credential formats, and protocol profiles.
- * Browser-compatible — no server-side APIs. Used by both front-end and back-end.
+ * Node.js compatible — no platform-specific APIs. Used by both front-end and back-end.
  *
  * Standards references:
  * - OpenID4VP 1.0: https://openid.net/specs/openid-4-verifiable-presentations-1_0.html
@@ -12,7 +12,7 @@
  * - EU Age Verification Profile: https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile
  */
 
-import type { DCQLQuery } from "./dcql.ts";
+import type { DCQLQuery } from "./dcql.js";
 
 // ============================================================================
 // Protocol Profiles
@@ -329,7 +329,7 @@ export interface VpFormats {
   /**
    * IETF SD-JWT VC — legacy identifier, superseded by `dc+sd-jwt` (§B.3).
    * Both SHOULD be accepted during the transitional period per
-   * draft-ietf-oauth-sd-jwt-vc §3.2.1.
+   * draft-ietf-oauth-sd-jwt-vc-08 §3.2.1.
    */
   "vc+sd-jwt"?: SdJwtVcVpFormat;
   /** W3C VC signed as JWT, without JSON-LD (§B.1.3.1). */
@@ -509,29 +509,6 @@ export interface VerifyResponse {
 // Transaction Status (Frontend polling)
 // ============================================================================
 
-/**
- * Error response sent by the Wallet to the Verifier's `response_uri` (§8.5).
- *
- * Instead of a VP Token the Wallet sends this when it cannot or will not fulfil
- * the Authorization Request. Field names are snake_case to match Rust API JSON.
- *
- * Error codes:
- * - `invalid_request` — malformed / unsupported request parameters
- * - `access_denied` — no matching credentials, user denied consent, or auth failed
- * - `vp_formats_not_supported` — no supported VP format found
- * - `invalid_request_uri_method` — unsupported `request_uri_method` value
- * - `invalid_transaction_data` — `transaction_data` claim issue
- * - `wallet_unavailable` — wallet cannot be invoked (§15.9.1)
- */
-export interface WalletAuthorizationError {
-  /** Error code from §8.5 (e.g. `"access_denied"`). */
-  error: string;
-  /** Human-readable error description (optional). */
-  error_description?: string;
-  /** The `state` parameter echoed back from the Authorization Request. */
-  state?: string;
-}
-
 /** Transaction status values. */
 export type TransactionStatus =
   | "pending"
@@ -634,29 +611,24 @@ export interface DigitalCredential {
 }
 
 /**
- * Extend navigator.credentials for the W3C Digital Credentials API.
- * @see https://www.w3.org/TR/digital-credentials/
+ * Error response sent by the Wallet to the Verifier's `response_uri` (§8.5).
+ *
+ * Instead of a VP Token the Wallet sends this when it cannot or will not fulfil
+ * the Authorization Request. Field names are snake_case to match Rust API JSON.
+ *
+ * Error codes:
+ * - `invalid_request` — malformed / unsupported request parameters
+ * - `access_denied` — no matching credentials, user denied consent, or auth failed
+ * - `vp_formats_not_supported` — no supported VP format found
+ * - `invalid_request_uri_method` — unsupported `request_uri_method` value
+ * - `invalid_transaction_data` — `transaction_data` claim issue
+ * - `wallet_unavailable` — wallet cannot be invoked (§15.9.1)
  */
-declare global {
-  interface CredentialsContainer {
-    get(options?: DigitalCredentialRequestOptions): Promise<Credential | null>;
-  }
-
-  interface DigitalCredentialRequestOptions extends CredentialRequestOptions {
-    digital?: {
-      requests: DigitalCredentialRequest[];
-    };
-  }
-
-  interface DigitalCredential extends Credential {
-    protocol: string;
-    data: unknown;
-  }
-
-  interface DigitalCredentialClass {
-    userAgentAllowsProtocol(protocol: string): boolean;
-  }
-
-  // eslint-disable-next-line no-var
-  var DigitalCredential: DigitalCredentialClass | undefined;
+export interface WalletAuthorizationError {
+  /** Error code from §8.5 (e.g. `"access_denied"`). */
+  error: string;
+  /** Human-readable error description (optional). */
+  error_description?: string;
+  /** The `state` parameter echoed back from the Authorization Request. */
+  state?: string;
 }

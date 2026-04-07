@@ -86,6 +86,10 @@ export {
   base64urlDecode,
 } from "./attestation.js";
 
+// === API Client ===
+export { EwqweApiClient } from "./api-client.js";
+export type { ApiClientOptions, FetchFn } from "./api-client.js";
+
 // === Config ===
 export {
   PROTOCOL_PROFILES,

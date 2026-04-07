@@ -1,0 +1,38 @@
+[package]
+name = "ewqwe_digital_identity"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85.0"
+authors = ["ewQwe <contact@ewqwe.com>"]
+license = "MIT"
+description = "Rust client library for the ewQwe EU Age Verification API — OpenID4VP, DCQL, credential verification"
+readme = "README.md"
+homepage = "https://github.com/ewqwe-identity/ewqwe-identity"
+repository = "https://github.com/ewqwe-identity/ewqwe-identity"
+keywords = ["openid4vp", "age-verification", "digital-identity", "dcql", "eudi"]
+categories = ["authentication", "api-bindings", "web-programming::http-client"]
+
+[lib]
+path = "src/lib.rs"
+
+# ── Feature flags ─────────────────────────────────────────────────────────────
+# `default-tls`  — TLS via native-tls (OpenSSL on Linux/macOS, SChannel on Windows)
+# `rustls-tls`   — TLS via rustls (pure-Rust; mutually exclusive with default-tls)
+# Both are forwarded transparently to reqwest.
+[features]
+default = ["default-tls"]
+default-tls = ["reqwest/default-tls", "reqwest/native-tls"]
+rustls-tls = ["reqwest/rustls-tls"]
+
+[dependencies]
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+thiserror = "2.0"
+url = "2.5"
+async-trait = "0.1"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["full", "macros"] }
+mockito = "1"
+serde_json = "1.0"

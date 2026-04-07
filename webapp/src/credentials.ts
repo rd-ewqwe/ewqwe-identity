@@ -8,7 +8,10 @@ import type {
   VerifyResponse,
   WalletAuthorizationError,
 } from "@ewqwe/digital-identity";
+import { EwqweApiClient } from "@ewqwe/digital-identity";
 import type { DebugLogger } from "./debug.ts";
+
+const apiClient = new EwqweApiClient();
 
 /**
  * Detect whether the browser is running on a mobile device (Android or iOS).
@@ -187,19 +190,8 @@ async function requestViaOpenID4VPCrossDevice(
   }
 
   // Step 1: Initialize the transaction on the backend
-  const initResponse = await fetch("/ewqwe_api/openid4vp/init", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  });
-
-  if (!initResponse.ok) {
-    throw new Error(
-      `Failed to initialize OpenID4VP transaction: ${initResponse.statusText}`,
-    );
-  }
-
-  const initData: InitTransactionResponse = await initResponse.json();
+  const initData: InitTransactionResponse =
+    await apiClient.initOpenID4VPTransaction(request);
 
   logger.log("Transaction initialized", initData);
 
@@ -419,8 +411,8 @@ function pollForWalletResponse(
       }
 
       try {
-        const response = await fetch(`/ewqwe_api/openid4vp/status/${transactionId}`);
-        const data: TransactionStatusResult = await response.json();
+        const data: TransactionStatusResult =
+          await apiClient.getOpenID4VPTransactionStatus(transactionId);
 
         if (data.status === "received") {
           logger.log("Wallet response received");
@@ -498,18 +490,8 @@ async function requestViaOpenID4VPSameDevice(
     logger.log(`Init Transaction Request:`, request);
   }
 
-  const initResponse = await fetch("/ewqwe_api/openid4vp/init", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(request),
-  });
-
-  if (!initResponse.ok) {
-    const errorText = await initResponse.text();
-    throw new Error(`Failed to initialize OpenID4VP transaction: ${errorText}`);
-  }
-
-  const initData: InitTransactionResponse = await initResponse.json();
+  const initData: InitTransactionResponse =
+    await apiClient.initOpenID4VPTransaction(request);
   const { transaction_id, authorization_request_uri } = initData;
 
   if (!authorization_request_uri) {
@@ -750,25 +732,11 @@ export async function sendToBackend(
   });
 
   try {
-    const fetchResponse = await fetch(backendUrl, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
+    const result = await apiClient.verifyPresentation(body);
 
-    logger.log(`Backend responded: HTTP ${fetchResponse.status}`);
-
-    if (!fetchResponse.ok) {
-      const errText = await fetchResponse
-        .text()
-        .catch(() => fetchResponse.statusText);
-      throw new Error(`Backend returned ${fetchResponse.status}: ${errText}`);
-    }
-
-    const result = await fetchResponse.json();
     logger.success("Backend verification complete", result);
 
-    return result as VerifyResponse;
+    return result;
   } catch (error) {
     logger.error("Backend verification failed", error);
     return {

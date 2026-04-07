@@ -1,32 +1,33 @@
 # ewqwe_logging
 
-A comprehensive and flexible logging library for Rust applications, providing unified telemetry with support for multiple logging backends including stdout, file logging, syslog (Unix), and OpenTelemetry Protocol (OTLP).
+A comprehensive and flexible logging library for Rust applications, providing unified telemetry with support for multiple logging backends.
+These include stdout, file logging, syslog (Unix), and OpenTelemetry Protocol (OTLP).
 
 ## Features
 
 - **Multiple Logging Backends**: Configure one or more output destinations simultaneously
-  - Console/stdout with optional ANSI color support
-  - Daily rolling file appender
-  - Syslog integration (Unix/macOS/Linux)
-  - OpenTelemetry Protocol (OTLP) for distributed tracing and metrics
+  - Console/stdout with optional ANSI color support.
+  - Daily rolling file appender.
+  - Syslog integration (Unix/macOS/Linux).
+  - OpenTelemetry Protocol (OTLP) for distributed tracing and metrics.
   
 - **OpenTelemetry Integration**: Full support for modern observability
-  - Distributed tracing with gRPC-based OTLP exporter
-  - Metrics collection with periodic export
-  - Semantic conventions for service metadata
-  - Customizable sampling and resource attributes
+  - Distributed tracing with gRPC-based OTLP exporter.
+  - Metrics collection with periodic export.
+  - Semantic conventions for service metadata.
+  - Customizable sampling and resource attributes.
   
 - **Flexible Configuration**: Fine-grained control over logging behavior
-  - Environment-based filter configuration via `RUST_LOG`
-  - Customizable service name, version, and environment tags
-  - ANSI color output control
-  - Configurable trace sampling and span limits
+  - Environment-based filter configuration via `RUST_LOG`.
+  - Customizable service name, version, and environment tags.
+  - ANSI color output control.
+  - Configurable trace sampling and span limits.
 
 - **Production-Ready**: Built for reliability
-  - Automatic cleanup of telemetry providers on shutdown
-  - Protection against multiple initialization
-  - Graceful error handling and fallbacks
-  - Non-blocking file I/O
+  - Automatic cleanup of telemetry providers on shutdown.
+  - Protection against multiple initialization.
+  - Graceful error handling and fallbacks.
+  - Non-blocking file I/O.
 
 ## Quick Start
 

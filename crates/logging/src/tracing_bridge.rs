@@ -641,7 +641,6 @@ fn tracing_init_(config: &TracingConfig) -> Result<LoggingGuards, LoggerError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use serde_json;
     use std::path::PathBuf;
 
     #[test]

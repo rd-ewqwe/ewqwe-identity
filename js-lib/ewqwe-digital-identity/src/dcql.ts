@@ -4,7 +4,7 @@
  * Functions to build, parse, and convert DCQL (Digital Credentials Query Language)
  * queries for EU Age Verification and OpenID4VP presentations.
  *
- * Browser-compatible — no server-side APIs.
+ * Node.js compatible — uses Node.js crypto API.
  *
  * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html §6–7
  * @see https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile
@@ -14,8 +14,8 @@ import type {
   CredentialType,
   InitTransactionRequest,
   VpFormats,
-} from "./types.ts";
-import { CREDENTIAL_TYPES } from "./config.ts";
+} from "./types.js";
+import { CREDENTIAL_TYPES } from "./config.js";
 
 // =============================================================================
 // Constants — Namespaces and Document Types
@@ -381,12 +381,29 @@ export function determineProfile(
  * @returns Base64URL-encoded random nonce
  */
 export function generateNonce(): string {
-  const array = new Uint8Array(32);
-  crypto.getRandomValues(array);
-  return btoa(String.fromCharCode(...array))
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=/g, "");
+  const bytes = new Uint8Array(32);
+  globalThis.crypto.getRandomValues(bytes);
+
+  if (typeof btoa === "function") {
+    let binary = "";
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte);
+    }
+    return btoa(binary)
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
+  }
+
+  if (typeof Buffer !== "undefined") {
+    return Buffer.from(bytes)
+      .toString("base64")
+      .replace(/\+/g, "-")
+      .replace(/\//g, "_")
+      .replace(/=/g, "");
+  }
+
+  throw new Error("No base64 encoder available in this runtime");
 }
 
 /**
@@ -539,7 +556,7 @@ export function parseDCQLQuery(queryString: string): DCQLQuery | null {
 export function extractAgeThreshold(query: DCQLQuery): number | null {
   for (const credential of query.credentials) {
     for (const claim of credential.claims ?? []) {
-      const pathComp = claim.path[0];
+      const pathComp = claim.path[claim.path.length - 1];
       if (typeof pathComp !== "string") continue;
       const match = pathComp.match(/^age_over_(\d+)$/);
       if (match) {

@@ -4,7 +4,7 @@
  * Defines protocol profiles (HAIP, Annex A), credential type specifications
  * (mDL, PID, Proof of Age), and helper functions for querying them.
  *
- * Browser-compatible — no server-side APIs.
+ * Node.js compatible — no platform-specific APIs.
  *
  * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html
  * @see https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile
@@ -17,7 +17,7 @@ import type {
   CredentialTypeConfig,
   ProfileId,
   ProtocolProfile,
-} from "./types.ts";
+} from "./types.js";
 
 // =============================================================================
 // Protocol Profiles

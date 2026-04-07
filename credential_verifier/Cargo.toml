@@ -55,4 +55,5 @@ uuid = { workspace = true }
 
 [dev-dependencies]
 cookie_store = { workspace = true }
+ewqwe_digital_identity = { workspace = true, features = ["default-tls"] }
 openssl = { workspace = true, features = ["vendored"] }

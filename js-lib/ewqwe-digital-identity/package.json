@@ -1,7 +1,7 @@
 {
   "name": "@ewqwe/digital-identity",
   "version": "0.1.0",
-  "description": "npm-compatible JavaScript/TypeScript library for EU Digital Identity (OpenID4VP, DCQL, mDoc, SD-JWT VC)",
+  "description": "JavaScript/TypeScript library for EU Digital Identity (OpenID4VP, DCQL, mDoc, SD-JWT VC, Age Verification)",
   "keywords": [
     "digital-identity",
     "openid4vp",
@@ -9,7 +9,8 @@
     "mdoc",
     "sd-jwt",
     "eudi-wallet",
-    "age-verification"
+    "age-verification",
+    "eu-av"
   ],
   "author": "ewQwe",
   "license": "MIT",
@@ -17,6 +18,7 @@
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.ts",
+  "sideEffects": false,
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
@@ -25,21 +27,25 @@
     }
   },
   "files": [
-    "dist"
+    "dist",
+    "README.md",
+    "LICENSE"
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/ewqwe-identity/js-lib/ewqwe-npm.git"
+    "url": "https://github.com/ewqwe-identity/ewqwe-identity.git",
+    "directory": "js-lib/ewqwe-digital-identity"
   },
   "scripts": {
-    "build": "vite build",
+    "build": "vite build && tsc --emitDeclarationOnly --declaration --declarationDir dist --outDir dist",
     "dev": "vite build --watch",
     "test": "vitest run",
     "test:watch": "vitest",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build && npm test"
   },
   "engines": {
-    "node": ">=16.0.0"
+    "node": ">=18.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

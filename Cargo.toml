@@ -9,7 +9,7 @@ repository = ""
 description = "ewQwe Identity"
 
 [workspace]
-members = ["credential_verifier", "crates/logging", "crates/openid4vp"]
+members = ["credential_verifier", "crates/logging", "crates/openid4vp", "crates/ewqwe-digital-identity"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -34,6 +34,7 @@ cookie_store = "0.22.0"
 derive_builder = "0.20.2"
 derive_more = "2.0"
 enum_dispatch = "0.3.13"
+ewqwe_digital_identity = { path = "crates/ewqwe-digital-identity", default-features = false }
 ewqwe_logging = { path = "crates/logging" }
 ewqwe_openid4vp = { path = "crates/openid4vp" }
 eyre = "0.6.12"

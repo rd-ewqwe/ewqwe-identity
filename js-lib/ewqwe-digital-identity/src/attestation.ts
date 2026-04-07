@@ -1,8 +1,7 @@
 /**
  * Attestation JWT parsing and verification utilities.
  *
- * Browser-compatible — uses the Web Crypto API only (SubtleCrypto).
- * No Node.js or server-side dependencies.
+ * Browser- and Node-compatible — uses the Web Crypto API only (SubtleCrypto).
  *
  * @module
  */
@@ -51,19 +50,36 @@ export interface Attestation {
  * Base64url-decode a string to a Uint8Array.
  * Handles the standard base64url alphabet (no padding required).
  */
-function base64urlDecode(input: string): Uint8Array {
+export function base64urlDecode(input: string): Uint8Array {
   // Restore padding and convert base64url → base64
   const base64 = input.replace(/-/g, "+").replace(/_/g, "/");
   const padded = base64.padEnd(
     base64.length + ((4 - (base64.length % 4)) % 4),
     "=",
   );
-  const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
-  for (let i = 0; i < binary.length; i++) {
-    bytes[i] = binary.charCodeAt(i);
+
+  if (typeof atob === "function") {
+    const binary = atob(padded);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      bytes[i] = binary.charCodeAt(i);
+    }
+    return bytes;
   }
-  return bytes;
+
+  if (typeof Buffer !== "undefined") {
+    return new Uint8Array(Buffer.from(padded, "base64"));
+  }
+
+  throw new Error("No base64 decoder available in this runtime");
+}
+
+function getSubtleCrypto(): SubtleCrypto {
+  const subtle = globalThis.crypto?.subtle;
+  if (!subtle) {
+    throw new Error("Web Crypto API is not available in this runtime");
+  }
+  return subtle;
 }
 
 function splitJwt(jwt: string): [string, string, Uint8Array] {
@@ -122,7 +138,7 @@ export function importVerifierPublicKey(pemOrSpki: string): Promise<CryptoKey> {
       .buffer as ArrayBuffer;
   }
 
-  return crypto.subtle.importKey(
+  return getSubtleCrypto().importKey(
     "spki",
     spkiDer,
     { name: "ECDSA", namedCurve: "P-256" },
@@ -177,7 +193,7 @@ function extractSpkiFromCert(der: ArrayBuffer): ArrayBuffer {
   }
 
   throw new Error(
-    "Could not extract SubjectPublicKeyInfo from certificate \u2014 EC public key OID not found",
+    "Could not extract SubjectPublicKeyInfo from certificate — EC public key OID not found",
   );
 }
 
@@ -264,15 +280,18 @@ export async function parseAttestation(
   const keys = Array.isArray(jwks.keys) ? jwks.keys : [];
 
   // Find the matching key: prefer kid match, fall back to first key with x5c
-  // deno-lint-ignore no-explicit-any
-  let jwk: any = undefined;
+  let jwk: unknown = undefined;
   if (kid !== undefined) {
-    // deno-lint-ignore no-explicit-any
-    jwk = keys.find((k: any) => k.kid === kid);
+    jwk = keys.find((k: unknown) => {
+      const keyObj = k as Record<string, unknown>;
+      return keyObj.kid === kid;
+    });
   }
   if (!jwk) {
-    // deno-lint-ignore no-explicit-any
-    jwk = keys.find((k: any) => Array.isArray(k.x5c) && k.x5c.length > 0);
+    jwk = keys.find((k: unknown) => {
+      const keyObj = k as Record<string, unknown>;
+      return Array.isArray(keyObj.x5c) && keyObj.x5c.length > 0;
+    });
   }
   if (!jwk) {
     throw new Error(
@@ -280,14 +299,15 @@ export async function parseAttestation(
     );
   }
 
-  if (!Array.isArray(jwk.x5c) || jwk.x5c.length === 0) {
+  const jwkObj = jwk as Record<string, unknown>;
+  if (!Array.isArray(jwkObj.x5c) || jwkObj.x5c.length === 0) {
     throw new Error("JWKS attestation key does not include an x5c certificate");
   }
 
   // x5c values are standard base64-encoded DER (RFC 7517 §4.7).
   // Reconstruct a PEM so importVerifierPublicKey takes the certificate branch
   // and extracts the SubjectPublicKeyInfo via the DER parser.
-  const certPem = `-----BEGIN CERTIFICATE-----\n${jwk.x5c[0]}\n-----END CERTIFICATE-----`;
+  const certPem = `-----BEGIN CERTIFICATE-----\n${jwkObj.x5c[0]}\n-----END CERTIFICATE-----`;
   const publicKey = await importVerifierPublicKey(certPem);
 
   return verifyAttestation(jwt, publicKey);
@@ -308,7 +328,7 @@ export async function verifyAttestation(
 
   const message = new TextEncoder().encode(`${headerB64}.${payloadB64}`);
 
-  const valid = await crypto.subtle.verify(
+  const valid = await getSubtleCrypto().verify(
     { name: "ECDSA", hash: { name: "SHA-256" } },
     publicKey,
     signature.buffer as ArrayBuffer,

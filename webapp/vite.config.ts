@@ -13,9 +13,13 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Resolve to the pre-built ESM dist so that Chrome's native module loader
+      // always receives a valid JavaScript file (text/javascript MIME type).
+      // Serving a raw .ts file via the alias causes the crbug/1173575 deprecation
+      // warning: "non-JS module files deprecated".
       "@ewqwe/digital-identity": path.resolve(
         import.meta.dirname!,
-        "../js-lib/ewqwe-npm/src/lib.ts",
+        "../js-lib/ewqwe-digital-identity/dist/index.mjs",
       ),
     },
   },

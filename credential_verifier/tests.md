@@ -101,3 +101,24 @@ Each table has two columns: test name and what it verifies.
 |-----------|----------|
 | `test_start_server` | `start_default_test_server` and lifecycle with startup/shutdown succeeds |
 | `test_version_endpoint` | `/version` endpoint returns expected Cargo package version |
+| `test_issuer_certs_empty_dir_and_issuer_untrusted` | Server returns error (not success) when no trusted issuer CA certs are configured and a credential is submitted |
+
+## End-to-end tests via the `ewqwe_digital_identity` Rust client library
+
+These tests exercise the credential-verifier REST API through the
+[`ewqwe_digital_identity`](../crates/ewqwe-digital-identity/) client crate.
+A custom `TestReqwestClient` transport is used in place of `DefaultHttpClient` so
+that the test server's self-signed certificate is accepted on macOS
+(`danger_accept_invalid_certs = true` is set only in test code, never in
+production).
+
+| Test Name | Verifies |
+|-----------|----------|
+| `e2e_ewqwe_client_version_endpoint` | `GET /version` returns the expected Cargo package version via `EwqweApiClient::get_version()` |
+| `e2e_ewqwe_client_init_transaction` | `POST /ewqwe_api/openid4vp/init` creates a transaction; `InitTransactionResponse` has non-empty `transaction_id`, `client_id`, `request_uri`, `authorization_request_uri` and a positive `expires_in` |
+| `e2e_ewqwe_client_transaction_status_pending` | `GET /ewqwe_api/openid4vp/status/:id` returns `status == pending` with an `expires_in` value for a freshly created transaction |
+| `e2e_ewqwe_client_transaction_status_unknown_id` | An unknown transaction ID is treated as expired — the store's `is_expired` returns `true` for nonexistent keys, so the response is `status == expired` (HTTP 200), not an HTTP 404 |
+| `e2e_ewqwe_client_jwks_endpoint` | `GET /ewqwe_api/openid4vp/.well-known/jwks.json` returns a JWK Set with at least one key, each having a `kty` field (RFC 7517 §4) |
+| `e2e_ewqwe_client_get_authorization_request` | `GET /ewqwe_api/openid4vp/request/:id` returns a JSON object containing at least a `response_type` or `client_id` OpenID4VP field |
+| `e2e_ewqwe_client_verify_requires_client_cert` | `POST /ewqwe_api/verify` fails (transport error or HTTP 401) when no client certificate is presented and `disable_authentication = false` |
+| `e2e_ewqwe_client_full_flow_no_auth` | Full init → status poll → verify with `disable_authentication = true`: transaction starts `pending`; submitting a dummy VP Token is rejected with a non-success code (invalid credential payload) |
