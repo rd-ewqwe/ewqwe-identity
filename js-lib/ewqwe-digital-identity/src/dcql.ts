@@ -14,7 +14,6 @@ import type {
   CredentialType,
   DCQLClaimsQuery,
   DCQLCredentialQuery,
-  DCQLCredentialSetQuery,
   DCQLQuery,
   InitTransactionRequest,
 } from "./types.ts";

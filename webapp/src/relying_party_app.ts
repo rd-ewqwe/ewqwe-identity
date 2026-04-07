@@ -32,14 +32,15 @@ export class RelyingPartyApp {
     this.setupEventListeners();
     this.checkAPISupport();
     this.renderClaims();
-    this.updatePresentationRequest();
     this.updateProfileInfo();
 
-    // Initialize with default claims
+    // Initialize with default claims before building the request,
+    // so currentRequest is never created with an empty claims list.
     getDefaultClaims(this.selectedCredentialType).forEach((claim) => {
       this.selectedClaims.add(claim);
     });
     this.updateClaimsUI();
+    this.updatePresentationRequest();
 
     // Restore any verification result that survived a page navigation
     // (same-device flow can trigger a brief page reload when the wallet
