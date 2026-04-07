@@ -1,0 +1,28 @@
+[package]
+name = "ewqwe_openid4vp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "OpenID4VP Relying Party backend — transaction lifecycle, JAR signing, JWE decryption, DCQL query building"
+
+[lib]
+path = "src/lib.rs"
+
+[dependencies]
+base64 = "0.22"
+chrono = { workspace = true }
+openssl = { workspace = true, features = ["vendored"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+tokio = { workspace = true, features = ["sync", "time"] }
+tracing = { workspace = true }
+url = { workspace = true }
+urlencoding = "2"
+uuid = { workspace = true }
+
+[dev-dependencies]
+tokio = { workspace = true, features = ["full"] }

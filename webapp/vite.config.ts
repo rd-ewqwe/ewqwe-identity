@@ -15,10 +15,6 @@ export default defineConfig({
         import.meta.dirname!,
         "../js-lib/ewqwe-digital-identity/mod.ts",
       ),
-      "@ewqwe/digital-identity-backend": path.resolve(
-        import.meta.dirname!,
-        "../js-lib/ewqwe-digital-identity-backend/mod.ts",
-      ),
     },
   },
   server: {

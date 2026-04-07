@@ -3,6 +3,7 @@ use crate::{
     server::{
         AttServerParams,
         endpoints::{verify_credential_endpoint, version_endpoint},
+        openid4vp_endpoints,
     },
 };
 use actix_cors::Cors;
@@ -18,6 +19,7 @@ use actix_web::{
     dev::ServerHandle,
     web::{self, Data, JsonConfig, PayloadConfig},
 };
+use ewqwe_openid4vp::OpenID4VPService;
 use std::{
     io,
     sync::{Arc, mpsc},
@@ -65,6 +67,24 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
         .await
         .expect("failed to create Redis session store");
 
+    // Initialize OpenID4VP service if configured
+    let openid4vp_service: Option<Arc<OpenID4VPService>> =
+        if let Some(ref openid4vp_config) = params.openid4vp_config {
+            match OpenID4VPService::create(openid4vp_config.clone()) {
+                Ok(svc) => {
+                    info!("OpenID4VP service initialized");
+                    Some(Arc::new(svc))
+                }
+                Err(e) => {
+                    tracing::warn!("OpenID4VP service not available: {e}");
+                    None
+                }
+            }
+        } else {
+            info!("OpenID4VP not configured — endpoints disabled");
+            None
+        };
+
     // Clone attestation server params for HttpServer closure
     let server_params = params.clone();
 
@@ -78,8 +98,15 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
             .app_data(PayloadConfig::new(1_000_000)) // Set the maximum size of the request payload.
             .app_data(JsonConfig::default().limit(1_000_000)); // Set the maximum size of the JSON request payload.
 
+        // Optionally share the OpenID4VP service
+        let app = if let Some(ref svc) = openid4vp_service {
+            app.app_data(Data::new(svc.clone()))
+        } else {
+            app
+        };
+
         // The default scope serves from the root / the KMIP, permissions, and TEE endpoints
-        let default_scope = web::scope("")
+        let mut default_scope = web::scope("")
             // .app_data(Data::new(privileged_users.clone()))
             .wrap(IdentityMiddleware::default())
             .wrap(
@@ -103,6 +130,35 @@ async fn prepare_server(params: Arc<AttServerParams>) -> AttResult<actix_web::de
             )
             .route("/version", web::get().to(version_endpoint))
             .route("/api/verify", web::post().to(verify_credential_endpoint));
+
+        // Register OpenID4VP endpoints if the service is available
+        if openid4vp_service.is_some() {
+            default_scope = default_scope
+                .route(
+                    "/api/openid4vp/init",
+                    web::post().to(openid4vp_endpoints::init_transaction),
+                )
+                .route(
+                    "/api/openid4vp/status/{id}",
+                    web::get().to(openid4vp_endpoints::get_transaction_status),
+                )
+                .route(
+                    "/api/openid4vp/direct_post",
+                    web::post().to(openid4vp_endpoints::handle_direct_post),
+                )
+                .route(
+                    "/api/openid4vp/request/{id}",
+                    web::get().to(openid4vp_endpoints::get_authorization_request),
+                )
+                .route(
+                    "/api/openid4vp/request/{id}",
+                    web::post().to(openid4vp_endpoints::get_authorization_request),
+                )
+                .route(
+                    "/api/openid4vp/.well-known/jwks.json",
+                    web::get().to(openid4vp_endpoints::get_jwks),
+                );
+        }
 
         #[cfg(test)]
         let default_scope = default_scope.route(

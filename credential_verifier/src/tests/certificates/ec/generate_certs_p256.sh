@@ -58,7 +58,11 @@ openssl x509 -req  -sha256 -in user2.csr -CA ewqwe.chain.pem -CAkey ewqwe.root.k
 # Clean up CSR files
 rm -f *.csr *.srl
 
-# 5. Generate PKCS12 files for users
+# 5. Generate full-chain PEM (leaf + CA) for JAR signing x5c header
+echo "Generating full-chain PEM..."
+cat ewqwe.server.cert.pem ewqwe.chain.pem > ewqwe.server.fullchain.pem
+
+# 6. Generate PKCS12 files for users
 echo "Generating PKCS12 files..."
 openssl pkcs12 -export -out ewqwe.user1.p12 \
     -inkey ewqwe.user1.key.pem \
@@ -75,6 +79,7 @@ openssl pkcs12 -export -out ewqwe.user2.p12 \
 echo "Done! Generated P-256 certificates with PKCS#8 keys:"
 echo "  Root CA: ewqwe.chain.pem (key: ewqwe.root.key.pem)"
 echo "  Server: ewqwe.server.cert.pem (key: ewqwe.server.key.pem)"
+echo "  Server full chain: ewqwe.server.fullchain.pem (leaf + CA, for JAR x5c)"
 echo "  User 1: ewqwe.user1.cert.pem (key: ewqwe.user1.key.pem, p12: ewqwe.user1.p12)"
 echo "  User 2: ewqwe.user2.cert.pem (key: ewqwe.user2.key.pem, p12: ewqwe.user2.p12)"
 echo "  PKCS12 password: secret"

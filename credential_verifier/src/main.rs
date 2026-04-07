@@ -15,6 +15,7 @@
 
 use credential_verifier::{AttServerParams, TlsParams, start_att_server};
 use ewqwe_logging::{TracingConfig, tracing_init};
+use ewqwe_openid4vp::OpenID4VPServiceConfig;
 use std::sync::Arc;
 
 #[actix_web::main]
@@ -45,11 +46,38 @@ async fn main() -> std::io::Result<()> {
         tls_cipher_suites: None,
     };
 
+    // OpenID4VP configuration (optional, enabled via env vars)
+    // X509_CERT_PATH: path to PEM certificate chain for JAR signing
+    // IMPORTANT: Must contain the FULL chain (leaf + CA) so the x5c header
+    // includes all certificates needed for the EUDI Wallet to validate the path.
+    // Use ewqwe.server.fullchain.pem (not ewqwe.server.cert.pem which is leaf-only).
+    // X509_KEY_PATH: path to PEM private key for JAR signing
+    let openid4vp_config = match (
+        std::env::var("X509_CERT_PATH").ok(),
+        std::env::var("X509_KEY_PATH").ok(),
+    ) {
+        (Some(cert_path), Some(key_path)) => {
+            tracing::info!("OpenID4VP: cert={}, key={}", cert_path, key_path,);
+            Some(OpenID4VPServiceConfig {
+                x509_cert_path: cert_path,
+                x509_key_path: key_path,
+                transaction_ttl_ms: std::env::var("OPENID4VP_TTL_MS")
+                    .ok()
+                    .and_then(|v| v.parse().ok()),
+            })
+        }
+        _ => {
+            tracing::info!("OpenID4VP not configured (set X509_CERT_PATH and X509_KEY_PATH)");
+            None
+        }
+    };
+
     let server_params = Arc::new(AttServerParams {
         host_name: host.clone(),
         host_port: port,
         tls_params,
         default_username: Some("demo-user".to_string()),
+        openid4vp_config,
     });
 
     tracing::info!("Server will listen on https://{}:{}", host, port);

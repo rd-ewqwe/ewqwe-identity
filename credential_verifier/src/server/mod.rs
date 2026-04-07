@@ -2,6 +2,7 @@ mod att_server;
 pub use att_server::start_att_server;
 
 pub(crate) mod endpoints;
+pub(crate) mod openid4vp_endpoints;
 
 mod params;
 pub use params::AttServerParams;

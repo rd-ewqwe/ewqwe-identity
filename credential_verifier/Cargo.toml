@@ -39,6 +39,7 @@ chrono = { workspace = true }
 ciborium = { workspace = true }
 coset = { workspace = true }
 ewqwe_logging = { workspace = true }
+ewqwe_openid4vp = { workspace = true }
 futures = { workspace = true }
 jsonwebtoken = { workspace = true }
 openssl = { workspace = true, features = ["vendored"], optional = true }
