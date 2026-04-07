@@ -21,6 +21,15 @@ This chapter centralizes external references used throughout this documentation.
 - PID Rulebook (attribute encodings): <https://github.com/eu-digital-identity-wallet/eudi-doc-attestation-rulebooks-catalog/blob/main/rulebooks/pid/pid-rulebook.md>
 - mDL Rulebook (attribute encodings): <https://github.com/eu-digital-identity-wallet/eudi-doc-attestation-rulebooks-catalog/blob/main/rulebooks/mdl/mdl-rulebook.md>
 
+## EU (demo) Wallets
+
+- the EUDI Wallet (HAIP reference implementation)
+  - Android: <https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui>
+  - iOS: <https://github.com/eu-digital-identity-wallet/eudi-app-ios-wallet-ui>
+- the Age Verification Wallet (AVI reference implementation)
+  - Android: <https://github.com/eu-digital-identity-wallet/av-app-android-wallet-ui)>
+  - iOS: <https://github.com/eu-digital-identity-wallet/av-app-ios-wallet-ui>
+
 ## EU PID / mDL Regulation
 
 - Commission Implementing Regulation (EU) 2024/2977 (CIR 2024/2977): <https://data.europa.eu/eli/reg_impl/2024/2977/oj>
@@ -71,6 +80,6 @@ These links are useful when validating feasibility and browser support status fo
 - Firefox Web API Standards Positions: <https://mozilla.github.io/standards-positions/>
 - MDN Web Docs (Credential Management API): <https://developer.mozilla.org/en-US/docs/Web/API/Credential_Management_API>
 
-## Tooling (Demo)
+## Tooling (Deno)
 
 - Deno installation guide: <https://deno.land/manual/getting_started/installation>
