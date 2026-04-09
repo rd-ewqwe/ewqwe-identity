@@ -38,8 +38,7 @@ use crate::{
 // Test-only HTTP transport
 // ============================================================================
 
-const EC_CERTS_DIR: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certificates/ec");
+const EC_CERTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../certificates/tls");
 
 /// An [`HttpClient`] implementation for tests that:
 /// - Accepts the test server's self-signed certificate without validating the
@@ -57,8 +56,8 @@ impl TestReqwestClient {
     /// Build a client that trusts the test CA and, on macOS, skips full chain
     /// validation.
     fn new() -> Self {
-        let ca_chain_pem = fs::read(format!("{EC_CERTS_DIR}/ewqwe.chain.pem"))
-            .expect("failed to read test CA chain");
+        let ca_chain_pem =
+            fs::read(format!("{EC_CERTS_DIR}/ewqwe.ca.pem")).expect("failed to read test CA chain");
 
         let mut builder = reqwest::Client::builder()
             .add_root_certificate(
@@ -78,7 +77,9 @@ impl TestReqwestClient {
             .expect("failed to parse user1 PKCS#12");
         builder = builder.identity(identity);
 
-        let inner = builder.build().expect("failed to build test reqwest client");
+        let inner = builder
+            .build()
+            .expect("failed to build test reqwest client");
         Self { inner }
     }
 }
@@ -126,7 +127,10 @@ async fn parse_response<R: DeserializeOwned>(
             body,
         });
     }
-    let bytes = response.bytes().await.map_err(|e| ApiError::Config(e.to_string()))?;
+    let bytes = response
+        .bytes()
+        .await
+        .map_err(|e| ApiError::Config(e.to_string()))?;
     serde_json::from_slice(&bytes).map_err(ApiError::Decode)
 }
 
@@ -143,14 +147,15 @@ fn build_test_api_client(base_url: &str) -> EwqweApiClient<TestReqwestClient> {
 /// `GET /version` returns the credential-verifier's Cargo package version.
 #[actix_web::test]
 async fn e2e_ewqwe_client_version_endpoint() -> AttResult<()> {
-    log_init(Some("info,actix_server=warn"));
+    log_init(None);
     info!("Starting test server for version endpoint test");
     let ctx = start_default_test_server().await?;
     let client = build_test_api_client(&ctx.base_url());
 
-    let version = client.get_version().await.map_err(|e| {
-        crate::AttError::Test(format!("get_version failed: {e}"))
-    })?;
+    let version = client
+        .get_version()
+        .await
+        .map_err(|e| crate::AttError::Test(format!("get_version failed: {e}")))?;
 
     assert_eq!(
         version.version,
@@ -167,7 +172,7 @@ async fn e2e_ewqwe_client_version_endpoint() -> AttResult<()> {
 /// well-formed `InitTransactionResponse`.
 #[actix_web::test]
 async fn e2e_ewqwe_client_init_transaction() -> AttResult<()> {
-    log_init(Some("info,actix_server=warn"));
+    log_init(None);
     let ctx = start_default_test_server().await?;
     let client = build_test_api_client(&ctx.base_url());
 
@@ -175,9 +180,10 @@ async fn e2e_ewqwe_client_init_transaction() -> AttResult<()> {
         .with_profile("annex-a")
         .with_credential_type("proof-of-age");
 
-    let tx = client.init_openid4vp_transaction(req).await.map_err(|e| {
-        crate::AttError::Test(format!("init_openid4vp_transaction failed: {e}"))
-    })?;
+    let tx = client
+        .init_openid4vp_transaction(req)
+        .await
+        .map_err(|e| crate::AttError::Test(format!("init_openid4vp_transaction failed: {e}")))?;
 
     info!(
         transaction_id = %tx.transaction_id,
@@ -187,7 +193,10 @@ async fn e2e_ewqwe_client_init_transaction() -> AttResult<()> {
         "Transaction initialized"
     );
 
-    assert!(!tx.transaction_id.is_empty(), "transaction_id must be non-empty");
+    assert!(
+        !tx.transaction_id.is_empty(),
+        "transaction_id must be non-empty"
+    );
     assert!(!tx.client_id.is_empty(), "client_id must be non-empty");
     assert!(!tx.request_uri.is_empty(), "request_uri must be non-empty");
     assert!(
@@ -204,7 +213,7 @@ async fn e2e_ewqwe_client_init_transaction() -> AttResult<()> {
 /// `GET /ewqwe_api/openid4vp/status/:id` returns `pending` for a fresh transaction.
 #[actix_web::test]
 async fn e2e_ewqwe_client_transaction_status_pending() -> AttResult<()> {
-    log_init(Some("info,actix_server=warn"));
+    log_init(None);
     let ctx = start_default_test_server().await?;
     let client = build_test_api_client(&ctx.base_url());
 
@@ -212,9 +221,10 @@ async fn e2e_ewqwe_client_transaction_status_pending() -> AttResult<()> {
     let req = InitTransactionRequest::new("https://rp.example.com")
         .with_profile("annex-a")
         .with_credential_type("proof-of-age");
-    let tx = client.init_openid4vp_transaction(req).await.map_err(|e| {
-        crate::AttError::Test(format!("init failed: {e}"))
-    })?;
+    let tx = client
+        .init_openid4vp_transaction(req)
+        .await
+        .map_err(|e| crate::AttError::Test(format!("init failed: {e}")))?;
 
     // Poll status immediately — must be pending
     let status_result = client
@@ -254,7 +264,7 @@ async fn e2e_ewqwe_client_transaction_status_pending() -> AttResult<()> {
 /// returning HTTP 404.
 #[actix_web::test]
 async fn e2e_ewqwe_client_transaction_status_unknown_id() -> AttResult<()> {
-    log_init(Some("info,actix_server=warn"));
+    log_init(None);
     let ctx = start_default_test_server().await?;
     let client = build_test_api_client(&ctx.base_url());
 
@@ -264,9 +274,8 @@ async fn e2e_ewqwe_client_transaction_status_unknown_id() -> AttResult<()> {
 
     // The InMemoryTransactionStore treats unknown IDs as expired,
     // so the call succeeds with status == Expired.
-    let status_result = result.map_err(|e| {
-        crate::AttError::Test(format!("Expected Ok(expired) but got Err: {e}"))
-    })?;
+    let status_result = result
+        .map_err(|e| crate::AttError::Test(format!("Expected Ok(expired) but got Err: {e}")))?;
 
     assert_eq!(
         status_result.status,
@@ -282,13 +291,14 @@ async fn e2e_ewqwe_client_transaction_status_unknown_id() -> AttResult<()> {
 /// `GET /ewqwe_api/openid4vp/.well-known/jwks.json` returns a JWK Set.
 #[actix_web::test]
 async fn e2e_ewqwe_client_jwks_endpoint() -> AttResult<()> {
-    log_init(Some("info,actix_server=warn"));
+    log_init(None);
     let ctx = start_default_test_server().await?;
     let client = build_test_api_client(&ctx.base_url());
 
-    let jwks = client.get_openid4vp_jwks().await.map_err(|e| {
-        crate::AttError::Test(format!("get_jwks failed: {e}"))
-    })?;
+    let jwks = client
+        .get_openid4vp_jwks()
+        .await
+        .map_err(|e| crate::AttError::Test(format!("get_jwks failed: {e}")))?;
 
     info!(key_count = jwks.keys.len(), "JWKS retrieved");
 
@@ -310,13 +320,12 @@ async fn e2e_ewqwe_client_jwks_endpoint() -> AttResult<()> {
 /// (JSON or JWT depending on the profile).
 #[actix_web::test]
 async fn e2e_ewqwe_client_get_authorization_request() -> AttResult<()> {
-    log_init(Some("info,actix_server=warn"));
+    log_init(None);
     let ctx = start_default_test_server().await?;
     let client = build_test_api_client(&ctx.base_url());
 
     // Create a transaction with Annex-A profile (returns plain JSON auth request)
-    let req = InitTransactionRequest::new("https://rp.example.com")
-        .with_profile("annex-a");
+    let req = InitTransactionRequest::new("https://rp.example.com").with_profile("annex-a");
     let tx = client
         .init_openid4vp_transaction(req)
         .await
@@ -335,8 +344,7 @@ async fn e2e_ewqwe_client_get_authorization_request() -> AttResult<()> {
 
     // The authorization request must contain required OpenID4VP fields
     assert!(
-        auth_request.get("response_type").is_some()
-            || auth_request.get("client_id").is_some(),
+        auth_request.get("response_type").is_some() || auth_request.get("client_id").is_some(),
         "Authorization request must include at least response_type or client_id"
     );
 
@@ -354,7 +362,7 @@ async fn e2e_ewqwe_client_get_authorization_request() -> AttResult<()> {
 /// layer or returns 401.
 #[actix_web::test]
 async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
-    log_init(Some("info,actix_server=warn"));
+    log_init(None);
 
     // Server with authentication enabled (default) and no user override
     let mut params = make_test_server_params(false, "unused");
@@ -368,12 +376,11 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
     // that doesn't load the user1.p12 identity)
     let url = Url::parse(&ctx.base_url()).expect("invalid base_url");
     let no_cert_client = {
-        let ca_chain_pem = fs::read(format!("{EC_CERTS_DIR}/ewqwe.chain.pem"))
-            .expect("failed to read test CA chain");
+        let ca_chain_pem =
+            fs::read(format!("{EC_CERTS_DIR}/ewqwe.ca.pem")).expect("failed to read test CA chain");
         let inner = reqwest::Client::builder()
             .add_root_certificate(
-                reqwest::Certificate::from_pem(&ca_chain_pem)
-                    .expect("failed to parse CA"),
+                reqwest::Certificate::from_pem(&ca_chain_pem).expect("failed to parse CA"),
             )
             .danger_accept_invalid_certs(true)
             .build()
@@ -389,7 +396,11 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
                 &self,
                 url: Url,
             ) -> ewqwe_digital_identity::Result<R> {
-                let resp = self.inner.get(url).send().await
+                let resp = self
+                    .inner
+                    .get(url)
+                    .send()
+                    .await
                     .map_err(|e| ApiError::Config(e.to_string()))?;
                 parse_response(resp).await
             }
@@ -399,7 +410,12 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
                 url: Url,
                 body: &B,
             ) -> ewqwe_digital_identity::Result<R> {
-                let resp = self.inner.post(url).json(body).send().await
+                let resp = self
+                    .inner
+                    .post(url)
+                    .json(body)
+                    .send()
+                    .await
                     .map_err(|e| ApiError::Config(e.to_string()))?;
                 parse_response(resp).await
             }
@@ -408,9 +424,8 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
         EwqweApiClient::with_http_client(url, NoCertClient { inner })
     };
 
-    let verify_req = ewqwe_digital_identity::VerifyRequest::new(
-        "{\"my_credential\":[\"dGVzdA==\"]}",
-    );
+    let verify_req =
+        ewqwe_digital_identity::VerifyRequest::new("{\"my_credential\":[\"dGVzdA==\"]}");
     let result = no_cert_client.verify_presentation(verify_req).await;
 
     ctx.stop_server().await?;
@@ -446,7 +461,7 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
 ///    Here we use a dummy token and assert the expected error response.
 #[actix_web::test]
 async fn e2e_ewqwe_client_full_flow_no_auth() -> AttResult<()> {
-    log_init(Some("info,actix_server=warn"));
+    log_init(None);
 
     let ctx =
         crate::tests::start_test_server(make_test_server_params(true, "test-e2e-user")).await?;
@@ -456,9 +471,10 @@ async fn e2e_ewqwe_client_full_flow_no_auth() -> AttResult<()> {
     let req = InitTransactionRequest::new("https://rp.example.com")
         .with_profile("annex-a")
         .with_credential_type("proof-of-age");
-    let tx = client.init_openid4vp_transaction(req).await.map_err(|e| {
-        crate::AttError::Test(format!("init failed: {e}"))
-    })?;
+    let tx = client
+        .init_openid4vp_transaction(req)
+        .await
+        .map_err(|e| crate::AttError::Test(format!("init failed: {e}")))?;
     info!(transaction_id = %tx.transaction_id, "Step 1: transaction created");
 
     // 2. Poll — must be pending
@@ -471,10 +487,9 @@ async fn e2e_ewqwe_client_full_flow_no_auth() -> AttResult<()> {
 
     // 3. Attempt verify with a dummy base64 VP Token — expect a parse error (400)
     //    because the credential payload isn't a real mDoc / SD-JWT.
-    let verify_req = ewqwe_digital_identity::VerifyRequest::new(
-        "{\"proof_of_age\":[\"dGVzdA==\"]}",
-    )
-    .with_client_id("https://rp.example.com");
+    let verify_req =
+        ewqwe_digital_identity::VerifyRequest::new("{\"proof_of_age\":[\"dGVzdA==\"]}")
+            .with_client_id("https://rp.example.com");
 
     let verify_result = client.verify_presentation(verify_req).await;
     info!("Step 3: verify result = {verify_result:?}");

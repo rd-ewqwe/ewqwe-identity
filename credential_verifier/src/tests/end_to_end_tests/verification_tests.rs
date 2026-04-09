@@ -59,7 +59,7 @@ use crate::{
 };
 
 // Path to EC test certificates (same constant used in ewqwe_client_tests.rs).
-const EC_CERTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certificates/ec");
+const EC_CERTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../certificates/tls");
 
 // ============================================================================
 // Shared helpers
@@ -71,7 +71,7 @@ const EC_CERTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certi
 /// - Authenticates with the test user1 PKCS#12 identity for mTLS.
 fn build_verify_http_client() -> reqwest::Client {
     let ca_chain_pem =
-        fs::read(format!("{EC_CERTS_DIR}/ewqwe.chain.pem")).expect("read test CA chain");
+        fs::read(format!("{EC_CERTS_DIR}/ewqwe.ca.pem")).expect("read test CA chain");
     let p12_bytes =
         fs::read(format!("{EC_CERTS_DIR}/ewqwe.user1.p12")).expect("read user1 PKCS#12");
     let identity = reqwest::Identity::from_pkcs12_der(&p12_bytes, "secret").expect("parse PKCS#12");
@@ -245,7 +245,7 @@ fn make_temp_ca_dir() -> (PathBuf, String) {
 /// defaults: EC test certificates, mTLS on, authentication required.
 fn server_params_with_ca_dir(ca_dir_path: &str) -> crate::ServerParams {
     let mut params = make_test_server_params(false, "");
-    params.credential_issuer_ca_dir = Some(ca_dir_path.to_owned());
+    params.credentials_cas_dir = Some(ca_dir_path.to_owned());
     params
 }
 

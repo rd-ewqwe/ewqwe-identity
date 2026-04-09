@@ -60,7 +60,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         std::env::var("CARGO_MANIFEST_DIR")
             .map_err(|_e| AttError::Test("Failed to find cargo manifest dir".to_owned()))?,
     );
-    let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
+    let certificates_dir = cargo_manifest_dir.join("../certificates/tls");
 
     let server_params = ServerParams {
         // Bind to 127.0.0.1 explicitly — on macOS "localhost" resolves to ::1 (IPv6)
@@ -80,12 +80,12 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
                 .to_string_lossy()
                 .to_string(),
             server_ca_chain: certificates_dir
-                .join("ewqwe.chain.pem")
+                .join("ewqwe.ca.pem")
                 .to_string_lossy()
                 .to_string(),
             client_ca_cert_chain: Some(
                 certificates_dir
-                    .join("ewqwe.chain.pem")
+                    .join("ewqwe.ca.pem")
                     .to_string_lossy()
                     .to_string(),
             ),
@@ -107,9 +107,9 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
                     .to_string(),
             }),
         },
-        credential_issuer_ca_dir: Some(
+        credentials_cas_dir: Some(
             cargo_manifest_dir
-                .join("src/tests/certificates/trusted_issuers")
+                .join("../certificates/credentials_cas")
                 .to_string_lossy()
                 .to_string(),
         ),
@@ -132,7 +132,7 @@ pub fn make_test_server_params(
     let cargo_manifest_dir = PathBuf::from(
         std::env::var("CARGO_MANIFEST_DIR").expect("Failed to find cargo manifest dir"),
     );
-    let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
+    let certificates_dir = cargo_manifest_dir.join("../certificates/tls");
 
     ServerParams {
         host_name: "127.0.0.1".to_string(),
@@ -149,12 +149,12 @@ pub fn make_test_server_params(
                 .to_string_lossy()
                 .to_string(),
             server_ca_chain: certificates_dir
-                .join("ewqwe.chain.pem")
+                .join("ewqwe.ca.pem")
                 .to_string_lossy()
                 .to_string(),
             client_ca_cert_chain: Some(
                 certificates_dir
-                    .join("ewqwe.chain.pem")
+                    .join("ewqwe.ca.pem")
                     .to_string_lossy()
                     .to_string(),
             ),
@@ -175,9 +175,9 @@ pub fn make_test_server_params(
                     .to_string(),
             }),
         },
-        credential_issuer_ca_dir: Some(
+        credentials_cas_dir: Some(
             cargo_manifest_dir
-                .join("src/tests/certificates/trusted_issuers")
+                .join("../certificates/credentials_cas")
                 .to_string_lossy()
                 .to_string(),
         ),
@@ -201,7 +201,7 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
         std::env::var("CARGO_MANIFEST_DIR")
             .map_err(|_e| AttError::Test("Failed to find cargo manifest dir".to_owned()))?,
     );
-    let certificates_dir = cargo_manifest_dir.join("src/tests/certificates/ec");
+    let certificates_dir = cargo_manifest_dir.join("../certificates/tls");
 
     let server_params = crate::ServerParams {
         rust_log: None,
@@ -218,12 +218,12 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
                 .to_string_lossy()
                 .to_string(),
             server_ca_chain: certificates_dir
-                .join("ewqwe.chain.pem")
+                .join("ewqwe.ca.pem")
                 .to_string_lossy()
                 .to_string(),
             client_ca_cert_chain: Some(
                 certificates_dir
-                    .join("ewqwe.chain.pem")
+                    .join("ewqwe.ca.pem")
                     .to_string_lossy()
                     .to_string(),
             ),
@@ -244,9 +244,9 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
                     .to_string(),
             }),
         },
-        credential_issuer_ca_dir: Some(
+        credentials_cas_dir: Some(
             cargo_manifest_dir
-                .join("src/tests/certificates/trusted_issuers")
+                .join("../certificates/credentials_cas")
                 .to_string_lossy()
                 .to_string(),
         ),

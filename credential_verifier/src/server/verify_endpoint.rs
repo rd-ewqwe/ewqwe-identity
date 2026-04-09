@@ -226,14 +226,14 @@ pub(crate) fn load_credential_issuer_cas(dir: &str) -> Result<Vec<X509>, AttErro
     let dir_path = std::path::Path::new(dir);
     if !dir_path.is_dir() {
         return Err(AttError::Config(format!(
-            "Credential issuer CA directory not found: {}",
+            "Credentials issuers CA directory not found: {}",
             dir_path.display()
         )));
     }
 
     let entries = std::fs::read_dir(dir_path).map_err(|e| {
         AttError::Config(format!(
-            "Failed to read credential issuer CA directory {}: {e}",
+            "Failed to read credentials issuers CA directory {}: {e}",
             dir_path.display()
         ))
     })?;
@@ -242,7 +242,7 @@ pub(crate) fn load_credential_issuer_cas(dir: &str) -> Result<Vec<X509>, AttErro
     for entry in entries {
         let entry = entry.map_err(|e| {
             AttError::Config(format!(
-                "Failed to read directory entry {}: {e}",
+                "Failed to read credentials issuers CA directory entry {}: {e}",
                 dir_path.display()
             ))
         })?;
@@ -254,17 +254,24 @@ pub(crate) fn load_credential_issuer_cas(dir: &str) -> Result<Vec<X509>, AttErro
         let path_str = entry_path.display().to_string();
 
         let pem = std::fs::read(&entry_path).map_err(|e| {
-            AttError::Config(format!("Failed to read certificate file {}: {e}", path_str))
+            AttError::Config(format!(
+                "Failed to read credentials issuers CA certificate file {}: {e}",
+                path_str
+            ))
         })?;
 
-        let parsed = X509::stack_from_pem(&pem)
-            .map_err(|e| AttError::Config(format!("Failed to parse PEM in {}: {e}", path_str)))?;
+        let parsed = X509::stack_from_pem(&pem).map_err(|e| {
+            AttError::Config(format!(
+                "Failed to parse credentials issuers CA PEM in {}: {e}",
+                path_str
+            ))
+        })?;
 
         for cert in parsed {
             tracing::debug!(
                 path = %path_str,
                 subject = ?cert.subject_name(),
-                "loaded credential issuer CA"
+                "loaded credentials issuers CA"
             );
             certs.push(cert);
         }

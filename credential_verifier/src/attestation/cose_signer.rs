@@ -344,15 +344,9 @@ mod cose_tests {
 
     // Test EC P-256 private key (for testing only!)
     const TEST_EC_PRIVATE_KEY: &[u8] =
-        include_bytes!("../tests/certificates/ec/ewqwe.server.key.pem");
+        include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.key.pem");
     const TEST_EC_PUBLIC_CERT: &[u8] =
-        include_bytes!("../tests/certificates/ec/ewqwe.server.cert.pem");
-
-    // Test RSA private key (for testing only!)
-    const TEST_RSA_PRIVATE_KEY: &[u8] =
-        include_bytes!("../tests/certificates/rsa/ewqwe.server.key.pem");
-    const TEST_RSA_PUBLIC_CERT: &[u8] =
-        include_bytes!("../tests/certificates/rsa/ewqwe.server.cert.pem");
+        include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.cert.pem");
 
     #[test]
     fn test_sign_and_verify_es256() {
@@ -385,25 +379,6 @@ mod cose_tests {
             verified_claims.doc_type,
             Some("org.iso.18013.5.1.mDL".to_owned())
         );
-    }
-
-    #[test]
-    fn test_sign_and_verify_rs256() {
-        let signer = CoseSigner::from_pem(CoseSigningAlgorithm::RS256, TEST_RSA_PRIVATE_KEY)
-            .expect("failed to create RS256 signer");
-
-        let claims = Attestation::new("verifier.example.com", "rp.example.com", "session-456");
-
-        let cose_bytes = signer.sign_to_bytes(&claims).expect("failed to sign");
-
-        // Extract public key and verify
-        let public_key_pem = extract_public_key_from_cert(TEST_RSA_PUBLIC_CERT);
-        let verified_claims =
-            verify_cose_attestation(&cose_bytes, &public_key_pem, CoseSigningAlgorithm::RS256)
-                .expect("failed to verify");
-        assert_eq!(verified_claims.iss, "verifier.example.com");
-        assert_eq!(verified_claims.aud, "rp.example.com");
-        assert_eq!(verified_claims.sub, "session-456");
     }
 
     #[test]

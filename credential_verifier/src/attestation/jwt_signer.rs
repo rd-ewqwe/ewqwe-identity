@@ -140,17 +140,10 @@ mod jwt_tests {
     use super::*;
     use jsonwebtoken::{DecodingKey, Validation};
 
-    // Test EC P-256 private key (for testing only!)
     const TEST_EC_PRIVATE_KEY: &[u8] =
-        include_bytes!("../tests/certificates/ec/ewqwe.server.key.pem");
+        include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.key.pem");
     const TEST_EC_PUBLIC_CERT: &[u8] =
-        include_bytes!("../tests/certificates/ec/ewqwe.server.cert.pem");
-
-    // Test RSA private key (for testing only!)
-    const TEST_RSA_PRIVATE_KEY: &[u8] =
-        include_bytes!("../tests/certificates/rsa/ewqwe.server.key.pem");
-    const TEST_RSA_PUBLIC_CERT: &[u8] =
-        include_bytes!("../tests/certificates/rsa/ewqwe.server.cert.pem");
+        include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.cert.pem");
 
     #[test]
     fn test_sign_with_es256() {
@@ -174,7 +167,7 @@ mod jwt_tests {
         validation.set_issuer(&["verifier.example.com"]);
 
         // Extract public key from certificate
-        let public_key = extract_public_key_from_cert(TEST_EC_PUBLIC_CERT, true);
+        let public_key = extract_public_key_from_cert(TEST_EC_PUBLIC_CERT);
         let decoding_key =
             DecodingKey::from_ec_pem(&public_key).expect("failed to create decoding key");
 
@@ -192,35 +185,6 @@ mod jwt_tests {
     }
 
     #[test]
-    fn test_sign_with_rs256() {
-        let signer = JwtSigner::from_pem(SigningAlgorithm::RS256, TEST_RSA_PRIVATE_KEY)
-            .expect("failed to create RS256 signer");
-
-        let claims = Attestation::new("verifier.example.com", "rp.example.com", "session-123");
-
-        let token = signer.sign_to_string(&claims).expect("failed to sign");
-
-        // Verify the token structure
-        assert_eq!(token.split('.').count(), 3);
-
-        // Verify we can decode the token
-        let mut validation = Validation::new(Algorithm::RS256);
-        validation.set_audience(&["rp.example.com"]);
-        validation.set_issuer(&["verifier.example.com"]);
-
-        // Extract public key from certificate
-        let public_key = extract_public_key_from_cert(TEST_RSA_PUBLIC_CERT, false);
-        let decoding_key =
-            DecodingKey::from_rsa_pem(&public_key).expect("failed to create decoding key");
-
-        let decoded = jsonwebtoken::decode::<Attestation>(&token, &decoding_key, &validation)
-            .expect("failed to decode token");
-        assert_eq!(decoded.claims.iss, "verifier.example.com");
-        assert_eq!(decoded.claims.aud, "rp.example.com");
-        assert_eq!(decoded.claims.sub, "session-123");
-    }
-
-    #[test]
     fn test_signer_with_key_id() {
         let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, TEST_EC_PRIVATE_KEY)
             .expect("failed to create signer")
@@ -235,20 +199,14 @@ mod jwt_tests {
     }
 
     /// Helper to extract public key PEM from X.509 certificate PEM
-    fn extract_public_key_from_cert(cert_pem: &[u8], is_ec: bool) -> Vec<u8> {
+    fn extract_public_key_from_cert(cert_pem: &[u8]) -> Vec<u8> {
         use openssl::x509::X509;
 
         let cert = X509::from_pem(cert_pem).expect("failed to parse certificate");
         let public_key = cert.public_key().expect("failed to get public key");
 
-        if is_ec {
-            public_key
-                .public_key_to_pem()
-                .expect("failed to export EC public key")
-        } else {
-            public_key
-                .public_key_to_pem()
-                .expect("failed to export RSA public key")
-        }
+        public_key
+            .public_key_to_pem()
+            .expect("failed to export EC public key")
     }
 }

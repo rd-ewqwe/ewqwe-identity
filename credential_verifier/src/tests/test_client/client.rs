@@ -40,11 +40,11 @@ use serde::{Serialize, de::DeserializeOwned};
 use tracing::{debug, error, trace};
 
 const EC_CERTIFICATES_PATH: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/src/tests/certificates/ec");
+    concat!(env!("CARGO_MANIFEST_DIR"), "/../certificates/tls");
 
 const USER1_P12_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/src/tests/certificates/ec/ewqwe.user1.p12"
+    "/../certificates/tls/ewqwe.user1.p12"
 );
 const USER_P12_PASSWORD: &str = "secret";
 
@@ -137,7 +137,7 @@ impl TestClient {
         identity: Option<Identity>,
     ) -> AttResult<Client> {
         // Load the CA certificate for TLS verification
-        let ca_cert_path = format!("{}/ewqwe.chain.pem", EC_CERTIFICATES_PATH);
+        let ca_cert_path = format!("{}/ewqwe.ca.pem", EC_CERTIFICATES_PATH);
         let ca_cert_pem = std::fs::read(&ca_cert_path)
             .map_err(|e| AttError::Config(format!("Failed to read CA certificate: {}", e)))?;
         let ca_cert = Certificate::from_pem(&ca_cert_pem)

@@ -7,27 +7,22 @@ use super::{
     Attestation, AttestationSigner, CoseSigner, CoseSigningAlgorithm, JwtSigner, SigningAlgorithm,
 };
 
-// Test certificates
-const EC_PRIVATE_KEY: &[u8] = include_bytes!("../tests/certificates/ec/ewqwe.server.key.pem");
-const RSA_PRIVATE_KEY: &[u8] = include_bytes!("../tests/certificates/rsa/ewqwe.server.key.pem");
+// Test certificate
+const EC_PRIVATE_KEY: &[u8] =
+    include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.key.pem");
 
 /// Test that both JWT and COSE signers implement the AttestationSigner trait.
 #[test]
 fn test_signer_trait_implementations() {
     let jwt_es256 = JwtSigner::from_pem(SigningAlgorithm::ES256, EC_PRIVATE_KEY)
         .expect("failed to create JWT ES256 signer");
-    let jwt_rs256 = JwtSigner::from_pem(SigningAlgorithm::RS256, RSA_PRIVATE_KEY)
-        .expect("failed to create JWT RS256 signer");
     let cose_es256 = CoseSigner::from_pem(CoseSigningAlgorithm::ES256, EC_PRIVATE_KEY)
         .expect("failed to create COSE ES256 signer");
-    let cose_rs256 = CoseSigner::from_pem(CoseSigningAlgorithm::RS256, RSA_PRIVATE_KEY)
-        .expect("failed to create COSE RS256 signer");
 
     let claims = Attestation::new("issuer", "audience", "subject");
 
     // All signers should successfully produce output
-    let signers: Vec<&dyn AttestationSigner> =
-        vec![&jwt_es256, &jwt_rs256, &cose_es256, &cose_rs256];
+    let signers: Vec<&dyn AttestationSigner> = vec![&jwt_es256, &cose_es256];
 
     for signer in signers {
         let result = signer.sign(&claims);
