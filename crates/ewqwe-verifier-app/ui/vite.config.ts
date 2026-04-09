@@ -1,4 +1,5 @@
 import { defineConfig } from "vite";
+import mkcert from "vite-plugin-mkcert";
 
 /**
  * Strip the `Secure` attribute from all `Set-Cookie` response headers so that
@@ -37,6 +38,7 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    https: true,
     host: "0.0.0.0",
     port: 5175,
     proxy: {
@@ -46,5 +48,5 @@ export default defineConfig({
       "/version": backendProxy,
     },
   },
+  plugins: [mkcert()],
 });
-

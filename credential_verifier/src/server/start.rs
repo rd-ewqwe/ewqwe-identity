@@ -11,7 +11,6 @@ use crate::{
     },
     tls::SslAuth,
 };
-use actix_files;
 use actix_identity::IdentityMiddleware;
 use actix_session::{SessionMiddleware, storage::CookieSessionStore};
 use actix_web::{
@@ -333,7 +332,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         // priority — more specific services must come first.
         let app = app.service(openid4vp_scope).service(version_route);
 
-        let app = if let Some(ref session_key) = verifier_app_session_key {
+        if let Some(ref session_key) = verifier_app_session_key {
             let api_scope = web::scope("/api/v1")
                 .wrap(IdentityMiddleware::default())
                 .wrap(
@@ -367,9 +366,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             app
         } else {
             app
-        };
-
-        app
+        }
     })
     .keep_alive(actix_web::http::KeepAlive::Timeout(
         std::time::Duration::from_secs(120),

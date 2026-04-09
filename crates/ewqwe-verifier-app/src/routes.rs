@@ -9,7 +9,7 @@ use ewqwe_openid4vp::{
 use serde::Deserialize;
 use serde_json::json;
 use std::sync::Arc;
-use tracing::info;
+use tracing::{info, trace};
 use uuid::Uuid;
 
 use crate::{
@@ -65,9 +65,9 @@ async fn current_user(
     identity: Option<Identity>,
     store: &DynVerifierAppStore,
 ) -> Option<UserResponse> {
-    info!("Verifier App: session user lookup {}", identity.is_some());
+    trace!("Verifier App: session user lookup {}", identity.is_some());
     let id = identity?.id().ok()?;
-    info!(user_id = %id, "Verifier App: session user lookup");
+    trace!(user_id = %id, "Verifier App: session user lookup");
     match store.get_user_by_id(&id).await {
         Ok(Some(user)) if user.is_active => Some(UserResponse::from(user)),
         _ => None,
@@ -220,7 +220,7 @@ pub async fn generate_qr(
     config: web::Data<Arc<VerifierAppConfig>>,
     body: web::Json<crate::models::GenerateQrRequest>,
 ) -> HttpResponse {
-    info!("Verifier App: QR generation requested");
+    trace!("Verifier App: QR generation requested");
 
     let user = match current_user(identity, &store).await {
         Some(u) => u,
