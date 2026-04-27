@@ -5,6 +5,7 @@ use std::{
     env, fs,
     path::{Path, PathBuf},
 };
+use tracing::info;
 
 const LOCAL_CONFIG_FILE_NAME: &str = "credential-server.toml";
 const PLATFORM_CONFIG_FILE_NAME: &str = "config.toml";
@@ -114,6 +115,8 @@ impl ServerParams {
                         .join(", ")
                 ))
             })?;
+
+        info!("Loading configuration from {}", config_path.display());
 
         let params = Self::load_from_file(&config_path)?;
         Ok((params, config_path))
@@ -231,6 +234,11 @@ impl ServerParams {
         // Resolve credential issuer CA directory (default: credentials_cas/)
         let default_dir = "credentials_cas";
         let dir = self.credentials_cas_dir.as_deref().unwrap_or(default_dir);
+        info!(
+            "Resolving credential issuer CA directory: base_dir='{}', dir='{}'",
+            base_dir.display(),
+            dir
+        );
         self.credentials_cas_dir = Some(resolve_path(base_dir, dir));
 
         if let Some(cert_path) = &mut self.attestation_issuer_certificate {

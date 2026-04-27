@@ -109,7 +109,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         },
         credentials_cas_dir: Some(
             cargo_manifest_dir
-                .join("../certificates/credentials_cas")
+                .join("../certificates/issuers_cas")
                 .to_string_lossy()
                 .to_string(),
         ),

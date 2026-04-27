@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 #[actix_web::test]
 async fn test_version_endpoint() -> AttResult<()> {
-    log_init(None);
+    log_init(Some("info"));
     info!("Starting test server...");
     let ctx = start_default_test_server().await?;
 

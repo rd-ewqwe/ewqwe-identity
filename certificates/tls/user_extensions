@@ -1,0 +1,4 @@
+[v3_req]
+keyUsage=digitalSignature
+extendedKeyUsage=clientAuth
+crlDistributionPoints=URI:https://acme.com/crl.pem
