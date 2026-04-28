@@ -25,7 +25,7 @@ const CREDENTIAL_VERIFIER_URL =
   Deno.env.get("CREDENTIAL_VERIFIER_URL") || "https://127.0.0.1:9443";
 const CA_CERT_PATH =
   Deno.env.get("CA_CERT_PATH") ||
-  "../credential_verifier/src/tests/certificates/ec/ewqwe.chain.pem";
+  "../certificates/tls/ewqwe.ca.pem";
 
 // ============================================================================
 // CORS

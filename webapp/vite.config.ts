@@ -19,7 +19,7 @@ export default defineConfig({
       // warning: "non-JS module files deprecated".
       "@ewqwe/digital-identity": path.resolve(
         import.meta.dirname!,
-        "../js-lib/ewqwe-digital-identity/dist/index.mjs",
+        "../js-lib/ewqwe-digital-identity/src/lib.ts",
       ),
     },
   },

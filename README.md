@@ -57,19 +57,19 @@ host_port = 9443
 default_username = "demo-user"
 
 [tls_params]
-server_private_key = "src/tests/certificates/ec/ewqwe.server.key.pem"
-server_certificate = "src/tests/certificates/ec/ewqwe.server.cert.pem"
-server_ca_chain = "src/tests/certificates/ec/ewqwe.chain.pem"
+server_private_key = "../cerificates/tls/ewqwe.server.key.pem"
+server_certificate = "../cerificates/tls/ewqwe.server.cert.pem"
+server_ca_chain = "../cerificates/tls/ewqwe.chain.pem"
 
 [openid4vp_config]
 transaction_ttl_secs = 300
 
 [openid4vp_config.haip_config]
-x509_cert_path = "src/tests/certificates/ec/ewqwe.server.fullchain.pem"
-x509_key_path = "src/tests/certificates/ec/ewqwe.server.key.pem"
+x509_cert_path = "../cerificates/signer/ewqwe.signer.leaf.fullchain.pem"
+x509_key_path = "../cerificates/signer/ewqwe.signer.leaf.key.pem"
 EOF
 
-RUST_LOG=info cargo run --features openssl
+RUST_LOG=info cargo run
 ```
 
 The verifier searches its configuration file in this order:

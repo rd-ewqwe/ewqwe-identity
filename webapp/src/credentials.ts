@@ -8,9 +8,8 @@ import type {
   VerifyResponse,
   WalletAuthorizationError,
 } from "@ewqwe/digital-identity";
-import { EwqweApiClient } from "@ewqwe/digital-identity";
+import { EwqweApiClient, VerifyRequest } from "@ewqwe/digital-identity";
 import type { DebugLogger } from "./debug.ts";
-import { VerifyRequest } from "../../js-lib/ewqwe-digital-identity/src/types.ts";
 
 const apiClient = new EwqweApiClient();
 

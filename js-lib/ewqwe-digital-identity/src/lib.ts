@@ -33,6 +33,7 @@ export type {
   PresentationSubmission,
   DescriptorMap,
   // Verification
+  VerifyRequest,
   VerifyResponse,
   TransactionStatus,
   WalletAuthorizationError,
