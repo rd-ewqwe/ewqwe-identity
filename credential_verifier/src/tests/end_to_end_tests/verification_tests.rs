@@ -245,7 +245,7 @@ fn make_temp_ca_dir() -> (PathBuf, String) {
 /// defaults: EC test certificates, mTLS on, authentication required.
 fn server_params_with_ca_dir(ca_dir_path: &str) -> crate::ServerParams {
     let mut params = make_test_server_params(false, "");
-    params.credentials_cas_dir = Some(ca_dir_path.to_owned());
+    params.issuers_cas_dir = Some(ca_dir_path.to_owned());
     params
 }
 

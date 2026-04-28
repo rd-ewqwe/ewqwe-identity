@@ -947,14 +947,14 @@ mod tests {
     /// Helper to load test cert chain: server cert (leaf, with SAN) + CA chain
     fn load_test_cert_chain() -> (String, String) {
         let base = env!("CARGO_MANIFEST_DIR");
-        let cert_dir = format!("{base}/../../credential_verifier/src/tests/certificates/ec");
+        let cert_dir = format!("{base}/../../certificates/signer");
         // The server cert has the SAN (IP:127.0.0.1) and must come first (leaf)
-        let server_cert = std::fs::read_to_string(format!("{cert_dir}/ewqwe.server.cert.pem"))
+        let server_cert = std::fs::read_to_string(format!("{cert_dir}/ewqwe.signer.leaf.cert.pem"))
             .expect("test server cert");
-        let ca_chain =
-            std::fs::read_to_string(format!("{cert_dir}/ewqwe.chain.pem")).expect("test CA chain");
-        let key_pem =
-            std::fs::read_to_string(format!("{cert_dir}/ewqwe.server.key.pem")).expect("test key");
+        let ca_chain = std::fs::read_to_string(format!("{cert_dir}/ewqwe.signer.ca.pem"))
+            .expect("test CA chain");
+        let key_pem = std::fs::read_to_string(format!("{cert_dir}/ewqwe.signer.leaf.key.pem"))
+            .expect("test key");
         // Build full chain: leaf first, then CA
         let full_chain = format!("{server_cert}{ca_chain}");
         (full_chain, key_pem)
@@ -1040,10 +1040,10 @@ mod tests {
     #[test]
     fn test_extract_san_dns_vs_ip() {
         let base = env!("CARGO_MANIFEST_DIR");
-        let cert_dir = format!("{base}/../../credential_verifier/src/tests/certificates/ec");
+        let cert_dir = format!("{base}/../../certificates/signer");
 
         // The server cert has DNS SAN, not IP SAN
-        let server_cert = std::fs::read_to_string(format!("{cert_dir}/ewqwe.server.cert.pem"))
+        let server_cert = std::fs::read_to_string(format!("{cert_dir}/ewqwe.signer.leaf.cert.pem"))
             .expect("test server cert");
         let chain = parse_pem_cert_chain(&server_cert);
         assert_eq!(chain.len(), 1);

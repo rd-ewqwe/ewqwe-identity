@@ -12,6 +12,7 @@ use crate::{
         test_client::TestClient,
     },
 };
+use ewqwe_logging::log_init;
 use serde_json::json;
 
 // ============================================================================
@@ -83,7 +84,10 @@ fn test_chain_hash_formula() {
     hasher.update(att_hash.as_bytes());
     let expected = hex::encode(hasher.finalize());
 
-    assert_eq!(compute_entry_hash(username, Some(prev), &att_hash), expected);
+    assert_eq!(
+        compute_entry_hash(username, Some(prev), &att_hash),
+        expected
+    );
 }
 
 // ============================================================================
@@ -542,6 +546,7 @@ async fn test_journal_entries_empty_for_new_user() -> AttResult<()> {
 
 #[actix_web::test]
 async fn test_journal_access_denied_for_other_user() -> AttResult<()> {
+    log_init(None);
     let ctx = start_journal_test_server().await?;
     // Authenticated as user1 but trying to access user2's journal.
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;

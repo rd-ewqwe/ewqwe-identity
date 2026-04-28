@@ -44,12 +44,12 @@ pub struct ServerParams {
     /// All `*.pem` files in this directory are loaded as trusted CA anchors.
     /// Credentials whose issuer JWT `x5c` chain (SD-JWT) or mDoc `issuerAuth` chain
     /// terminates at a CA in this directory are considered trustworthy.
-    /// Defaults to `credentials_cas/` in the same directory as the config file.
+    /// Defaults to `issuers_cas/` in the same directory as the config file.
     ///
     /// NOTE: This directory is loaded at startup and cached. Restart the server
     /// to apply changes after adding/removing certs.
     #[serde(default)]
-    pub credentials_cas_dir: Option<String>,
+    pub issuers_cas_dir: Option<String>,
 
     /// Path to the PEM certificate whose public key is used to verify signed
     /// attestation JWTs.  The `iss` claim is set to the CN of the certificate's
@@ -231,15 +231,15 @@ impl ServerParams {
             haip_config.x509_key_path = resolve_path(base_dir, &haip_config.x509_key_path);
         }
 
-        // Resolve credential issuer CA directory (default: credentials_cas/)
-        let default_dir = "credentials_cas";
-        let dir = self.credentials_cas_dir.as_deref().unwrap_or(default_dir);
+        // Resolve credential issuer CA directory (default: issuers_cas/)
+        let default_dir = "issuers_cas";
+        let dir = self.issuers_cas_dir.as_deref().unwrap_or(default_dir);
         info!(
             "Resolving credential issuer CA directory: base_dir='{}', dir='{}'",
             base_dir.display(),
             dir
         );
-        self.credentials_cas_dir = Some(resolve_path(base_dir, dir));
+        self.issuers_cas_dir = Some(resolve_path(base_dir, dir));
 
         if let Some(cert_path) = &mut self.attestation_issuer_certificate {
             *cert_path = resolve_path(base_dir, cert_path);
@@ -260,9 +260,7 @@ impl ServerParams {
 
 impl ServerParams {
     pub fn credential_issuer_ca_dir(&self) -> &str {
-        self.credentials_cas_dir
-            .as_deref()
-            .unwrap_or("credentials_cas")
+        self.issuers_cas_dir.as_deref().unwrap_or("issuers_cas")
     }
 
     /// Username to use when authentication is disabled.
@@ -416,7 +414,7 @@ x509_key_path = "certs/server.key.pem"
         );
         assert_eq!(
             params.credential_issuer_ca_dir(),
-            temp_dir.join("credentials_cas").display().to_string()
+            temp_dir.join("issuers_cas").display().to_string()
         );
 
         fs::remove_dir_all(&temp_dir).expect("failed to remove temp config directory");
@@ -532,7 +530,7 @@ transaction_ttl_secs = 300
             },
             disable_authentication: false,
             disabled_authentication_user: None,
-            credentials_cas_dir: None,
+            issuers_cas_dir: None,
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
@@ -565,7 +563,7 @@ transaction_ttl_secs = 300
             },
             disable_authentication: false,
             disabled_authentication_user: None,
-            credentials_cas_dir: None,
+            issuers_cas_dir: None,
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),

@@ -13,7 +13,7 @@ use uuid::Uuid;
 
 #[actix_web::test]
 async fn test_version_endpoint() -> AttResult<()> {
-    log_init(Some("info"));
+    log_init(None);
     info!("Starting test server...");
     let ctx = start_default_test_server().await?;
 
@@ -38,7 +38,7 @@ async fn test_issuer_certs_empty_dir_and_issuer_untrusted() -> AttResult<()> {
     fs::create_dir_all(&temp_dir).expect("unable to create temp dir");
 
     let mut params = make_test_server_params(true, "test-user");
-    params.credentials_cas_dir = Some(temp_dir.to_string_lossy().to_string());
+    params.issuers_cas_dir = Some(temp_dir.to_string_lossy().to_string());
 
     let ctx = start_test_server(params).await?;
     let client = TestClient::new(&ctx.base_url())?;

@@ -39,8 +39,7 @@ use reqwest::{Certificate, Client, Identity, Response};
 use serde::{Serialize, de::DeserializeOwned};
 use tracing::{debug, error, trace};
 
-const EC_CERTIFICATES_PATH: &str =
-    concat!(env!("CARGO_MANIFEST_DIR"), "/../certificates/tls");
+const EC_CERTIFICATES_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../certificates/tls");
 
 const USER1_P12_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
@@ -287,7 +286,7 @@ mod tests {
 
     #[test]
     fn test_client_creation() {
-        // log_init(Some("info"));
+        // log_init(None);
         let client = TestClient::new("https://localhost:8443");
         assert!(client.is_ok());
         let client = client.unwrap();

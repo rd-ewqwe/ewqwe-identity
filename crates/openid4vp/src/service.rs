@@ -214,12 +214,8 @@ impl OpenID4VPService {
         let profile = determine_profile(request.credential_type.as_deref(), request.profile);
 
         let transaction_id = uuid::Uuid::new_v4().to_string();
-        let state = request
-            .state
-            .unwrap_or_else(gen_compact_token);
-        let nonce = request
-            .nonce
-            .unwrap_or_else(gen_compact_token);
+        let state = request.state.unwrap_or_else(gen_compact_token);
+        let nonce = request.nonce.unwrap_or_else(gen_compact_token);
         let now = chrono::Utc::now().timestamp_millis();
         let expires_at = now + (self.ttl_secs * 1000);
 
@@ -323,24 +319,23 @@ impl OpenID4VPService {
         // directly in an <img src> without any external API dependency.
         // EcLevel::L (7 % error correction) produces the fewest modules for a
         // given payload, making the code easier to scan on low-end cameras.
-        let qr_code_data_url =
-            qrcode::QrCode::with_error_correction_level(
-                authorization_request_uri.as_bytes(),
-                qrcode::EcLevel::L,
+        let qr_code_data_url = qrcode::QrCode::with_error_correction_level(
+            authorization_request_uri.as_bytes(),
+            qrcode::EcLevel::L,
+        )
+        .ok()
+        .map(|code| {
+            use base64::Engine as _;
+            use qrcode::render::svg;
+            let svg_str = code
+                .render::<svg::Color<'_>>()
+                .min_dimensions(256, 256)
+                .build();
+            format!(
+                "data:image/svg+xml;base64,{}",
+                base64::engine::general_purpose::STANDARD.encode(svg_str.as_bytes())
             )
-            .ok()
-            .map(|code| {
-                use base64::Engine as _;
-                use qrcode::render::svg;
-                let svg_str = code
-                    .render::<svg::Color<'_>>()
-                    .min_dimensions(256, 256)
-                    .build();
-                format!(
-                    "data:image/svg+xml;base64,{}",
-                    base64::engine::general_purpose::STANDARD.encode(svg_str.as_bytes())
-                )
-            });
+        });
 
         Ok(InitTransactionResponse {
             transaction_id,
@@ -762,14 +757,14 @@ mod tests {
 
     fn test_config() -> OpenID4VPServiceConfig {
         let base = env!("CARGO_MANIFEST_DIR");
-        let cert_dir = format!("{base}/../../credential_verifier/src/tests/certificates/ec");
+        let cert_dir = format!("{base}/../../certificates/signer");
 
         OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests
             haip_config: Some(HaipConfig {
                 // Use the pre-built fullchain PEM (leaf + CA) for x5c
-                x509_cert_path: format!("{cert_dir}/ewqwe.server.fullchain.pem"),
-                x509_key_path: format!("{cert_dir}/ewqwe.server.key.pem"),
+                x509_cert_path: format!("{cert_dir}/ewqwe.signer.leaf.fullchain.pem"),
+                x509_key_path: format!("{cert_dir}/ewqwe.signer.leaf.key.pem"),
             }),
             transaction_store: Default::default(), // SQLite in-memory
         }

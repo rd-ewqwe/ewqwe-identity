@@ -107,7 +107,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
                     .to_string(),
             }),
         },
-        credentials_cas_dir: Some(
+        issuers_cas_dir: Some(
             cargo_manifest_dir
                 .join("../certificates/issuers_cas")
                 .to_string_lossy()
@@ -175,9 +175,9 @@ pub fn make_test_server_params(
                     .to_string(),
             }),
         },
-        credentials_cas_dir: Some(
+        issuers_cas_dir: Some(
             cargo_manifest_dir
-                .join("../certificates/credentials_cas")
+                .join("../certificates/issuers_cas")
                 .to_string_lossy()
                 .to_string(),
         ),
@@ -244,9 +244,9 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
                     .to_string(),
             }),
         },
-        credentials_cas_dir: Some(
+        issuers_cas_dir: Some(
             cargo_manifest_dir
-                .join("../certificates/credentials_cas")
+                .join("../certificates/issuers_cas")
                 .to_string_lossy()
                 .to_string(),
         ),
