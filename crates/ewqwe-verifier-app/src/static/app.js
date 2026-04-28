@@ -873,7 +873,7 @@ function renderJournal(entries) {
 
 function updateJournalPageInfo() {
   const page = Math.floor(journalOffset / journalLimit) + 1;
-  $("journal-page-info").textContent = `${t("page")} ${page}`;
+  $("journal-page-info").textContent = `${t("page")}&nbsp;${page}`;
 }
 
 function journalPage(dir) {
