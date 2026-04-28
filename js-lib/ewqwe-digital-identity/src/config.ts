@@ -28,7 +28,7 @@ import type {
  *
  * **HAIP (High Assurance Interoperability Profile):**
  * - Used for: mDL, PID (National ID)
- * - Client ID Scheme: x509_san_dns (X.509 certificate with SAN DNS)
+ * - Client ID Scheme: x509_hash (X.509 certificate SHA-256 hash)
  * - Request Format: JAR (JWT Authorization Request with x5c header)
  * - Response Mode: direct_post.jwt (encrypted/signed response)
  * - URL Schemes: eudi-openid4vp://, openid4vp://
@@ -42,15 +42,17 @@ import type {
  * - URL Schemes: av://
  * - Reference: https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile
  *
- * Note: The key difference is client_id_scheme. HAIP uses x509_san_dns with signed JARs,
+ * Note: The key difference is client_id_scheme. HAIP uses x509_hash with signed JARs,
  * while Annex A uses redirect_uri with plain JSON (signed requests are explicitly forbidden).
+ * The `x509_hash` scheme is preferred over `x509_san_dns` because it provides a direct
+ * cryptographic binding to the verifier's certificate, independent of DNS resolution.
  */
 export const PROTOCOL_PROFILES: Record<ProfileId, ProtocolProfile> = {
   haip: {
     id: "haip",
     name: "HAIP Profile",
     description: "High Assurance Interoperability Profile for EUDI Wallet",
-    clientIdScheme: "x509_san_dns",
+    clientIdScheme: "x509_hash",
     requestFormat: "jar",
     responseMode: "direct_post.jwt",
     urlSchemes: ["eudi-openid4vp://", "openid4vp://"],

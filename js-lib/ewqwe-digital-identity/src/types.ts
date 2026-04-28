@@ -26,7 +26,8 @@ export type ClientIdScheme =
   | "x509_san_dns"
   | "redirect_uri"
   | "x509_san_uri"
-  | "did";
+  | "did"
+  | "x509_hash";
 
 /** Authorization request format. */
 export type RequestFormat = "jar" | "plain";

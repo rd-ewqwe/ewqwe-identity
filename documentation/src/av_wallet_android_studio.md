@@ -29,7 +29,7 @@ The [AV App Android source code](https://github.com/eu-digital-identity-wallet/a
 > | **LoA** | Substantial | High |
 > | **PAR / DPoP** | Disabled | Supported |
 >
-> If your Relying Party targets the **EUDI Wallet** using `x509_san_dns` with signed JARs, see the [EUDI Wallet guide](./eudi_wallet_android_studio.md) instead.
+> If your Relying Party targets the **EUDI Wallet** using `x509_hash` (or legacy `x509_san_dns`) with signed JARs, see the [EUDI Wallet guide](./eudi_wallet_android_studio.md) instead.
 
 ## ewQwe Demo Setup
 

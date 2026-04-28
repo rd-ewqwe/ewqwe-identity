@@ -308,10 +308,11 @@ export class RelyingPartyApp {
     if (!requestJson) return;
 
     try {
-      // For HAIP the wallet enforces that response_uri host == DNS SAN of the
-      // JAR-signing cert (x509_san_dns scheme).  The cert's primary SAN is
-      // "demo.ewqwe.local", so we must use that hostname regardless of the IP/host
-      // the browser used to reach this page.
+      // For HAIP with x509_hash scheme, the wallet validates the client_id by
+      // computing the SHA-256 hash of the leaf certificate from the JAR's x5c
+      // header and comparing it to the hash in client_id.  No DNS SAN hostname
+      // constraint is required (unlike x509_san_dns).  We use demo.ewqwe.local
+      // as the public URL hostname for consistency with TLS certificate SANs.
       // For Annex A (redirect_uri scheme) there is no such constraint, so we
       // can use the document origin directly.
       const profile = getProfileForType(this.selectedCredentialType);

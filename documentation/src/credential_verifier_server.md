@@ -130,9 +130,9 @@ server_ca_chain     = "certs/ca.chain.pem"        # CA chain PEM
 
 All paths are resolved relative to the config file directory.
 
-### HAIP and x509_san_dns Client ID
+### HAIP and x509_hash Client ID
 
-For the HAIP profile (`x509_san_dns:` `client_id` scheme), configure the server's full certificate chain for use in JAR `x5c` headers:
+For the HAIP profile (`x509_hash:` `client_id` scheme), configure the server's full certificate chain for use in JAR `x5c` headers. The `client_id` is constructed as `x509_hash:<base64url_sha256>` using the SHA-256 digest of the DER-encoded leaf certificate:
 
 ```toml
 [openid4vp_config.haip_config]

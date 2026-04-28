@@ -45,7 +45,7 @@ pub mod types;
 pub use config::{determine_profile, get_credential_type, get_profile};
 pub use crypto::{
     DecryptedWalletResponse, JarKeyMaterial, JarPayload, JweKeyMaterial, build_public_jwk_set,
-    decrypt_jwe_response, initialize_jar_key, initialize_jwe_key, sign_jar,
+    compute_cert_hash, decrypt_jwe_response, initialize_jar_key, initialize_jwe_key, sign_jar,
 };
 pub use dcql::{
     build_age_verification_query, build_age_verification_query_with_fallback,

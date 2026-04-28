@@ -522,6 +522,11 @@ pub enum ClientIdScheme {
     /// Decentralized Identifier (DID). Request must be signed with a key from
     /// the DID Document's `verificationMethod` property.
     Did,
+    /// X.509 certificate SHA-256 hash (HAIP profile). The `client_id` value is
+    /// the base64url-encoded SHA-256 digest of the DER-encoded leaf certificate.
+    /// More robust than `x509_san_dns` because it does not depend on DNS
+    /// resolution and is a direct cryptographic binding to the certificate.
+    X509Hash,
 }
 
 impl std::fmt::Display for ClientIdScheme {
@@ -531,6 +536,7 @@ impl std::fmt::Display for ClientIdScheme {
             ClientIdScheme::RedirectUri => write!(f, "redirect_uri"),
             ClientIdScheme::X509SanUri => write!(f, "x509_san_uri"),
             ClientIdScheme::Did => write!(f, "did"),
+            ClientIdScheme::X509Hash => write!(f, "x509_hash"),
         }
     }
 }

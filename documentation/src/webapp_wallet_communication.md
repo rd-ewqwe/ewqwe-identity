@@ -244,7 +244,7 @@ The OpenID4VP request structure is identical whether sent via the native API or 
 | Parameter | Type | Required | Description |
 | --------- | ---- | -------- | ----------- |
 | `client_id` | string | ✓ | RP identifier (format depends on `client_id_scheme`) |
-| `client_id_scheme` | string | ✓ | How to validate client_id: `"redirect_uri"` (Annex A) \| `"x509_san_dns"` (HAIP) |
+| `client_id_scheme` | string | ✓ | How to validate client_id: `"redirect_uri"` (Annex A) \| `"x509_hash"` (HAIP) \| `"x509_san_dns"` (legacy HAIP) |
 | `response_type` | string | ✓ | Always `"vp_token"` for credential presentations |
 | `response_mode` | string | ✓ | `"direct_post"` (Annex A) \| `"direct_post.jwt"` (HAIP) |
 | `nonce` | string | ✓ | Replay protection (cryptographically random) |
@@ -260,7 +260,7 @@ The webapp uses two profiles that affect how requests are formatted:
 
 | Aspect | HAIP Profile (mDL, PID) | Annex A Profile (Proof of Age) |
 | ------ | ---------------------- | ----------------------------- |
-| **Client ID Format** | `x509_san_dns:<DNS>` (e.g. `x509_san_dns:demo.ewqwe.local` for the demo) | `redirect_uri:https://host/callback` |
+| **Client ID Format** | `x509_hash:<base64url_sha256>` (e.g. `x509_hash:2Y4J7s...` derived from server certificate) | `redirect_uri:https://host/callback` |
 | **Request Delivery** | `request_uri` → wallet fetches signed JAR | All parameters inline in URL (no `request_uri`) |
 | **Request Format** | Signed JAR (JWT with x5c) | Plain URL parameters (redirect_uri forbids signing) |
 | **Response Mode** | `direct_post.jwt` | `direct_post` |
@@ -300,8 +300,8 @@ const request: OpenID4VPRequest = {
 
 ```typescript
 const request: OpenID4VPRequest = {
-  client_id: "x509_san_dns:demo.ewqwe.local",  // derived from server certificate SAN
-  client_id_scheme: "x509_san_dns",
+  client_id: "x509_hash:2Y4J7s...",  // base64url SHA-256 of the server's leaf certificate
+  client_id_scheme: "x509_hash",
   response_type: "vp_token",
   response_mode: "direct_post.jwt",
   nonce: crypto.randomUUID(),

@@ -139,13 +139,13 @@ export class OpenID4VPService {
 
     // Determine client_id, scheme, response_mode, and URL scheme per profile
     let clientId: string;
-    let clientIdScheme: "x509_san_dns" | "redirect_uri";
+    let clientIdScheme: "x509_hash" | "x509_san_dns" | "redirect_uri";
     let responseMode: "direct_post" | "direct_post.jwt";
     let urlScheme: string;
 
     if (profile === "haip") {
-      clientIdScheme = "x509_san_dns";
-      clientId = `x509_san_dns:${this.jarKey.sanDnsName}`;
+      clientIdScheme = "x509_hash";
+      clientId = `x509_hash:${this.jarKey.certHash}`;
       responseMode = "direct_post.jwt";
       urlScheme = "eudi-openid4vp://";
     } else {

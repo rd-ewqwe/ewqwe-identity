@@ -105,7 +105,7 @@ export interface OpenID4VPTransaction {
   status: TransactionStatus;
   dcqlQuery: DCQLQuery;
   clientId: string;
-  clientIdScheme: "x509_san_dns" | "redirect_uri";
+  clientIdScheme: "x509_san_dns" | "x509_hash" | "redirect_uri";
   responseUri: string;
   responseMode: "direct_post" | "direct_post.jwt";
   profile: ProfileId;

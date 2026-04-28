@@ -11,7 +11,7 @@ rm -f *.csr
 echo "Generating Root CA..."
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime256v1 -out ewqwe.signer.ca.key.pem
 openssl req -new -x509 -days 3650 -key ewqwe.signer.ca.key.pem -out ewqwe.signer.ca.pem \
-    -subj "/CN=acme.com" \
+    -subj "/CN=ewqwe-signer-ca" \
     -addext "subjectAltName=DNS:demo.ewqwe.local,DNS:localhost,IP:127.0.0.1" \
     -addext "basicConstraints=CA:TRUE,pathlen:0" \
     -addext "keyUsage = digitalSignature,cRLSign,keyCertSign" \
@@ -22,7 +22,7 @@ openssl req -new -x509 -days 3650 -key ewqwe.signer.ca.key.pem -out ewqwe.signer
 echo "Generating Signer Certificate..."
 openssl genpkey -algorithm EC -pkeyopt ec_paramgen_curve:prime256v1 -out ewqwe.signer.leaf.key.pem
 openssl req -new -key ewqwe.signer.leaf.key.pem -out ewqwe.signer.leaf.csr \
-    -subj "/CN=ewqwe.acme.com" \
+    -subj "/CN=ewqwe-signer-leaf" \
     -addext "subjectAltName=DNS:demo.ewqwe.local,DNS:localhost,IP:127.0.0.1"
 openssl x509 -req -sha256 -in ewqwe.signer.leaf.csr -CA ewqwe.signer.ca.pem -CAkey ewqwe.signer.ca.key.pem \
     -CAcreateserial -out ewqwe.signer.leaf.cert.pem -days 3650 \

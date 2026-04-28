@@ -182,10 +182,10 @@ pub struct InitTransactionResponse {
     /// Unique transaction identifier used for subsequent status polling.
     pub transaction_id: String,
 
-    /// Constructed `client_id` (e.g. `"x509_san_dns:demo.ewqwe.local"`).
+    /// Constructed `client_id` (e.g. `"x509_hash:<base64url_sha256>"` or `"redirect_uri:https://..."`).
     pub client_id: String,
 
-    /// Client ID scheme serialized as string (e.g. `"x509_san_dns"`, `"redirect_uri"`).
+    /// Client ID scheme serialized as string (e.g. `"x509_hash"`, `"x509_san_dns"`, `"redirect_uri"`).
     pub client_id_scheme: String,
 
     /// `request_uri` that the wallet fetches to obtain the JAR / authorization request.

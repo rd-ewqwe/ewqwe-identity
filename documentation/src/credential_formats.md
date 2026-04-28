@@ -146,7 +146,7 @@ OID4VPHandover = [
 ]
 
 OID4VPHandoverInfo = [
-  clientId,             ; the RP's client_id (e.g. "redirect_uri:https://..." or "x509_san_dns:...")
+  clientId,             ; the RP's client_id (e.g. "redirect_uri:https://..." or "x509_hash:...")
   nonce,                ; from the Authorization Request
   jwkThumbprint,        ; bstr | null — SHA-256 JWK thumbprint of verifier's encryption key
   responseUri           ; the response_uri from the Authorization Request

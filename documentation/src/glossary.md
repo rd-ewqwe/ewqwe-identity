@@ -39,6 +39,7 @@ In OpenID4VP, the identifier of the Relying Party (Verifier). The format depends
 
 - `redirect_uri:https://rp.example.com/cb` — RP identified by its redirect URI (AnnexA profile)
 - `x509_san_dns:rp.example.com` — RP identified by a DNS SAN in its X.509 certificate (HAIP profile)
+- `x509_hash:<base64url_sha256>` — RP identified by the SHA‑256 hash of its leaf X.509 certificate (HAIP profile, **recommended** over `x509_san_dns`)
 
 **cnf** — *Confirmation Claim* (RFC 7800)
 A JWT claim that contains the holder's public key (usually as a `jwk`). Used in SD-JWT VCs to bind the credential to a specific cryptographic key, enabling holder binding.
@@ -97,7 +98,7 @@ Cryptographic scheme used for compact key sizes and signatures. Common curves in
 ## H
 
 **HAIP** — *High Assurance Interoperability Profile*
-An OpenID4VP profile requiring JARM (`response_mode=direct_post.jwt`) and X.509-based RP authentication (`client_id_scheme=x509_san_dns`). Provides higher security guarantees than the basic profile.
+An OpenID4VP profile requiring JARM (`response_mode=direct_post.jwt`) and X.509-based RP authentication (`client_id_scheme=x509_hash`). Provides higher security guarantees than the basic profile.
 
 **Holder**
 The entity (person, organisation) who possesses a credential and presents it to verifiers. In this project, corresponds to the wallet / AVI.
@@ -297,4 +298,4 @@ The software (mobile app or browser extension) that stores, manages, and present
 An unprotected COSE header containing a DER-encoded X.509 certificate chain. Used in mDL `issuerAuth` to carry the issuer certificate for chain verification.
 
 **x5c** (JOSE header)
-The JSON/JWT equivalent of `x5chain`. An array of base64-encoded DER X.509 certificates. Used in JAR (JWT Authorization Request) to carry the RP's certificate for `x509_san_dns` verification.
+The JSON/JWT equivalent of `x5chain`. An array of base64-encoded DER X.509 certificates. Used in JAR (JWT Authorization Request) to carry the RP's certificate for `x509_hash` / `x509_san_dns` verification.

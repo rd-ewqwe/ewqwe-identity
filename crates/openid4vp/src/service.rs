@@ -226,18 +226,17 @@ impl OpenID4VPService {
         // Determine client_id, scheme, response_mode, and URL scheme per profile
         let (client_id, client_id_scheme, response_mode, url_scheme) = match profile {
             ProfileId::Haip => {
-                let san_dns_name =
+                let jar_key =
                     self.jar_key
                         .as_ref()
-                        .map(|k| &k.san_dns_name)
                         .ok_or_else(|| {
                             OpenID4VPError::Config(
                                 "Unable to initialize transaction: HAIP is not configured; the JAR keys are not configured".into(),
                             )
                         })?;
                 (
-                    format!("x509_san_dns:{}", san_dns_name),
-                    ClientIdScheme::X509SanDns,
+                    format!("x509_hash:{}", jar_key.cert_hash),
+                    ClientIdScheme::X509Hash,
                     ResponseMode::DirectPostJwt,
                     "eudi-openid4vp://",
                 )
@@ -828,14 +827,19 @@ mod tests {
 
         let response = service.init_transaction(request).await.unwrap();
 
-        assert!(response.client_id.starts_with("x509_san_dns:"));
-        assert_eq!(response.client_id_scheme, ClientIdScheme::X509SanDns);
+        // With x509_hash scheme, client_id should be "x509_hash:<base64url_sha256>"
+        assert!(response.client_id.starts_with("x509_hash:"));
+        assert_eq!(response.client_id_scheme, ClientIdScheme::X509Hash);
         assert_eq!(response.profile, ProfileId::Haip);
         assert!(
             response
                 .authorization_request_uri
                 .starts_with("eudi-openid4vp://")
         );
+
+        // Verify the hash part is 43 base64url characters
+        let hash = response.client_id.strip_prefix("x509_hash:").unwrap();
+        assert_eq!(hash.len(), 43, "SHA-256 hash must be 43 base64url chars");
 
         service.shutdown();
     }

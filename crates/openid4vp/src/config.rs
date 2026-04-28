@@ -21,7 +21,7 @@ pub const PROFILE_HAIP: ProtocolProfile = ProtocolProfile {
     id: ProfileId::Haip,
     name: "HAIP",
     description: "High Assurance Interoperability Profile for EUDI Wallets",
-    client_id_scheme: ClientIdScheme::X509SanDns,
+    client_id_scheme: ClientIdScheme::X509Hash,
     response_mode: ResponseMode::DirectPostJwt,
     url_schemes: &["eudi-openid4vp://", "openid4vp://"],
     requires_jar_signing: true,

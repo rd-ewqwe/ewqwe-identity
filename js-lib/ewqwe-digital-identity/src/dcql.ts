@@ -594,6 +594,11 @@ export function buildAuthorizationRequest(params: {
 
 /**
  * Build an OpenID4VP authorization request for cross-device flow.
+ *
+ * Note: When using the HAIP profile with the EUDI Wallet, the client_id should be
+ * `x509_hash:<cert_hash>` instead of `x509_san_dns:<domain>` for a direct cryptographic
+ * binding to the verifier's certificate. The `x509_san_dns` form is maintained here for
+ * legacy compatibility and for deployments that still rely on DNS-based identification.
  */
 export function buildCrossDeviceAuthorizationRequest(params: {
   rpDomain: string;

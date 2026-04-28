@@ -39,6 +39,7 @@ use crate::error::{OpenID4VPError, OpenID4VPResult};
 /// - Public key as JWK (for JWKS endpoint)
 /// - X.509 certificate chain (for JWT `x5c` header)
 /// - SAN DNS name (for `client_id` in HAIP profile)
+/// - Certificate SHA-256 hash (for `x509_hash` client ID scheme)
 pub struct JarKeyMaterial {
     /// OpenSSL private key for ES256 signing.
     signing_key: PKey<Private>,
@@ -50,6 +51,9 @@ pub struct JarKeyMaterial {
     pub san_dns_name: String,
     /// Key identifier.
     pub key_id: String,
+    /// SHA-256 hash of the leaf certificate (DER-encoded), base64url-encoded.
+    /// Used for the `x509_hash` client ID scheme.
+    pub cert_hash: String,
 }
 
 /// Key material for decrypting JWE responses from wallets (ECDH-ES).
@@ -147,6 +151,24 @@ pub fn extract_san_from_cert(base64_der: &str) -> Option<String> {
     None
 }
 
+/// Compute the SHA-256 hash of a DER-encoded X.509 certificate, returning
+/// the base64url-encoded digest (no padding).
+///
+/// This is used for the `x509_hash` client ID scheme where the verifier's
+/// `client_id` is `x509_hash:<base64url_sha256>` — a direct cryptographic
+/// binding between the authorization request and the verifier's certificate.
+///
+/// Per OpenID4VP 1.0 §5.9.3 and HAIP, the wallet validates this by computing
+/// the same hash from the leaf certificate in the JAR's `x5c` header and
+/// comparing it to the `client_id` value.
+pub fn compute_cert_hash(base64_der: &str) -> OpenID4VPResult<String> {
+    let der_bytes = STANDARD
+        .decode(base64_der)
+        .map_err(|e| OpenID4VPError::Crypto(format!("Failed to decode base64 DER: {e}")))?;
+    let digest = openssl::sha::sha256(&der_bytes);
+    Ok(URL_SAFE_NO_PAD.encode(digest))
+}
+
 // ============================================================================
 // Key Initialization
 // ============================================================================
@@ -182,6 +204,9 @@ pub fn initialize_jar_key(
         OpenID4VPError::Config("Could not extract SAN (DNS or IP) from leaf certificate".into())
     })?;
 
+    // Compute SHA-256 hash of leaf certificate (DER-encoded) for x509_hash scheme.
+    let cert_hash = compute_cert_hash(&x5c_chain[0])?;
+
     // Load private key with openssl
     let signing_key = PKey::private_key_from_pem(key_pem.as_bytes())
         .map_err(|e| OpenID4VPError::Crypto(format!("Failed to load EC private key: {e}")))?;
@@ -205,6 +230,7 @@ pub fn initialize_jar_key(
     tracing::info!(
         certs = x5c_chain.len(),
         san_dns = %san_dns_name,
+        cert_hash = %cert_hash,
         key_id = %key_id,
         "Loaded JAR signing key"
     );
@@ -215,6 +241,7 @@ pub fn initialize_jar_key(
         x5c_chain,
         san_dns_name,
         key_id: key_id.to_string(),
+        cert_hash,
     })
 }
 
@@ -975,6 +1002,17 @@ mod tests {
         assert_eq!(jar_key.signing_key_jwk["kty"], "EC");
         assert_eq!(jar_key.signing_key_jwk["crv"], "P-256");
         assert_eq!(jar_key.signing_key_jwk["alg"], "ES256");
+
+        // cert_hash must be a non-empty base64url string
+        assert!(!jar_key.cert_hash.is_empty(), "cert_hash must be non-empty");
+        assert!(
+            jar_key.cert_hash.contains('_')
+                || jar_key.cert_hash.contains('-')
+                || jar_key.cert_hash.chars().all(|c| c.is_ascii_alphanumeric()),
+            "cert_hash should be base64url (alphanumeric, -, _)"
+        );
+        // SHA-256 produces 32 bytes = 43 base64url chars (no padding)
+        assert_eq!(jar_key.cert_hash.len(), 43);
     }
 
     #[test]
@@ -984,8 +1022,8 @@ mod tests {
         let jar_key = initialize_jar_key(&cert_pem, &key_pem, "test-key-1").unwrap();
 
         let payload = JarPayload {
-            client_id: format!("x509_san_dns:{}", jar_key.san_dns_name),
-            client_id_scheme: "x509_san_dns".to_string(),
+            client_id: format!("x509_hash:{}", jar_key.cert_hash),
+            client_id_scheme: "x509_hash".to_string(),
             response_mode: "direct_post.jwt".to_string(),
             response_uri: "https://rp.example.com/ewqwe_api/openid4vp/direct_post".to_string(),
             state: "state-123".to_string(),
@@ -1060,5 +1098,37 @@ mod tests {
         // extract_san should return the DNS name first
         let any_san = extract_san_from_cert(&chain[0]);
         assert_eq!(any_san, Some("demo.ewqwe.local".to_string()));
+    }
+
+    #[test]
+    fn test_compute_cert_hash_is_deterministic() {
+        let base = env!("CARGO_MANIFEST_DIR");
+        let cert_dir = format!("{base}/../../certificates/signer");
+        let server_cert = std::fs::read_to_string(format!("{cert_dir}/ewqwe.signer.leaf.cert.pem"))
+            .expect("test server cert");
+        let chain = parse_pem_cert_chain(&server_cert);
+        assert_eq!(chain.len(), 1);
+
+        // Hash must be deterministic
+        let hash1 = compute_cert_hash(&chain[0]).unwrap();
+        let hash2 = compute_cert_hash(&chain[0]).unwrap();
+        assert_eq!(hash1, hash2, "cert hash must be deterministic");
+
+        // SHA-256 → 43 base64url characters (no padding)
+        assert_eq!(hash1.len(), 43, "base64url SHA-256 must be 43 chars");
+
+        // Different certificate should produce different hash.
+        // The TLS server cert is a different cert from the signer leaf,
+        // so their hashes must differ.
+        let tls_cert_dir = format!("{base}/../../certificates/tls");
+        let tls_cert = std::fs::read_to_string(format!("{tls_cert_dir}/ewqwe.server.cert.pem"))
+            .expect("test TLS server cert");
+        let tls_chain = parse_pem_cert_chain(&tls_cert);
+        assert_eq!(tls_chain.len(), 1);
+        let hash_tls = compute_cert_hash(&tls_chain[0]).unwrap();
+        assert_ne!(
+            hash1, hash_tls,
+            "Different leaf certs must produce different hashes"
+        );
     }
 }

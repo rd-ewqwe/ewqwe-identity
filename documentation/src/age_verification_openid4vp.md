@@ -109,6 +109,18 @@ The `client_id` parameter uses a **scheme prefix** to indicate how the RP is ide
 - The wallet validates the certificate against its **Reader Trust Store**
 - Requires the RP's root CA to be trusted by the wallet
 
+#### `x509_hash` scheme (HAIP - EUDI Wallet, **recommended**)
+
+- The client_id is the SHA-256 hash of the verifier's X.509 leaf certificate: `client_id=x509_hash:<base64url_sha256>`
+- Request **MUST be signed** as a JWT-secured Authorization Request (JAR, RFC 9101)
+- The `x5c` JOSE header contains the certificate chain
+- The wallet validates the client_id by computing the SHA-256 hash of the leaf certificate from the `x5c` header and comparing it to the hash in `client_id`
+- Provides a direct cryptographic binding to the verifier's certificate, independent of DNS resolution
+- **Preferred over `x509_san_dns`** because:
+  - No DNS dependency — the wallet does not need to resolve a hostname
+  - Resistant to DNS spoofing or misconfiguration
+  - Direct certificate → identity binding
+
 #### `verifier_attestation` scheme (HAIP - optional)
 
 - The client_id is an identifier attested by a trusted issuer: `client_id=verifier_attestation:my-verifier`
@@ -571,9 +583,14 @@ The EUDI Wallet implements **HAIP** (High Assurance Interoperability Profile), w
    - No certificate or JAR required
 
 2. **EUDI Wallet (HAIP compliant)**
-   - Use `client_id=x509_san_dns:your-rp.com`
+   - Use `client_id=x509_hash:<base64url_sha256_of_leaf_cert>`
    - Sign the request as a JAR with `x5c` header containing your certificate chain
+   - The wallet validates the client_id by computing the SHA-256 hash of the leaf certificate
+     from the `x5c` header and comparing it to the hash in `client_id`
    - Your root CA must be in the wallet's Reader Trust Store
+   - **Note**: `x509_hash` is preferred over `x509_san_dns` because it provides a direct
+     cryptographic binding to the verifier's certificate, independent of DNS resolution.
+     The wallet does not need to perform DNS resolution to validate the verifier identity.
 
 ### Wallet Compatibility Matrix
 
@@ -581,7 +598,7 @@ The EUDI Wallet implements **HAIP** (High Assurance Interoperability Profile), w
 |--------|----------------|----------------|-------------|------------------------|
 | **Age Verification App** (ageverification.dev) | ✅ Expected | ? | ? | ? |
 | **EUDI Wallet** (eu-digital-identity-wallet) | ❌ Not supported | ✅ | ✅ | ❌ Not configured |
-| **Demo webapp (this project)** | ✅ Planned | ✅ Implemented | ❌ | ❌ |
+| **Demo webapp (this project)** | ✅ Planned | ✅ (legacy) | ✅ **Default** | ❌ |
 
 > **Note**: The EUDI Wallet pre-built APKs from GitHub only support `x509_san_dns` and `x509_hash`. The `redirect_uri` scheme is **not supported** without modifying the wallet source code.
 
@@ -619,8 +636,9 @@ const avUrl = `av://authorize?response_type=vp_token&response_mode=direct_post&c
 ### For mDL / National ID (HAIP Profile)
 
 ```typescript
-// Use x509_san_dns scheme - signed JAR with x5c header
-const clientId = `x509_san_dns:${hostname}`;
+// Use x509_hash scheme - signed JAR with x5c header
+// The certHash is the base64url-encoded SHA-256 digest of the DER-encoded leaf certificate.
+const clientId = `x509_hash:${certHash}`;
 // Build and sign JAR JWT with x5c header containing certificate chain
 const jar = await signJAR(claims, privateKey, certificateChain);
 const requestUri = await storeJAR(jar); // or embed by value
@@ -633,8 +651,8 @@ The webapp should detect which credential type is being requested and use the ap
 | Credential Type | DocType | Client ID Scheme | Target Wallet |
 |-----------------|---------|------------------|---------------|
 | Proof of Age | `eu.europa.ec.av.1` | `redirect_uri` | Age Verification App |
-| Mobile Driving Licence | `org.iso.18013.5.1.mDL` | `x509_san_dns` | EUDI Wallet |
-| National ID (PID) | `eu.europa.ec.eudi.pid.1` | `x509_san_dns` | EUDI Wallet |
+| Mobile Driving Licence | `org.iso.18013.5.1.mDL` | `x509_hash` | EUDI Wallet |
+| National ID (PID) | `eu.europa.ec.eudi.pid.1` | `x509_hash` | EUDI Wallet |
 
 ## References
 

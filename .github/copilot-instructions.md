@@ -64,7 +64,7 @@ Key parameters:
 - `response_type=vp_token` - Request Verifiable Presentations
 - `dcql_query` - Digital Credentials Query Language for required claims
 - `nonce` - Binds presentation to transaction (replay prevention)
-- `client_id` with prefixes like `redirect_uri:` or `x509_san_dns:`
+- `client_id` with prefixes like `redirect_uri:` or `x509_hash:`
 
 ## Rust Workspace Conventions
 
@@ -278,7 +278,7 @@ Test certificates for TLS connections and attestation signing are located in:
 - **EC (P-256)**: `credential_verifier/src/tests/certificates/ec/`
 - **RSA (4096-bit)**: `credential_verifier/src/tests/certificates/rsa/`
 
-All certificates have SANs: `DNS:demo.ewqwe.local, DNS:localhost, IP:127.0.0.1`. For HAIP, the `client_id` derived from the EC server certificate is `x509_san_dns:demo.ewqwe.local`.
+All certificates have SANs: `DNS:demo.ewqwe.local, DNS:localhost, IP:127.0.0.1`. For HAIP, the `client_id` derived from the EC server certificate is `x509_hash:<cert_sha256>`. The `cert_hash` is the base64url-encoded SHA-256 digest of the DER-encoded leaf certificate.
 
 `demo.ewqwe.local` is used as the primary DNS SAN so that the EUDI Wallet's `response_uri` host-match check passes when running against the Android Studio emulator. The emulator must resolve `demo.ewqwe.local` → host machine — see [Android emulator setup](#android-emulator-setup) below.
 
