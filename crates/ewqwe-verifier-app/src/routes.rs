@@ -270,10 +270,20 @@ pub async fn generate_qr(
     // Determine profile from credential type.
     let profile = determine_profile(Some(credential_type), None);
 
+    // Build DCQL query: use specified claims if provided, otherwise use defaults.
+    let dcql_query = if body.claims.is_empty() {
+        None // let init_transaction use the default DCQL for the credential type
+    } else {
+        Some(ewqwe_openid4vp::build_dcql_for_credential_type_with_claims(
+            credential_type,
+            &body.claims,
+        ))
+    };
+
     let init_req = InitTransactionRequest {
         public_url,
         profile: Some(profile),
-        dcql_query: None, // use default DCQL for the credential type
+        dcql_query, // use custom DCQL with selected claims, or None for defaults
         nonce: None,
         state: None,
         client_metadata: None,
@@ -389,6 +399,7 @@ pub async fn qr_status(
                                 HttpResponse::Ok().json(json!({
                                     "status": "verified",
                                     "age_over_18": result.age_over_18,
+                                    "verified_claims": result.verified_claims,
                                 }))
                             }
                             Ok(result) => {

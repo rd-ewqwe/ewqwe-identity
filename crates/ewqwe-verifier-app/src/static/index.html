@@ -696,6 +696,21 @@
                 id="qr-age-result"
                 class="hidden text-base font-semibold px-4 py-1 rounded-full"
               ></p>
+              <div
+                id="qr-verified-claims"
+                class="hidden w-full max-w-md mt-1"
+              >
+                <p
+                  class="text-white/50 text-xs uppercase tracking-wider mb-1"
+                  data-i18n="verified_claims"
+                >
+                  Verified Claims
+                </p>
+                <div
+                  id="qr-claims-list"
+                  class="bg-brand-bg/60 rounded-lg p-3 text-xs text-white/80 font-mono max-h-40 overflow-y-auto break-all"
+                ></div>
+              </div>
               <p
                 class="text-white/55 text-sm"
                 data-i18n="credential_verified_success"
@@ -881,13 +896,14 @@
                   <th data-i18n="time">Time</th>
                   <th data-i18n="verifier">Verifier</th>
                   <th data-i18n="doc_type">Doc Type</th>
+                  <th data-i18n="claims">Claims</th>
                   <th data-i18n="status">Status</th>
                 </tr>
               </thead>
               <tbody id="journal-tbody">
                 <tr>
                   <td
-                    colspan="4"
+                    colspan="5"
                     class="text-center text-white/40 py-6"
                     data-i18n="loading"
                   >

@@ -881,6 +881,8 @@ pub(crate) struct QrVerificationOutcome {
     pub errors: Vec<String>,
     /// Value of the `age_over_18` claim from the presented credential, if present.
     pub age_over_18: Option<bool>,
+    /// Serialised map of verified claims from the presented credential.
+    pub verified_claims: serde_json::Value,
 }
 
 /// Verify a VP token presented via the Verifier App QR (`direct_post`) flow.
@@ -975,6 +977,7 @@ pub(crate) async fn verify_vp_token_for_qr(
             namespace,
             errors: verification_result.errors,
             age_over_18: None,
+            verified_claims: serde_json::Value::Object(Default::default()),
         });
     }
 
@@ -1016,6 +1019,7 @@ pub(crate) async fn verify_vp_token_for_qr(
         namespace,
         errors: Vec::new(),
         age_over_18,
+        verified_claims: claims,
     })
 }
 

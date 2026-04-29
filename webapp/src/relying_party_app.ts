@@ -311,22 +311,26 @@ export class RelyingPartyApp {
       // For HAIP with x509_hash scheme, the wallet validates the client_id by
       // computing the SHA-256 hash of the leaf certificate from the JAR's x5c
       // header and comparing it to the hash in client_id.  No DNS SAN hostname
-      // constraint is required (unlike x509_san_dns).  We use demo.ewqwe.local
+      // constraint is required (unlike x509_san_dns).  
+      // 
+      // For x509_dns_san, we use demo.ewqwe.local
       // as the public URL hostname for consistency with TLS certificate SANs.
-      // For Annex A (redirect_uri scheme) there is no such constraint, so we
+      // 
+      //For Annex A (redirect_uri scheme) there is no such constraint, so we
       // can use the document origin directly.
-      const profile = getProfileForType(this.selectedCredentialType);
-      let publicUrl: string;
-      if (profile?.id === "haip") {
-        const u = new URL(globalThis.location.href);
-        u.hostname = "demo.ewqwe.local";
-        publicUrl = u.origin;
-      } else {
-        publicUrl = globalThis.location.origin;
-      }
+
+      // const profile = getProfileForType(this.selectedCredentialType);
+      // let publicUrl: string;
+      // if (profile?.id === "haip") {
+      //   const u = new URL(globalThis.location.href);
+      //   u.hostname = "demo.ewqwe.local";
+      //   publicUrl = u.origin;
+      // } else {
+      //   publicUrl = globalThis.location.origin;
+      // }
 
       const request = buildInitTransactionRequest(
-        publicUrl,
+        globalThis.location.origin,
         this.selectedCredentialType,
         Array.from(this.selectedClaims),
       );

@@ -44,6 +44,9 @@ pub struct QrVerifyResult {
     pub errors: Vec<String>,
     /// Value of the `age_over_18` claim from the presented credential, if present.
     pub age_over_18: Option<bool>,
+    /// Serialised map of verified claims and their values from the presented credential.
+    /// Contains entries like `{"age_over_18": true, "portrait": "/9j/4AAQ..."}`.
+    pub verified_claims: serde_json::Value,
 }
 
 /// Pluggable in-process credential verifier for the Verifier App QR flow.

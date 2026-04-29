@@ -189,6 +189,12 @@ pub struct GenerateQrRequest {
     ///
     /// Defaults to `"proof-of-age"` when absent.
     pub credential_type: Option<String>,
+
+    /// Specific claim names to request (e.g. `["age_over_18", "portrait"]`).
+    ///
+    /// When empty or absent, the default claims for the credential type are used.
+    #[serde(default)]
+    pub claims: Vec<String>,
 }
 
 /// Query parameters for `GET /verifier_app/api/admin/journal`.

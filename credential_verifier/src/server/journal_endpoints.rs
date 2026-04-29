@@ -41,6 +41,12 @@ pub struct JournalEntryView {
     /// Flattened credential claims (e.g. `age_over_18`, `family_name`).
     /// mDoc namespace wrappers are removed so all claims appear at the top level.
     pub claims: serde_json::Value,
+    /// Credential doc type (e.g. `org.iso.18013.5.1.mDL`).
+    pub doc_type: Option<String>,
+    /// Credential namespace (e.g. `eu.europa.ec.av.1`).
+    pub namespace: Option<String>,
+    /// Raw credential claims (namespace-nested for mDoc, flat for SD-JWT).
+    pub credential_claims: serde_json::Value,
 }
 
 impl From<JournalEntry> for JournalEntryView {
@@ -51,22 +57,22 @@ impl From<JournalEntry> for JournalEntryView {
             .and_then(|v| v.as_bool())
             .unwrap_or(false);
 
-        // Extract the raw credential claims stored under "credential_claims",
-        // then flatten one level if the top-level values are objects (mDoc
-        // namespace pattern, e.g. `{"eu.europa.ec.av.1": {"age_over_18": true}}`).
         let raw = e
             .verification_summary
             .get("credential_claims")
             .cloned()
             .unwrap_or(serde_json::Value::Object(serde_json::Map::new()));
 
-        let claims = flatten_credential_claims(raw);
+        let claims = flatten_credential_claims(raw.clone());
 
         JournalEntryView {
             created_at: e.created_at,
             qrcode_app_user_email: e.qrcode_app_user_email,
             success,
             claims,
+            doc_type: e.doc_type,
+            namespace: e.namespace,
+            credential_claims: raw,
         }
     }
 }

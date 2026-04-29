@@ -206,6 +206,75 @@ pub fn build_default_dcql_for_credential_type(credential_type: &str) -> DCQLQuer
     }
 }
 
+/// Build a DCQL query for the given credential type with a specific set of claims.
+///
+/// Unlike [`build_default_dcql_for_credential_type`] which only requests
+/// `age_over_18`, this function allows the caller to specify which claims
+/// to request (e.g. `["age_over_18", "portrait"]`).
+///
+/// # Arguments
+///
+/// * `credential_type` — Credential type key (e.g. `"mdl"`, `"national-id"`, `"proof-of-age"`).
+/// * `claims` — Slice of claim path strings (e.g. `["age_over_18", "portrait"]`).
+///   When empty, falls back to the default behaviour.
+pub fn build_dcql_for_credential_type_with_claims(
+    credential_type: &str,
+    claims: &[String],
+) -> DCQLQuery {
+    if claims.is_empty() {
+        return build_default_dcql_for_credential_type(credential_type);
+    }
+
+    let config = crate::config::get_credential_type(credential_type);
+    let (doc_type, namespace) = match config {
+        Some(c) => (c.doc_type, c.namespace),
+        None => return build_default_dcql_for_credential_type(credential_type),
+    };
+
+    let format = match credential_type {
+        "national-id-sd-jwt" | "tax-sd-jwt" | "pda1-sd-jwt" => "dc+sd-jwt",
+        _ => "mso_mdoc",
+    };
+
+    let credential_claims: Vec<DCQLClaimsQuery> = claims
+        .iter()
+        .map(|claim_id| {
+            let path = if format == "dc+sd-jwt" {
+                vec![ClaimsPathComponent::Key(claim_id.clone())]
+            } else {
+                vec![
+                    ClaimsPathComponent::Key(namespace.to_string()),
+                    ClaimsPathComponent::Key(claim_id.clone()),
+                ]
+            };
+            DCQLClaimsQuery {
+                id: Some(claim_id.clone()),
+                path,
+                values: None,
+                intent_to_retain: None,
+            }
+        })
+        .collect();
+
+    DCQLQuery {
+        credentials: vec![DCQLCredentialQuery {
+            id: format!("{}_credential", credential_type.replace('-', "_")),
+            format: format.to_string(),
+            meta: DCQLCredentialMeta {
+                doctype_value: Some(doc_type.to_string()),
+                vct_values: None,
+                type_values: None,
+            },
+            claims: Some(credential_claims),
+            claim_sets: None,
+            multiple: None,
+            trusted_authorities: None,
+            require_cryptographic_holder_binding: None,
+        }],
+        credential_sets: None,
+    }
+}
+
 /// Convert a legacy PresentationDefinition to DCQL.
 ///
 /// Parses `input_descriptors` from the presentation definition and

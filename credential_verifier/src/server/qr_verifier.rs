@@ -13,10 +13,7 @@ use ewqwe_openid4vp::OpenID4VPService;
 use ewqwe_verifier_app::{QrVerifyResult, VerifierCredentialVerifier};
 use openssl::x509::X509;
 
-use crate::{
-    journal::DynJournalStore,
-    server::verify_endpoint::verify_vp_token_for_qr,
-};
+use crate::{journal::DynJournalStore, server::verify_endpoint::verify_vp_token_for_qr};
 
 /// Adapts `credential_verifier`'s `verify_vp_token_for_qr` to the
 /// [`VerifierCredentialVerifier`] interface expected by `ewqwe_verifier_app`.
@@ -35,12 +32,22 @@ impl VerifierCredentialVerifier for QrCredentialVerifierImpl {
         username: &str,
     ) -> Result<QrVerifyResult, String> {
         let journal_ref = self.journal.as_deref();
-        match verify_vp_token_for_qr(vp_token, state, username, &self.service, &self.trusted_cas, journal_ref).await {
+        match verify_vp_token_for_qr(
+            vp_token,
+            state,
+            username,
+            &self.service,
+            &self.trusted_cas,
+            journal_ref,
+        )
+        .await
+        {
             Ok(outcome) => Ok(QrVerifyResult {
                 success: outcome.success,
                 doc_type: outcome.doc_type,
                 errors: outcome.errors,
                 age_over_18: outcome.age_over_18,
+                verified_claims: outcome.verified_claims,
             }),
             Err(e) => Err(e.to_string()),
         }

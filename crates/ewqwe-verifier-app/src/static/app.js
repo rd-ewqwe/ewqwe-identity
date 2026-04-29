@@ -569,6 +569,34 @@ async function pollStatus(txId) {
           ageEl.classList.add("hidden");
         }
       }
+
+      // Show verified claims list if the backend returned them
+      const claimsContainer = $("qr-verified-claims");
+      const claimsList = $("qr-claims-list");
+      if (claimsContainer && claimsList && data.verified_claims) {
+        const claims = data.verified_claims;
+        const items = [];
+        // Flatten namespace-nested structure (mDoc) or use keys directly (SD-JWT)
+        if (typeof claims === "object" && claims !== null) {
+          for (const [ns, val] of Object.entries(claims)) {
+            if (typeof val === "object" && val !== null) {
+              for (const [key, v] of Object.entries(val)) {
+                const display = typeof v === "boolean" ? v : (typeof v === "string" ? v.substring(0, 40) + (v.length > 40 ? "..." : "") : JSON.stringify(v));
+                items.push(`<span class="text-green-400">${escapeHtml(ns)}.${escapeHtml(key)}</span>: <span class="text-white/70">${escapeHtml(String(display))}</span>`);
+              }
+            } else {
+              const display = typeof val === "boolean" ? val : (typeof val === "string" ? val.substring(0, 40) + (val.length > 40 ? "..." : "") : JSON.stringify(val));
+              items.push(`<span class="text-green-400">${escapeHtml(ns)}</span>: <span class="text-white/70">${escapeHtml(String(display))}</span>`);
+            }
+          }
+        }
+        if (items.length > 0) {
+          claimsList.innerHTML = items.join("<br/>");
+          claimsContainer.classList.remove("hidden");
+        } else {
+          claimsContainer.classList.add("hidden");
+        }
+      }
       show("qr-area-verified");
     } else if (
       status === "failed" ||
@@ -835,14 +863,14 @@ async function loadJournal(offset) {
     renderJournal(entries);
   } catch (err) {
     const tbody = $("journal-tbody");
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-white/40 py-6">${t("no_journal")}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-white/40 py-6">${t("no_journal")}</td></tr>`;
   }
 }
 
 function renderJournal(entries) {
   const tbody = $("journal-tbody");
   if (!entries || entries.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-white/40 py-6">${t("no_journal")}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-white/40 py-6">${t("no_journal")}</td></tr>`;
     $("journal-prev").disabled = journalOffset === 0;
     $("journal-next").disabled = true;
     updateJournalPageInfo();
@@ -853,14 +881,37 @@ function renderJournal(entries) {
     .map((e) => {
       const time = new Date(e.created_at).toLocaleString();
       const verifier = escapeHtml(e.qrcode_app_user_email || e.verifier || "—");
-      const credential = escapeHtml(e.doc_type || e.namespace || "—");
+      const credential = escapeHtml(e.doc_type || "—");
+
+      // Extract credential claims from summary if present
+      let claimsStr = "—";
+      if (e.credential_claims && typeof e.credential_claims === "object") {
+        const claimKeys = Object.keys(e.credential_claims);
+        if (claimKeys.length > 0) {
+          // If the claims are namespace-nested (mDoc), extract inner keys
+          const innerKeys = [];
+          for (const key of claimKeys) {
+            const val = e.credential_claims[key];
+            if (typeof val === "object" && val !== null) {
+              innerKeys.push(...Object.keys(val));
+            } else {
+              innerKeys.push(key);
+            }
+          }
+          claimsStr = innerKeys.join(", ");
+        }
+      } else if (typeof e.credential_claims === "string") {
+        claimsStr = e.credential_claims.substring(0, 80);
+      }
+
       const statusBadge = e.success
         ? `<span class="text-green-400 font-semibold">✓</span>`
         : `<span class="text-red-400 font-semibold">✗</span>`;
       return `<tr>
         <td class="whitespace-nowrap">${time}</td>
-        <td class="max-w-[220px] truncate" title="${escapeHtml(e.qrcode_app_user_email || e.verifier || "")}">${verifier}</td>
-        <td class="max-w-[200px] truncate" title="${escapeHtml(e.doc_type || e.namespace || "")}">${credential}</td>
+        <td class="max-w-[180px] truncate" title="${escapeHtml(e.qrcode_app_user_email || e.verifier || "")}">${verifier}</td>
+        <td class="max-w-[160px] truncate" title="${escapeHtml(credential)}">${credential}</td>
+        <td class="max-w-[200px] truncate text-xs" title="${escapeHtml(claimsStr)}">${escapeHtml(claimsStr)}</td>
         <td class="text-center">${statusBadge}</td>
       </tr>`;
     })
