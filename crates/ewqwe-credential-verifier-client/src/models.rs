@@ -15,372 +15,99 @@ Standards references:
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-// ============================================================================
-// DCQL — Digital Credentials Query Language (OpenID4VP 1.0 §6)
-// ============================================================================
+// // ============================================================================
+// // Request / Response — /ewqwe_api/verify
+// // ============================================================================
 
-/// A single component in a DCQL Claims Path Pointer (OpenID4VP 1.0 §7).
-///
-/// Serializes as a JSON string, non-negative integer, or `null`.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(untagged)]
-pub enum ClaimsPathComponent {
-    /// String key — navigate into the named field of a JSON object.
-    Key(String),
-    /// Non-negative integer — select array element at this index.
-    Index(u32),
-}
+// /// Request body for `POST /ewqwe_api/verify`.
+// ///
+// /// Submit a VP Token to the credential-verifier for signature and policy validation.
+// ///
+// /// # Mutual TLS
+// ///
+// /// This endpoint requires a valid client certificate unless the server has
+// /// `disable_authentication = true` in its configuration. Provide
+// /// `client_cert_pem` / `client_key_pem` in [`ClientOptions`](crate::ClientOptions).
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct VerifyRequest {
+//     /// JSON-encoded `Record<credentialQueryId, presentation[]>` (OpenID4VP §8.1).
+//     pub vp_token: String,
 
-/// A single claims query within a [`DcqlCredentialQuery`].
-///
-/// For `mso_mdoc` format, `path` MUST contain exactly two [`ClaimsPathComponent::Key`]
-/// components: the namespace and the data element identifier (§7.2).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DcqlClaimsQuery {
-    /// Optional stable identifier for this claims query (required when `claim_sets` is used).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub id: Option<String>,
+//     /// DIF Presentation Exchange submission — omit for DCQL flows.
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub presentation_submission: Option<PresentationSubmission>,
 
-    /// Claims Path Pointer (§7): a non-empty array of strings/integers/nulls.
-    pub path: Vec<ClaimsPathComponent>,
+//     /// `state` from the original Authorization Request.
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub state: Option<String>,
 
-    /// Acceptable values for this claim — wallet MUST provide one of them.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub values: Option<Vec<Value>>,
-}
+//     /// The RP's `client_id` — required when there is no `state` (W3C DC API flow).
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub client_id: Option<String>,
+// }
 
-/// Format-specific metadata for a DCQL credential query.
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
-pub struct DcqlCredentialMeta {
-    /// mDoc document type (e.g. `"org.iso.18013.5.1.mDL"`).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub doctype_value: Option<String>,
+// /// Presentation submission structure from OpenID4VP.
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// #[allow(dead_code)] // Part of OpenID4VP spec, used with presentation_definition (not DCQL)
+// pub struct PresentationSubmission {
+//     pub id: String,
+//     pub definition_id: String,
+//     pub descriptor_map: Vec<DescriptorMapEntry>,
+// }
 
-    /// SD-JWT Verifiable Credential type values.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub vct_values: Option<Vec<String>>,
-}
+// impl VerifyRequest {
+//     /// Create a minimal `VerifyRequest` from a raw VP Token.
+//     pub fn new(vp_token: impl Into<String>) -> Self {
+//         Self {
+//             vp_token: vp_token.into(),
+//             presentation_submission: None,
+//             state: None,
+//             client_id: None,
+//         }
+//     }
 
-/// A credential query within a [`DcqlQuery`], specifying which credential
-/// to request and which claims to extract.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DcqlCredentialQuery {
-    /// Unique identifier for this query (used as key in the `vp_token` response).
-    pub id: String,
+//     /// Attach the OAuth `state` from the Authorization Request.
+//     pub fn with_state(mut self, state: impl Into<String>) -> Self {
+//         self.state = Some(state.into());
+//         self
+//     }
 
-    /// Credential format: `"mso_mdoc"` (ISO 18013-5) or `"dc+sd-jwt"` (SD-JWT VC).
-    pub format: String,
+//     /// Attach the RP's `client_id` (required for DC API flows without `state`).
+//     pub fn with_client_id(mut self, client_id: impl Into<String>) -> Self {
+//         self.client_id = Some(client_id.into());
+//         self
+//     }
+// }
 
-    /// Format-specific metadata.
-    #[serde(default)]
-    pub meta: DcqlCredentialMeta,
+// /// Per-claim verification flags returned alongside the signed attestation.
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct VerificationDetails {
+//     /// Cryptographic signature over the credential is valid.
+//     pub signature_valid: bool,
+//     /// Credential has not expired.
+//     pub not_expired: bool,
+//     /// Issuing authority is trusted by the credential-verifier.
+//     pub issuer_trusted: bool,
+// }
 
-    /// Claims to request from the credential.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub claims: Option<Vec<DcqlClaimsQuery>>,
-
-    /// Named sets of claims — wallet must present at least one full set.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub claim_sets: Option<Vec<Vec<String>>>,
-}
-
-/// A complete DCQL query — the top-level structure sent in the Authorization Request.
-///
-/// ```json
-/// {
-///   "credentials": [
-///     {
-///       "id": "age_proof",
-///       "format": "mso_mdoc",
-///       "meta": { "doctype_value": "org.iso.18013.5.1.mDL" },
-///       "claims": [
-///         { "path": ["org.iso.18013.5.1", "age_over_18"] }
-///       ]
-///     }
-///   ]
-/// }
-/// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct DcqlQuery {
-    /// One or more credential queries.
-    pub credentials: Vec<DcqlCredentialQuery>,
-}
-
-// ============================================================================
-// Request / Response — /ewqwe_api/openid4vp/init
-// ============================================================================
-
-/// Request body for `POST /ewqwe_api/openid4vp/init`.
-///
-/// The RP sends this to start a new OpenID4VP transaction. `public_url` is
-/// required; the server fills in `nonce`, `state`, `client_id`, and all other
-/// protocol parameters automatically.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InitTransactionRequest {
-    /// **Required.** The RP's public HTTPS URL — used to build `response_uri` and
-    /// `request_uri` so wallet traffic is proxied back through the RP.
-    pub public_url: String,
-
-    /// Custom DCQL query. When omitted the server uses its default
-    /// age-verification DCQL (`proof-of-age` credential type).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub dcql_query: Option<DcqlQuery>,
-
-    /// Nonce — auto-generated by the server when omitted.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nonce: Option<String>,
-
-    /// OAuth `state` parameter — auto-generated when omitted.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub state: Option<String>,
-
-    /// Protocol profile override: `"haip"` or `"annex-a"`.
-    /// The server selects a sensible default when omitted.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub profile: Option<String>,
-
-    /// Credential type shorthand: `"mdl"`, `"national-id"`, or `"proof-of-age"`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub credential_type: Option<String>,
-}
-
-impl InitTransactionRequest {
-    /// Minimal constructor — only the RP's public URL is required.
-    pub fn new(public_url: impl Into<String>) -> Self {
-        Self {
-            public_url: public_url.into(),
-            dcql_query: None,
-            nonce: None,
-            state: None,
-            profile: None,
-            credential_type: None,
-        }
-    }
-
-    /// Set the credential type shorthand.
-    pub fn with_credential_type(mut self, ct: impl Into<String>) -> Self {
-        self.credential_type = Some(ct.into());
-        self
-    }
-
-    /// Override the protocol profile (`"haip"` or `"annex-a"`).
-    pub fn with_profile(mut self, profile: impl Into<String>) -> Self {
-        self.profile = Some(profile.into());
-        self
-    }
-
-    /// Attach a custom DCQL query.
-    pub fn with_dcql_query(mut self, query: DcqlQuery) -> Self {
-        self.dcql_query = Some(query);
-        self
-    }
-}
-
-/// Response from `POST /ewqwe_api/openid4vp/init`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct InitTransactionResponse {
-    /// Unique transaction identifier used for subsequent status polling.
-    pub transaction_id: String,
-
-    /// Constructed `client_id` (e.g. `"x509_hash:<base64url_sha256>"` or `"redirect_uri:https://..."`).
-    pub client_id: String,
-
-    /// Client ID scheme serialized as string (e.g. `"x509_hash"`, `"x509_san_dns"`, `"redirect_uri"`).
-    pub client_id_scheme: String,
-
-    /// `request_uri` that the wallet fetches to obtain the JAR / authorization request.
-    pub request_uri: String,
-
-    /// Full authorization request URI suitable for a QR code or wallet deep link.
-    pub authorization_request_uri: String,
-
-    /// Seconds until the transaction expires.
-    pub expires_in: i64,
-
-    /// Protocol profile selected by the server (e.g. `"haip"`, `"annex-a"`).
-    pub profile: String,
-
-    /// QR code as a `data:image/svg+xml;base64,...` data URL.
-    /// Only present for cross-device flows; assign directly to `<img src>`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub qr_code_data_url: Option<String>,
-}
-
-// ============================================================================
-// Request / Response — /ewqwe_api/openid4vp/status/:id
-// ============================================================================
-
-/// Possible statuses of an OpenID4VP transaction.
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum TransactionStatus {
-    /// Waiting for the wallet to post a response.
-    Pending,
-    /// Wallet response received; not yet verified by the RP.
-    Received,
-    /// Credential verified successfully.
-    Verified,
-    /// Verification failed or server-side error occurred.
-    Error,
-    /// Transaction TTL exceeded.
-    Expired,
-}
-
-/// Wallet-side authorization error (OpenID4VP 1.0 §8.5).
-///
-/// Instead of returning a VP Token, the wallet may send an error code when it
-/// cannot or will not fulfil the Authorization Request.
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct WalletAuthorizationError {
-    /// OAuth 2.0 error code (e.g. `"access_denied"`, `"invalid_request"`).
-    pub error: String,
-
-    /// Human-readable error description.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error_description: Option<String>,
-
-    /// The `state` from the Authorization Request, echoed back by the wallet.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub state: Option<String>,
-}
-
-/// OpenID4VP Authorization Response received from the wallet (§8.1 + §8.2).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OpenID4VPResponse {
-    /// JSON-encoded `Record<credentialQueryId, presentation[]>` (§8.1).
-    /// Each key is the DCQL `credentials[].id`; each value is an array of
-    /// base64url-encoded credential presentations.
-    pub vp_token: String,
-
-    /// DIF Presentation Exchange submission descriptor — absent in DCQL flows
-    /// (kept for backward-compatibility with older wallets).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub presentation_submission: Option<String>,
-
-    /// `state` echoed from the Authorization Request.
-    pub state: String,
-}
-
-/// Result of polling `GET /ewqwe_api/openid4vp/status/:id`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct TransactionStatusResult {
-    /// Current transaction lifecycle status.
-    pub status: TransactionStatus,
-
-    /// Seconds until expiry — only present when `status == pending`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub expires_in: Option<i64>,
-
-    /// Authorization response from the wallet — only present when
-    /// `status == received`.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub authorization_response: Option<OpenID4VPResponse>,
-
-    /// Nonce from the original Authorization Request — present when
-    /// `status == received` (required for VP Token replay protection, §14.1).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub nonce: Option<String>,
-
-    /// Wallet-side error — present when `status == error` and the error came
-    /// from the wallet (§8.5).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub wallet_error: Option<WalletAuthorizationError>,
-
-    /// Server-side error message (internal failure details).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub error_message: Option<String>,
-
-    /// The original `transaction_data` from the Authorization Request (§8.4).
-    /// Present when `status == received` so the RP can verify hashes that the
-    /// wallet embedded in its credential presentations.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub transaction_data: Option<Vec<String>>,
-}
-
-// ============================================================================
-// Request / Response — /ewqwe_api/verify
-// ============================================================================
-
-/// Request body for `POST /ewqwe_api/verify`.
-///
-/// Submit a VP Token to the credential-verifier for signature and policy validation.
-///
-/// # Mutual TLS
-///
-/// This endpoint requires a valid client certificate unless the server has
-/// `disable_authentication = true` in its configuration. Provide
-/// `client_cert_pem` / `client_key_pem` in [`ClientOptions`](crate::ClientOptions).
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VerifyRequest {
-    /// JSON-encoded `Record<credentialQueryId, presentation[]>` (OpenID4VP §8.1).
-    pub vp_token: String,
-
-    /// DIF Presentation Exchange submission — omit for DCQL flows.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub presentation_submission: Option<Value>,
-
-    /// `state` from the original Authorization Request.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub state: Option<String>,
-
-    /// The RP's `client_id` — required when there is no `state` (W3C DC API flow).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub client_id: Option<String>,
-}
-
-impl VerifyRequest {
-    /// Create a minimal `VerifyRequest` from a raw VP Token.
-    pub fn new(vp_token: impl Into<String>) -> Self {
-        Self {
-            vp_token: vp_token.into(),
-            presentation_submission: None,
-            state: None,
-            client_id: None,
-        }
-    }
-
-    /// Attach the OAuth `state` from the Authorization Request.
-    pub fn with_state(mut self, state: impl Into<String>) -> Self {
-        self.state = Some(state.into());
-        self
-    }
-
-    /// Attach the RP's `client_id` (required for DC API flows without `state`).
-    pub fn with_client_id(mut self, client_id: impl Into<String>) -> Self {
-        self.client_id = Some(client_id.into());
-        self
-    }
-}
-
-/// Per-claim verification flags returned alongside the signed attestation.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VerificationDetails {
-    /// Cryptographic signature over the credential is valid.
-    pub signature_valid: bool,
-    /// Credential has not expired.
-    pub not_expired: bool,
-    /// Issuing authority is trusted by the credential-verifier.
-    pub issuer_trusted: bool,
-}
-
-/// Response from `POST /ewqwe_api/verify`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct VerifyResponse {
-    /// `true` → credential was successfully verified.
-    pub success: bool,
-    /// Human-readable outcome message.
-    pub message: String,
-    /// Signed JWT attestation. Always present. Contains `verified`, `doc_type`,
-    /// and all credential claims the verifier extracted.
-    #[serde(default)]
-    pub attestation: String,
-    /// Optional detailed verification flags.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub verification_details: Option<VerificationDetails>,
-    /// Validation error messages on failure.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub errors: Option<Vec<String>>,
-}
+// /// Response from `POST /ewqwe_api/verify`.
+// #[derive(Debug, Clone, Serialize, Deserialize)]
+// pub struct VerifyResponse {
+//     /// `true` → credential was successfully verified.
+//     pub success: bool,
+//     /// Human-readable outcome message.
+//     pub message: String,
+//     /// Signed JWT attestation. Always present. Contains `verified`, `doc_type`,
+//     /// and all credential claims the verifier extracted.
+//     #[serde(default)]
+//     pub attestation: String,
+//     /// Optional detailed verification flags.
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub verification_details: Option<VerificationDetails>,
+//     /// Validation error messages on failure.
+//     #[serde(skip_serializing_if = "Option::is_none")]
+//     pub errors: Option<Vec<String>>,
+// }
 
 // ============================================================================
 // JWKS

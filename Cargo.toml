@@ -55,6 +55,7 @@ humantime-serde = "1.1.1"
 iso8601 = { version = "0.6", features = ["serde"] }
 itertools = "0.14.0"
 jsonwebtoken = "9"
+mockito = "1"
 opentelemetry = { version = "0.29" }
 opentelemetry-otlp = { version = "0.29" }
 opentelemetry_sdk = { version = "0.29", default-features = false }

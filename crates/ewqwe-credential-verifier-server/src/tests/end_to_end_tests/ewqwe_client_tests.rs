@@ -21,10 +21,11 @@
 use std::fs;
 
 use async_trait::async_trait;
-use ewqwe_credential_verifier_client::{
-    ApiError, EwqweApiClient, HttpClient, InitTransactionRequest, TransactionStatus,
-};
+use ewqwe_credential_verifier_client::{ApiError, EwqweApiClient, HttpClient};
 use ewqwe_logging::log_init;
+use ewqwe_openid4vp::{
+    InitTransactionRequest, ProfileId, TransactionStatus, VerifyCredentialRequest,
+};
 use serde::{Serialize, de::DeserializeOwned};
 use tracing::info;
 use url::Url;
@@ -179,8 +180,8 @@ async fn e2e_ewqwe_client_init_transaction() -> AttResult<()> {
     let ctx = start_default_test_server().await?;
     let client = build_test_api_client(&ctx.base_url());
 
-    let req = InitTransactionRequest::new("https://rp.example.com")
-        .with_profile("annex-a")
+    let req = InitTransactionRequest::new()
+        .with_profile(ProfileId::AnnexA)
         .with_credential_type("proof-of-age");
 
     let tx = client
@@ -207,7 +208,7 @@ async fn e2e_ewqwe_client_init_transaction() -> AttResult<()> {
         "authorization_request_uri must be non-empty"
     );
     assert!(tx.expires_in > 0, "expires_in must be positive");
-    assert_eq!(tx.profile, "annex-a", "profile must match request");
+    assert_eq!(tx.profile, ProfileId::AnnexA, "profile must match request");
 
     ctx.stop_server().await?;
     Ok(())
@@ -221,8 +222,8 @@ async fn e2e_ewqwe_client_transaction_status_pending() -> AttResult<()> {
     let client = build_test_api_client(&ctx.base_url());
 
     // Create a transaction first
-    let req = InitTransactionRequest::new("https://rp.example.com")
-        .with_profile("annex-a")
+    let req = InitTransactionRequest::new()
+        .with_profile(ProfileId::AnnexA)
         .with_credential_type("proof-of-age");
     let tx = client
         .init_openid4vp_transaction(req)
@@ -328,7 +329,7 @@ async fn e2e_ewqwe_client_get_authorization_request() -> AttResult<()> {
     let client = build_test_api_client(&ctx.base_url());
 
     // Create a transaction with Annex-A profile (returns plain JSON auth request)
-    let req = InitTransactionRequest::new("https://rp.example.com").with_profile("annex-a");
+    let req = InitTransactionRequest::new().with_profile(ProfileId::AnnexA);
     let tx = client
         .init_openid4vp_transaction(req)
         .await
@@ -427,8 +428,12 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
         EwqweApiClient::with_http_client(url, NoCertClient { inner })
     };
 
-    let verify_req =
-        ewqwe_credential_verifier_client::VerifyRequest::new("{\"my_credential\":[\"dGVzdA==\"]}");
+    let verify_req = VerifyCredentialRequest {
+        vp_token: "DUMMY".to_string(),
+        presentation_submission: None,
+        state: None,
+        client_id: None,
+    };
     let result = no_cert_client.verify_presentation(verify_req).await;
 
     ctx.stop_server().await?;
@@ -471,8 +476,8 @@ async fn e2e_ewqwe_client_full_flow_no_auth() -> AttResult<()> {
     let client = build_test_api_client(&ctx.base_url());
 
     // 1. Init transaction
-    let req = InitTransactionRequest::new("https://rp.example.com")
-        .with_profile("annex-a")
+    let req = InitTransactionRequest::new()
+        .with_profile(ProfileId::AnnexA)
         .with_credential_type("proof-of-age");
     let tx = client
         .init_openid4vp_transaction(req)
@@ -490,9 +495,12 @@ async fn e2e_ewqwe_client_full_flow_no_auth() -> AttResult<()> {
 
     // 3. Attempt verify with a dummy base64 VP Token — expect a parse error (400)
     //    because the credential payload isn't a real mDoc / SD-JWT.
-    let verify_req =
-        ewqwe_credential_verifier_client::VerifyRequest::new("{\"proof_of_age\":[\"dGVzdA==\"]}")
-            .with_client_id("https://rp.example.com");
+    let verify_req = VerifyCredentialRequest {
+        vp_token: "{\"proof_of_age\":[\"dGVzdA==\"]}".to_string(),
+        presentation_submission: None,
+        state: None,
+        client_id: Some("https://rp.example.com".to_string()),
+    };
 
     let verify_result = client.verify_presentation(verify_req).await;
     info!("Step 3: verify result = {verify_result:?}");

@@ -9,7 +9,7 @@
 //!
 //! ## Design
 //!
-//! The HTTP transport is abstracted behind the [`HttpClient`] trait.  
+//! The HTTP transport is abstracted behind the [`HttpClient`] trait.
 //! The default implementation uses [`reqwest`](https://docs.rs/reqwest), but you
 //! can supply any `Send + Sync` implementation — useful for testing or embedding in
 //! frameworks that already manage an HTTP stack.
@@ -34,6 +34,10 @@ pub mod models;
 mod tests;
 
 pub use error::{ApiError, Result};
+use ewqwe_openid4vp::{
+    InitTransactionRequest, InitTransactionResponse, OpenID4VPResponse, TransactionStatusResult,
+    VerifyCredentialRequest, VerifyCredentialResponse,
+};
 pub use http::{DefaultHttpClient, HttpClient};
 pub use models::*;
 
@@ -230,7 +234,10 @@ impl<C: HttpClient> EwqweApiClient<C> {
     /// The `/ewqwe_api/verify` endpoint requires a valid client certificate
     /// unless `disable_authentication = true` is set in the server config.
     /// Provide `client_cert_pem` / `client_key_pem` in [`ClientOptions`].
-    pub async fn verify_presentation(&self, request: VerifyRequest) -> Result<VerifyResponse> {
+    pub async fn verify_presentation(
+        &self,
+        request: VerifyCredentialRequest,
+    ) -> Result<VerifyCredentialResponse> {
         let url = self.url("/ewqwe_api/verify")?;
         self.http.post_json(url, &request).await
     }

@@ -21,84 +21,13 @@ use ewqwe_digital_credential::{
     SigVerificationResult, decode_mdoc_presentation, decode_sd_jwt_presentation,
     verify_mdoc_presentation, verify_sd_jwt_signatures,
 };
-use ewqwe_openid4vp::{OpenID4VPService, OpenID4VPTransaction};
+use ewqwe_openid4vp::{
+    OpenID4VPService, OpenID4VPTransaction, VerificationDetails, VerifyCredentialRequest,
+    VerifyCredentialResponse,
+};
 use openssl::x509::X509;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-
-// ============================================================================
-// Public request/response types
-// ============================================================================
-
-/// Request body for credential verification.
-#[derive(Debug, Clone, Deserialize)]
-#[allow(dead_code)] // Fields are part of OpenID4VP spec but may not all be actively used
-pub struct VerifyCredentialRequest {
-    /// The VP token from the wallet (JSON string containing the credential).
-    pub vp_token: String,
-
-    /// Presentation submission with descriptor mapping.
-    /// Optional because DCQL-based responses (OpenID4VP Section 8.1) don't include
-    /// `presentation_submission` — the `vp_token` itself is structured with credential IDs as keys.
-    #[serde(default)]
-    pub presentation_submission: Option<PresentationSubmission>,
-
-    /// Original state from the request.
-    /// Used to look up the server-stored transaction nonce for replay prevention.
-    #[serde(default)]
-    pub state: Option<String>,
-
-    /// Client ID (relying party identifier).
-    #[serde(default)]
-    pub client_id: Option<String>,
-}
-
-/// Presentation submission structure from OpenID4VP.
-#[derive(Debug, Clone, Deserialize)]
-#[allow(dead_code)] // Part of OpenID4VP spec, used with presentation_definition (not DCQL)
-pub struct PresentationSubmission {
-    pub id: String,
-    pub definition_id: String,
-    pub descriptor_map: Vec<DescriptorMapEntry>,
-}
-
-/// Descriptor map entry.
-#[derive(Debug, Clone, Deserialize)]
-#[allow(dead_code)] // Part of OpenID4VP spec
-pub struct DescriptorMapEntry {
-    pub id: String,
-    pub format: String,
-    pub path: String,
-}
-
-/// Response from credential verification.
-#[derive(Debug, Clone, Serialize)]
-pub struct VerifyCredentialResponse {
-    /// Whether verification was successful.
-    pub success: bool,
-
-    /// Human-readable message.
-    pub message: String,
-
-    /// Verification details.
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub verification_details: Option<VerificationDetails>,
-
-    /// Signed attestation JWT (always present).
-    pub attestation: String,
-
-    /// Errors (if failed).
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub errors: Option<Vec<String>>,
-}
-
-/// Details about the verification process.
-#[derive(Debug, Clone, Serialize)]
-pub struct VerificationDetails {
-    pub signature_valid: bool,
-    pub not_expired: bool,
-    pub issuer_trusted: bool,
-}
 
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct IssuerCertsQuery {

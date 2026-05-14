@@ -676,6 +676,80 @@ pub enum TransactionStatus {
     Expired,
 }
 
+// ============================================================================
+// Verification request/response types
+// ============================================================================
+
+/// Request body for credential verification.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)] // Fields are part of OpenID4VP spec but may not all be actively used
+pub struct VerifyCredentialRequest {
+    /// The VP token from the wallet (JSON string containing the credential).
+    pub vp_token: String,
+
+    /// Presentation submission with descriptor mapping.
+    /// Optional because DCQL-based responses (OpenID4VP Section 8.1) don't include
+    /// `presentation_submission` — the `vp_token` itself is structured with credential IDs as keys.
+    #[serde(default)]
+    pub presentation_submission: Option<PresentationSubmission>,
+
+    /// Original state from the request.
+    /// Used to look up the server-stored transaction nonce for replay prevention.
+    #[serde(default)]
+    pub state: Option<String>,
+
+    /// Client ID (relying party identifier).
+    #[serde(default)]
+    pub client_id: Option<String>,
+}
+
+/// Presentation submission structure from OpenID4VP.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)] // Part of OpenID4VP spec, used with presentation_definition (not DCQL)
+pub struct PresentationSubmission {
+    pub id: String,
+    pub definition_id: String,
+    pub descriptor_map: Vec<DescriptorMapEntry>,
+}
+
+/// Descriptor map entry.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[allow(dead_code)] // Part of OpenID4VP spec
+pub struct DescriptorMapEntry {
+    pub id: String,
+    pub format: String,
+    pub path: String,
+}
+
+/// Response from credential verification.
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct VerifyCredentialResponse {
+    /// Whether verification was successful.
+    pub success: bool,
+
+    /// Human-readable message.
+    pub message: String,
+
+    /// Verification details.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub verification_details: Option<VerificationDetails>,
+
+    /// Signed attestation JWT (always present).
+    pub attestation: String,
+
+    /// Errors (if failed).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub errors: Option<Vec<String>>,
+}
+
+/// Details about the verification process.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct VerificationDetails {
+    pub signature_valid: bool,
+    pub not_expired: bool,
+    pub issuer_trusted: bool,
+}
+
 /// Error response sent by the Wallet to the Verifier's `response_uri` (§8.5).
 ///
 /// Instead of a VP Token the Wallet can send an error code when it cannot or will

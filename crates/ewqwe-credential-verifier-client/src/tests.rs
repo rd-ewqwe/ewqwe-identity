@@ -13,10 +13,9 @@ End-to-end tests that exercise the live server live in
 */
 
 use crate::{
-    ApiError, ClientOptions, DcqlClaimsQuery, DcqlCredentialMeta, DcqlCredentialQuery, DcqlQuery,
-    DefaultHttpClient, EwqweApiClient, InitTransactionRequest, InitTransactionResponse,
-    JwkSet, TransactionStatus, TransactionStatusResult, VerifyRequest, VerifyResponse,
-    VersionResponse,
+    ApiError, ClientOptions, DefaultHttpClient, EwqweApiClient, InitTransactionRequest,
+    InitTransactionResponse, JwkSet, TransactionStatusResult, VerifyCredentialRequest,
+    VerifyCredentialResponse, VersionResponse,
 };
 use url::Url;
 
@@ -25,8 +24,8 @@ use url::Url;
 /// Used to test that [`EwqweApiClient`] calls the correct endpoint paths / methods
 /// without going to a real HTTP server.
 mod stub {
-    use async_trait::async_trait;
     use crate::{ApiError, HttpClient, Result};
+    use async_trait::async_trait;
     use serde::{Serialize, de::DeserializeOwned};
     use serde_json::Value;
     use url::Url;
@@ -79,14 +78,17 @@ use stub::StubHttpClient;
 
 mod models {
     use super::*;
+    use ewqwe_openid4vp::{
+        ClaimsPathComponent, ClientIdScheme, DCQLClaimsQuery, DCQLCredentialMeta,
+        DCQLCredentialQuery, DCQLQuery, ProfileId, TransactionStatus,
+    };
     use serde_json::json;
 
     #[test]
     fn init_request_minimal_serializes() {
-        let req = InitTransactionRequest::new("https://rp.example.com");
+        let req = InitTransactionRequest::new();
         let json = serde_json::to_value(&req).unwrap();
 
-        assert_eq!(json["public_url"], "https://rp.example.com");
         // Optional fields should be absent
         assert!(json.get("dcql_query").is_none());
         assert!(json.get("nonce").is_none());
@@ -96,45 +98,45 @@ mod models {
 
     #[test]
     fn init_request_builder_methods() {
-        let req = InitTransactionRequest::new("https://rp.example.com")
+        let req = InitTransactionRequest::new()
             .with_credential_type("mdl")
-            .with_profile("haip");
+            .with_profile(ProfileId::Haip);
 
         assert_eq!(req.credential_type.as_deref(), Some("mdl"));
-        assert_eq!(req.profile.as_deref(), Some("haip"));
+        assert_eq!(req.profile, Some(ProfileId::Haip));
     }
 
     #[test]
     fn init_request_with_dcql_query() {
-        let query = DcqlQuery {
-            credentials: vec![DcqlCredentialQuery {
+        let query = DCQLQuery {
+            credentials: vec![DCQLCredentialQuery {
                 id: "age_proof".to_string(),
                 format: "mso_mdoc".to_string(),
-                meta: DcqlCredentialMeta {
+                meta: DCQLCredentialMeta {
                     doctype_value: Some("org.iso.18013.5.1.mDL".to_string()),
                     ..Default::default()
                 },
-                claims: Some(vec![DcqlClaimsQuery {
+                claims: Some(vec![DCQLClaimsQuery {
                     id: None,
                     path: vec![
-                        crate::ClaimsPathComponent::Key(
-                            "org.iso.18013.5.1".into(),
-                        ),
-                        crate::ClaimsPathComponent::Key("age_over_18".into()),
+                        ClaimsPathComponent::Key("org.iso.18013.5.1".into()),
+                        ClaimsPathComponent::Key("age_over_18".into()),
                     ],
                     values: None,
+                    intent_to_retain: None,
                 }]),
                 claim_sets: None,
+                multiple: None,
+                trusted_authorities: None,
+                require_cryptographic_holder_binding: None,
             }],
+            credential_sets: None,
         };
 
-        let req = InitTransactionRequest::new("https://rp.example.com").with_dcql_query(query);
+        let req = InitTransactionRequest::new().with_dcql_query(query);
         let json = serde_json::to_value(&req).unwrap();
 
-        assert_eq!(
-            json["dcql_query"]["credentials"][0]["id"],
-            "age_proof"
-        );
+        assert_eq!(json["dcql_query"]["credentials"][0]["id"], "age_proof");
         assert_eq!(
             json["dcql_query"]["credentials"][0]["meta"]["doctype_value"],
             "org.iso.18013.5.1.mDL"
@@ -160,9 +162,9 @@ mod models {
 
         let resp: InitTransactionResponse = serde_json::from_value(json).unwrap();
         assert_eq!(resp.transaction_id, "txn-abc123");
-        assert_eq!(resp.client_id_scheme, "x509_san_dns");
+        assert_eq!(resp.client_id_scheme, ClientIdScheme::X509SanDns);
         assert_eq!(resp.expires_in, 60);
-        assert_eq!(resp.profile, "haip");
+        assert_eq!(resp.profile, ProfileId::Haip);
         assert!(resp.qr_code_data_url.is_some());
     }
 
@@ -214,7 +216,7 @@ mod models {
     #[test]
     fn transaction_status_verified_serializes() {
         let status = TransactionStatus::Verified;
-        let json = serde_json::to_value(&status).unwrap();
+        let json = serde_json::to_value(status).unwrap();
         assert_eq!(json, "verified");
     }
 
@@ -227,9 +229,12 @@ mod models {
 
     #[test]
     fn verify_request_builder() {
-        let req = VerifyRequest::new("eyJhbGci...truncated")
-            .with_state("my-state")
-            .with_client_id("x509_san_dns:demo.ewqwe.local");
+        let req = VerifyCredentialRequest {
+            vp_token: "eyJhbGci...truncated".to_string(),
+            presentation_submission: None,
+            state: Some("my-state".to_string()),
+            client_id: Some("x509_san_dns:demo.ewqwe.local".to_string()),
+        };
 
         let json = serde_json::to_value(&req).unwrap();
         assert_eq!(json["vp_token"], "eyJhbGci...truncated");
@@ -251,7 +256,7 @@ mod models {
             }
         });
 
-        let resp: VerifyResponse = serde_json::from_value(json).unwrap();
+        let resp: VerifyCredentialResponse = serde_json::from_value(json).unwrap();
         assert!(resp.success);
         assert_eq!(resp.attestation, "eyJhbGciOiJFUzI1NiJ9.stub.sig");
         let vd = resp.verification_details.unwrap();
@@ -267,7 +272,7 @@ mod models {
             "errors": ["not_expired check failed"]
         });
 
-        let resp: VerifyResponse = serde_json::from_value(json).unwrap();
+        let resp: VerifyCredentialResponse = serde_json::from_value(json).unwrap();
         assert!(!resp.success);
         assert_eq!(resp.errors.unwrap(), vec!["not_expired check failed"]);
     }
@@ -299,6 +304,7 @@ mod models {
 
 mod client {
     use super::*;
+    use ewqwe_openid4vp::TransactionStatus;
     use serde_json::json;
     use std::sync::Arc;
 
@@ -324,7 +330,7 @@ mod client {
         let stub = Arc::new(StubHttpClient::new(stub_resp));
         let client = EwqweApiClient::with_http_client(base, Arc::clone(&stub));
 
-        let req = InitTransactionRequest::new("https://rp.example.com");
+        let req = InitTransactionRequest::new();
         let resp = client.init_openid4vp_transaction(req).await.unwrap();
 
         assert_eq!(resp.transaction_id, "txn-1");
@@ -408,7 +414,12 @@ mod client {
         let stub = Arc::new(StubHttpClient::new(stub_resp));
         let client = EwqweApiClient::with_http_client(base, Arc::clone(&stub));
 
-        let req = VerifyRequest::new("{\"age_proof\":[\"base64...\"]}");
+        let req = VerifyCredentialRequest {
+            vp_token: "{\"age_proof\":[\"base64...\"]}".to_string(),
+            presentation_submission: None,
+            state: None,
+            client_id: None,
+        };
         let resp = client.verify_presentation(req).await.unwrap();
 
         assert!(resp.success);

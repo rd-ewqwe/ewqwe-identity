@@ -58,5 +58,5 @@ uuid = { workspace = true }
 
 [dev-dependencies]
 cookie_store = { workspace = true }
-ewqwe_credential_verifier_client = { workspace = true, features = ["default-tls"] }
+ewqwe_credential_verifier_client = { workspace = true}
 openssl = { workspace = true, features = ["vendored"] }

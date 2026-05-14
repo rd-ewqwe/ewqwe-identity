@@ -15,24 +15,17 @@ categories = ["authentication", "api-bindings", "web-programming::http-client"]
 [lib]
 path = "src/lib.rs"
 
-# ── Feature flags ─────────────────────────────────────────────────────────────
-# `default-tls`  — TLS via native-tls (OpenSSL on Linux/macOS, SChannel on Windows)
-# `rustls-tls`   — TLS via rustls (pure-Rust; mutually exclusive with default-tls)
-# Both are forwarded transparently to reqwest.
-[features]
-default = ["default-tls"]
-default-tls = ["reqwest/default-tls", "reqwest/native-tls"]
-rustls-tls = ["reqwest/rustls-tls"]
 
 [dependencies]
-reqwest = { version = "0.12", default-features = false, features = ["json"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-thiserror = "2.0"
-url = "2.5"
-async-trait = "0.1"
+async-trait = { workspace = true }
+ewqwe_openid4vp = { workspace = true }
+reqwest = { workspace = true , features = ["json", "rustls"] }
+serde = { workspace = true , features = ["derive"] }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+url = { workspace = true }
 
 [dev-dependencies]
-tokio = { version = "1", features = ["full", "macros"] }
-mockito = "1"
-serde_json = "1.0"
+tokio = { workspace = true , features = ["full", "macros"] }
+mockito = { workspace = true }
+serde_json = { workspace = true }
