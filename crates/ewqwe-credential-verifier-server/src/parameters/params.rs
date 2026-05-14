@@ -1,5 +1,5 @@
 use crate::{AttError, AttResult, journal::JournalConfig, parameters::TlsParams};
-use ewqwe_credential_verifier_ui::VerifierAppConfig;
+use ewqwe_credential_verifier_ui::VerifierUiConfig;
 use serde::{Deserialize, Serialize};
 use std::{
     env, fs,
@@ -82,7 +82,7 @@ pub struct ServerParams {
     /// Example: `"https://demo.ewqwe.local:9443"` or `"https://verifier.example.com"`.
     ///
     /// Priority when building the QR code public URL:
-    ///   1. `[verifier_app].public_url` (most specific override)
+    ///   1. `[verifier_ui].qr_code_callback_url` (most specific override)
     ///   2. This field (`public_root_url`)
     ///   3. URL inferred from the incoming HTTP request (last resort)
     #[serde(default)]
@@ -91,10 +91,10 @@ pub struct ServerParams {
     /// Verifier App configuration.
     ///
     /// When `enabled = true`, the embedded web application for QR-code-based
-    /// age verification is activated and all `/verifier_app/*` routes are served.
+    /// age verification is activated and all `/verifier_ui/*` routes are served.
     /// Omit or set `enabled = false` (the default) to disable the app.
-    #[serde(default, rename = "verifier_app", alias = "qrcode_app")]
-    pub verifier_app_config: VerifierAppConfig,
+    #[serde(default, rename = "verifier_ui")]
+    pub verifier_ui_config: VerifierUiConfig,
 }
 
 impl ServerParams {
@@ -159,6 +159,12 @@ impl ServerParams {
 
         let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
         params.resolve_relative_paths(base_dir);
+
+        // Set the UI qr_code_callback_url to the public_root_url if not set.
+        if params.verifier_ui_config.qr_code_callback_url.is_none() {
+            params.verifier_ui_config.qr_code_callback_url = params.public_root_url.clone();
+        }
+
         Ok(params)
     }
 
@@ -534,7 +540,7 @@ transaction_ttl_secs = 300
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
-            verifier_app_config: crate::verifier_app::VerifierAppConfig::default(),
+            verifier_ui_config: crate::ewqwe_credential_verifier_ui::VerifierUiConfig::default(),
             tracing_config: TracingConfig::default(),
         };
 
@@ -567,7 +573,7 @@ transaction_ttl_secs = 300
             attestation_issuer_certificate: None,
             attestation_issuer_key: None,
             journal_config: crate::journal::JournalConfig::default(),
-            verifier_app_config: crate::verifier_app::VerifierAppConfig::default(),
+            verifier_ui_config: crate::ewqwe_credential_verifier_ui::VerifierUiConfig::default(),
         };
 
         assert_eq!(

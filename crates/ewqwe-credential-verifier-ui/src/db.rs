@@ -3,7 +3,7 @@
 use async_trait::async_trait;
 
 use crate::{
-    config::{VerifierAppConfig, VerifierAppDbBackend},
+    config::{VerifierAppDbBackend, VerifierUiConfig},
     error::VerifierAppResult,
     models::{NewUserRecord, UserChanges, VerifierAppUser},
     stores::{MysqlVerifierAppStore, PostgresVerifierAppStore, SqliteVerifierAppStore},
@@ -57,17 +57,17 @@ pub trait VerifierAppStore: Send + Sync {
 // ============================================================================
 
 /// Wraps any supported backend behind a single concrete type.
-pub enum DynVerifierAppStore {
+pub enum DynVerifierUiStore {
     Sqlite(SqliteVerifierAppStore),
     Postgres(PostgresVerifierAppStore),
     Mysql(MysqlVerifierAppStore),
 }
 
-impl DynVerifierAppStore {
+impl DynVerifierUiStore {
     /// Construct a new store from the provided configuration.
     ///
     /// Runs schema migrations automatically.  Call once during server startup.
-    pub async fn new(config: &VerifierAppConfig) -> VerifierAppResult<Self> {
+    pub async fn new(config: &VerifierUiConfig) -> VerifierAppResult<Self> {
         match &config.db {
             VerifierAppDbBackend::SqliteMemory => {
                 let store = SqliteVerifierAppStore::new_memory().await?;
@@ -94,7 +94,7 @@ impl DynVerifierAppStore {
 // ============================================================================
 
 #[async_trait]
-impl VerifierAppStore for DynVerifierAppStore {
+impl VerifierAppStore for DynVerifierUiStore {
     async fn user_count(&self) -> VerifierAppResult<u64> {
         match self {
             Self::Sqlite(s) => s.user_count().await,

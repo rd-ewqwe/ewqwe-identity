@@ -29,12 +29,12 @@ pub enum VerifierAppDbBackend {
     },
 }
 
-/// Top-level configuration section for the Verifier App.
+/// Top-level configuration section for the Verifier UI.
 ///
-/// Embedded in the server configuration file as `[verifier_app]`.
+/// Embedded in the server configuration file as `[verifier_ui]`.
 ///
 /// ```toml
-/// [verifier_app]
+/// [verifier_ui]
 /// enabled = true
 /// app_name = "My Age Verifier"
 /// # public_url = "https://verifier.example.com:9443"
@@ -46,7 +46,7 @@ pub enum VerifierAppDbBackend {
 ///
 /// # SQLite file (persistent, single-instance):
 /// # backend = "sqlite_file"
-/// # path    = "/var/lib/ewqwe/verifier_app.db"
+/// # path    = "/var/lib/ewqwe/verifier_ui.db"
 ///
 /// # PostgreSQL (HA / multi-instance):
 /// # backend = "postgres"
@@ -57,10 +57,10 @@ pub enum VerifierAppDbBackend {
 /// # url     = "mysql://ewqwe:ewqwe@localhost/ewqwe"
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
-pub struct VerifierAppConfig {
+pub struct VerifierUiConfig {
     /// Whether the Verifier App is enabled. Defaults to `false` (opt-in).
     ///
-    /// When `false`, all `/verifier_app/*` routes are disabled and return 404.
+    /// When `false`, all `/verifier_ui/*` routes are disabled and return 404.
     #[serde(default = "default_true")]
     pub enabled: bool,
 
@@ -72,14 +72,13 @@ pub struct VerifierAppConfig {
     #[serde(default)]
     pub logo_url: Option<String>,
 
-    /// Public base URL used to construct the `response_uri` for OpenID4VP
-    /// wallet callbacks (e.g. `"https://verifier.example.com:9443"`).
+    /// Public URL used as the QR code callback URLs that will be called
+    /// by the wallet in order to obtain the authorization request.
     ///
-    /// When absent, the URL is derived from the incoming HTTP request, which
-    /// works for simple setups but fails behind reverse proxies or when the
-    /// server binds to `0.0.0.0`.
+    /// This will default to the `public_root_url` set on the credential
+    /// verifier server and there little reason to set it manually.
     #[serde(default)]
-    pub public_url: Option<String>,
+    pub qr_code_callback_url: Option<String>,
 
     /// Credential types that verifier users are allowed to request.
     ///
@@ -135,12 +134,12 @@ mod tests {
 
             [db]
             backend = "sqlite_file"
-            path = "/var/lib/ewqwe/verifier_app.db"
+            path = "/var/lib/ewqwe/verifier_ui.db"
         "#;
 
-        let config: VerifierAppConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        let config: VerifierUiConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
         assert!(config.enabled);
-        assert_eq!(config.app_name.as_deref(), Some("My Verifier App"));
+        assert_eq!(config.app_name.as_deref(), Some("My Verifier UI"));
         assert_eq!(
             config.logo_url.as_deref(),
             Some("https://example.com/logo.png")
@@ -149,12 +148,12 @@ mod tests {
             config.session_secret.as_deref(),
             Some("0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef")
         );
-        assert!(config.public_url.is_none());
+        assert!(config.qr_code_callback_url.is_none());
         assert!(config.allowed_credential_types.is_empty());
 
         match config.db {
             VerifierAppDbBackend::SqliteFile { path } => {
-                assert_eq!(path, "/var/lib/ewqwe/verifier_app.db");
+                assert_eq!(path, "/var/lib/ewqwe/verifier_ui.db");
             }
             _ => panic!("Expected SqliteFile backend"),
         }
@@ -170,7 +169,7 @@ mod tests {
             url = "mysql://ewqwe:ewqwe@localhost/ewqwe"
         "#;
 
-        let config: VerifierAppConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        let config: VerifierUiConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
         match config.db {
             VerifierAppDbBackend::Mysql { url } => {
                 assert_eq!(url, "mysql://ewqwe:ewqwe@localhost/ewqwe");
@@ -190,9 +189,9 @@ mod tests {
             backend = "sqlite_memory"
         "#;
 
-        let config: VerifierAppConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
+        let config: VerifierUiConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
         assert_eq!(
-            config.public_url.as_deref(),
+            config.qr_code_callback_url.as_deref(),
             Some("https://verifier.example.com:9443")
         );
         assert_eq!(config.allowed_credential_types, vec!["proof-of-age", "mdl"]);

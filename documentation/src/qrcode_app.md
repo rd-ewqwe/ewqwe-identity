@@ -42,10 +42,10 @@ cd crates/ewqwe-verifier-app/ui
 npm run build          # outputs to dist/
 ```
 
-The `credential-server.toml` `[verifier_app]` section tells the server where to find the built assets:
+The `credential-server.toml` `[verifier_ui]` section tells the server where to find the built assets:
 
 ```toml
-[verifier_app]
+[verifier_ui]
 ui_dist_path = "./crates/ewqwe-verifier-app/ui/dist"
 ```
 
@@ -72,7 +72,7 @@ Open <http://localhost:5175> in your browser. The Vite proxy forwards `/api/v1/*
 Add the following section to `credential-server.toml`:
 
 ```toml
-[verifier_app]
+[verifier_ui]
 enabled = true
 app_name = "ACME.eu"                          # optional (default: "Verifier App")
 # logo_url = "https://example.com/logo.png"   # optional logo
@@ -99,7 +99,7 @@ Paste the output as the value of `session_secret_key`.
 When the server is behind a reverse proxy or NAT, the auto-detected URL from the incoming request may not match the externally reachable address. Set `public_url` to the canonical HTTPS URL that wallets will use for the OpenID4VP redirect:
 
 ```toml
-[verifier_app]
+[verifier_ui]
 public_url = "https://demo.ewqwe.local:9443"
 ```
 
@@ -110,7 +110,7 @@ When omitted, the URL is derived from the `Host` header of the incoming request.
 Restrict which credential types can be requested from this server instance:
 
 ```toml
-[verifier_app]
+[verifier_ui]
 allowed_credential_types = ["proof-of-age", "mdl"]
 ```
 
@@ -127,24 +127,24 @@ The Verifier App manages user accounts in a separate database from the main cred
 | Backend | Use-case | Config |
 |---------|----------|--------|
 | `sqlite_memory` (default) | Development / testing | _(no extra config needed)_ |
-| `sqlite_file` | Single-instance with persistence | `path = "/var/lib/ewqwe/verifier_app.db"` |
+| `sqlite_file` | Single-instance with persistence | `path = "/var/lib/ewqwe/verifier_ui.db"` |
 | `postgres` | Multi-instance / HA | `url = "postgres://user:pw@host/db"` |
 | `mysql` | MySQL / MariaDB environments | `url = "mysql://user:pw@host/db"` |
 
 ```toml
-[verifier_app.db]
+[verifier_ui.db]
 backend = "sqlite_file"
-path    = "/var/lib/ewqwe/verifier_app.db"
+path    = "/var/lib/ewqwe/verifier_ui.db"
 ```
 
 ```toml
-[verifier_app.db]
+[verifier_ui.db]
 backend = "postgres"
 url     = "postgres://ewqwe:secret@db.internal/ewqwe_verifierapp"
 ```
 
 ```toml
-[verifier_app.db]
+[verifier_ui.db]
 backend = "mysql"
 url     = "mysql://ewqwe:secret@db.internal/ewqwe_verifierapp"
 ```
@@ -284,7 +284,7 @@ Supported language codes:
 
 By default the app detects the browser's language (`navigator.language`) and uses the closest supported locale, falling back to English. Users can override this in the **Settings** page by choosing a specific language from the dropdown, or selecting **Default (browser language)** to restore automatic detection.
 
-The language preference is stored in `localStorage` (`verifier_app_lang`) and persists across sessions.
+The language preference is stored in `localStorage` (`verifier_ui_lang`) and persists across sessions.
 
 Locale files are embedded in the binary at compile time from  
 `crates/ewqwe-verifier-app/src/static/i18n/` and served via `GET /api/v1/i18n?lang=<code>`.

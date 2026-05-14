@@ -5,7 +5,7 @@ pub mod attestation;
 
 pub mod journal;
 
-pub use ewqwe_credential_verifier_ui as verifier_app;
+pub use ewqwe_credential_verifier_ui;
 
 mod server;
 pub use server::start_server;

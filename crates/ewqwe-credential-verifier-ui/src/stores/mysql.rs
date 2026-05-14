@@ -97,7 +97,7 @@ impl MysqlVerifierAppStore {
 
         sqlx::query(
             r#"
-            CREATE TABLE IF NOT EXISTS verifier_app_settings (
+            CREATE TABLE IF NOT EXISTS verifier_ui_settings (
                 `key`   VARCHAR(255) PRIMARY KEY,
                 value   TEXT NOT NULL
             )
@@ -358,7 +358,7 @@ impl VerifierAppStore for MysqlVerifierAppStore {
 
     async fn get_setting(&self, key: &str) -> VerifierAppResult<Option<String>> {
         let row: Option<(String,)> =
-            sqlx::query_as("SELECT value FROM verifier_app_settings WHERE `key` = ?")
+            sqlx::query_as("SELECT value FROM verifier_ui_settings WHERE `key` = ?")
                 .bind(key)
                 .fetch_optional(&self.pool)
                 .await
@@ -369,7 +369,7 @@ impl VerifierAppStore for MysqlVerifierAppStore {
     async fn set_setting(&self, key: &str, value: &str) -> VerifierAppResult<()> {
         // MySQL upsert: INSERT ... ON DUPLICATE KEY UPDATE.
         sqlx::query(
-            "INSERT INTO verifier_app_settings (`key`, value) VALUES (?, ?) \
+            "INSERT INTO verifier_ui_settings (`key`, value) VALUES (?, ?) \
              ON DUPLICATE KEY UPDATE value = VALUES(value)",
         )
         .bind(key)

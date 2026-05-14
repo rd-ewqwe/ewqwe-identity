@@ -21,7 +21,7 @@ use actix_web::{
 };
 use argon2::Argon2;
 use ewqwe_credential_verifier_ui::{
-    VerifierCredentialVerifier, VerifierJournalProvider, db::DynVerifierAppStore,
+    VerifierCredentialVerifier, VerifierJournalProvider, db::DynVerifierUiStore,
     qr_user_map::QrUserMap,
 };
 use ewqwe_openid4vp::OpenID4VPService;
@@ -119,16 +119,15 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
     };
 
     // Initialise the Verifier App user store (when the app is enabled).
-    let verifier_app_store: Option<Arc<DynVerifierAppStore>> = if params.verifier_app_config.enabled
-    {
-        let store = DynVerifierAppStore::new(&params.verifier_app_config)
+    let verifier_ui_store: Option<Arc<DynVerifierUiStore>> = if params.verifier_ui_config.enabled {
+        let store = DynVerifierUiStore::new(&params.verifier_ui_config)
             .await
             .map_err(|e| {
                 crate::AttError::Config(format!("Failed to initialise Verifier App store: {e}"))
             })?;
         info!(
             "Verifier App store enabled (backend: {:?})",
-            params.verifier_app_config.db
+            params.verifier_ui_config.db
         );
         Some(Arc::new(store))
     } else {
@@ -146,11 +145,11 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
     );
 
     // Build session cookie key for the Verifier App (only when enabled).
-    let verifier_app_session_key: Option<CookieKey> = if params.verifier_app_config.enabled {
-        let key = if let Some(session_secret) = &params.verifier_app_config.session_secret {
+    let verifier_ui_session_key: Option<CookieKey> = if params.verifier_ui_config.enabled {
+        let key = if let Some(session_secret) = &params.verifier_ui_config.session_secret {
             if session_secret.len() < 8 {
                 return Err(crate::AttError::Config(
-                    "verifier_app.session_secret must be at least 8 characters".to_string(),
+                    "verifier_ui.session_secret must be at least 8 characters".to_string(),
                 ));
             }
             // derive 64 bytes using argon 2
@@ -167,7 +166,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             CookieKey::derive_from(&derived_key)
         } else {
             tracing::warn!(
-                "verifier_app.session_secret not set — sessions will be invalidated on \
+                "verifier_ui.session_secret not set — sessions will be invalidated on \
                  server restart; configure a stable secret for production"
             );
             CookieKey::generate()
@@ -186,13 +185,13 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         journal_store.as_ref().map(|j| {
             Arc::new(JournalProviderForVerifier(j.clone())) as Arc<dyn VerifierJournalProvider>
         });
-    let verifier_app_config = Arc::new(params.verifier_app_config.clone());
+    let verifier_ui_config = Arc::new(params.verifier_ui_config.clone());
 
     // Build in-process credential verifier for the Verifier App QR polling flow.
     // Only constructed when the Verifier App is enabled; otherwise `qr_status`
     // falls back to returning the raw "received" status.
     let qr_credential_verifier: Option<Arc<dyn VerifierCredentialVerifier>> =
-        if params.verifier_app_config.enabled {
+        if params.verifier_ui_config.enabled {
             Some(Arc::new(QrCredentialVerifierImpl {
                 service: openid4vp_service.clone(),
                 trusted_cas: trusted_cas.clone(),
@@ -232,8 +231,8 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             app
         };
 
-        // Optionally share the Verifier App user store
-        let app = if let Some(store) = &verifier_app_store {
+        // Optionally share the Verifier UI user store
+        let app = if let Some(store) = &verifier_ui_store {
             app.app_data(Data::new(store.clone()))
         } else {
             app
@@ -243,7 +242,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
         let app = app.app_data(Data::new(qr_user_map.clone()));
 
         // Share VerifierApp config for the get_settings endpoint.
-        let app = app.app_data(Data::new(verifier_app_config.clone()));
+        let app = app.app_data(Data::new(verifier_ui_config.clone()));
 
         // Optionally share the journal provider adapter for the Verifier App.
         let app = if let Some(ref jp) = journal_provider_for_va {
@@ -327,18 +326,18 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             );
 
         // Register openid4vp_scope first (most specific prefix /ewqwe_api),
-        // then the verifier_app API scope, then the explicit /version resource,
+        // then the verifier_ui API scope, then the explicit /version resource,
         // and finally actix_files (catch-all /). Registration order dictates
         // priority — more specific services must come first.
         let app = app.service(openid4vp_scope).service(version_route);
 
-        if let Some(ref session_key) = verifier_app_session_key {
+        if let Some(ref session_key) = verifier_ui_session_key {
             let api_scope = web::scope("/api/v1")
                 .wrap(IdentityMiddleware::default())
                 .wrap(
                     SessionMiddleware::builder(CookieSessionStore::default(), session_key.clone())
                         // Use a unique name to prevent conflicts with any other "id" cookie.
-                        .cookie_name("verifier_app_session".to_string())
+                        .cookie_name("verifier_ui_session".to_string())
                         // Cookie is scoped to "/" so it is sent on every request to
                         // the server (required now that the SPA lives at root).
                         .cookie_path("/".to_string())
@@ -351,7 +350,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
             // Serve the Vite-built SPA from the configured dist directory. Must
             // come after all API scopes and the /version resource so it acts as a
             // true catch-all only when nothing more specific matches.
-            if let Some(ref dist_path) = server_params.verifier_app_config.ui_dist_path {
+            if let Some(ref dist_path) = server_params.verifier_ui_config.ui_dist_path {
                 if std::path::Path::new(dist_path).exists() {
                     app = app
                         .service(actix_files::Files::new("/", dist_path).index_file("index.html"));

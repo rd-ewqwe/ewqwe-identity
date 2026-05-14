@@ -14,8 +14,8 @@ use uuid::Uuid;
 
 use crate::{
     VerifierCredentialVerifier, VerifierJournalProvider, auth,
-    config::VerifierAppConfig,
-    db::{DynVerifierAppStore, VerifierAppStore},
+    config::VerifierUiConfig,
+    db::{DynVerifierUiStore, VerifierAppStore},
     error::VerifierAppError,
     models::{
         AdminJournalQuery, BootstrapRequest, CreateUserRequest, I18nQuery, LoginRequest,
@@ -43,7 +43,7 @@ fn bad_request(msg: &str) -> HttpResponse {
 }
 
 fn internal_error(msg: &str) -> HttpResponse {
-    tracing::error!("verifier_app internal error: {msg}");
+    tracing::error!("verifier_ui internal error: {msg}");
     HttpResponse::InternalServerError().json(json!({"error": "internal server error"}))
 }
 
@@ -63,7 +63,7 @@ fn store_error_response(e: VerifierAppError) -> HttpResponse {
 /// store.  Returns `None` (→ 401) when the cookie is absent or stale.
 async fn current_user(
     identity: Option<Identity>,
-    store: &DynVerifierAppStore,
+    store: &DynVerifierUiStore,
 ) -> Option<UserResponse> {
     trace!("Verifier App: session user lookup {}", identity.is_some());
     let id = identity?.id().ok()?;
@@ -76,13 +76,13 @@ async fn current_user(
 
 // ─── Setup ────────────────────────────────────────────────────────────────────
 
-/// `POST /verifier_app/api/setup/bootstrap`
+/// `POST /verifier_ui/api/setup/bootstrap`
 ///
 /// One-time first-admin creation.  Fails with `409 Conflict` after the first
 /// successful call.
 pub async fn bootstrap(
     req: HttpRequest,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     body: web::Json<BootstrapRequest>,
 ) -> HttpResponse {
     // Guard: only allowed before any admin user exists.
@@ -135,10 +135,10 @@ pub async fn bootstrap(
 
 // ─── Authentication ───────────────────────────────────────────────────────────
 
-/// `POST /verifier_app/api/auth/login`
+/// `POST /verifier_ui/api/auth/login`
 pub async fn login(
     req: HttpRequest,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     body: web::Json<LoginRequest>,
 ) -> HttpResponse {
     let email = body.email.trim().to_lowercase();
@@ -182,7 +182,7 @@ pub async fn login(
     HttpResponse::Ok().json(UserResponse::from(user))
 }
 
-/// `POST /verifier_app/api/auth/logout`
+/// `POST /verifier_ui/api/auth/logout`
 pub async fn logout(identity: Option<Identity>) -> HttpResponse {
     if let Some(id) = identity {
         id.logout();
@@ -190,10 +190,10 @@ pub async fn logout(identity: Option<Identity>) -> HttpResponse {
     HttpResponse::Ok().json(json!({"status": "logged out"}))
 }
 
-/// `GET /verifier_app/api/auth/me`
+/// `GET /verifier_ui/api/auth/me`
 pub async fn me(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
 ) -> HttpResponse {
     match current_user(identity, &store).await {
         Some(user) => HttpResponse::Ok().json(user),
@@ -203,7 +203,7 @@ pub async fn me(
 
 // ─── QR Code generation & status ─────────────────────────────────────────────
 
-/// `POST /verifier_app/api/qr/generate`
+/// `POST /verifier_ui/api/qr/generate`
 ///
 /// Initiates an OpenID4VP credential verification transaction and returns the
 /// QR code data URL together with the transaction ID for status polling.
@@ -214,10 +214,10 @@ pub async fn me(
 pub async fn generate_qr(
     req: HttpRequest,
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     service: web::Data<Arc<OpenID4VPService>>,
     qr_map: web::Data<Arc<QrUserMap>>,
-    config: web::Data<Arc<VerifierAppConfig>>,
+    config: web::Data<Arc<VerifierUiConfig>>,
     body: web::Json<crate::models::GenerateQrRequest>,
 ) -> HttpResponse {
     trace!("Verifier App: QR generation requested");
@@ -262,7 +262,7 @@ pub async fn generate_qr(
           "Verifier App: generating QR transaction");
 
     // Build the public URL the wallet will use for `response_uri`.
-    let public_url = config.public_url.clone().unwrap_or_else(|| {
+    let public_url = config.qr_code_callback_url.clone().unwrap_or_else(|| {
         let conn = req.connection_info();
         format!("{}://{}", conn.scheme(), conn.host())
     });
@@ -281,7 +281,6 @@ pub async fn generate_qr(
     };
 
     let init_req = InitTransactionRequest {
-        public_url,
         profile: Some(profile),
         dcql_query, // use custom DCQL with selected claims, or None for defaults
         nonce: None,
@@ -291,7 +290,7 @@ pub async fn generate_qr(
         transaction_data: None,
     };
 
-    let resp = match service.init_transaction(init_req).await {
+    let resp = match service.init_transaction(init_req, &public_url).await {
         Ok(r) => r,
         Err(e) => {
             tracing::error!("Verifier App: init_transaction failed: {e}");
@@ -324,13 +323,13 @@ pub async fn generate_qr(
     }))
 }
 
-/// `GET /verifier_app/api/qr/{id}/status`
+/// `GET /verifier_ui/api/qr/{id}/status`
 ///
 /// Polls the verification status for a transaction created by this user.
 /// Returns `403 Forbidden` if the transaction belongs to a different user.
 pub async fn qr_status(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     service: web::Data<Arc<OpenID4VPService>>,
     qr_map: web::Data<Arc<QrUserMap>>,
     verifier: Option<web::Data<Arc<dyn VerifierCredentialVerifier>>>,
@@ -458,7 +457,7 @@ pub async fn qr_status(
 /// Require the calling user to be an active admin, or return `403 Forbidden`.
 async fn require_admin(
     identity: Option<Identity>,
-    store: &DynVerifierAppStore,
+    store: &DynVerifierUiStore,
 ) -> Result<UserResponse, HttpResponse> {
     match current_user(identity, store).await {
         Some(user) if user.role == VerifierAppRole::Admin => Ok(user),
@@ -467,10 +466,10 @@ async fn require_admin(
     }
 }
 
-/// `GET /verifier_app/api/admin/users`
+/// `GET /verifier_ui/api/admin/users`
 pub async fn list_users(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
 ) -> HttpResponse {
     if let Err(resp) = require_admin(identity, &store).await {
         return resp;
@@ -484,10 +483,10 @@ pub async fn list_users(
     }
 }
 
-/// `POST /verifier_app/api/admin/users`
+/// `POST /verifier_ui/api/admin/users`
 pub async fn create_user(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     body: web::Json<CreateUserRequest>,
 ) -> HttpResponse {
     if let Err(resp) = require_admin(identity, &store).await {
@@ -526,10 +525,10 @@ pub async fn create_user(
     }
 }
 
-/// `PUT /verifier_app/api/admin/users/{id}`
+/// `PUT /verifier_ui/api/admin/users/{id}`
 pub async fn update_user(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     path: web::Path<String>,
     body: web::Json<UpdateUserRequest>,
 ) -> HttpResponse {
@@ -569,10 +568,10 @@ pub async fn update_user(
     }
 }
 
-/// `DELETE /verifier_app/api/admin/users/{id}`
+/// `DELETE /verifier_ui/api/admin/users/{id}`
 pub async fn delete_user(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     path: web::Path<String>,
 ) -> HttpResponse {
     if let Err(resp) = require_admin(identity, &store).await {
@@ -587,10 +586,10 @@ pub async fn delete_user(
 
 // ─── Admin: journal ───────────────────────────────────────────────────────────
 
-/// `GET /verifier_app/api/admin/journal`
+/// `GET /verifier_ui/api/admin/journal`
 pub async fn admin_journal(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     journal: Option<web::Data<Arc<dyn VerifierJournalProvider>>>,
     query: web::Query<AdminJournalQuery>,
 ) -> HttpResponse {
@@ -659,11 +658,11 @@ pub async fn get_i18n(query: web::Query<I18nQuery>) -> HttpResponse {
 
 // ─── Setup status ─────────────────────────────────────────────────────────────
 
-/// `GET /verifier_app/api/setup/status`
+/// `GET /verifier_ui/api/setup/status`
 ///
 /// Public endpoint. Returns `{"bootstrapped": true}` once the first admin
 /// account exists, `{"bootstrapped": false}` before bootstrap.
-pub async fn setup_status(store: web::Data<Arc<DynVerifierAppStore>>) -> HttpResponse {
+pub async fn setup_status(store: web::Data<Arc<DynVerifierUiStore>>) -> HttpResponse {
     match store.user_count().await {
         Ok(count) => HttpResponse::Ok().json(json!({ "bootstrapped": count > 0 })),
         Err(e) => internal_error(&e.to_string()),
@@ -672,12 +671,12 @@ pub async fn setup_status(store: web::Data<Arc<DynVerifierAppStore>>) -> HttpRes
 
 // ─── App settings ─────────────────────────────────────────────────────────────
 
-/// `GET /verifier_app/api/settings`
+/// `GET /verifier_ui/api/settings`
 ///
 /// Public endpoint. Returns the current app display settings.
 pub async fn get_settings(
-    store: web::Data<Arc<DynVerifierAppStore>>,
-    config: web::Data<Arc<VerifierAppConfig>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
+    config: web::Data<Arc<VerifierUiConfig>>,
 ) -> HttpResponse {
     // DB overrides config defaults.
     let app_name = match store.get_setting("app_name").await {
@@ -698,19 +697,19 @@ pub async fn get_settings(
     }))
 }
 
-/// Body for `PUT /verifier_app/api/admin/settings`.
+/// Body for `PUT /verifier_ui/api/admin/settings`.
 #[derive(Debug, Deserialize)]
 pub struct UpdateSettingsRequest {
     pub app_name: Option<String>,
     pub logo_url: Option<String>,
 }
 
-/// `PUT /verifier_app/api/admin/settings`
+/// `PUT /verifier_ui/api/admin/settings`
 ///
 /// Admin-only. Persists app display settings to the database.
 pub async fn update_settings(
     identity: Option<Identity>,
-    store: web::Data<Arc<DynVerifierAppStore>>,
+    store: web::Data<Arc<DynVerifierUiStore>>,
     body: web::Json<UpdateSettingsRequest>,
 ) -> HttpResponse {
     if let Err(resp) = require_admin(identity, &store).await {

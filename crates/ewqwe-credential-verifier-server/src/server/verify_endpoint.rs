@@ -9,11 +9,11 @@
 use crate::{
     AttError,
     attestation::{Attestation, AttestationSigner, JwtSigner, SigningAlgorithm},
+    ewqwe_credential_verifier_ui::qr_user_map::QrUserMap,
     journal::{DynJournalStore, append_verification},
     parameters::ServerParams,
     server::Version,
     tls::AuthenticatedUser,
-    verifier_app::qr_user_map::QrUserMap,
 };
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use base64::Engine as _;

@@ -1,5 +1,5 @@
 //! End-to-end tests exercising the `ewQwe` credential-verifier API via the
-//! `ewqwe_digital_identity` Rust client library.
+//! `ewqwe_credential_verifier_client` Rust client library.
 //!
 //! These tests start an in-process credential-verifier server (with test TLS
 //! certificates), then use `EwqweApiClient` to call each endpoint and assert
@@ -21,7 +21,7 @@
 use std::fs;
 
 use async_trait::async_trait;
-use ewqwe_digital_identity::{
+use ewqwe_credential_verifier_client::{
     ApiError, EwqweApiClient, HttpClient, InitTransactionRequest, TransactionStatus,
 };
 use ewqwe_logging::log_init;
@@ -86,7 +86,10 @@ impl TestReqwestClient {
 
 #[async_trait]
 impl HttpClient for TestReqwestClient {
-    async fn get_json<R: DeserializeOwned>(&self, url: Url) -> ewqwe_digital_identity::Result<R> {
+    async fn get_json<R: DeserializeOwned>(
+        &self,
+        url: Url,
+    ) -> ewqwe_credential_verifier_client::Result<R> {
         let response = self
             .inner
             .get(url)
@@ -102,7 +105,7 @@ impl HttpClient for TestReqwestClient {
         &self,
         url: Url,
         body: &B,
-    ) -> ewqwe_digital_identity::Result<R> {
+    ) -> ewqwe_credential_verifier_client::Result<R> {
         let response = self
             .inner
             .post(url)
@@ -118,7 +121,7 @@ impl HttpClient for TestReqwestClient {
 
 async fn parse_response<R: DeserializeOwned>(
     response: reqwest::Response,
-) -> ewqwe_digital_identity::Result<R> {
+) -> ewqwe_credential_verifier_client::Result<R> {
     let status = response.status();
     if !status.is_success() {
         let body = response.text().await.unwrap_or_default();
@@ -395,7 +398,7 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
             async fn get_json<R: DeserializeOwned>(
                 &self,
                 url: Url,
-            ) -> ewqwe_digital_identity::Result<R> {
+            ) -> ewqwe_credential_verifier_client::Result<R> {
                 let resp = self
                     .inner
                     .get(url)
@@ -409,7 +412,7 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
                 &self,
                 url: Url,
                 body: &B,
-            ) -> ewqwe_digital_identity::Result<R> {
+            ) -> ewqwe_credential_verifier_client::Result<R> {
                 let resp = self
                     .inner
                     .post(url)
@@ -425,7 +428,7 @@ async fn e2e_ewqwe_client_verify_requires_client_cert() -> AttResult<()> {
     };
 
     let verify_req =
-        ewqwe_digital_identity::VerifyRequest::new("{\"my_credential\":[\"dGVzdA==\"]}");
+        ewqwe_credential_verifier_client::VerifyRequest::new("{\"my_credential\":[\"dGVzdA==\"]}");
     let result = no_cert_client.verify_presentation(verify_req).await;
 
     ctx.stop_server().await?;
@@ -488,7 +491,7 @@ async fn e2e_ewqwe_client_full_flow_no_auth() -> AttResult<()> {
     // 3. Attempt verify with a dummy base64 VP Token — expect a parse error (400)
     //    because the credential payload isn't a real mDoc / SD-JWT.
     let verify_req =
-        ewqwe_digital_identity::VerifyRequest::new("{\"proof_of_age\":[\"dGVzdA==\"]}")
+        ewqwe_credential_verifier_client::VerifyRequest::new("{\"proof_of_age\":[\"dGVzdA==\"]}")
             .with_client_id("https://rp.example.com");
 
     let verify_result = client.verify_presentation(verify_req).await;

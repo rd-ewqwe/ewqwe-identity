@@ -14,7 +14,7 @@ let currentTransactionId = null;
 let journalOffset = 0;
 let journalLimit = 10;
 let editingUserId = null;
-let defaultLogoDataUrl = null; // loaded lazily from /verifier_app/favicon_b64.txt
+let defaultLogoDataUrl = null; // loaded lazily from /verifier_ui/favicon_b64.txt
 let _qrTypeSelectorWasVisible = false;
 
 // Languages supported
@@ -60,13 +60,17 @@ function toast(msg, ok) {
 }
 
 async function api(path, opts = {}) {
-  const url = "/verifier_app" + path;
+  const url = "/verifier_ui" + path;
   const headers = opts.headers || {};
   if (opts.body && typeof opts.body === "object") {
     headers["Content-Type"] = "application/json";
     opts.body = JSON.stringify(opts.body);
   }
-  const res = await fetch(url, { ...opts, headers, credentials: "same-origin" });
+  const res = await fetch(url, {
+    ...opts,
+    headers,
+    credentials: "same-origin",
+  });
   if (res.status === 204) return null;
   const data = await res.json().catch(() => null);
   if (!res.ok) {
@@ -86,7 +90,9 @@ function detectBrowserLang() {
 
 async function loadI18n(lang) {
   try {
-    const res = await fetch("/verifier_app/api/i18n?lang=" + encodeURIComponent(lang));
+    const res = await fetch(
+      "/verifier_ui/api/i18n?lang=" + encodeURIComponent(lang),
+    );
     if (res.ok) {
       i18n = await res.json();
       currentLang = lang;
@@ -116,7 +122,7 @@ function applyI18n() {
 
 function getSavedLang() {
   try {
-    return localStorage.getItem("verifier_app_lang");
+    return localStorage.getItem("verifier_ui_lang");
   } catch (_) {
     return null;
   }
@@ -124,7 +130,7 @@ function getSavedLang() {
 
 function setSavedLang(lang) {
   try {
-    localStorage.setItem("verifier_app_lang", lang);
+    localStorage.setItem("verifier_ui_lang", lang);
   } catch (_) {}
 }
 
@@ -139,7 +145,7 @@ function getEffectiveLang() {
 async function loadDefaultLogo() {
   if (defaultLogoDataUrl) return defaultLogoDataUrl;
   try {
-    const res = await fetch("/verifier_app/favicon_b64.txt");
+    const res = await fetch("/verifier_ui/favicon_b64.txt");
     if (res.ok) {
       defaultLogoDataUrl = (await res.text()).trim();
       return defaultLogoDataUrl;
@@ -160,37 +166,46 @@ async function applyBranding() {
     const topbarName = $("topbar-app-name");
     if (topbarName) {
       topbarName.textContent = companyName;
-      if (companyName) show(topbarName); else hide(topbarName);
+      if (companyName) show(topbarName);
+      else hide(topbarName);
     }
 
     const topbarLogo = $("topbar-logo");
     if (topbarLogo) {
-      if (logoUrl) { topbarLogo.src = logoUrl; show(topbarLogo); }
-      else hide(topbarLogo);
+      if (logoUrl) {
+        topbarLogo.src = logoUrl;
+        show(topbarLogo);
+      } else hide(topbarLogo);
     }
 
     // Login branding
     const loginName = $("login-company-name");
     if (loginName) {
       loginName.textContent = companyName;
-      if (companyName) show(loginName); else hide(loginName);
+      if (companyName) show(loginName);
+      else hide(loginName);
     }
     const loginLogo = $("login-logo");
     if (loginLogo) {
-      if (logoUrl) { loginLogo.src = logoUrl; show(loginLogo); }
-      else hide(loginLogo);
+      if (logoUrl) {
+        loginLogo.src = logoUrl;
+        show(loginLogo);
+      } else hide(loginLogo);
     }
 
     // Bootstrap branding
     const bsName = $("bootstrap-company-name");
     if (bsName) {
       bsName.textContent = companyName;
-      if (companyName) show(bsName); else hide(bsName);
+      if (companyName) show(bsName);
+      else hide(bsName);
     }
     const bsLogo = $("bootstrap-logo");
     if (bsLogo) {
-      if (logoUrl) { bsLogo.src = logoUrl; show(bsLogo); }
-      else hide(bsLogo);
+      if (logoUrl) {
+        bsLogo.src = logoUrl;
+        show(bsLogo);
+      } else hide(bsLogo);
     }
 
     // Drawer name
@@ -251,7 +266,7 @@ function navigateTo(page) {
   currentPage = page;
   // Hide all page sections
   ["page-home", "page-users", "page-journal", "page-settings"].forEach((id) =>
-    hide(id)
+    hide(id),
   );
   // Show requested
   show("page-" + page);
@@ -261,7 +276,7 @@ function navigateTo(page) {
     const links = btn.querySelectorAll("[data-i18n]");
     const key = links.length ? links[0].getAttribute("data-i18n") : "";
     const navItem = [...NAV_ITEMS_ADMIN, ...NAV_ITEMS_VERIFIER].find(
-      (n) => n.label === key
+      (n) => n.label === key,
     );
     if (navItem) {
       btn.classList.toggle("active", navItem.id === page);
@@ -404,7 +419,7 @@ function setupQRPage() {
 
   if (userTypes.length > 0) {
     effectiveTypes = userTypes.filter(
-      (t) => serverTypes.length === 0 || serverTypes.includes(t)
+      (t) => serverTypes.length === 0 || serverTypes.includes(t),
     );
   } else if (serverTypes.length > 0) {
     effectiveTypes = serverTypes;
@@ -469,17 +484,20 @@ async function generateQR() {
     currentTransactionId = data.transaction_id;
 
     // Hide type selector and update title with selected credential type
-    const typeSelector = $('qr-type-selector');
+    const typeSelector = $("qr-type-selector");
     // Preserve true: on re-calls ("New QR Code") the selector is already hidden,
     // so we must not overwrite a previously recorded true value.
-    _qrTypeSelectorWasVisible = _qrTypeSelectorWasVisible ||
-      !!(typeSelector && !typeSelector.classList.contains('hidden'));
-    hide('qr-type-selector');
-    const select = $('qr-credential-type');
+    _qrTypeSelectorWasVisible =
+      _qrTypeSelectorWasVisible ||
+      !!(typeSelector && !typeSelector.classList.contains("hidden"));
+    hide("qr-type-selector");
+    const select = $("qr-credential-type");
     const selectedOpt = select && select.options[select.selectedIndex];
-    const i18nKey = selectedOpt && selectedOpt.getAttribute('data-i18n');
-    const typeLabel = i18nKey ? t(i18nKey) : (selectedOpt && selectedOpt.textContent.trim());
-    const titleEl = $('qr-title');
+    const i18nKey = selectedOpt && selectedOpt.getAttribute("data-i18n");
+    const typeLabel = i18nKey
+      ? t(i18nKey)
+      : selectedOpt && selectedOpt.textContent.trim();
+    const titleEl = $("qr-title");
     if (titleEl && typeLabel) titleEl.textContent = typeLabel;
 
     // Show QR image
@@ -581,12 +599,26 @@ async function pollStatus(txId) {
           for (const [ns, val] of Object.entries(claims)) {
             if (typeof val === "object" && val !== null) {
               for (const [key, v] of Object.entries(val)) {
-                const display = typeof v === "boolean" ? v : (typeof v === "string" ? v.substring(0, 40) + (v.length > 40 ? "..." : "") : JSON.stringify(v));
-                items.push(`<span class="text-green-400">${escapeHtml(ns)}.${escapeHtml(key)}</span>: <span class="text-white/70">${escapeHtml(String(display))}</span>`);
+                const display =
+                  typeof v === "boolean"
+                    ? v
+                    : typeof v === "string"
+                      ? v.substring(0, 40) + (v.length > 40 ? "..." : "")
+                      : JSON.stringify(v);
+                items.push(
+                  `<span class="text-green-400">${escapeHtml(ns)}.${escapeHtml(key)}</span>: <span class="text-white/70">${escapeHtml(String(display))}</span>`,
+                );
               }
             } else {
-              const display = typeof val === "boolean" ? val : (typeof val === "string" ? val.substring(0, 40) + (val.length > 40 ? "..." : "") : JSON.stringify(val));
-              items.push(`<span class="text-green-400">${escapeHtml(ns)}</span>: <span class="text-white/70">${escapeHtml(String(display))}</span>`);
+              const display =
+                typeof val === "boolean"
+                  ? val
+                  : typeof val === "string"
+                    ? val.substring(0, 40) + (val.length > 40 ? "..." : "")
+                    : JSON.stringify(val);
+              items.push(
+                `<span class="text-green-400">${escapeHtml(ns)}</span>: <span class="text-white/70">${escapeHtml(String(display))}</span>`,
+              );
             }
           }
         }
@@ -696,7 +728,9 @@ function openCreateUserModal() {
   hide("mu-error");
 
   // Reset credential type checkboxes
-  document.querySelectorAll(".mu-cred-cb").forEach((cb) => (cb.checked = false));
+  document
+    .querySelectorAll(".mu-cred-cb")
+    .forEach((cb) => (cb.checked = false));
 
   show("modal-user");
 }
@@ -855,7 +889,8 @@ async function loadJournal(offset) {
 
   let qs = `?limit=${journalLimit}&offset=${journalOffset}`;
   if (userId) qs += "&user_id=" + encodeURIComponent(userId);
-  if (dateFrom) qs += "&date_from=" + encodeURIComponent(dateFrom + "T00:00:00Z");
+  if (dateFrom)
+    qs += "&date_from=" + encodeURIComponent(dateFrom + "T00:00:00Z");
   if (dateTo) qs += "&date_to=" + encodeURIComponent(dateTo + "T23:59:59Z");
 
   try {
@@ -937,7 +972,10 @@ function clearJournalFilters() {
   const filterUser = $("journal-filter-user");
   const limitEl = $("journal-limit-select");
   if (filterUser) filterUser.value = "";
-  if (limitEl) { limitEl.value = "10"; journalLimit = 10; }
+  if (limitEl) {
+    limitEl.value = "10";
+    journalLimit = 10;
+  }
   setJournalDefaultDates();
   loadJournal(0);
 }
@@ -965,8 +1003,8 @@ async function loadSettings() {
 function loadClaimsSettings() {
   try {
     const pidClaims = JSON.parse(
-      localStorage.getItem("verifier_app_pid_claims") ||
-        JSON.stringify(["age_over_18", "portrait"])
+      localStorage.getItem("verifier_ui_pid_claims") ||
+        JSON.stringify(["age_over_18", "portrait"]),
     );
     document.querySelectorAll(".pid-claim-cb").forEach((cb) => {
       cb.checked = pidClaims.includes(cb.value);
@@ -975,8 +1013,8 @@ function loadClaimsSettings() {
 
   try {
     const mdlClaims = JSON.parse(
-      localStorage.getItem("verifier_app_mdl_claims") ||
-        JSON.stringify(["age_over_18", "portrait"])
+      localStorage.getItem("verifier_ui_mdl_claims") ||
+        JSON.stringify(["age_over_18", "portrait"]),
     );
     document.querySelectorAll(".mdl-claim-cb").forEach((cb) => {
       cb.checked = mdlClaims.includes(cb.value);
@@ -990,8 +1028,9 @@ async function saveSettings() {
   const mdlChecked = document.querySelectorAll(".mdl-claim-cb:checked").length;
   if (pidChecked === 0 || mdlChecked === 0) {
     toast(
-      i18n["claims_min_one"] || "Select at least one claim per credential type.",
-      false
+      i18n["claims_min_one"] ||
+        "Select at least one claim per credential type.",
+      false,
     );
     return;
   }
@@ -1027,13 +1066,13 @@ async function saveSettings() {
   document.querySelectorAll(".pid-claim-cb:checked").forEach((cb) => {
     pidClaims.push(cb.value);
   });
-  localStorage.setItem("verifier_app_pid_claims", JSON.stringify(pidClaims));
+  localStorage.setItem("verifier_ui_pid_claims", JSON.stringify(pidClaims));
 
   const mdlClaims = [];
   document.querySelectorAll(".mdl-claim-cb:checked").forEach((cb) => {
     mdlClaims.push(cb.value);
   });
-  localStorage.setItem("verifier_app_mdl_claims", JSON.stringify(mdlClaims));
+  localStorage.setItem("verifier_ui_mdl_claims", JSON.stringify(mdlClaims));
 
   // Re-apply branding
   await applyBranding();

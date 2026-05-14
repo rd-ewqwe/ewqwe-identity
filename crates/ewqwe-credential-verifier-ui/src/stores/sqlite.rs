@@ -88,7 +88,7 @@ impl SqliteVerifierAppStore {
                 created_by    TEXT REFERENCES qrcode_app_users(id),
                 created_at    TEXT NOT NULL
             );
-            CREATE TABLE IF NOT EXISTS verifier_app_settings (
+            CREATE TABLE IF NOT EXISTS verifier_ui_settings (
                 key   TEXT PRIMARY KEY NOT NULL,
                 value TEXT NOT NULL
             );
@@ -349,7 +349,7 @@ impl VerifierAppStore for SqliteVerifierAppStore {
 
     async fn get_setting(&self, key: &str) -> VerifierAppResult<Option<String>> {
         let row: Option<(String,)> =
-            sqlx::query_as("SELECT value FROM verifier_app_settings WHERE key = ?1")
+            sqlx::query_as("SELECT value FROM verifier_ui_settings WHERE key = ?1")
                 .bind(key)
                 .fetch_optional(&self.pool)
                 .await
@@ -359,7 +359,7 @@ impl VerifierAppStore for SqliteVerifierAppStore {
 
     async fn set_setting(&self, key: &str, value: &str) -> VerifierAppResult<()> {
         sqlx::query(
-            "INSERT INTO verifier_app_settings (key, value) VALUES (?1, ?2) \
+            "INSERT INTO verifier_ui_settings (key, value) VALUES (?1, ?2) \
              ON CONFLICT(key) DO UPDATE SET value = excluded.value",
         )
         .bind(key)

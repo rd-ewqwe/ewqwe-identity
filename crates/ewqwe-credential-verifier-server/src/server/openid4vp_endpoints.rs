@@ -29,27 +29,32 @@ use crate::parameters::ServerParams;
 
 /// Initialize a new OpenID4VP transaction.
 ///
-/// The RP sends its `public_url` so the verifier can construct authorization
-/// request URIs that point back to the RP (which proxies wallet traffic here).
-///
 /// # Request Body
 ///
 /// ```json
 /// {
-///     "public_url": "https://rp.example.com",
 ///     "profile": "annex-a",
 ///     "credential_type": "proof-of-age",
 ///     "nonce": "optional-nonce"
 /// }
 /// ```
 pub async fn init_transaction(
+    req: HttpRequest,
     service: web::Data<Arc<OpenID4VPService>>,
+    params: web::Data<ServerParams>,
     body: web::Json<InitTransactionRequest>,
 ) -> HttpResponse {
     info!("POST /ewqwe_api/openid4vp/init");
     let request = body.into_inner();
 
-    match service.init_transaction(request).await {
+    // Construct the public URL for the transaction.
+    // If `public_root_url` is not set, use the request's scheme and host.
+    let public_url = params.public_root_url.clone().unwrap_or_else(|| {
+        let conn = req.connection_info();
+        format!("{}://{}", conn.scheme(), conn.host())
+    });
+
+    match service.init_transaction(request, &public_url).await {
         Ok(response) => {
             info!(
                 transaction_id = %response.transaction_id,

@@ -10,12 +10,12 @@ description = "ewQwe Identity"
 
 [workspace]
 members = [
-    "crates/ewqwe-credential-verifier-server", 
+    "crates/ewqwe-credential-verifier-client",
+    "crates/ewqwe-credential-verifier-server",
     "crates/ewqwe-credential-verifier-ui",
-    "crates/ewqwe-digital-credential", 
-    "crates/ewqwe-digital-identity", 
-    "crates/logging", 
-    "crates/openid4vp"
+    "crates/ewqwe-digital-credential",
+    "crates/ewqwe-logging",
+    "crates/ewqwe-openid4vp"
     ]
 resolver = "2"
 
@@ -42,11 +42,11 @@ coset = "0.3"
 derive_builder = "0.20.2"
 derive_more = "2.0"
 enum_dispatch = "0.3.13"
-ewqwe_credential_verifier_ui = { path = "crates/ewqwe-credential-verifier-ui" } 
+ewqwe_credential_verifier_ui = { path = "crates/ewqwe-credential-verifier-ui" }
 ewqwe_digital_credential = { path = "crates/ewqwe-digital-credential", default-features = false }
-ewqwe_digital_identity = { path = "crates/ewqwe-digital-identity", default-features = false }
-ewqwe_logging = { path = "crates/logging" }
-ewqwe_openid4vp = { path = "crates/openid4vp" }
+ewqwe_credential_verifier_client = { path = "crates/ewqwe-credential-verifier-client", default-features = false }
+ewqwe_logging = { path = "crates/ewqwe-logging" }
+ewqwe_openid4vp = { path = "crates/ewqwe-openid4vp" }
 eyre = "0.6.12"
 futures = "0.3.31"
 hex = { version = "0.4.3", features = ["serde"] }

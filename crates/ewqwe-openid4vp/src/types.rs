@@ -979,16 +979,10 @@ pub struct OpenID4VPTransaction {
 /// Request body for `POST /ewqwe_api/openid4vp/init`.
 ///
 /// The RP sends this to the credential verifier to start a new transaction.
-/// `public_url` tells the verifier which URL the wallet should use for
-/// `response_uri` and `request_uri` (since the RP proxies wallet traffic).
 ///
 /// The frontend counterpart is `InitTransactionRequest` in `@ewqwe/digital-identity`.
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct InitTransactionRequest {
-    /// **Required**: The RP's public URL that the wallet will interact with.
-    /// Used to construct `response_uri` and `request_uri`.
-    pub public_url: String,
-
     /// DCQL query specifying the credentials to request.
     /// If omitted, a default age verification query is used.
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -1023,6 +1017,47 @@ pub struct InitTransactionRequest {
     /// and echoed back in the status result for RP hash verification.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub transaction_data: Option<Vec<String>>,
+}
+
+impl InitTransactionRequest {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    pub fn with_credential_type(mut self, credential_type: impl Into<String>) -> Self {
+        self.credential_type = Some(credential_type.into());
+        self
+    }
+
+    pub fn with_transaction_data(mut self, transaction_data: impl Into<Vec<String>>) -> Self {
+        self.transaction_data = Some(transaction_data.into());
+        self
+    }
+
+    pub fn with_dcql_query(mut self, dcql_query: impl Into<DCQLQuery>) -> Self {
+        self.dcql_query = Some(dcql_query.into());
+        self
+    }
+
+    pub fn with_nonce(mut self, nonce: impl Into<String>) -> Self {
+        self.nonce = Some(nonce.into());
+        self
+    }
+
+    pub fn with_state(mut self, state: impl Into<String>) -> Self {
+        self.state = Some(state.into());
+        self
+    }
+
+    pub fn with_client_metadata(mut self, client_metadata: impl Into<ClientMetadata>) -> Self {
+        self.client_metadata = Some(client_metadata.into());
+        self
+    }
+
+    pub fn with_profile(mut self, profile: impl Into<ProfileId>) -> Self {
+        self.profile = Some(profile.into());
+        self
+    }
 }
 
 /// Response from `POST /ewqwe_api/openid4vp/init`.

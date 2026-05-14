@@ -28,7 +28,7 @@ pub mod qr_user_map;
 mod routes;
 pub mod stores;
 
-pub use config::VerifierAppConfig;
+pub use config::VerifierUiConfig;
 
 use actix_web::web;
 use async_trait::async_trait;
@@ -94,7 +94,7 @@ pub trait VerifierJournalProvider: Send + Sync {
 /// Register all Verifier App routes on the given [`web::ServiceConfig`].
 ///
 /// Called from `credential_verifier::server::start` when
-/// `verifier_app_config.enabled = true`.  The `/api/v1` scope prefix is
+/// `verifier_ui_config.enabled = true`.  The `/api/v1` scope prefix is
 /// applied by the caller.
 ///
 /// ## Required `web::Data` registrations (on the enclosing scope or App)

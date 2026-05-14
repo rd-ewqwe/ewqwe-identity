@@ -229,17 +229,17 @@ The credential verifier ships with an embedded **Verifier App** — a self-conta
 Enable the Verifier App in `credential-server.toml`:
 
 ```toml
-[verifier_app]
+[verifier_ui]
 enabled = true
 app_name = "My Age Verifier"
 # allowed_credential_types = ["proof-of-age", "mdl", "national-id"]
 backend = "sqlite_file"
-path = "/var/lib/ewqwe/verifier_app.db"
+path = "/var/lib/ewqwe/verifier_ui.db"
 ```
 
 ### Routes
 
-The Verifier App mounts under `/verifier_app/`:
+The Verifier App mounts under `/verifier_ui/`:
 
 | Route | Auth | Description |
 |-------|------|-------------|

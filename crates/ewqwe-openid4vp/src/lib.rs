@@ -20,9 +20,9 @@
 //! to the credential verifier, which uses this crate internally.
 //!
 //! ```text
-//! ┌─────────┐  proxy   ┌────────────────────┐  uses  ┌──────────────────┐
-//! │  RP     │ ───────> │ Credential Verifier │ ────> │  ewqwe_openid4vp │
-//! │ webapp  │          │   (actix-web)       │       │  (this crate)    │
+//! ┌─────────┐  proxy   ┌────────────────────┐  uses ┌──────────────────┐
+//! │  RP     │ ───────> │ Credential Verifier│ ────> │  ewqwe_openid4vp │
+//! │ webapp  │          │   (actix-web)      │       │  (this crate)    │
 //! └─────────┘          └────────────────────┘       └──────────────────┘
 //! ```
 //!

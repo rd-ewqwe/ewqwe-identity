@@ -1,11 +1,11 @@
 [package]
-name = "ewqwe_digital_identity"
+name = "ewqwe_credential_verifier_client"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85.0"
-authors = ["ewQwe <contact@ewqwe.com>"]
+authors = ["ewQwe <rd@ewqwe.eu>"]
 license = "MIT"
-description = "Rust client library for the ewQwe EU Age Verification API — OpenID4VP, DCQL, credential verification"
+description = "Rust client library for the ewQwe Digital Credential Verification API — OpenID4VP, DCQL, credential verification"
 readme = "README.md"
 homepage = "https://github.com/ewqwe-identity/ewqwe-identity"
 repository = "https://github.com/ewqwe-identity/ewqwe-identity"

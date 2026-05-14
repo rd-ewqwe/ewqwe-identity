@@ -50,7 +50,7 @@ async fn main() -> ewqwe_digital_identity::Result<()> {
     let client = EwqweApiClient::new(opts)?;
 
     // Step 1 — initialize a transaction (server builds DCQL authorization request)
-    let req = InitTransactionRequest::new("https://my-rp.example.com")
+    let req = InitTransactionRequest::new("https://rp.example.com")
         .with_profile("annex-a")
         .with_credential_type("proof-of-age");
 

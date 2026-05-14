@@ -142,7 +142,7 @@ pub struct UserChanges {
 // API request DTOs
 // ============================================================================
 
-/// Body for `POST /verifier_app/api/setup/bootstrap`.
+/// Body for `POST /verifier_ui/api/setup/bootstrap`.
 #[derive(Debug, Deserialize)]
 pub struct BootstrapRequest {
     pub email: String,
@@ -151,14 +151,14 @@ pub struct BootstrapRequest {
     pub last_name: Option<String>,
 }
 
-/// Body for `POST /verifier_app/api/auth/login`.
+/// Body for `POST /verifier_ui/api/auth/login`.
 #[derive(Debug, Deserialize)]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
 }
 
-/// Body for `POST /verifier_app/api/admin/users`.
+/// Body for `POST /verifier_ui/api/admin/users`.
 #[derive(Debug, Deserialize)]
 pub struct CreateUserRequest {
     pub email: String,
@@ -170,7 +170,7 @@ pub struct CreateUserRequest {
     pub allowed_credential_types: Option<Vec<String>>,
 }
 
-/// Body for `PUT /verifier_app/api/admin/users/{id}`.
+/// Body for `PUT /verifier_ui/api/admin/users/{id}`.
 #[derive(Debug, Deserialize, Default)]
 pub struct UpdateUserRequest {
     pub first_name: Option<String>,
@@ -182,7 +182,7 @@ pub struct UpdateUserRequest {
     pub allowed_credential_types: Option<Vec<String>>,
 }
 
-/// Body for `POST /verifier_app/api/qr/generate`.
+/// Body for `POST /verifier_ui/api/qr/generate`.
 #[derive(Debug, Deserialize, Default)]
 pub struct GenerateQrRequest {
     /// Credential type to request: `"proof-of-age"`, `"mdl"`, or `"national-id"`.
@@ -197,7 +197,7 @@ pub struct GenerateQrRequest {
     pub claims: Vec<String>,
 }
 
-/// Query parameters for `GET /verifier_app/api/admin/journal`.
+/// Query parameters for `GET /verifier_ui/api/admin/journal`.
 #[derive(Debug, Deserialize, Default)]
 pub struct AdminJournalQuery {
     /// Filter to entries attributed to this QR app user ID.
@@ -212,7 +212,7 @@ pub struct AdminJournalQuery {
     pub offset: Option<u32>,
 }
 
-/// Query parameters for `GET /verifier_app/api/i18n`.
+/// Query parameters for `GET /verifier_ui/api/i18n`.
 #[derive(Debug, Deserialize, Default)]
 pub struct I18nQuery {
     /// BCP-47 language code (e.g. `en`, `de`, `fr`). Defaults to `en`.

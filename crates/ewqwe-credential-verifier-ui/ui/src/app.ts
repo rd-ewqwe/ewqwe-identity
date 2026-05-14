@@ -121,7 +121,7 @@ function applyI18n(): void {
 
 function getSavedLang(): string | null {
   try {
-    return localStorage.getItem("verifier_app_lang");
+    return localStorage.getItem("verifier_ui_lang");
   } catch {
     return null;
   }
@@ -129,7 +129,7 @@ function getSavedLang(): string | null {
 
 function setSavedLang(lang: string): void {
   try {
-    localStorage.setItem("verifier_app_lang", lang);
+    localStorage.setItem("verifier_ui_lang", lang);
   } catch {
     // ignore
   }
@@ -209,8 +209,7 @@ function buildNav(): void {
     container.innerHTML = "";
     items.forEach((item) => {
       const btn = document.createElement("button");
-      btn.className =
-        "nav-link" + (currentPage === item.id ? " active" : "");
+      btn.className = "nav-link" + (currentPage === item.id ? " active" : "");
       btn.innerHTML = `<span>${item.icon}</span> <span data-i18n="${item.label}">${t(item.label)}</span>`;
       btn.onclick = () => {
         navigateTo(item.id);
@@ -297,12 +296,8 @@ export function closeDrawer(): void {
 
 export async function doLogin(e: Event): Promise<void> {
   e.preventDefault();
-  const email = (
-    $("login-email") as HTMLInputElement
-  ).value.trim();
-  const password = (
-    $("login-password") as HTMLInputElement
-  ).value;
+  const email = ($("login-email") as HTMLInputElement).value.trim();
+  const password = ($("login-password") as HTMLInputElement).value;
   const errEl = $("login-error");
 
   try {
@@ -342,10 +337,8 @@ export async function doBootstrap(e: Event): Promise<void> {
       body: {
         email: ($("bs-email") as HTMLInputElement).value.trim(),
         password: pw1,
-        first_name:
-          ($("bs-first") as HTMLInputElement).value.trim() || null,
-        last_name:
-          ($("bs-last") as HTMLInputElement).value.trim() || null,
+        first_name: ($("bs-first") as HTMLInputElement).value.trim() || null,
+        last_name: ($("bs-last") as HTMLInputElement).value.trim() || null,
       },
     });
     toast(t("admin_created"), true);
@@ -446,8 +439,9 @@ export async function generateQR(): Promise<void> {
 
     const selectedOpt = select.options[select.selectedIndex];
     const i18nKey = selectedOpt?.getAttribute("data-i18n");
-    const typeLabel =
-      i18nKey ? t(i18nKey) : (selectedOpt?.textContent?.trim() ?? "");
+    const typeLabel = i18nKey
+      ? t(i18nKey)
+      : (selectedOpt?.textContent?.trim() ?? "");
     const titleEl = $("qr-title");
     if (titleEl && typeLabel) titleEl.textContent = typeLabel;
 
@@ -549,7 +543,9 @@ async function pollStatus(txId: string): Promise<void> {
       const reason = $("qr-fail-reason");
       if (reason) {
         reason.textContent =
-          status === "expired" ? t("session_expired") : t("presentation_rejected");
+          status === "expired"
+            ? t("session_expired")
+            : t("presentation_rejected");
       }
     } else if (status === "pending" || status === "scanned") {
       const badge = $("qr-status-badge");
@@ -589,8 +585,7 @@ function renderUsersTable(users: User[]): void {
 
   tbody.innerHTML = users
     .map((u) => {
-      const name =
-        [u.first_name, u.last_name].filter(Boolean).join(" ") || "—";
+      const name = [u.first_name, u.last_name].filter(Boolean).join(" ") || "—";
       const roleBadge =
         u.role === "admin"
           ? `<span class="badge badge-indigo">${t("role_admin")}</span>`
@@ -658,11 +653,9 @@ export async function openEditUserModal(userId: string): Promise<void> {
     ($("mu-active") as HTMLInputElement).checked = user.is_active;
     show("mu-active-wrap");
 
-    document
-      .querySelectorAll<HTMLInputElement>(".mu-cred-cb")
-      .forEach((cb) => {
-        cb.checked = user.allowed_credential_types.includes(cb.value);
-      });
+    document.querySelectorAll<HTMLInputElement>(".mu-cred-cb").forEach((cb) => {
+      cb.checked = user.allowed_credential_types.includes(cb.value);
+    });
 
     show("modal-user");
   } catch (err) {
@@ -686,10 +679,8 @@ export async function submitUserModal(e: Event): Promise<void> {
 
   if (editingUserId) {
     const body: Record<string, unknown> = {
-      first_name:
-        ($("mu-first") as HTMLInputElement).value.trim() || null,
-      last_name:
-        ($("mu-last") as HTMLInputElement).value.trim() || null,
+      first_name: ($("mu-first") as HTMLInputElement).value.trim() || null,
+      last_name: ($("mu-last") as HTMLInputElement).value.trim() || null,
       role: ($("mu-role") as HTMLSelectElement).value,
       is_active: ($("mu-active") as HTMLInputElement).checked,
       allowed_credential_types: allowedTypes,
@@ -716,10 +707,8 @@ export async function submitUserModal(e: Event): Promise<void> {
     const body = {
       email: ($("mu-email") as HTMLInputElement).value.trim(),
       password: ($("mu-password") as HTMLInputElement).value,
-      first_name:
-        ($("mu-first") as HTMLInputElement).value.trim() || null,
-      last_name:
-        ($("mu-last") as HTMLInputElement).value.trim() || null,
+      first_name: ($("mu-first") as HTMLInputElement).value.trim() || null,
+      last_name: ($("mu-last") as HTMLInputElement).value.trim() || null,
       role: ($("mu-role") as HTMLSelectElement).value,
       allowed_credential_types: allowedTypes,
     };
@@ -746,10 +735,9 @@ export function confirmDeleteUser(userId: string): void {
 
 async function deleteUser(userId: string): Promise<void> {
   try {
-    await apiFetch<null>(
-      `/admin/users/${encodeURIComponent(userId)}`,
-      { method: "DELETE" },
-    );
+    await apiFetch<null>(`/admin/users/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+    });
     toast(t("user_deleted"), true);
     await loadUsers();
   } catch (err) {
@@ -922,7 +910,7 @@ export async function loadSettings(): Promise<void> {
 function loadClaimsSettings(): void {
   try {
     const pidClaims: string[] = JSON.parse(
-      localStorage.getItem("verifier_app_pid_claims") ??
+      localStorage.getItem("verifier_ui_pid_claims") ??
         JSON.stringify(["age_over_18", "portrait"]),
     );
     document
@@ -936,7 +924,7 @@ function loadClaimsSettings(): void {
 
   try {
     const mdlClaims: string[] = JSON.parse(
-      localStorage.getItem("verifier_app_mdl_claims") ??
+      localStorage.getItem("verifier_ui_mdl_claims") ??
         JSON.stringify(["age_over_18", "portrait"]),
     );
     document
@@ -964,10 +952,8 @@ export async function saveSettings(): Promise<void> {
   if (currentUser?.role === "admin") {
     try {
       const body = {
-        app_name:
-          ($("settings-app-name") as HTMLInputElement).value.trim(),
-        logo_url:
-          ($("settings-logo-url") as HTMLInputElement).value.trim(),
+        app_name: ($("settings-app-name") as HTMLInputElement).value.trim(),
+        logo_url: ($("settings-logo-url") as HTMLInputElement).value.trim(),
       };
       await apiFetch<unknown>("/admin/settings", { method: "PUT", body });
     } catch (err) {
@@ -980,8 +966,7 @@ export async function saveSettings(): Promise<void> {
   if (langSelect) {
     const lang = langSelect.value;
     setSavedLang(lang);
-    const effectiveLang =
-      lang === "default" ? detectBrowserLang() : lang;
+    const effectiveLang = lang === "default" ? detectBrowserLang() : lang;
     if (effectiveLang !== currentLang) {
       await loadI18n(effectiveLang);
       buildNav();
@@ -992,13 +977,13 @@ export async function saveSettings(): Promise<void> {
   document
     .querySelectorAll<HTMLInputElement>(".pid-claim-cb:checked")
     .forEach((cb) => pidClaims.push(cb.value));
-  localStorage.setItem("verifier_app_pid_claims", JSON.stringify(pidClaims));
+  localStorage.setItem("verifier_ui_pid_claims", JSON.stringify(pidClaims));
 
   const mdlClaims: string[] = [];
   document
     .querySelectorAll<HTMLInputElement>(".mdl-claim-cb:checked")
     .forEach((cb) => mdlClaims.push(cb.value));
-  localStorage.setItem("verifier_app_mdl_claims", JSON.stringify(mdlClaims));
+  localStorage.setItem("verifier_ui_mdl_claims", JSON.stringify(mdlClaims));
 
   await applyBranding();
   toast(t("settings_saved"), true);

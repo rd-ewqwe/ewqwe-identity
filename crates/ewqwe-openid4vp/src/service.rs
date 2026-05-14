@@ -204,12 +204,12 @@ impl OpenID4VPService {
     /// Builds the DCQL query, authorization request URI, and returns data for
     /// the QR code (cross-device) or deep link (same-device).
     ///
-    /// The `public_url` in the request tells the service which URL the wallet
-    /// should use for `response_uri` and `request_uri` (since the RP proxies
-    /// wallet traffic to this service).
+    /// The `public_url` is the URL the wallet should use
+    /// for `response_uri` and `request_uri`.
     pub async fn init_transaction(
         &self,
         request: InitTransactionRequest,
+        public_url: &str,
     ) -> OpenID4VPResult<InitTransactionResponse> {
         let profile = determine_profile(request.credential_type.as_deref(), request.profile);
 
@@ -219,7 +219,6 @@ impl OpenID4VPService {
         let now = chrono::Utc::now().timestamp_millis();
         let expires_at = now + (self.ttl_secs * 1000);
 
-        let public_url = request.public_url.trim_end_matches('/');
         let response_uri = format!("{public_url}/ewqwe_api/openid4vp/direct_post");
         let request_uri = format!("{public_url}/ewqwe_api/openid4vp/request/{transaction_id}");
 
@@ -782,7 +781,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("test-nonce-123".to_string()),
             state: None,
@@ -791,8 +789,9 @@ mod tests {
             credential_type: None,
             transaction_data: None,
         };
+        let public_url = "https://rp.example.com";
 
-        let response = service.init_transaction(request).await.unwrap();
+        let response = service.init_transaction(request, public_url).await.unwrap();
 
         assert!(!response.transaction_id.is_empty());
         assert!(response.client_id.starts_with("redirect_uri:"));
@@ -815,7 +814,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -825,7 +823,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let response = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let response = service.init_transaction(request, public_url).await.unwrap();
 
         // With x509_hash scheme, client_id should be "x509_hash:<base64url_sha256>"
         assert!(response.client_id.starts_with("x509_hash:"));
@@ -850,7 +849,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -860,7 +858,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -881,7 +880,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -891,7 +889,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -910,7 +909,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -920,7 +918,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let status = service
             .get_transaction_status(&init_resp.transaction_id)
             .await
@@ -939,7 +938,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("test-nonce".to_string()),
             state: None,
@@ -949,7 +947,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
 
         // Extract the state from the authorization request
         let auth_req = service
@@ -1049,7 +1048,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("test-nonce-8-2".to_string()),
             state: None,
@@ -1059,7 +1057,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -1102,7 +1101,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -1112,7 +1110,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -1151,7 +1150,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -1161,7 +1159,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -1208,7 +1207,6 @@ mod tests {
             let service = OpenID4VPService::create(config).await.unwrap();
 
             let request = InitTransactionRequest {
-                public_url: "https://rp.example.com".to_string(),
                 dcql_query: None,
                 nonce: None,
                 state: None,
@@ -1218,7 +1216,8 @@ mod tests {
                 transaction_data: None,
             };
 
-            let init_resp = service.init_transaction(request).await.unwrap();
+            let public_url = "https://rp.example.com";
+            let init_resp = service.init_transaction(request, public_url).await.unwrap();
             let auth_req = service
                 .get_authorization_request(&init_resp.transaction_id)
                 .await
@@ -1301,7 +1300,6 @@ mod tests {
         let transaction_data = vec![encoded.clone()];
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("nonce-8-4".to_string()),
             state: None,
@@ -1311,7 +1309,8 @@ mod tests {
             transaction_data: Some(transaction_data.clone()),
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
 
         // Retrieve state from auth request for wallet simulation
         let auth_req = service
@@ -1363,7 +1362,6 @@ mod tests {
         let encoded = encode_transaction_data_entry(&entry);
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -1373,7 +1371,8 @@ mod tests {
             transaction_data: Some(vec![encoded.clone()]),
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -1406,7 +1405,6 @@ mod tests {
         let encoded = encode_transaction_data_entry(&entry);
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -1416,7 +1414,8 @@ mod tests {
             transaction_data: Some(vec![encoded.clone()]),
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -1450,7 +1449,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: None,
@@ -1460,7 +1458,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -1486,7 +1485,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: Some("nonce-from-client".to_string()),
             state: Some("client-state-123".to_string()),
@@ -1496,7 +1494,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
         let auth_req = service
             .get_authorization_request(&init_resp.transaction_id)
             .await
@@ -1521,7 +1520,6 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let request = InitTransactionRequest {
-            public_url: "https://rp.example.com".to_string(),
             dcql_query: None,
             nonce: None,
             state: Some("consume-me-state".to_string()),
@@ -1531,7 +1529,8 @@ mod tests {
             transaction_data: None,
         };
 
-        let init_resp = service.init_transaction(request).await.unwrap();
+        let public_url = "https://rp.example.com";
+        let init_resp = service.init_transaction(request, public_url).await.unwrap();
 
         assert!(
             service
