@@ -20,11 +20,11 @@ use actix_web::{
     web::{self, Data, JsonConfig, PayloadConfig},
 };
 use argon2::Argon2;
-use ewqwe_openid4vp::OpenID4VPService;
-use ewqwe_verifier_app::{
+use ewqwe_credential_verifier_ui::{
     VerifierCredentialVerifier, VerifierJournalProvider, db::DynVerifierAppStore,
     qr_user_map::QrUserMap,
 };
+use ewqwe_openid4vp::OpenID4VPService;
 use std::{
     io,
     sync::{Arc, mpsc},
@@ -35,7 +35,7 @@ use crate::server::verify_endpoint::load_credential_issuer_cas;
 use crate::tls::{create_openssl_acceptor, extract_openssl_peer_certificate};
 
 /// Adapts [`DynJournalStore`] to the [`VerifierJournalProvider`] interface required
-/// by `ewqwe_verifier_app`.  This breaks the dependency cycle between the two crates.
+/// by `ewqwe_credential_verifier_ui`.  This breaks the dependency cycle between the two crates.
 struct JournalProviderForVerifier(std::sync::Arc<DynJournalStore>);
 
 #[async_trait::async_trait]
@@ -181,7 +181,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
     let qr_user_map: Arc<QrUserMap> = Arc::new(QrUserMap::new());
 
     // Build journal provider adapter for the Verifier App (bridges DynJournalStore
-    // to the VerifierJournalProvider trait defined in ewqwe_verifier_app).
+    // to the VerifierJournalProvider trait defined in ewqwe_credential_verifier_ui).
     let journal_provider_for_va: Option<Arc<dyn VerifierJournalProvider>> =
         journal_store.as_ref().map(|j| {
             Arc::new(JournalProviderForVerifier(j.clone())) as Arc<dyn VerifierJournalProvider>
@@ -344,7 +344,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
                         .cookie_path("/".to_string())
                         .build(),
                 )
-                .configure(ewqwe_verifier_app::configure_routes);
+                .configure(ewqwe_credential_verifier_ui::configure_routes);
 
             let mut app = app.service(api_scope);
 

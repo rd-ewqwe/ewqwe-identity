@@ -344,9 +344,9 @@ mod cose_tests {
 
     // Test EC P-256 private key (for testing only!)
     const TEST_EC_PRIVATE_KEY: &[u8] =
-        include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.key.pem");
+        include_bytes!("../../../../certificates/signer/ewqwe.signer.leaf.key.pem");
     const TEST_EC_PUBLIC_CERT: &[u8] =
-        include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.cert.pem");
+        include_bytes!("../../../../certificates/signer/ewqwe.signer.leaf.cert.pem");
 
     #[test]
     fn test_sign_and_verify_es256() {

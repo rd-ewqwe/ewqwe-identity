@@ -141,9 +141,9 @@ mod jwt_tests {
     use jsonwebtoken::{DecodingKey, Validation};
 
     const TEST_EC_PRIVATE_KEY: &[u8] =
-        include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.key.pem");
+        include_bytes!("../../../../certificates/signer/ewqwe.signer.leaf.key.pem");
     const TEST_EC_PUBLIC_CERT: &[u8] =
-        include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.cert.pem");
+        include_bytes!("../../../../certificates/signer/ewqwe.signer.leaf.cert.pem");
 
     #[test]
     fn test_sign_with_es256() {

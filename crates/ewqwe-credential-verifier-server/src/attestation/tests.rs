@@ -9,7 +9,7 @@ use super::{
 
 // Test certificate
 const EC_PRIVATE_KEY: &[u8] =
-    include_bytes!("../../../certificates/signer/ewqwe.signer.leaf.key.pem");
+    include_bytes!("../../../../certificates/signer/ewqwe.signer.leaf.key.pem");
 
 /// Test that both JWT and COSE signers implement the AttestationSigner trait.
 #[test]

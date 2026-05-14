@@ -1,4 +1,4 @@
-//! Verifier App — embedded age-verification web application.
+//! Verifier Ui — embedded ewqwe verifier web UI application.
 //!
 //! This crate provides the complete Verifier App module that is mounted as a
 //! scope under `/api/v1` by `credential_verifier`.
@@ -53,7 +53,7 @@ pub struct QrVerifyResult {
 ///
 /// Implemented by `credential_verifier` via `credential_verifier::server::start`
 /// and registered as `web::Data<Arc<dyn VerifierCredentialVerifier>>` on the app.
-/// Breaks the dependency cycle between `ewqwe_verifier_app` and `credential_verifier`.
+/// Breaks the dependency cycle between `ewqwe_credential_verifier_ui` and `credential_verifier`.
 #[async_trait]
 pub trait VerifierCredentialVerifier: Send + Sync {
     /// Verify a VP token received from the wallet via the OpenID4VP direct_post.
@@ -74,7 +74,7 @@ pub trait VerifierCredentialVerifier: Send + Sync {
 ///
 /// Implemented by `credential_verifier::journal::DynJournalStore` via a thin
 /// adapter in `credential_verifier`.  This trait breaks the dependency cycle
-/// between `ewqwe_verifier_app` and `credential_verifier`.
+/// between `ewqwe_credential_verifier_ui` and `credential_verifier`.
 #[async_trait]
 pub trait VerifierJournalProvider: Send + Sync {
     /// List journal entries attributed to a Verifier App user.

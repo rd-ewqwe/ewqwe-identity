@@ -1,7 +1,7 @@
 //! In-process `VerifierCredentialVerifier` implementation for the Verifier App QR flow.
 //!
 //! `QrCredentialVerifierImpl` adapts the `credential_verifier` verification
-//! pipeline to the [`ewqwe_verifier_app::VerifierCredentialVerifier`] trait.
+//! pipeline to the [`ewqwe_credential_verifier_ui::VerifierCredentialVerifier`] trait.
 //! It is registered as `web::Data<Arc<dyn VerifierCredentialVerifier>>` on the
 //! actix-web app when the Verifier App is enabled, allowing the
 //! `qr_status` route handler to run full credential verification in-process
@@ -9,14 +9,14 @@
 
 use std::sync::Arc;
 
+use ewqwe_credential_verifier_ui::{QrVerifyResult, VerifierCredentialVerifier};
 use ewqwe_openid4vp::OpenID4VPService;
-use ewqwe_verifier_app::{QrVerifyResult, VerifierCredentialVerifier};
 use openssl::x509::X509;
 
 use crate::{journal::DynJournalStore, server::verify_endpoint::verify_vp_token_for_qr};
 
 /// Adapts `credential_verifier`'s `verify_vp_token_for_qr` to the
-/// [`VerifierCredentialVerifier`] interface expected by `ewqwe_verifier_app`.
+/// [`VerifierCredentialVerifier`] interface expected by `ewqwe_credential_verifier_ui`.
 pub(crate) struct QrCredentialVerifierImpl {
     pub service: Arc<OpenID4VPService>,
     pub trusted_cas: Arc<Vec<X509>>,

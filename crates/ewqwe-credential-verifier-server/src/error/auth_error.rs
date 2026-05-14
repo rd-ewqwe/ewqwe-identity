@@ -1,8 +1,8 @@
 use thiserror::Error;
 
-impl From<ewqwe_verifier_app::error::VerifierAppError> for AttError {
-    fn from(e: ewqwe_verifier_app::error::VerifierAppError) -> Self {
-        use ewqwe_verifier_app::error::VerifierAppError;
+impl From<ewqwe_credential_verifier_ui::error::VerifierAppError> for AttError {
+    fn from(e: ewqwe_credential_verifier_ui::error::VerifierAppError) -> Self {
+        use ewqwe_credential_verifier_ui::error::VerifierAppError;
         match e {
             VerifierAppError::NotFound => AttError::BadRequest("not found".to_string()),
             VerifierAppError::Conflict(msg) => AttError::BadRequest(msg),

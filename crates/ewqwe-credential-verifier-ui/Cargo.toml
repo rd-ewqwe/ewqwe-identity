@@ -1,12 +1,12 @@
 [package]
-name = "ewqwe_verifier_app"
+name = "ewqwe_credential_verifier_ui"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
-description = "Verifier App — embedded age-verification web application for the ewQwe credential verifier"
+description = "Credential Verifier UI — embedded age-verification web application for the ewQwe credential verifier server"
 
 [lib]
 path = "src/lib.rs"

@@ -1,5 +1,5 @@
 use crate::{AttError, AttResult, journal::JournalConfig, parameters::TlsParams};
-use ewqwe_verifier_app::VerifierAppConfig;
+use ewqwe_credential_verifier_ui::VerifierAppConfig;
 use serde::{Deserialize, Serialize};
 use std::{
     env, fs,

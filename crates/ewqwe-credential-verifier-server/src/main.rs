@@ -13,7 +13,7 @@
 //! cargo run --features openssl
 //! ```
 
-use credential_verifier::{ServerParams, start_server};
+use ewqwe_credential_verifier_server::{ServerParams, start_server};
 use ewqwe_logging::tracing_init;
 use std::{path::PathBuf, sync::Arc};
 
