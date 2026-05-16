@@ -4,7 +4,8 @@ use actix_identity::Identity;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use chrono::{DateTime, Utc};
 use ewqwe_openid4vp::{
-    InitTransactionRequest, OpenID4VPService, determine_profile, get_credential_type,
+    ClaimsPathComponent, InitTransactionRequest, OpenID4VPService, determine_profile,
+    get_credential_type,
 };
 use serde::Deserialize;
 use serde_json::json;
@@ -258,14 +259,14 @@ pub async fn generate_qr(
         }));
     }
 
-    info!(user_id = %user.id, credential_type = %credential_type,
-          "Verifier App: generating QR transaction");
-
     // Build the public URL the wallet will use for `response_uri`.
     let public_url = config.qr_code_callback_url.clone().unwrap_or_else(|| {
         let conn = req.connection_info();
         format!("{}://{}", conn.scheme(), conn.host())
     });
+
+    info!(user_id = %user.id, credential_type = %credential_type, callback_url = %public_url, claims = ?body.claims,
+          "Verifier App: generating QR Code");
 
     // Determine profile from credential type.
     let profile = determine_profile(Some(credential_type), None);

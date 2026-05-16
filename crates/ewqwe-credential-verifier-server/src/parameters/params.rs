@@ -463,6 +463,47 @@ rust_log = "info,actix_server=warn"
     }
 
     #[test]
+    fn loads_toml_with_public_root_url() {
+        let temp_dir =
+            std::env::temp_dir().join(format!("credential-server-config-test-{}", Uuid::new_v4()));
+        fs::create_dir_all(&temp_dir).expect("failed to create temp dir");
+
+        let config_path = temp_dir.join("credential-server.toml");
+        fs::write(
+            &config_path,
+            r#"
+host_name = "127.0.0.1"
+host_port = 9443
+public_root_url = "https://ewqwe.example.com"
+
+[tls_params]
+server_private_key = "certs/server.key.pem"
+server_certificate = "certs/server.cert.pem"
+server_ca_chain = "certs/ca.chain.pem"
+
+[openid4vp_config]
+transaction_ttl_secs = 300
+
+[tracing_config]
+rust_log = "info,actix_server=warn"
+"#,
+        )
+        .expect("failed to write config file");
+
+        let params = ServerParams::load_from_file(&config_path).expect("failed to load config");
+
+        assert_eq!(
+            params.public_root_url.as_deref(),
+            Some("https://ewqwe.example.com")
+        );
+
+        assert_eq!(
+            params.verifier_ui_config.qr_code_callback_url.as_deref(),
+            Some("https://ewqwe.example.com")
+        );
+    }
+
+    #[test]
     fn loads_credential_server_toml_from_project() {
         let manifest_dir = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
         let config_path = manifest_dir.join("credential-server.toml");
@@ -518,6 +559,51 @@ transaction_ttl_secs = 300
         assert!(params.tracing_config().rust_log.is_none());
 
         fs::remove_dir_all(&temp_dir).expect("failed to remove temp config directory");
+    }
+
+    #[test]
+    fn loads_toml_with_qr_code_callback_url() {
+        let temp_dir =
+            std::env::temp_dir().join(format!("credential-server-config-test-{}", Uuid::new_v4()));
+        fs::create_dir_all(&temp_dir).expect("failed to create temp dir");
+
+        let config_path = temp_dir.join("credential-server.toml");
+        fs::write(
+            &config_path,
+            r#"
+host_name = "127.0.0.1"
+host_port = 9443
+public_root_url = "https://ewqwe.example.com"
+
+
+[tls_params]
+server_private_key = "certs/server.key.pem"
+server_certificate = "certs/server.cert.pem"
+server_ca_chain = "certs/ca.chain.pem"
+
+[openid4vp_config]
+transaction_ttl_secs = 300
+
+[tracing_config]
+rust_log = "info,actix_server=warn"
+
+[verifier_ui]
+qr_code_callback_url = "https://modified.example.com/"
+"#,
+        )
+        .expect("failed to write config file");
+
+        let params = ServerParams::load_from_file(&config_path).expect("failed to load config");
+
+        assert_eq!(
+            params.public_root_url.as_deref(),
+            Some("https://ewqwe.example.com")
+        );
+
+        assert_eq!(
+            params.verifier_ui_config.qr_code_callback_url.as_deref(),
+            Some("https://modified.example.com/")
+        );
     }
 
     #[test]
