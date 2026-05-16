@@ -16,6 +16,7 @@ path = "src/lib.rs"
 async-trait = { workspace = true }
 base64 = { workspace = true }
 chrono = { workspace = true }
+ewqwe_digital_credential = { workspace = true }
 openssl = { workspace = true, features = ["vendored"] }
 qrcode = { workspace = true }
 redis = { workspace = true, features = ["aio", "tokio-comp"] }

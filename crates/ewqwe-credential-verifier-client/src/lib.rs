@@ -28,18 +28,17 @@
 
 pub mod error;
 pub mod http;
-pub mod models;
 
 #[cfg(test)]
 mod tests;
 
 pub use error::{ApiError, Result};
 use ewqwe_openid4vp::{
-    InitTransactionRequest, InitTransactionResponse, OpenID4VPResponse, TransactionStatusResult,
-    VerifyCredentialRequest, VerifyCredentialResponse,
+    InitTransactionRequest, InitTransactionResponse, JwkSet, OpenID4VPResponse,
+    TransactionStatusResult, VerifyCredentialRequest, VerifyCredentialResponse,
 };
 pub use http::{DefaultHttpClient, HttpClient};
-pub use models::*;
+use serde::Deserialize;
 
 use std::sync::Arc;
 use url::Url;
@@ -257,4 +256,10 @@ impl<C: HttpClient> EwqweApiClient<C> {
 #[inline]
 fn urlenc(s: &str) -> String {
     url::form_urlencoded::byte_serialize(s.as_bytes()).collect()
+}
+
+/// Response from `GET /version`.
+#[derive(Debug, Clone, Deserialize)]
+pub struct VersionResponse {
+    pub version: String,
 }

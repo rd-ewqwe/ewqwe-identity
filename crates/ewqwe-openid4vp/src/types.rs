@@ -13,6 +13,7 @@
 //! - <https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile>
 
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
 // ============================================================================
 // DCQL Types (OpenID4VP §6)
@@ -1206,4 +1207,46 @@ pub struct AuthorizationRequestResult {
     pub body: String,
     /// Content-Type header value.
     pub content_type: String,
+}
+
+/// Result of VP token verification performed by [`OpenID4VPService::verify_presentation`].
+///
+/// Contains the cryptographic verification result, the extracted credential
+/// claims, and (when a `state` was provided) the server-stored transaction.
+/// The caller uses this information to create an attestation JWT, write the
+/// verification journal, and formulate the HTTP response.
+#[derive(Debug, Clone)]
+pub struct VpTokenVerificationResult {
+    /// Whether the presentation passed all verification checks.
+    pub is_valid: bool,
+    /// Whether the credential's cryptographic signatures are valid.
+    pub signature_valid: bool,
+    /// Whether the credential has not expired.
+    pub not_expired: bool,
+    /// Whether the issuer certificate chains to a trusted CA.
+    pub issuer_trusted: bool,
+    /// Human-readable errors accumulated during verification.
+    pub errors: Vec<String>,
+    /// Extracted credential claims (as a JSON value).
+    pub claims: serde_json::Value,
+    /// Credential document type (e.g. `"org.iso.18013.5.1.mDL"`).
+    pub doc_type: String,
+    /// Credential namespace (e.g. `"eu.europa.ec.av.1"`).
+    pub namespace: String,
+    /// The credential ID from a DCQL-wrapped VP token, if any.
+    pub credential_id: Option<String>,
+    /// The server-stored nonce from the transaction (when state was provided).
+    pub server_nonce: Option<String>,
+    /// The nonce extracted from the presentation itself (e.g. from KB-JWT).
+    pub presentation_nonce: Option<String>,
+    /// The server-stored transaction, when a matching state was provided.
+    pub transaction: Option<OpenID4VPTransaction>,
+}
+
+/// JSON Web Key Set returned by `GET /ewqwe_api/openid4vp/.well-known/jwks.json`.
+///
+/// Used by the RP to verify JWT attestations signed by the credential-verifier.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct JwkSet {
+    pub keys: Vec<Value>,
 }

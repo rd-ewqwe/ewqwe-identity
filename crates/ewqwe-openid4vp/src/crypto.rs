@@ -26,7 +26,10 @@ use openssl::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::error::{OpenID4VPError, OpenID4VPResult};
+use crate::{
+    JwkSet,
+    error::{OpenID4VPError, OpenID4VPResult},
+};
 
 // ============================================================================
 // Key Material Types
@@ -757,10 +760,10 @@ fn concat_kdf_sha256(
 ///
 /// Serves the JWKS at `.well-known/jwks.json` for wallets to verify
 /// the signature on JWT Authorization Requests (JAR).
-pub fn build_public_jwk_set(jar_key: &JarKeyMaterial) -> serde_json::Value {
-    serde_json::json!({
-        "keys": [jar_key.signing_key_jwk.clone()]
-    })
+pub fn build_public_jwk_set(jar_key: &JarKeyMaterial) -> JwkSet {
+    JwkSet {
+        keys: vec![jar_key.signing_key_jwk.clone()],
+    }
 }
 
 // ============================================================================
@@ -1065,8 +1068,7 @@ mod tests {
         let jar_key = initialize_jar_key(&cert_pem, &key_pem, "test-key-1").unwrap();
         let jwks = build_public_jwk_set(&jar_key);
 
-        assert!(jwks["keys"].is_array());
-        let keys = jwks["keys"].as_array().unwrap();
+        let keys = jwks.keys;
         assert_eq!(keys.len(), 1);
         assert_eq!(keys[0]["kty"], "EC");
         assert_eq!(keys[0]["use"], "sig");

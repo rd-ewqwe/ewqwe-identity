@@ -40,6 +40,7 @@ pub mod service;
 pub mod stores;
 pub mod transaction;
 pub mod types;
+pub mod verification;
 
 // Re-export key types for convenience.
 pub use config::{determine_profile, get_credential_type, get_profile};

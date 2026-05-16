@@ -17,6 +17,7 @@
 //! - [RFC 7516 — JWE](https://www.rfc-editor.org/rfc/rfc7516)
 
 use crate::{
+    JwkSet,
     crypto::{
         DecryptedWalletResponse, JarKeyMaterial, JarPayload, JweKeyMaterial, build_public_jwk_set,
         decrypt_jwe_response, initialize_jar_key, initialize_jwe_key, sign_jar,
@@ -689,13 +690,113 @@ impl OpenID4VPService {
     ///
     /// Serves at `.well-known/jwks.json` so wallets can verify the
     /// JWT Authorization Request signature.
-    pub fn get_public_jwk_set(&self) -> OpenID4VPResult<serde_json::Value> {
+    pub fn get_public_jwk_set(&self) -> OpenID4VPResult<JwkSet> {
         let jar_key = self.jar_key.as_ref().ok_or_else(|| {
             OpenID4VPError::Config(
                 "Unable to get public JWK Set: HAIP is not configured; the JAR signing key is not configured".into(),
             )
         })?;
         Ok(build_public_jwk_set(jar_key))
+    }
+
+    // ========================================================================
+    // VP Token Verification
+    // ========================================================================
+
+    /// Verify a credential presentation (VP token) against a server-stored
+    /// transaction and trusted CA certificates.
+    ///
+    /// This method encapsulates the full verification pipeline:
+    ///
+    /// 1. Looks up the server-stored transaction by `state` (when provided)
+    /// 2. Parses the VP token (DCQL-wrapped or direct JSON)
+    /// 3. Validates `client_id` against the transaction (when both are provided)
+    /// 4. Verifies the credential format: mDoc (COSE) or SD-JWT VC (`x5c` + KB-JWT)
+    /// 5. Checks expiry, nonce binding, issuer trust
+    ///
+    /// The returned [`VpTokenVerificationResult`] contains the cryptographic
+    /// verification outcome plus extracted credential claims. The caller is
+    /// responsible for creating the attestation JWT and writing the
+    /// verification journal.
+    ///
+    /// # Arguments
+    ///
+    /// * `vp_token_str` — The raw VP token string.
+    /// * `state` — Optional OpenID4VP `state` to look up the transaction.
+    /// * `client_id` — Optional client_id to validate against the transaction.
+    /// * `trusted_cas` — The list of trusted CA certificates.
+    pub async fn verify_presentation(
+        &self,
+        vp_token_str: &str,
+        state: Option<&str>,
+        client_id: Option<&str>,
+        trusted_cas: &[openssl::x509::X509],
+    ) -> OpenID4VPResult<crate::types::VpTokenVerificationResult> {
+        // Look up the server-stored transaction by state.
+        let transaction: Option<OpenID4VPTransaction> = if let Some(s) = state {
+            match self.get_transaction_by_state(s).await {
+                Ok(tx) => tx,
+                Err(e) => {
+                    tracing::warn!(state = s, error = %e, "failed to look up transaction by state");
+                    None
+                }
+            }
+        } else {
+            None
+        };
+        let server_nonce = transaction.as_ref().map(|tx| tx.nonce.clone());
+        let response_jwk_thumbprint = self.get_response_jwk_thumbprint();
+
+        let (claims, doc_type, namespace, verification_result, credential_id) =
+            crate::verification::verify_vp_token_against_cas(
+                vp_token_str,
+                transaction.as_ref(),
+                client_id,
+                trusted_cas,
+                response_jwk_thumbprint.as_deref(),
+            )
+            .map_err(OpenID4VPError::BadRequest)?;
+
+        // Save presentation nonce from the parsed token (extracted during verify_vp_token_against_cas).
+        // We re-parse the first ~-separated segment to extract the nonce from the presentation.
+        // This is a best-effort extraction; the nonce is primarily validated inside verify_vp_token.
+        let presentation_nonce = if vp_token_str.contains('~') {
+            // SD-JWT VC — nonce was extracted during decode_sd_jwt_presentation
+            // We already have it in the verification pipeline; extract from the raw string
+            // for the return value.
+            match ewqwe_digital_credential::decode_sd_jwt_presentation(vp_token_str) {
+                Ok(d) => d.nonce,
+                Err(_) => None,
+            }
+        } else {
+            None
+        };
+
+        tracing::debug!(
+            credential_id = ?credential_id,
+            doc_type = ?doc_type,
+            namespace = ?namespace,
+            is_valid = verification_result.is_valid,
+            not_expired = verification_result.not_expired,
+            issuer_trusted = verification_result.issuer_trusted,
+            signature_valid = verification_result.signature_valid,
+            "VP token verification completed"
+        );
+
+        Ok(crate::types::VpTokenVerificationResult {
+            is_valid: verification_result.is_valid,
+            signature_valid: verification_result.signature_valid,
+            not_expired: verification_result.not_expired,
+            issuer_trusted: verification_result.issuer_trusted,
+            errors: verification_result.errors,
+            claims,
+            doc_type,
+            namespace,
+            credential_id,
+            server_nonce,
+            presentation_nonce,
+            transaction,
+        })
     }
 
     // ========================================================================
@@ -1026,8 +1127,7 @@ mod tests {
         let service = OpenID4VPService::create(config).await.unwrap();
 
         let jwks = service.get_public_jwk_set().expect("a JWKS should exist");
-        assert!(jwks["keys"].is_array());
-        let keys = jwks["keys"].as_array().unwrap();
+        let keys = jwks.keys;
         assert_eq!(keys.len(), 1);
         assert_eq!(keys[0]["kty"], "EC");
         assert_eq!(keys[0]["alg"], "ES256");

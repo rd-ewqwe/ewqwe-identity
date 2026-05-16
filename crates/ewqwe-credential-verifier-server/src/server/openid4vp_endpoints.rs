@@ -274,10 +274,8 @@ pub async fn get_jwks(
     let mut keys: Vec<serde_json::Value> = Vec::new();
 
     // JAR signing key — present in HAIP mode only
-    if let Ok(jar_jwks) = service.get_public_jwk_set()
-        && let Some(arr) = jar_jwks.get("keys").and_then(|v| v.as_array())
-    {
-        keys.extend(arr.iter().cloned());
+    if let Ok(jar_jwks) = service.get_public_jwk_set() {
+        keys.extend(jar_jwks.keys.iter().cloned());
     }
 
     // Attestation verification key (from the issuer certificate)
