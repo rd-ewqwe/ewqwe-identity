@@ -477,9 +477,72 @@ Returns the server version information.
 }
 ```
 
-## Security Considerations
+### `POST /ewqwe_api/dc_api/verify` — Verify DC API Credential
 
-### Nonce Replay Prevention ✅
+Verifies an mDoc DeviceResponse received via the W3C Digital Credentials API (ISO 18013-7 Annex C). This endpoint accepts an already-decrypted mDoc from the RP (which performs HPKE decryption in the browser) and validates the mDoc signature chain.
+
+This endpoint is **stateless** — unlike the OpenID4VP flow, there is no transaction store lookup. The RP generates the HPKE key pair and nonce locally in the browser.
+
+**Request Body**:
+
+```json
+{
+  "device_response_b64": "o2R2ZXJzaW9uYzEuMGR...",
+  "nonce": "n-0S6_WzA2Mj",
+  "client_id": "https://rp.example.com",
+  "doc_type": "eu.europa.ec.av.1"
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `device_response_b64` | string | Base64url-encoded (no pad), **already-decrypted** mDoc DeviceResponse CBOR |
+| `nonce` | string | The nonce from the `encryptionInfo` (used for replay prevention) |
+| `client_id` | string | RP identity (attestation `aud` claim) |
+| `doc_type` | string? | Expected document type (optional — verified if present) |
+
+**Response** (Success):
+
+```json
+{
+  "success": true,
+  "message": "Credential verified successfully",
+  "verification_details": {
+    "signature_valid": true,
+    "not_expired": true,
+    "issuer_trusted": true
+  },
+  "attestation": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Response** (Failure — e.g., untrusted issuer):
+
+```json
+{
+  "success": false,
+  "message": "Credential verification failed: issuer not trusted",
+  "verification_details": {
+    "signature_valid": true,
+    "not_expired": true,
+    "issuer_trusted": false
+  },
+  "attestation": "eyJhbGciOiJFUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "errors": ["mDoc issuerAuth certificate chain is not trusted"]
+}
+```
+
+**Lifecycle**:
+
+1. RP generates HPKE key pair (X25519) and random nonce in the browser
+2. RP builds `encryptionInfo` + `deviceRequest` CBOR blobs (ISO 18013-7 Annex C wrapper)
+3. RP calls `navigator.credentials.get()` with `protocol: "org-iso-mdoc"`
+4. Wallet returns HPKE-encrypted EncryptedResponse
+5. RP HPKE-decrypts locally to obtain the DeviceResponse
+6. RP sends decrypted DeviceResponse to this endpoint
+7. Verifier validates mDoc signatures and returns signed attestation
+
+## Security Considerations
 
 The nonce used for replay prevention is looked up **server-side** from the `OpenID4VPTransaction` store. The `verify_credential_endpoint` receives the `state` field from the request, loads the stored transaction, and compares the stored nonce against the holder-binding proof in the presentation. The nonce is never taken from the HTTP request body.
 

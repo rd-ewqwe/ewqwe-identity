@@ -80,6 +80,11 @@ These links are useful when validating feasibility and browser support status fo
 - Firefox Web API Standards Positions: <https://mozilla.github.io/standards-positions/>
 - MDN Web Docs (Credential Management API): <https://developer.mozilla.org/en-US/docs/Web/API/Credential_Management_API>
 
+
+## Playgrounds
+
+- France Identité: <https://playground.france-identite.gouv.fr/doc/>
+
 ## Tooling (Deno)
 
 - Deno installation guide: <https://deno.land/manual/getting_started/installation>

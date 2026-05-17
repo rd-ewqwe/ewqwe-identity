@@ -4,8 +4,7 @@ use actix_identity::Identity;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use chrono::{DateTime, Utc};
 use ewqwe_openid4vp::{
-    ClaimsPathComponent, InitTransactionRequest, OpenID4VPService, determine_profile,
-    get_credential_type,
+    InitTransactionRequest, OpenID4VPService, determine_profile, get_credential_type,
 };
 use serde::Deserialize;
 use serde_json::json;

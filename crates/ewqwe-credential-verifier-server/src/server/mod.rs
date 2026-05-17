@@ -1,6 +1,7 @@
 mod start;
 pub use start::start_server;
 
+pub(crate) mod dc_api_endpoint;
 mod ensure_auth_middleware;
 pub(crate) mod journal_endpoints;
 pub(crate) mod openid4vp_endpoints;

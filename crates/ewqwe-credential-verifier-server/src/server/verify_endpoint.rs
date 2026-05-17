@@ -380,7 +380,7 @@ pub(crate) async fn verify_credential_endpoint(
 /// The `kid` JWT header is the SHA-256 fingerprint of the certificate so the verifier
 /// can locate the matching public key in the JWKS served at
 /// `/ewqwe_api/openid4vp/.well-known/jwks.json`.
-fn create_attestation(
+pub(crate) fn create_attestation(
     client_id: &str,
     nonce: Option<&str>,
     transaction_id: &str,

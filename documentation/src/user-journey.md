@@ -1,72 +1,144 @@
 # The User Journey
 
-This page describes the end-to-end **digital credential verification user journey** in the EU Digital Identity ecosystem and how a Relying Party (RP - you!) can request and validate a **verifiable presentation** from a user’s wallet, such as a proof of age credential.
+This page describes the end-to-end **digital credential verification user journey** in the EU Digital Identity ecosystem and how a Relying Party (RP — you!) can request and validate a **verifiable presentation** from a user's wallet, such as a proof of age credential.
 
-Because real-world interoperability today is primarily based on **OpenID4VP** (with the **W3C Digital Credentials API** as a browser-native option when available), the journey is presented in two concrete profiles:
+The EU ecosystem currently defines **two profiles**, with one of them having two presentation methods:
 
-- **EU Age Verification Profile (Annex A)** using the **Age Verification App (AVI)** — simpler integration (`redirect_uri`, no signed JAR, `direct_post`).
-- **HAIP** using the **EUDI Wallet** — higher assurance integration (certificate-based `x509_*` client IDs, **signed JAR**, `direct_post.jwt`).
+- **EU Age Verification Profile** (Annex A of the [EU AV specification](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile)) — for age verification. It defines **two presentation methods**:
+  - **Primary: W3C Digital Credentials API** (per ISO 18013-7 Annex C) — browser-native DC API with ISO mDoc.
+  - **Fallback: OpenID4VP** (`redirect_uri`, no JAR, `direct_post`) — for when the W3C DC API is unavailable.
+- **HAIP (High Assurance Interoperability Profile)** — a separate profile for high-assurance credentials (PID, mDL). Requires JAR signing, JWE responses, X.509 client IDs. Implemented by the **EUDI Wallet**.
 
-Both paths ultimately converge on the same backend pattern: the RP forwards the received VP Token to the **ewQwe Credential Verifier**, which validates the proof and returns a **signed attestation** the RP can use for access control and session establishment.
+> **Terminology note:** "Annex A" in this documentation refers to the EU Age Verification Profile document (Annex A of the EU AV specification). It should not be confused with ISO 18013-7 Annex A (reader authentication). The DC API wrapper format is defined by ISO 18013-7 **Annex C**.
+
+All paths ultimately converge on the same backend pattern: the Credential Verifier validates the presented credential (mDoc or SD-JWT) and returns a **signed attestation** the RP can use for access control and session establishment.
 
 ## W3C Digital Credentials API vs OpenID4VP
 
-The **W3C Digital Credentials API** is a browser-native way for a website (RP) to request a verifiable presentation from a user’s wallet. When it is available, it can provide the simplest user experience because the browser can directly invoke the wallet via `navigator.credentials.get()`. However, it is **still a draft** and is **not consistently supported across browsers and wallets** yet ([W3C Digital Credentials API, Editor’s Draft / TR](https://www.w3.org/TR/digital-credentials/)).
+Per the [EU Age Verification Profile §A.5](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile/#a5-proof-of-age-attestation-presentation):
 
-In the **EU Digital Identity** ecosystem, real-world interoperability for presentations is currently based on **OpenID for Verifiable Presentations (OpenID4VP)**. Both the **EU Age Verification Profile (Annex A)** and **HAIP** are OpenID4VP-based profiles and define how wallets and relying parties exchange presentation requests and responses (including same-device redirects and cross-device direct-post) ([OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html), [EU Age Verification Profile — Annex A](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/)).
+> "The default method for the presentation of a Proof of Age attestation is the W3C Digital Credentials API. The W3C Digital Credentials API is used as specified in [ISO/IEC 18013-7], Annex C. OpenID for Verifiable Presentations is used as a fallback mechanism when the W3C Digital Credentials API is not available."
 
 ### Recommended approach
 
-- **Use the W3C Digital Credentials API when available**: use the browser’s credentials interface (`navigator.credentials.get()`) for the smoothest, most “web-native” flow.
-- **Fallback to OpenID4VP when the W3C API is not available**: use the standardized OpenID4VP presentation flows (same-device deep link or cross-device QR code, with `direct_post` / `direct_post.jwt`) to stay compatible with EU wallet implementations.
+- **Use the W3C Digital Credentials API as the primary method**: call `navigator.credentials.get()` with ISO 18013-7 Annex C wrapper format for the smoothest, most "web-native" flow. This is the officially recommended primary path.
+- **Fallback to OpenID4VP when the W3C API is not available**: use the OpenID4VP presentation flow (`av://` deep link or QR code, `direct_post`, no JAR).
 
-This “use the browser API when possible, otherwise use OpenID4VP” strategy matches the **EU Age Verification Profile (Annex A)** guidance for age-verification presentations and keeps the RP aligned with the European Digital Identity ecosystem as browser support for the W3C API matures (see [EU Age Verification Profile — Annex A](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/), and [OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)).
+## Two Profiles, Three Presentation Methods
 
-## Two Wallets, Two Profiles
+| Aspect | EU AV Profile — DC API (Annex C) | EU AV Profile — OpenID4VP Fallback | HAIP (EUDI Wallet) |
+|--------|---------------------------------------------|-------------------------------------|---------------------|
+| **Profile** | EU Age Verification Profile | EU Age Verification Profile | High Assurance Interoperability Profile |
+| **Transport** | W3C Digital Credentials API (`navigator.credentials.get()`) | OpenID4VP (QR/deep link) | OpenID4VP (QR/deep link) |
+| **Use Case** | Age verification (primary) | Age verification (fallback) | High-value credentials (PID, mDL) |
+| **LoA** | Substantial | Substantial | High |
+| **Client ID Scheme** | N/A (browser-mediated) | `redirect_uri` | `x509_san_dns`, `x509_hash` |
+| **Request Signing** | Not required | Not required (plain params) | Required (JWT with `x5c` header) |
+| **Response Format** | HPKE-encrypted mDoc (Annex C wrapper) | Plain VP Token (`direct_post`) | JWE-encrypted VP Token (`direct_post.jwt`) |
+| **Trust Model** | Browser OS mediates wallet selection | RP identified by redirect URI | RP identified by certificate |
+| **Root CA Required** | No (W3C API mediation) | No (any HTTPS certificate) | Yes (wallet trust store) |
+| **Invocation** | Browser credential picker | `av://`, `openid4vp://` | `eudi-openid4vp://`, `openid4vp://` |
+| **Credential Formats** | `mso_mdoc` (`eu.europa.ec.av.1`) | `mso_mdoc` (`eu.europa.ec.av.1`) | `mso_mdoc` (mDL, PID) / `dc+sd-jwt` (PID) |
+| **Crypto** | COSE_Sign1 + HPKE (X25519 + AES-128-GCM) | COSE_Sign1 + OpenID4VP Handover | COSE_Sign1 or JWT + JWE (ECDH-ES + A256GCM) |
+| **Device Support** | Same-device only (browser-wallet on one device) | Same-device + cross-device (QR) | Same-device + cross-device (QR) |
+| **Wallets** | France Identité, AVI (Android) | France Identité, AVI, any OID4VP wallet | EUDI Wallet |
 
-The European Digital Identity ecosystem defines **two separate profiles** for credential presentation, each with its own wallet implementation:
+### The ISO 18013-7 Annex Letters Explained
 
-- The **EU Age Verification Profile (Annex A)**, implemented by the **Age Verification App (AVI)**, focuses on age verification use cases and uses a simpler OpenID4VP flow with `redirect_uri` client IDs and no signed JAR.
-- The **High Assurance Interoperability Profile (HAIP)**, implemented by the **EUDI Wallet**, targets high-value credentials like Personal Identity Documents (PID) and mobile driving licenses (mDL), and requires a more complex OpenID4VP flow with certificate-based client IDs, signed JARs, and JWT-wrapped responses.
+| Annex | Scope | Used By |
+|-------|-------|---------|
+| **Annex A** | Reader authentication data structures | (not directly used in AV profiles) |
+| **Annex B** | Online services — TLS, reader authentication, server retrieval | France Identité, national mDL (transport) |
+| **Annex C** | Digital Credentials API integration — `["dcapi", ...]` wrapper | EU AV Profile primary method |
 
-| Aspect | Age Verification App (Annex A) | EUDI Wallet (HAIP) |
-| -------- | --------------------------------- | ------------------- |
-| **Profile** | EU Age Verification Profile | High Assurance Interoperability Profile |
-| **Use Case** | Age verification (websites, services) | High-value credentials (PID, mDL) |
-| **LoA** | Substantial | High |
-| **Client ID Scheme** | `redirect_uri` | `x509_san_dns`, `x509_hash` |
-| **Request Signing** | Not required (plain query params) | Required (JWT with `x5c` header) |
-| **Response Mode** | `direct_post` | `direct_post.jwt` |
-| **Trust Model** | RP identified by redirect URI | RP identified by certificate |
-| **Root CA Required** | No (any HTTPS certificate) | Yes (must be in wallet trust store) |
-| **URL Scheme** | `av://`, `avsp://`, `openid4vp://` | `eudi-openid4vp://`, `openid4vp://` |
-| **Credential Formats** | `mso_mdoc` (`eu.europa.ec.av.1`) | `mso_mdoc` (mDL, PID) / `dc+sd-jwt` (PID) |
-
-### Key Differences from HAIP
-
-The Annex A profile was designed to be simpler than HAIP because:
-
-| Feature | Annex A Rationale | HAIP Approach |
-| --------- | ------------------- | --------------- |
-| **No JAR signing** | Reduces implementation complexity | Required for RP authentication |
-| **No trust list** | Trust lists for age verification don't exist yet | Relies on pre-established CA trust |
-| **Simple client_id** | `redirect_uri:` prefix + callback URL | Certificate-based identity |
-| **Plain response** | Direct POST of VP Token | JWE-encrypted response (ECDH-ES + A256GCM) |
-| **Lower LoA** | Appropriate for age verification | Required for identity documents |
-
-> **Source**: [Annex A.9 - Comparison with HAIP](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#a9-comparison-with-haip)
+> **Key point:** When the EU AV Profile says "use the W3C DC API", it means **ISO 18013-7 Annex C**. When France Identité says it supports "ISO 18013-7 (Annex B)", it means the full online transport stack (Annex B + C). This documentation uses "Annex C / DC API" for the browser path and "OpenID4VP" for the fallback.
 
 ## Architecture Components
 
 All credential verification flows involve these main components:
 
 - **Relying Party (RP) Web App**: A web application requesting credential verification from users
-- **Wallet (AVI)**: The user's digital wallet storing credentials — either the Age Verification App (Annex A) or EUDI Wallet (HAIP)
+- **Wallet**: The user's digital wallet storing credentials — France Identité, Age Verification App (AVI), or EUDI Wallet
 - **ewQwe Credential Verifier**: A trusted backend service that verifies credentials and issues signed attestations
 
-## Flow 1: Age Verification App (Annex A Profile)
+---
 
-This flow implements the [EU Age Verification Profile (Annex A)](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/), which uses the `redirect_uri` Client ID Scheme. The Credential Format is `mso_mdoc` with document type `eu.europa.ec.av.1`.
+## Flow 1: W3C Digital Credentials API (EU AV Profile — Primary Method)
+
+This flow implements the **EU Age Verification Profile's primary presentation method** using the **W3C Digital Credentials API** per **ISO 18013-7 Annex C**.
+
+> **Key difference from OpenID4VP:** No QR code or deep link is used. The browser invokes the wallet directly, passing two CBOR blobs: `encryptionInfo` (wallet encrypts response to RP's public key) and `deviceRequest` (what to present). The wallet returns an **HPKE-encrypted** DeviceResponse which the RP decrypts in the browser.
+
+> **Cross-device support:** The W3C DC API is inherently **same-device** (browser and wallet on one device). For cross-device flows (e.g., QR code on desktop scanned by phone), use the OpenID4VP fallback (Flow 2). France Identité supports both.
+
+### DC API / Annex C Flow
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant RP as RP Webapp
+    participant Browser
+    participant Wallet as France Identité<br/>Wallet (Android)
+    participant CV as ewQwe<br/>Credential Verifier
+
+    User->>RP: Click "Verify Age"
+
+    Note over RP: 1. Generate keys & nonce (stateless — no /init call needed)
+    RP->>RP: Generate HPKE key pair (X25519) and random nonce
+    RP->>RP: Build encryptionInfo:<br/>CBOR(["dcapi", {nonce, recipientPublicKey}])<br/>= base64url(CBOR...)
+    RP->>RP: Build DeviceRequest:<br/>CBOR({docRequests: [{docType, itemsRequest}]})<br/>= base64url(CBOR...)
+
+    Note over RP,Browser: 2. Call W3C Digital Credentials API
+    RP-->>Browser: navigator.credentials.get({<br/>    digital: {<br/>        requests: [{encryptionInfo, deviceRequest}]<br/>    }<br/>})
+
+    Browser->>Browser: Identify wallet (France Identité)<br/>based on credential type / doc type
+    Browser->>Wallet: Invoke wallet via intent / service
+
+    Note over Wallet: 3. Wallet processes request
+    Wallet->>Wallet: Decode encryptionInfo<br/>(extract nonce + recipientPublicKey)
+    Wallet->>Wallet: Decode DeviceRequest<br/>(ISO 18013-5 §8.3.2.1.2.1)
+    Wallet->>Wallet: Find matching mDoc credential
+
+    Wallet->>User: Present consent dialog
+    User->>Wallet: Authorize presentation
+
+    Note over Wallet: 4. Build and encrypt DeviceResponse
+    Wallet->>Wallet: Build DeviceResponse (CBOR)<br/>- namespace claims<br/>- IssuerAuth (COSE_Sign1)<br/>- DeviceSignature (COSE_Sign1)
+    Wallet->>Wallet: HPKE encrypt:<br/>cipherText = HPKE.seal(<br/>    recipientPublicKey,<br/>    DeviceResponse CBOR<br/>)
+    Wallet->>Wallet: Build EncryptedResponse:<br/>CBOR(["dcapi", {enc, cipherText}])<br/>= base64url(CBOR...)
+
+    Wallet->>Browser: Return EncryptedResponse
+    Browser-->>RP: Promise resolves with credential
+
+    Note over RP: 5. HPKE-decrypt DeviceResponse (in browser)
+    RP->>RP: Base64url-decode EncryptedResponse<br/>Parse CBOR: [enc, cipherText]
+    RP->>RP: HPKE open:<br/>DeviceResponse = HPKE.open(<br/>    recipientPrivateKey,<br/>    enc, cipherText<br/>)
+
+    Note over RP,CV: 6. Send decrypted DeviceResponse to Verifier
+    RP->>CV: POST /ewqwe_api/dc_api/verify<br/>{device_response_b64,<br/> nonce, client_id, doc_type}
+    CV->>CV: Decode mDoc DeviceResponse<br/>Verify IssuerAuth (COSE_Sign1)<br/>Validate Issuer certificate chain<br/>Verify DeviceSignature<br/>Check nonce binding
+    CV->>CV: Sign Attestation (JWT, ES256)<br/>Record in journal
+    CV-->>RP: {success, claims, attestation_jwt}
+
+    RP->>User: Display verification result
+```
+
+### DC API Key Characteristics
+
+- **W3C Digital Credentials API Transport**: Uses `navigator.credentials.get()` — no redirects, no deep links. The `protocol` field is `"org-iso-mdoc"` (as shown in the EU AV Profile examples)
+- **ISO Annex C Wrapper**: Request and response are wrapped in CBOR `["dcapi", ...]` arrays, base64url-encoded without padding
+- **HPKE Encryption (RFC 9180)**: The wallet encrypts the DeviceResponse using HPKE (X25519 + HKDF-SHA256 + AES-128-GCM) with the RP's public key from `encryptionInfo`
+- **ISO DeviceRequest/DeviceResponse**: Request format per ISO 18013-5 §8.3.2.1.2.1; response per §8.3.2.1.2.3
+- **Stateless on the verifier**: The RP generates the HPKE key pair and nonce locally (no server `/init` call needed). The decrypted DeviceResponse is sent directly to `POST /ewqwe_api/dc_api/verify` for verification
+- **mDoc-only**: Only `mso_mdoc` format is supported in this flow (no SD-JWT)
+- **Same-device only**: Browser and wallet must be on the same device
+- **Browser Support**: Requires a browser supporting the W3C Digital Credentials API (Chrome on Android 9+, others in development)
+
+---
+
+## Flow 2: Age Verification App (Annex A OpenID4VP Fallback)
+
+This flow implements the **EU Age Verification Profile's fallback method** using **OpenID4VP** with the `redirect_uri` Client ID Scheme, no JAR signing, and `direct_post` response mode.
 
 > **Same-device vs Cross-device**: The protocol steps are identical regardless of how the Authorization Request reaches the Wallet. In the **cross-device flow**, the RP displays a QR code that the User scans with their Wallet. In the **same-device flow**, the RP opens the `av://` deep link directly. Both flows use `direct_post` for the Authorization Response.
 
@@ -100,7 +172,7 @@ sequenceDiagram
     Note over AVI,CV: Authorization Response — direct_post (OpenID4VP §8.2)
     AVI->>AVI: Build VP Token (DCQL response map)<br/>{credential_query_id: [base64url(DeviceResponse)]}
     AVI->>CV: POST {response_uri}<br/>vp_token={...}&state={state}
-    CV->>CV: Store Authorization Response<br/>Update transaction status → received
+    CV->>CV: Store Authorization Response<br/>Update transaction status -> received
     CV-->>AVI: HTTP 200 OK {}
 
     Note over RP,CV: Transaction Status Polling
@@ -118,15 +190,16 @@ sequenceDiagram
 
 ### Annex A Key Characteristics
 
-- **Inline Authorization Request**: All parameters are passed directly in the `av://` URI — no `request_uri` indirection ([Annex A §A.4](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#a4-authorization-request))
+- **Inline Authorization Request**: All parameters are passed directly in the `av://` URI — no `request_uri` indirection
 - **No JAR**: The Authorization Request is sent as plain query parameters, not as a JWT-Secured Authorization Request (no RFC 9101)
 - **`redirect_uri` Client ID Scheme**: `client_id` = `redirect_uri:{response_uri}` — the Verifier is identified by its callback URL
 - **`direct_post` Response Mode** (OpenID4VP §8.2): The Wallet POSTs the plain VP Token directly to `response_uri`
 - **Simple trust model**: No certificate chain verification; the Verifier is identified solely by its redirect URI
 - **`av://` URL Scheme**: Custom deep link registered by the Age Verification App
-- **`client_metadata`**: When provided inline, uses `vp_formats_supported` field with COSE algorithm identifiers
 
-## Flow 2: EUDI Wallet — HAIP Profile, mso_mdoc Credential Format
+---
+
+## Flow 3: EUDI Wallet — HAIP Profile, mso_mdoc Credential Format
 
 This flow implements the **High Assurance Interoperability Profile (HAIP)** with `mso_mdoc` credentials (ISO 18013-5). This format is used for mobile driving licenses (`org.iso.18013.5.1.mDL`) and EU PID documents (`eu.europa.ec.eudi.pid.1`).
 
@@ -171,7 +244,7 @@ sequenceDiagram
     EUDI->>EUDI: Build VP Token (DCQL response map)<br/>{credential_query_id: [base64url(DeviceResponse)]}
     EUDI->>EUDI: Encrypt Authorization Response<br/>as JWE (ECDH-ES + A256GCM)
     EUDI->>CV: POST {response_uri}<br/>response={jwe}&state={state}
-    CV->>CV: Decrypt JWE (ECDH-ES key agreement)<br/>Extract VP Token<br/>Update transaction status → received
+    CV->>CV: Decrypt JWE (ECDH-ES key agreement)<br/>Extract VP Token<br/>Update transaction status -> received
     CV-->>EUDI: HTTP 200 OK {}
 
     Note over RP,CV: Transaction Status Polling
@@ -187,11 +260,11 @@ sequenceDiagram
     RP->>User: Display verification result
 ```
 
-## Flow 3: EUDI Wallet — HAIP Profile, SD-JWT VC Credential Format
+---
 
-This flow implements HAIP with `dc+sd-jwt` credentials ([SD-JWT-based Verifiable Credentials](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html)). This format is used for EU PID documents (`urn:eudi:pid:1`) and other credentials that use selective disclosure with JSON-based claims.
+## Flow 4: EUDI Wallet — HAIP Profile, SD-JWT VC Credential Format
 
-The DCQL Credential Query specifies `format: "dc+sd-jwt"` with `vct_values` (Verifiable Credential Type) instead of the `doctype_value` used by mso_mdoc. Claims Path Pointers use a flat structure (`[claim_name]`) rather than the namespaced `[namespace, element_identifier]` paths of mso_mdoc.
+This flow implements HAIP with `dc+sd-jwt` credentials. This format is used for EU PID documents (`urn:eudi:pid:1`) and other credentials that use selective disclosure with JSON-based claims.
 
 ### HAIP SD-JWT VC OpenID4VP Flow
 
@@ -232,7 +305,7 @@ sequenceDiagram
     EUDI->>EUDI: Build VP Token (DCQL response map)<br/>{credential_query_id: [Issuer-signed JWT~Disclosures~KB-JWT]}
     EUDI->>EUDI: Encrypt Authorization Response<br/>as JWE (ECDH-ES + A256GCM)
     EUDI->>CV: POST {response_uri}<br/>response={jwe}&state={state}
-    CV->>CV: Decrypt JWE (ECDH-ES key agreement)<br/>Extract VP Token<br/>Update transaction status → received
+    CV->>CV: Decrypt JWE (ECDH-ES key agreement)<br/>Extract VP Token<br/>Update transaction status -> received
     CV-->>EUDI: HTTP 200 OK {}
 
     Note over RP,CV: Transaction Status Polling
@@ -250,50 +323,61 @@ sequenceDiagram
 
 ### HAIP Key Characteristics
 
-- **JWT-Secured Authorization Request (JAR)**: The Authorization Request Object is a signed JWT (RFC 9101) with `ES256` and an `x5c` header containing the certificate chain (`typ: oauth-authz-req+jwt`)
-- **`x509_san_dns` Client ID Scheme**: `client_id` = `x509_san_dns:{dns_san}` — the Verifier is identified by the DNS SAN of its X.509 certificate
-- **Certificate chain verification**: The Wallet verifies the `x5c` certificate chain against its Reader Trust Store and confirms the `client_id` matches the leaf certificate's SAN
-- **`direct_post.jwt` Response Mode** (OpenID4VP §8.3): The Wallet encrypts the Authorization Response as a JWE (ECDH-ES + A256GCM) before POSTing to `response_uri`
-- **JWE Response Encryption**: The JAR's `client_metadata` includes `jwks` with the Verifier's ephemeral public key and `authorization_encrypted_response_alg` / `authorization_encrypted_response_enc` parameters
-- **Two Credential Formats**:
-  - **`mso_mdoc`** (ISO 18013-5): CBOR-encoded DeviceResponse with COSE_Sign1 IssuerAuth — DCQL uses namespaced Claims Path Pointers `[namespace, element_identifier]`
-  - **`dc+sd-jwt`** (SD-JWT VC): Issuer-signed JWT with selectively disclosable claims — DCQL uses flat Claims Path Pointers `[claim_name]` and `vct_values` in credential query metadata
-- **`eudi-openid4vp://` URL Scheme**: Custom deep link registered by the EUDI Wallet
-- **Root CA required**: The Verifier's root CA must be present in the Wallet's Reader Trust Store
+- **JWT-Secured Authorization Request (JAR)** (RFC 9101) with `ES256` and `x5c` header
+- **`x509_san_dns` Client ID Scheme**: Verifier identified by certificate DNS SAN
+- **Certificate chain verification**: Wallet verifies `x5c` chain against Reader Trust Store
+- **`direct_post.jwt` Response Mode**: Wallet encrypts response as JWE (ECDH-ES + A256GCM)
+- **Two Credential Formats**: `mso_mdoc` and `dc+sd-jwt`
+- **Root CA required**: Present in Wallet's Reader Trust Store
+
+---
 
 ## Wallet Compatibility Matrix
 
-When implementing a Relying Party, choose your approach based on which wallets you need to support:
+| If you need to support... | Use this flow | Transport | Implementation |
+|--------------------------|---------------|-----------|----------------|
+| **France Identité Wallet** (DC API) | Flow 1 | W3C DC API | HPKE + CBOR in browser, stateless verifier endpoint |
+| **France Identité Wallet** (OpenID4VP) | Flow 2 | OpenID4VP (QR) | Annex A profile — no JAR |
+| **Age Verification App (AVI)** | Flow 2 | OpenID4VP (QR) | Annex A profile — no JAR |
+| **EUDI Wallet (mDoc)** | Flow 3 | OpenID4VP (QR) | HAIP — JAR + JWE + trusted CA |
+| **EUDI Wallet (SD-JWT)** | Flow 4 | OpenID4VP (QR) | HAIP SD-JWT |
+| **Browser extension (fallback)** | Flow 2 | OpenID4VP + postMessage | Same as Annex A |
 
-| If you need to support... | Use this profile | Client ID Scheme | Implementation |
-| ------------------------ | ---------------- | ---------------- | -------------- |
-| **Age Verification App only** | Annex A | `redirect_uri` | Simpler — no JAR signing |
-| **EUDI Wallet only** | HAIP | `x509_san_dns` | Complex — requires JAR + trusted CA |
-| **Both wallets** | Dual-mode | Both | Implement both code paths |
-| **Browser extension (fallback)** | Annex A + postMessage | `redirect_uri` | Same as Annex A |
+### Choosing the Right Flow
+
+| Scenario | Recommended Flow |
+|----------|-----------------|
+| User has France Identité + Android Chrome | Flow 1 (DC API) — browser-native, best UX |
+| France Identité, DC API not available | Flow 2 (OpenID4VP fallback) |
+| EUDI Wallet with mDoc (PID/mDL) | Flow 3 (HAIP mDoc) |
+| EUDI Wallet with SD-JWT (PID) | Flow 4 (HAIP SD-JWT) |
+| Unknown wallet, broad compatibility | Detect DC API first, fall back to OpenID4VP |
+
+---
 
 ## Verification Flow (Common to All)
 
-Regardless of which Wallet and profile is used, the verification flow through the ewQwe Credential Verifier is the same:
+1. **RP receives credential data** via DC API promise or OpenID4VP transaction status
+2. **RP sends to verifier**: `POST /ewqwe_api/verify` (OpenID4VP) or `POST /ewqwe_api/dc_api/verify` (DC API)
+3. **Verifier validates**: mDoc COSE signatures or SD-JWT disclosures
+4. **Verifier returns signed Attestation JWT** (ES256)
+5. **RP uses Attestation** for session establishment
 
-1. **RP Webapp receives the Authorization Response** (VP Token) via transaction status polling
-2. **RP Webapp calls the Credential Verifier's** `/ewqwe_api/verify` **endpoint** with the VP Token, `state`, and `client_id`
-3. **Credential Verifier validates** the Verifiable Presentation:
-    - **mso_mdoc**: Decodes CBOR DeviceResponse, verifies IssuerAuth (COSE_Sign1), validates the issuer certificate chain, validates MobileSecurityObject digests, reconstructs the OpenID4VP handover, and verifies `deviceAuth.deviceSignature`
-   - **dc+sd-jwt**: Decodes Issuer-signed JWT, verifies Disclosures, verifies Key Binding JWT, extracts selectively disclosed claims
-4. **Credential Verifier consumes the stored transaction and returns a signed Attestation JWT** (ES256) confirming successful verification, along with the extracted claims
-5. **RP Webapp uses the Attestation** for session establishment or access control
-
-See [The ewQwe Credential Verifier](./credential_verifier_server.md) for detailed API documentation.
+---
 
 ## References
 
-- [EU Age Verification Profile (Annex A)](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/) — Annex A specification
-- [Annex A.9 - Comparison with HAIP](https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#a9-comparison-with-haip) — Detailed differences
-- [OpenID4VP 1.0 Specification](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) — Protocol standard
-- [SD-JWT-based Verifiable Credentials](https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.html) — SD-JWT VC specification
-- [ISO/IEC 18013-5](https://www.iso.org/standard/69084.html) — Mobile driving licence (mDL) data retrieval
-- [RFC 9101 — JWT-Secured Authorization Request (JAR)](https://datatracker.ietf.org/doc/html/rfc9101) — Signed authorization requests
-- [Age Verification App Documentation](./av_wallet_android_studio.md) — Installing the AV App
-- [EUDI Wallet Documentation](./eudi_wallet_android_studio.md) — Installing the EUDI Wallet
-- [Demo Wallet Browser Extension](./demo_wallet_extension.md) — Browser-based fallback
+- [EU Age Verification Profile (Annex A)](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile/)
+- [Annex A.9 - Comparison with HAIP](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile/#a9-comparison-with-haip)
+- [OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html)
+- [ISO/IEC 18013-5](https://www.iso.org/standard/69084.html)
+- [ISO/IEC 18013-7](https://www.iso.org/standard/69086.html)
+- [RFC 9101 — JAR](https://datatracker.ietf.org/doc/html/rfc9101)
+- [RFC 9180 — HPKE](https://www.rfc-editor.org/rfc/rfc9180)
+- [W3C Digital Credentials API](https://www.w3.org/TR/digital-credentials/)
+- [Annex B vs HAIP Comparison](./annex_b_vs_haip.md)
+- [Annex B Implementation Plan](./annex_b_implementation_plan.md)
+- [France Identité Wallet Testing Guide](./france_identite_wallet.md)
+- [EU Age Verification: ISO mDoc + DCAPI](./age_verification_iso_18013_dcapi.md)
+- [Age Verification App Documentation](./av_wallet_android_studio.md)
+- [EUDI Wallet Documentation](./eudi_wallet_android_studio.md)

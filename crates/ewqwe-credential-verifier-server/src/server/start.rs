@@ -287,6 +287,14 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
                     .wrap(SslAuth)
                     .route(web::post().to(verify_credential_endpoint)),
             )
+            // DC API endpoint — receives already-decrypted mDoc DeviceResponse from the RP
+            // (the RP performs HPKE decryption in the browser per ISO 18013-7 Annex C)
+            .service(
+                web::resource("/dc_api/verify")
+                    .wrap(ensure_auth.clone())
+                    .wrap(SslAuth)
+                    .route(web::post().to(super::dc_api_endpoint::verify_dc_api)),
+            )
             .service(
                 web::resource("/.well-known/issuer_certs")
                     .wrap(ensure_auth.clone())

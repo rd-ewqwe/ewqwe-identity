@@ -15,9 +15,14 @@ ISO/IEC 18013-7 defines a *transport binding* that describes how an mDoc exchang
 
 In other words:
 
-- **The browser API call** is defined by W3C.
+- **The browser API call** is defined by W3C (`navigator.credentials.get()` with `protocol: "org-iso-mdoc"`).
 - **The credential message format** is defined by ISO mDoc.
 - **The wrapper + encryption packaging** (so the browser sees opaque bytes) is defined by ISO/IEC 18013-7 Annex C.
+
+The `"org-iso-mdoc"` protocol identifier tells the browser's credential manager to route the request to wallets
+that support ISO mDoc presentations (such as France Identité). This is the convention used in the
+[France Identité playground](https://playground.france-identite.gouv.fr/doc/) and the
+[EUDIW Playground marketplace](https://playground.france-identite.gouv.fr/doc/marketplace/).
 
 ## Mental model (high level)
 

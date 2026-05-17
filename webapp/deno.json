@@ -15,8 +15,10 @@
     "@ewqwe/digital-identity": "../js-lib/ewqwe-digital-identity/src/lib.ts",
     "@vitejs/plugin-basic-ssl": "npm:@vitejs/plugin-basic-ssl@^2.1.4",
     "autoprefixer": "npm:autoprefixer@^10.4.0",
+    "cbor-x": "npm:cbor-x@^1.6.0",
     "jose": "npm:jose@^5.9.6",
     "postcss": "npm:postcss@^8.4.0",
+    "rfc4648": "npm:rfc4648@^1.5.0",
     "tailwindcss": "npm:tailwindcss@^3.4.0",
     "vite": "npm:vite@^5.4.0"
   },
