@@ -10,7 +10,6 @@ The W3C Digital Credentials API is the primary method specified in Annex A.5. Ho
 
 - Not all browsers support it yet (see browser compatibility notes in the References chapter).
 - The API may be disabled by user preference or enterprise policy.
-- Browser extensions cannot register as Digital Credentials providers (see Demo Wallet chapter).
 
 When the native API is unavailable, the Relying Party **MUST** fall back to OpenID4VP with specific constraints defined by the Age Verification Profile.
 
@@ -522,7 +521,7 @@ app.post("/ewqwe_api/openid4vp/callback", async (req, res) => {
 |--------|----------------------------|-------------------|
 | **Invocation** | `navigator.credentials.get()` | `av://` custom URL scheme |
 | **Response delivery** | JavaScript Promise (in-page) | HTTP POST to `response_uri` |
-| **Cross-device support** | Limited (requires browser extension workaround) | Native (via QR code) |
+| **Cross-device support** | Limited (browser and wallet must be on the same device) | Native (via QR code) |
 | **Browser support** | Chrome (flag), limited | Universal (OS handles URL scheme) |
 | **Request format** | Base64url CBOR (ISO 18013-7) | Query parameters + DCQL JSON |
 | **Response format** | Base64url CBOR (HPKE encrypted) | JWT or CBOR (no encryption required) |

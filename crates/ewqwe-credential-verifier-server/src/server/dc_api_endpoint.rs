@@ -22,7 +22,6 @@
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use openssl::x509::X509;
 use std::sync::Arc;
-use tracing;
 
 use crate::AttError;
 use crate::authenticated_user::AuthenticatedUser;
@@ -122,13 +121,13 @@ pub async fn verify_dc_api(
     .map_err(|e| AttError::BadRequest(format!("mDoc presentation verification failed: {e}")))?;
 
     // --- Step 2: Check doc_type matches if specified ---
-    if let Some(ref expected_doc_type) = body.doc_type {
-        if mdoc_result.doc_type != *expected_doc_type {
-            return Err(AttError::BadRequest(format!(
-                "Document type mismatch: expected {}, got {}",
-                expected_doc_type, mdoc_result.doc_type
-            )));
-        }
+    if let Some(ref expected_doc_type) = body.doc_type
+        && mdoc_result.doc_type != *expected_doc_type
+    {
+        return Err(AttError::BadRequest(format!(
+            "Document type mismatch: expected {}, got {}",
+            expected_doc_type, mdoc_result.doc_type
+        )));
     }
 
     // --- Step 3: Check verification result ---

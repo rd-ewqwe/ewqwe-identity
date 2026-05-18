@@ -2,9 +2,8 @@
 
 The **Relying Party Demo Web Application** is a sample web application that demonstrates how to request and verify credentials from:
 
-1. **Demo Wallet Browser Extension** - Using the W3C Digital Credentials API
-2. **EUDI Wallet (Android/iOS)** - Using the OpenID4VP cross-device flow with QR codes (HAIP profile)
-3. **Age Verification Apps** - Using the OpenID4VP Annex A profile for Proof of Age
+1. **EUDI Wallet (Android/iOS)** - Using the OpenID4VP cross-device flow with QR codes (HAIP profile)
+2. **Age Verification Apps** - Using the OpenID4VP Annex A profile for Proof of Age
 
 This implementation is compatible with:
 
@@ -38,7 +37,7 @@ flowchart TB
 
     UI --> CredConfig
     CredConfig --> Protocol
-    Protocol -->|W3C DC| BrowserExt[Browser Extension]
+    Protocol -->|W3C DC| WalletApp
     Protocol -->|OpenID4VP| QRModal
     QRModal -.->|Scan QR| WalletApp
     WalletApp -->|POST direct_post| APIServer
@@ -56,8 +55,8 @@ The webapp supports five protocol modes:
 
 | Protocol | Description | Use Case |
 | -------- | ----------- | -------- |
-| **W3C DC + fallback** | Tries W3C Digital Credentials API first, falls back to OpenID4VP cross-device | Default on **desktop** — best compatibility with browser extension wallet |
-| **W3C DC only** | Uses only the native browser API with wallet extension | Desktop with browser extension |
+| **W3C DC + fallback** | Tries native W3C Digital Credentials API (`navigator.credentials.get`) first, falls back to OpenID4VP cross-device | Default on **desktop** — works on compatible browsers/devices with a mobile wallet |
+| **W3C DC only** | Uses only the native W3C Digital Credentials API with ISO 18013-7 Annex C | Compatible browsers/devices with a wallet supporting the DC API |
 | **OpenID4VP (Cross-Device)** | Cross-device flow with QR code scanning | Mobile wallets via QR code (EUDI Wallet, AV Apps) |
 | **OpenID4VP (Same-Device)** | Same-device flow with deep link | Default on **mobile** — reliable across all Android/iOS versions |
 | **Simulated** | Mock response for testing without a wallet | Development/testing |
@@ -321,8 +320,6 @@ deno task vite
 ```
 
 #### Verify Webapp is Running
-
-> Install the Demo Wallet Browser Extension first, as described in the [Demo Wallet Browser Extension](./demo_wallet_extension.md) chapter.
 
 1. Open your browser to [https://localhost:5174](https://localhost:5174)
 2. You should see the Relying Party demo interface

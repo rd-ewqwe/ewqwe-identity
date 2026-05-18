@@ -10,8 +10,6 @@ This demonstration system showcases a complete credential verification flow usin
 
    1. Age Verification Mobile App - A mobile application that acts as a wallet on Android devices, allowing users to manage and present age verification credentials on . Emulator for testing and development purposes.
    2. EUDI Wallet - A reference implementation of a mobile wallet based on the EU Digital Identity (EUDI) specifications and HAIP profile. The wallet runs in the Android Studio Emulator for testing and development purposes.
-   3. Browser Extension - A browser extension that acts as the user's digital wallet, demonstrating the (future) W3C Digital Credentials API for web applications.
-
 The demo wallets and webapp work together to demonstrate the complete end-to-end flow of credential presentation and verification. The webapp serves as both a functional demonstration and a **starting point for Relying Parties** who want to implement credential verification in their own web applications.
 
 > **Source Code**: The wallets and relying party webapp source codes are available on GitHub for developers to use as a reference implementation. (GitHub repository details to be provided)
@@ -22,22 +20,11 @@ The following diagram shows how the components interact in a complete credential
 
 ```mermaid
 flowchart TB
-    subgraph Browser["Browser Environment"]
-        subgraph WalletExt["Demo Wallet Extension"]
-            BG[Background Service Worker<br/>- Credential Storage<br/>- Request Matching<br/>- VP Token Generation]
-            Popup[Popup UI<br/>- Credential Management<br/>- User Consent]
-            Content[Content Script<br/>- Message Relay<br/>- Injected into Webapp]
-            
-            BG <--> Popup
-            BG <--> Content
-        end
-        
-        subgraph WebappUI["Demo Webapp Frontend"]
-            RP[Relying Party UI<br/>- Credential Type Selection<br/>- Claims Configuration<br/>- Protocol Selection<br/>- Results Display]
-        end
-        
-        Content <-->|postMessage| RP
+subgraph Browser["Browser Environment"]
+    subgraph WebappUI["Demo Webapp Frontend"]
+        RP[Relying Party UI<br/>- Credential Type Selection<br/>- Claims Configuration<br/>- Protocol Selection<br/>- Results Display]
     end
+end
     
     subgraph WebappBackend["Webapp Backend<br/>Deno Server"]
         API[API Server<br/>- /api/verify endpoint<br/>- TLS client config<br/>- Proxied via Vite]
@@ -60,7 +47,6 @@ flowchart TB
     API -->|Return signed<br/>attestation| RP
     
     style Browser fill:#6d28d9
-    style WalletExt fill:##7c3aed
     style WebappUI fill:##7c3aed
     style WebappBackend fill:#6d28d9
     style CredVerifier fill:#6d28d9
@@ -75,7 +61,6 @@ flowchart TB
 - ✅ Credential Verifier listening on <https://127.0.0.1:9443>
 - ✅ Webapp frontend accessible at <https://localhost:5174>
 - ✅ Webapp backend API proxied through Vite
-- ✅ Wallet extension loaded in browser toolbar
 
 ### Test the Complete Flow
 
@@ -84,22 +69,15 @@ flowchart TB
 2. **Configure a Request**:
    - Select credential type (e.g., "Proof of Age")
    - Choose required claims (e.g., "age_over_18")
-   - Select protocol (try "W3C Digital Credentials API" first)
+   - Select protocol (appropriate for your wallet setup)
 
-3. **Request Credentials**:
+3. **Initiate Verification**:
    - Click "Request Credentials"
-   - If W3C API fails (as expected in current browsers), the webapp will fallback to OpenID4VP
-   - The wallet extension should receive the request
+   - The webapp sends the credential request to the credential verifier via the backend
 
-4. **Wallet Consent**:
-   - A postMessage event triggers the wallet's content script
-   - The wallet matches available credentials
-   - User grants consent (automatically in demo mode, or via popup)
-
-5. **Verification**:
-   - Wallet returns VP token to webapp
-   - Webapp forwards to credential verifier via backend
-   - Verifier validates and returns signed attestation
+4. **Verification**:
+   - The credential verifier processes the request
+   - Verifier validates and returns a signed attestation
    - Webapp displays verification results and extracted claims
 
 **Expected Result**: You should see verified claims displayed in the webapp UI with a success message and the signed attestation JWT.
@@ -125,17 +103,6 @@ flowchart TB
 - Verify Redis is running: `redis-cli ping`
 - Check backend logs for TLS certificate errors
 - Ensure CA certificate is correctly configured in `webapp/server.ts`
-
----
-
-**Issue**: Wallet extension not responding to requests
-
-**Solution**:
-
-- Open extension debugging console
-- Check for JavaScript errors in content script
-- Verify extension has permissions for the webapp origin
-- Reload the extension and refresh the webapp page
 
 ---
 
@@ -188,10 +155,6 @@ deno task api
 # Terminal 4 — Webapp Vite dev server (port 5174, HTTPS)
 cd webapp
 deno task vite
-
-# Browser: Install/load Demo Wallet extension
-# - From Chrome Web Store: Search "ewQwe Demo Wallet"
-# - Or load unpacked from wallet-extension/dist/
 
 # Open: https://localhost:5174
 ```

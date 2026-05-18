@@ -1,597 +1,652 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>ewQwe Digital Identity - Relying Party Demo</title>
-    <link rel="stylesheet" href="/src/styles.css" />
-  </head>
-  <body class="brand-page min-h-screen text-white">
-    <div id="app" class="container mx-auto px-4 py-8 max-w-4xl">
-      <!-- Header -->
-      <header class="text-center mb-12">
-        <img
-          src="/ewqwe_logo.png"
-          alt="ewQwe logo"
-          class="brand-header-logo mx-auto mb-5"
-        />
-        <h1 class="text-4xl font-bold mb-2 brand-title">Digital Identity</h1>
-        <p class="text-lg brand-subtitle">Relying Party Webapp Demo</p>
-      </header>
-
-      <!-- Main Content -->
-      <main class="space-y-8">
-        <!-- Credential Request Card -->
-        <section
-          class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20"
-        >
-          <h2 class="text-2xl font-semibold mb-6 flex items-center">
-            <svg
-              class="w-6 h-6 mr-3 text-indigo-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M15 9a2 2 0 10-4 0v5a2 2 0 01-2 2h6m-6-4h4m8 0a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            Request Credentials
-          </h2>
-
-          <!-- Credential Type Selection -->
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-300 mb-3"
-              >Credential Type</label
-            >
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-              <!-- Proof of Age Credential -->
-              <button
-                class="credential-type-btn active relative"
-                data-type="proof-of-age"
-              >
-                <a
-                  href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="absolute top-2 right-2 text-gray-500/60 hover:text-purple-400 transition-colors text-sm z-10"
-                  aria-label="Learn more about EU Age Verification Profile"
-                  onclick="event.stopPropagation()"
-                >
-                  ⓘ
-                </a>
-                <div class="flex items-center">
-                  <div
-                    class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mr-3"
-                  >
-                    <svg
-                      class="w-5 h-5 text-purple-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                      />
-                    </svg>
-                  </div>
-                  <div class="text-left">
-                    <div class="font-medium">Proof of Age</div>
-                    <div class="text-sm text-gray-400">EU Age Verification</div>
-                  </div>
-                </div>
-              </button>
-
-              <!-- Mobile Driver's License Credential -->
-              <button class="credential-type-btn relative" data-type="mdl">
-                <a
-                  href="https://www.iso.org/standard/69084.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="absolute top-2 right-2 text-gray-500/60 hover:text-blue-400 transition-colors text-sm z-10"
-                  aria-label="Learn more about ISO 18013-5"
-                  onclick="event.stopPropagation()"
-                >
-                  ⓘ
-                </a>
-                <div class="flex items-center">
-                  <div
-                    class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mr-3"
-                  >
-                    <svg
-                      class="w-5 h-5 text-blue-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
-                      />
-                    </svg>
-                  </div>
-                  <div class="text-left">
-                    <div class="font-medium">Mobile Driver's License</div>
-                    <div class="text-sm text-gray-400">ISO 18013-5 mDL</div>
-                  </div>
-                </div>
-              </button>
-
-              <!-- National ID Credential -->
-              <button
-                class="credential-type-btn relative"
-                data-type="national-id"
-              >
-                <a
-                  href="https://data.europa.eu/eli/reg_impl/2024/2977/oj"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="absolute top-2 right-2 text-gray-500/60 hover:text-green-400 transition-colors text-sm z-10"
-                  aria-label="Learn more about EU PID Regulation"
-                  onclick="event.stopPropagation()"
-                >
-                  ⓘ
-                </a>
-                <div class="flex items-center">
-                  <div
-                    class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mr-3"
-                  >
-                    <svg
-                      class="w-5 h-5 text-green-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                      />
-                    </svg>
-                  </div>
-                  <div class="text-left">
-                    <div class="font-medium">National ID</div>
-                    <div class="text-sm text-gray-400">EU PID</div>
-                  </div>
-                </div>
-              </button>
-
-              <!-- Health ID SD-JWT VC Credential -->
-              <button
-                class="credential-type-btn relative"
-                data-type="health-id-sd-jwt"
-              >
-                <a
-                  href="https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="absolute top-2 right-2 text-gray-500/60 hover:text-rose-400 transition-colors text-sm z-10"
-                  aria-label="Learn more about EU Health ID"
-                  onclick="event.stopPropagation()"
-                >
-                  ⓘ
-                </a>
-                <div class="flex items-center">
-                  <div
-                    class="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center mr-3"
-                  >
-                    <svg
-                      class="w-5 h-5 text-rose-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        stroke-width="2"
-                        d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
-                      />
-                    </svg>
-                  </div>
-                  <div class="text-left">
-                    <div class="font-medium">Health ID</div>
-                    <div class="text-sm text-gray-400">SD-JWT VC</div>
-                  </div>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          <!-- Request Button and Spinner -->
-          <div class="mb-6">
-            <button
-              id="request-credentials-btn"
-              class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center"
-            >
-              <svg
-                class="w-5 h-5 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M13 10V3L4 14h7v7l9-11h-7z"
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>ewQwe Digital Identity - Relying Party Demo</title>
+        <link rel="stylesheet" href="/src/styles.css" />
+    </head>
+    <body class="brand-page min-h-screen text-white">
+        <div id="app" class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- Header -->
+            <header class="text-center mb-12">
+                <img
+                    src="/ewqwe_logo.png"
+                    alt="ewQwe logo"
+                    class="brand-header-logo mx-auto mb-5"
                 />
-              </svg>
-              Request Credentials
-            </button>
-            <button
-              id="requesting-credentials-btn"
-              disabled="true"
-              class="hidden w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] items-center justify-center"
-            >
-              <svg
-                class="animate-spin w-5 h-5 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-              >
-                <circle
-                  class="opacity-25"
-                  cx="12"
-                  cy="12"
-                  r="10"
-                  stroke="currentColor"
-                  stroke-width="4"
-                ></circle>
-                <path
-                  class="opacity-75"
-                  fill="currentColor"
-                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                ></path>
-              </svg>
-              Requesting...
-            </button>
-          </div>
+                <h1 class="text-4xl font-bold mb-2 brand-title">
+                    Digital Identity
+                </h1>
+                <p class="text-lg brand-subtitle">Relying Party Webapp Demo</p>
+            </header>
 
-          <!-- Profile Information -->
-          <div id="profile-info" class="mb-2">
-            <!-- Profile details will be rendered here by rp.ts -->
-          </div>
-
-          <!-- Claims Selection -->
-          <div class="mb-6">
-            <label class="block text-sm font-medium text-gray-300 mb-3"
-              >Requested Claims</label
-            >
-            <div
-              id="claims-selection"
-              class="grid grid-cols-2 md:grid-cols-3 gap-3"
-            >
-              <!-- Claims will be rendered here -->
-            </div>
-          </div>
-
-          <!-- Protocol Selection -->
-          <div class="mb-8">
-            <label class="block text-sm font-medium text-gray-300 mb-3"
-              >Protocol</label
-            >
-            <select
-              id="protocol-select"
-              class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-            >
-              <option value="w3c-dc-fallback">
-                W3C Digital Credentials with fallback to OpenID4VP
-              </option>
-              <option value="w3c-dc">W3C Digital Credentials</option>
-              <option value="openid4vp-cross-device">
-                OpenID4VP (Cross-Device / QR Code)
-              </option>
-              <option value="openid4vp-same-device">
-                OpenID4VP (Same-Device / Deep Link)
-              </option>
-              <option value="simulated">Simulated (no wallet call)</option>
-            </select>
-            <p id="protocol-description" class="mt-2 text-xs text-gray-400">
-              Uses navigator.credentials.get() with the wallet extension
-            </p>
-          </div>
-
-          <!-- Show Request JSON Toggle -->
-          <button
-            id="show-request-btn"
-            class="mt-4 w-full text-gray-400 hover:text-white text-sm py-2 flex items-center justify-center transition-colors"
-          >
-            <svg
-              class="w-4 h-4 mr-2"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-              />
-            </svg>
-            Show Request JSON
-          </button>
-        </section>
-
-        <!-- Request Preview -->
-        <section
-          id="request-preview"
-          class="hidden bg-slate-800/50 rounded-2xl p-6 border border-slate-700"
-        >
-          <h3 class="text-lg font-semibold mb-4 flex items-center">
-            <svg
-              class="w-5 h-5 mr-2 text-yellow-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                stroke-width="2"
-                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-              />
-            </svg>
-            Request Preview (OpenID4VP)
-          </h3>
-          <pre
-            id="request-json"
-            class="bg-slate-900 text-green-400 p-4 rounded-lg text-sm overflow-auto max-h-96 font-mono"
-          ></pre>
-        </section>
-
-        <!-- Verification Result -->
-        <section id="verification-result" class="hidden">
-          <div
-            class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20"
-          >
-            <h3 class="text-2xl font-semibold mb-6 flex items-center">
-              <svg
-                id="result-icon"
-                class="w-6 h-6 mr-3"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <span id="result-title">Verification Result</span>
-            </h3>
-
-            <div id="result-content" class="space-y-4">
-              <!-- Result will be rendered here -->
-            </div>
-
-            <!-- Debug Toggle -->
-            <button
-              id="toggle-debug-result"
-              class="mt-6 text-gray-400 hover:text-white text-sm flex items-center transition-colors"
-            >
-              <svg
-                class="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-              Show Debug Information
-            </button>
-
-            <div id="debug-result" class="hidden mt-4">
-              <div class="bg-slate-900 rounded-lg p-4">
-                <h4 class="text-sm font-medium text-gray-400 mb-2">
-                  Raw Response
-                </h4>
-                <pre
-                  id="raw-response"
-                  class="text-green-400 text-xs overflow-auto max-h-64 font-mono"
-                ></pre>
-              </div>
-              <div class="bg-slate-900 rounded-lg p-4 mt-4">
-                <h4 class="text-sm font-medium text-gray-400 mb-2">
-                  Verification Details
-                </h4>
-                <pre
-                  id="verification-details"
-                  class="text-blue-400 text-xs overflow-auto max-h-64 font-mono"
-                ></pre>
-              </div>
-            </div>
-
-            <!-- New Request Button -->
-            <button
-              id="new-request-btn"
-              class="mt-6 w-full bg-white/10 hover:bg-white/20 text-white font-medium py-3 px-6 rounded-xl transition-colors"
-            >
-              Make Another Request
-            </button>
-          </div>
-        </section>
-
-        <!-- API Status -->
-        <section class="bg-slate-800/30 rounded-xl p-6 border border-slate-700">
-          <h3 class="text-lg font-semibold mb-4">API Support Status</h3>
-          <div id="api-status" class="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <!-- Status will be rendered here -->
-          </div>
-        </section>
-      </main>
-
-      <!-- Footer -->
-      <footer class="mt-12 text-center text-gray-500 text-sm">
-        <p>No data is collected or stored on any server.</p>
-      </footer>
-    </div>
-
-    <!-- QR Code Modal (hidden until triggered by cross-device flow) -->
-    <div
-      id="openid4vp-qr-modal"
-      class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm items-center justify-center z-50"
-    >
-      <div
-        class="bg-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-white/20"
-      >
-        <div class="text-center">
-          <div class="flex items-center justify-center gap-2 mb-2">
-            <h3 class="text-xl font-semibold">Scan with your Wallet</h3>
-            <!-- Badge text/colour updated at runtime -->
-            <span
-              id="qr-profile-badge"
-              class="inline-block px-2 py-1 text-xs rounded-full"
-            ></span>
-          </div>
-          <p class="text-gray-400 text-sm mb-6">
-            Scan this QR code with your
-            <span id="qr-wallet-name">wallet</span>
-            or compatible mobile wallet app
-          </p>
-
-          <!-- QR code container: spinner shown initially; img shown once data URL arrives -->
-          <div
-            id="qr-code-container"
-            class="bg-white p-4 rounded-xl inline-block mb-6"
-          >
-            <!-- spinner: visible while waiting for the server response -->
-            <div
-              id="qr-spinner"
-              class="w-64 h-64 flex items-center justify-center"
-            >
-              <div
-                class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"
-              ></div>
-            </div>
-            <!-- populated from InitTransactionResponse.qr_code_data_url -->
-            <img
-              id="qr-code-img"
-              alt="QR Code for wallet"
-              class="w-64 h-64 hidden"
-            />
-            <!-- shown if qr_code_data_url is absent (should not happen) -->
-            <div
-              id="qr-code-error"
-              class="w-64 h-64 hidden flex-col items-center justify-center text-gray-700 text-xs p-2"
-            >
-              <p class="font-medium mb-2">QR Code unavailable</p>
-              <p id="qr-code-error-hint" class="break-all text-center"></p>
-            </div>
-          </div>
-
-          <p class="text-gray-500 text-xs mb-4">
-            Waiting for wallet response&hellip;
-          </p>
-
-          <div class="flex gap-3 justify-center">
-            <button
-              id="qr-cancel-btn"
-              class="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              id="qr-copy-btn"
-              class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-2"
-            >
-              <!-- default state -->
-              <span id="qr-copy-default" class="flex items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+            <!-- Main Content -->
+            <main class="space-y-8">
+                <!-- Credential Request Card -->
+                <section
+                    class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                Copy Link
-              </span>
-              <!-- success state (hidden until copy succeeds) -->
-              <span id="qr-copy-success" class="hidden items-center gap-2">
-                <svg
-                  class="w-4 h-4"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
+                    <h2 class="text-2xl font-semibold mb-6 flex items-center">
+                        <svg
+                            class="w-6 h-6 mr-3 text-indigo-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M15 9a2 2 0 10-4 0v5a2 2 0 01-2 2h6m-6-4h4m8 0a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                        </svg>
+                        Request Credentials
+                    </h2>
+
+                    <!-- Credential Type Selection -->
+                    <div class="mb-6">
+                        <label
+                            class="block text-sm font-medium text-gray-300 mb-3"
+                            >Credential Type</label
+                        >
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <!-- Proof of Age Credential -->
+                            <button
+                                class="credential-type-btn active relative"
+                                data-type="proof-of-age"
+                            >
+                                <a
+                                    href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="absolute top-2 right-2 text-gray-500/60 hover:text-purple-400 transition-colors text-sm z-10"
+                                    aria-label="Learn more about EU Age Verification Profile"
+                                    onclick="event.stopPropagation()"
+                                >
+                                    ⓘ
+                                </a>
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mr-3"
+                                    >
+                                        <svg
+                                            class="w-5 h-5 text-purple-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="font-medium">
+                                            Proof of Age
+                                        </div>
+                                        <div class="text-sm text-gray-400">
+                                            EU Age Verification
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <!-- Mobile Driver's License Credential -->
+                            <button
+                                class="credential-type-btn relative"
+                                data-type="mdl"
+                            >
+                                <a
+                                    href="https://www.iso.org/standard/69084.html"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="absolute top-2 right-2 text-gray-500/60 hover:text-blue-400 transition-colors text-sm z-10"
+                                    aria-label="Learn more about ISO 18013-5"
+                                    onclick="event.stopPropagation()"
+                                >
+                                    ⓘ
+                                </a>
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center mr-3"
+                                    >
+                                        <svg
+                                            class="w-5 h-5 text-blue-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0m-5 8a2 2 0 100-4 2 2 0 000 4zm0 0c1.306 0 2.417.835 2.83 2M9 14a3.001 3.001 0 00-2.83 2M15 11h3m-3 4h2"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="font-medium">
+                                            Mobile Driver's License
+                                        </div>
+                                        <div class="text-sm text-gray-400">
+                                            ISO 18013-5 mDL
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <!-- National ID Credential -->
+                            <button
+                                class="credential-type-btn relative"
+                                data-type="national-id"
+                            >
+                                <a
+                                    href="https://data.europa.eu/eli/reg_impl/2024/2977/oj"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="absolute top-2 right-2 text-gray-500/60 hover:text-green-400 transition-colors text-sm z-10"
+                                    aria-label="Learn more about EU PID Regulation"
+                                    onclick="event.stopPropagation()"
+                                >
+                                    ⓘ
+                                </a>
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mr-3"
+                                    >
+                                        <svg
+                                            class="w-5 h-5 text-green-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="font-medium">
+                                            National ID
+                                        </div>
+                                        <div class="text-sm text-gray-400">
+                                            EU PID
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+
+                            <!-- Health ID SD-JWT VC Credential -->
+                            <button
+                                class="credential-type-btn relative"
+                                data-type="health-id-sd-jwt"
+                            >
+                                <a
+                                    href="https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="absolute top-2 right-2 text-gray-500/60 hover:text-rose-400 transition-colors text-sm z-10"
+                                    aria-label="Learn more about EU Health ID"
+                                    onclick="event.stopPropagation()"
+                                >
+                                    ⓘ
+                                </a>
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-rose-500/20 flex items-center justify-center mr-3"
+                                    >
+                                        <svg
+                                            class="w-5 h-5 text-rose-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="font-medium">Health ID</div>
+                                        <div class="text-sm text-gray-400">
+                                            SD-JWT VC
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Request Button and Spinner -->
+                    <div class="mb-6">
+                        <button
+                            id="request-credentials-btn"
+                            class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] flex items-center justify-center"
+                        >
+                            <svg
+                                class="w-5 h-5 mr-2"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"
+                                />
+                            </svg>
+                            Request Credentials
+                        </button>
+                        <button
+                            id="requesting-credentials-btn"
+                            disabled="true"
+                            class="hidden w-full bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 transform hover:scale-[1.02] items-center justify-center"
+                        >
+                            <svg
+                                class="animate-spin w-5 h-5 mr-2"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                            >
+                                <circle
+                                    class="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    stroke-width="4"
+                                ></circle>
+                                <path
+                                    class="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                ></path>
+                            </svg>
+                            Requesting...
+                        </button>
+                    </div>
+
+                    <!-- Profile Information -->
+                    <div id="profile-info" class="mb-2">
+                        <!-- Profile details will be rendered here by rp.ts -->
+                    </div>
+
+                    <!-- Claims Selection -->
+                    <div class="mb-6">
+                        <label
+                            class="block text-sm font-medium text-gray-300 mb-3"
+                            >Requested Claims</label
+                        >
+                        <div
+                            id="claims-selection"
+                            class="grid grid-cols-2 md:grid-cols-3 gap-3"
+                        >
+                            <!-- Claims will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Protocol Selection -->
+                    <div class="mb-8">
+                        <label
+                            class="block text-sm font-medium text-gray-300 mb-3"
+                            >Protocol</label
+                        >
+                        <select
+                            id="protocol-select"
+                            class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                            <option value="w3c-dc-fallback">
+                                W3C Digital Credentials with fallback to
+                                OpenID4VP
+                            </option>
+                            <option value="w3c-dc">
+                                W3C Digital Credentials
+                            </option>
+                            <option value="openid4vp-cross-device">
+                                OpenID4VP (Cross-Device / QR Code)
+                            </option>
+                            <option value="openid4vp-same-device">
+                                OpenID4VP (Same-Device / Deep Link)
+                            </option>
+                            <option value="simulated">
+                                Simulated (no wallet call)
+                            </option>
+                        </select>
+                        <p
+                            id="protocol-description"
+                            class="mt-2 text-xs text-gray-400"
+                        >
+                            Uses navigator.credentials.get() with ISO 18013-7
+                            Annex C
+                        </p>
+                    </div>
+
+                    <!-- Show Request JSON Toggle -->
+                    <button
+                        id="show-request-btn"
+                        class="mt-4 w-full text-gray-400 hover:text-white text-sm py-2 flex items-center justify-center transition-colors"
+                    >
+                        <svg
+                            class="w-4 h-4 mr-2"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                            />
+                        </svg>
+                        Show Request JSON
+                    </button>
+                </section>
+
+                <!-- Request Preview -->
+                <section
+                    id="request-preview"
+                    class="hidden bg-slate-800/50 rounded-2xl p-6 border border-slate-700"
                 >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    stroke-width="2"
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                Copied!
-              </span>
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
+                    <h3 class="text-lg font-semibold mb-4 flex items-center">
+                        <svg
+                            class="w-5 h-5 mr-2 text-yellow-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                stroke-width="2"
+                                d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
+                            />
+                        </svg>
+                        Request Preview (OpenID4VP)
+                    </h3>
+                    <pre
+                        id="request-json"
+                        class="bg-slate-900 text-green-400 p-4 rounded-lg text-sm overflow-auto max-h-96 font-mono"
+                    ></pre>
+                </section>
 
-    <!-- Same-Device Wallet Modal (hidden until triggered by same-device flow) -->
-    <div
-      id="same-device-modal"
-      class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm items-center justify-center z-[10000]"
-    >
-      <div
-        class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl"
-      >
-        <h2 class="text-2xl font-semibold text-gray-900 mb-4">
-          Open Wallet App
-        </h2>
-        <p class="text-gray-500 mb-6 leading-relaxed">
-          Click the button below to open your EUDI Wallet app and share your
-          credentials.
-        </p>
+                <!-- Verification Result -->
+                <section id="verification-result" class="hidden">
+                    <div
+                        class="bg-white/10 backdrop-blur-lg rounded-2xl p-8 border border-white/20"
+                    >
+                        <h3
+                            class="text-2xl font-semibold mb-6 flex items-center"
+                        >
+                            <svg
+                                id="result-icon"
+                                class="w-6 h-6 mr-3"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                                />
+                            </svg>
+                            <span id="result-title">Verification Result</span>
+                        </h3>
 
-        <button
-          id="open-wallet-btn"
-          class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-7 rounded-xl text-base transition-colors"
-        >
-          Open EUDI Wallet
-        </button>
+                        <div id="result-content" class="space-y-4">
+                            <!-- Result will be rendered here -->
+                        </div>
 
-        <div class="mt-5 pt-5 border-t border-gray-200">
-          <p class="text-gray-400 text-sm mb-3">
-            Waiting for response from wallet&hellip;
-          </p>
-          <div
-            class="w-6 h-6 border-[3px] border-gray-200 border-t-blue-500 rounded-full mx-auto animate-spin"
-          ></div>
+                        <!-- Debug Toggle -->
+                        <button
+                            id="toggle-debug-result"
+                            class="mt-6 text-gray-400 hover:text-white text-sm flex items-center transition-colors"
+                        >
+                            <svg
+                                class="w-4 h-4 mr-2"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="2"
+                                    d="M19 9l-7 7-7-7"
+                                />
+                            </svg>
+                            Show Debug Information
+                        </button>
+
+                        <div id="debug-result" class="hidden mt-4">
+                            <div class="bg-slate-900 rounded-lg p-4">
+                                <h4
+                                    class="text-sm font-medium text-gray-400 mb-2"
+                                >
+                                    Raw Response
+                                </h4>
+                                <pre
+                                    id="raw-response"
+                                    class="text-green-400 text-xs overflow-auto max-h-64 font-mono"
+                                ></pre>
+                            </div>
+                            <div class="bg-slate-900 rounded-lg p-4 mt-4">
+                                <h4
+                                    class="text-sm font-medium text-gray-400 mb-2"
+                                >
+                                    Verification Details
+                                </h4>
+                                <pre
+                                    id="verification-details"
+                                    class="text-blue-400 text-xs overflow-auto max-h-64 font-mono"
+                                ></pre>
+                            </div>
+                        </div>
+
+                        <!-- New Request Button -->
+                        <button
+                            id="new-request-btn"
+                            class="mt-6 w-full bg-white/10 hover:bg-white/20 text-white font-medium py-3 px-6 rounded-xl transition-colors"
+                        >
+                            Make Another Request
+                        </button>
+                    </div>
+                </section>
+
+                <!-- API Status -->
+                <section
+                    class="bg-slate-800/30 rounded-xl p-6 border border-slate-700"
+                >
+                    <h3 class="text-lg font-semibold mb-4">
+                        API Support Status
+                    </h3>
+                    <div
+                        id="api-status"
+                        class="grid grid-cols-2 md:grid-cols-4 gap-4"
+                    >
+                        <!-- Status will be rendered here -->
+                    </div>
+                </section>
+            </main>
+
+            <!-- Footer -->
+            <footer class="mt-12 text-center text-gray-500 text-sm">
+                <p>No data is collected or stored on any server.</p>
+            </footer>
         </div>
 
-        <button
-          id="cancel-same-device-btn"
-          class="mt-5 text-gray-400 hover:text-gray-600 text-sm underline bg-transparent border-none cursor-pointer transition-colors"
+        <!-- QR Code Modal (hidden until triggered by cross-device flow) -->
+        <div
+            id="openid4vp-qr-modal"
+            class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm items-center justify-center z-50"
         >
-          Cancel
-        </button>
-      </div>
-    </div>
+            <div
+                class="bg-slate-800 rounded-2xl p-8 max-w-md w-full mx-4 border border-white/20"
+            >
+                <div class="text-center">
+                    <div class="flex items-center justify-center gap-2 mb-2">
+                        <h3 class="text-xl font-semibold">
+                            Scan with your Wallet
+                        </h3>
+                        <!-- Badge text/colour updated at runtime -->
+                        <span
+                            id="qr-profile-badge"
+                            class="inline-block px-2 py-1 text-xs rounded-full"
+                        ></span>
+                    </div>
+                    <p class="text-gray-400 text-sm mb-6">
+                        Scan this QR code with your
+                        <span id="qr-wallet-name">wallet</span>
+                        or compatible mobile wallet app
+                    </p>
 
-    <script type="module" src="/src/main.ts"></script>
-  </body>
+                    <!-- QR code container: spinner shown initially; img shown once data URL arrives -->
+                    <div
+                        id="qr-code-container"
+                        class="bg-white p-4 rounded-xl inline-block mb-6"
+                    >
+                        <!-- spinner: visible while waiting for the server response -->
+                        <div
+                            id="qr-spinner"
+                            class="w-64 h-64 flex items-center justify-center"
+                        >
+                            <div
+                                class="animate-spin w-8 h-8 border-4 border-indigo-500 border-t-transparent rounded-full"
+                            ></div>
+                        </div>
+                        <!-- populated from InitTransactionResponse.qr_code_data_url -->
+                        <img
+                            id="qr-code-img"
+                            alt="QR Code for wallet"
+                            class="w-64 h-64 hidden"
+                        />
+                        <!-- shown if qr_code_data_url is absent (should not happen) -->
+                        <div
+                            id="qr-code-error"
+                            class="w-64 h-64 hidden flex-col items-center justify-center text-gray-700 text-xs p-2"
+                        >
+                            <p class="font-medium mb-2">QR Code unavailable</p>
+                            <p
+                                id="qr-code-error-hint"
+                                class="break-all text-center"
+                            ></p>
+                        </div>
+                    </div>
+
+                    <p class="text-gray-500 text-xs mb-4">
+                        Waiting for wallet response&hellip;
+                    </p>
+
+                    <div class="flex gap-3 justify-center">
+                        <button
+                            id="qr-cancel-btn"
+                            class="px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            id="qr-copy-btn"
+                            class="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors flex items-center gap-2"
+                        >
+                            <!-- default state -->
+                            <span
+                                id="qr-copy-default"
+                                class="flex items-center gap-2"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+                                    />
+                                </svg>
+                                Copy Link
+                            </span>
+                            <!-- success state (hidden until copy succeeds) -->
+                            <span
+                                id="qr-copy-success"
+                                class="hidden items-center gap-2"
+                            >
+                                <svg
+                                    class="w-4 h-4"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        stroke-width="2"
+                                        d="M5 13l4 4L19 7"
+                                    />
+                                </svg>
+                                Copied!
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Same-Device Wallet Modal (hidden until triggered by same-device flow) -->
+        <div
+            id="same-device-modal"
+            class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm items-center justify-center z-[10000]"
+        >
+            <div
+                class="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 text-center shadow-2xl"
+            >
+                <h2 class="text-2xl font-semibold text-gray-900 mb-4">
+                    Open Wallet App
+                </h2>
+                <p class="text-gray-500 mb-6 leading-relaxed">
+                    Click the button below to open your EUDI Wallet app and
+                    share your credentials.
+                </p>
+
+                <button
+                    id="open-wallet-btn"
+                    class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-7 rounded-xl text-base transition-colors"
+                >
+                    Open EUDI Wallet
+                </button>
+
+                <div class="mt-5 pt-5 border-t border-gray-200">
+                    <p class="text-gray-400 text-sm mb-3">
+                        Waiting for response from wallet&hellip;
+                    </p>
+                    <div
+                        class="w-6 h-6 border-[3px] border-gray-200 border-t-blue-500 rounded-full mx-auto animate-spin"
+                    ></div>
+                </div>
+
+                <button
+                    id="cancel-same-device-btn"
+                    class="mt-5 text-gray-400 hover:text-gray-600 text-sm underline bg-transparent border-none cursor-pointer transition-colors"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+
+        <script type="module" src="/src/main.ts"></script>
+    </body>
 </html>

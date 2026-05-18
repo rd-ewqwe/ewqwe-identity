@@ -365,18 +365,6 @@ impl OpenID4VPService {
             .await?
             .ok_or_else(|| OpenID4VPError::NotFound("Transaction not found".into()))?;
 
-        let jar_key = self.jar_key.as_ref().ok_or_else(|| {
-            OpenID4VPError::Config(
-                "Unable to build authorization request: HAIP is not configured; the JAR signing key is not configured".into(),
-            )
-        })?;
-
-        let jwe_key = self.jwe_key.as_ref().ok_or_else(|| {
-            OpenID4VPError::Config(
-                "Unable to build authorization request: HAIP is not configured; the JWE encryption key is not configured".into(),
-            )
-        })?;
-
         // Build client_metadata with VP format capabilities.
         // `vp_formats` is typed as `VpFormats`; serialize to JSON for embedding in the request.
         let base_formats = transaction
@@ -410,14 +398,23 @@ impl OpenID4VPService {
             "vp_formats_supported": base_formats,
         });
 
-        // Add JWE encryption parameters for HAIP profile
         if transaction.profile == ProfileId::Haip {
+            let jar_key = self.jar_key.as_ref().ok_or_else(|| {
+                OpenID4VPError::Config(
+                    "HAIP is not configured; JAR signing key not available for JAR signing".into(),
+                )
+            })?;
+            let jwe_key = self.jwe_key.as_ref().ok_or_else(|| {
+                OpenID4VPError::Config(
+                    "HAIP is not configured; JWE encryption key not available".into(),
+                )
+            })?;
+
+            // Add JWE encryption parameters for HAIP profile
             metadata["jwks"] = serde_json::json!({ "keys": [jwe_key.public_jwk.clone()] });
             metadata["authorization_encrypted_response_alg"] = "ECDH-ES".into();
             metadata["authorization_encrypted_response_enc"] = "A256GCM".into();
-        }
 
-        if transaction.profile == ProfileId::Haip {
             // HAIP: Signed JAR (RFC 9101)
             let jar_payload = JarPayload {
                 client_id: transaction.client_id.clone(),
@@ -438,7 +435,7 @@ impl OpenID4VPService {
                 content_type: "application/oauth-authz-req+jwt".to_string(),
             })
         } else {
-            // Annex A: Plain JSON authorization request
+            // Annex A: Plain JSON authorization request — no JAR/JWE keys needed
             let mut auth_request = serde_json::json!({
                 "client_id": transaction.client_id,
                 "client_id_scheme": transaction.client_id_scheme.to_string(),

@@ -11,28 +11,23 @@
 
 // === Types ===
 export type {
-  // Protocol profiles
   ProfileId,
   ClientIdScheme,
   RequestFormat,
   ResponseMode,
   ProtocolProfile,
-  // Credential configuration
   CredentialType,
   CredentialFormat,
   ClaimDefinition,
   CredentialTypeConfig,
-  // OpenID4VP
   OpenID4VPRequest,
   SimpleClientMetadata,
   OpenID4VPResponse,
-  // Legacy Presentation Definition format
   PresentationDefinition,
   InputDescriptor,
   ConstraintField,
   PresentationSubmission,
   DescriptorMap,
-  // Verification
   VerifyRequest,
   VerifyResponse,
   TransactionStatus,
@@ -40,46 +35,38 @@ export type {
   TransactionDataEntry,
   TransactionStatusResult,
   InitTransactionResponse,
-  // W3C Digital Credentials API
   DigitalCredentialRequest,
   DigitalCredential,
-  // Transaction init (frontend → RP backend)
   InitTransactionRequest,
-} from "./types.js";
+} from "./types.ts";
 
 export type {
-  // DCQL types
   DCQLClaimsQuery,
   DCQLCredentialQuery,
   DCQLCredentialSetQuery,
   DCQLQuery,
-} from "./dcql.js";
+} from "./dcql.ts";
 
-// === DCQL ===
 export {
-  // Constants
   EU_AV_NAMESPACE,
   EU_AV_DOCTYPE,
   ISO_MDL_NAMESPACE,
   ISO_MDL_DOCTYPE,
   EU_PID_NAMESPACE,
   EU_PID_DOCTYPE,
-  // Query builders
   buildAgeVerificationQuery,
   buildAgeVerificationQueryWithFallback,
   buildInitTransactionRequest,
   getDefaultAgeVerificationDCQL,
   determineProfile,
-  // Utilities
   generateNonce,
   parseDCQLQuery,
   extractAgeThreshold,
   buildAuthorizationRequest,
   buildCrossDeviceAuthorizationRequest,
-} from "./dcql.js";
+} from "./dcql.ts";
 
-// === Attestation ===
-export type { Attestation as AttestationClaims } from "./attestation.js";
+export type { Attestation as AttestationClaims } from "./attestation.ts";
 export {
   parseAttestation,
   decodeAttestation,
@@ -87,13 +74,11 @@ export {
   importVerifierPublicKey,
   verifyAttestation,
   base64urlDecode,
-} from "./attestation.js";
+} from "./attestation.ts";
 
-// === API Client ===
-export { EwqweApiClient } from "./api-client.js";
-export type { ApiClientOptions, FetchFn } from "./api-client.js";
+export { EwqweApiClient } from "./api-client.ts";
+export type { ApiClientOptions, FetchFn } from "./api-client.ts";
 
-// === Config ===
 export {
   PROTOCOL_PROFILES,
   CREDENTIAL_TYPES,
@@ -101,4 +86,4 @@ export {
   getClaimsForType,
   getProfileForType,
   getProfileIdForType,
-} from "./config.js";
+} from "./config.ts";

@@ -8,7 +8,6 @@ This is a **developer guide** for building and running the ewQwe Identity system
 
 This project implements the [EU Age Verification Profile](https://ageverification.dev/) using W3C Digital Credentials, consisting of:
 
-- **Wallet Extension** (`wallet-extension/`) - Browser extension for storing and presenting Proof of Age credentials
 - **Relying Party (RP)** (`webapp/`) - Deno/TypeScript application that requests and verifies credentials
 - **Credential Verifier** (`crates/ewqwe-credential-verifier-server/`) - Rust backend that validates VP Tokens and issues attestations
 - **Verifier UI** (`crates/ewqwe-credential-verifier-ui/ui/`) - Admin dashboard for managing verifier operations

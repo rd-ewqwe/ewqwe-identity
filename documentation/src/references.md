@@ -84,6 +84,7 @@ These links are useful when validating feasibility and browser support status fo
 ## Playgrounds
 
 - France Identité: <https://playground.france-identite.gouv.fr/doc/>
+- EUDIW Unfold: <https://playground.france-identite.gouv.fr>
 
 ## Tooling (Deno)
 

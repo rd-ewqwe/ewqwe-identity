@@ -24,7 +24,7 @@ Per the [EU Age Verification Profile §A.5](https://ageverification.dev/Technica
 - **Use the W3C Digital Credentials API as the primary method**: call `navigator.credentials.get()` with ISO 18013-7 Annex C wrapper format for the smoothest, most "web-native" flow. This is the officially recommended primary path.
 - **Fallback to OpenID4VP when the W3C API is not available**: use the OpenID4VP presentation flow (`av://` deep link or QR code, `direct_post`, no JAR).
 
-## Two Profiles, Three Presentation Methods
+<!--## Two Profiles, Three Presentation Methods-->
 
 | Aspect | EU AV Profile — DC API (Annex C) | EU AV Profile — OpenID4VP Fallback | HAIP (EUDI Wallet) |
 |--------|---------------------------------------------|-------------------------------------|---------------------|
@@ -41,7 +41,7 @@ Per the [EU Age Verification Profile §A.5](https://ageverification.dev/Technica
 | **Credential Formats** | `mso_mdoc` (`eu.europa.ec.av.1`) | `mso_mdoc` (`eu.europa.ec.av.1`) | `mso_mdoc` (mDL, PID) / `dc+sd-jwt` (PID) |
 | **Crypto** | COSE_Sign1 + HPKE (X25519 + AES-128-GCM) | COSE_Sign1 + OpenID4VP Handover | COSE_Sign1 or JWT + JWE (ECDH-ES + A256GCM) |
 | **Device Support** | Same-device only (browser-wallet on one device) | Same-device + cross-device (QR) | Same-device + cross-device (QR) |
-| **Wallets** | France Identité, AVI (Android) | France Identité, AVI, any OID4VP wallet | EUDI Wallet |
+| **Wallets** | France Identité, EUDI Wallet Referenz, AVI, any mDoc wallet | France Identité, AVI, any OID4VP wallet | EUDI Wallet, any HAIP-compatible wallet |
 
 ### The ISO 18013-7 Annex Letters Explained
 
@@ -58,7 +58,7 @@ Per the [EU Age Verification Profile §A.5](https://ageverification.dev/Technica
 All credential verification flows involve these main components:
 
 - **Relying Party (RP) Web App**: A web application requesting credential verification from users
-- **Wallet**: The user's digital wallet storing credentials — France Identité, Age Verification App (AVI), or EUDI Wallet
+- **Wallet**: The user's digital wallet storing credentials — e.g. France Identité, EUDI Wallet Referenz, Age Verification App (AVI), or any OID4VP/DC API-compatible wallet
 - **ewQwe Credential Verifier**: A trusted backend service that verifies credentials and issues signed attestations
 
 ---
@@ -69,7 +69,7 @@ This flow implements the **EU Age Verification Profile's primary presentation me
 
 > **Key difference from OpenID4VP:** No QR code or deep link is used. The browser invokes the wallet directly, passing two CBOR blobs: `encryptionInfo` (wallet encrypts response to RP's public key) and `deviceRequest` (what to present). The wallet returns an **HPKE-encrypted** DeviceResponse which the RP decrypts in the browser.
 
-> **Cross-device support:** The W3C DC API is inherently **same-device** (browser and wallet on one device). For cross-device flows (e.g., QR code on desktop scanned by phone), use the OpenID4VP fallback (Flow 2). France Identité supports both.
+> **Cross-device support:** The W3C DC API is inherently **same-device** (browser and wallet on one device). For cross-device flows (e.g., QR code on desktop scanned by phone), use the OpenID4VP fallback (Flow 2). Many EU wallets — including France Identité — support both.
 
 ### DC API / Annex C Flow
 
@@ -78,7 +78,7 @@ sequenceDiagram
     participant User
     participant RP as RP Webapp
     participant Browser
-    participant Wallet as France Identité<br/>Wallet (Android)
+    participant Wallet as Wallet<br/>(Mobile/Android)
     participant CV as ewQwe<br/>Credential Verifier
 
     User->>RP: Click "Verify Age"
@@ -91,7 +91,7 @@ sequenceDiagram
     Note over RP,Browser: 2. Call W3C Digital Credentials API
     RP-->>Browser: navigator.credentials.get({<br/>    digital: {<br/>        requests: [{encryptionInfo, deviceRequest}]<br/>    }<br/>})
 
-    Browser->>Browser: Identify wallet (France Identité)<br/>based on credential type / doc type
+    Browser->>Browser: Identify wallet<br/>based on credential type / doc type
     Browser->>Wallet: Invoke wallet via intent / service
 
     Note over Wallet: 3. Wallet processes request
@@ -334,24 +334,46 @@ sequenceDiagram
 
 ## Wallet Compatibility Matrix
 
-| If you need to support... | Use this flow | Transport | Implementation |
-|--------------------------|---------------|-----------|----------------|
-| **France Identité Wallet** (DC API) | Flow 1 | W3C DC API | HPKE + CBOR in browser, stateless verifier endpoint |
-| **France Identité Wallet** (OpenID4VP) | Flow 2 | OpenID4VP (QR) | Annex A profile — no JAR |
-| **Age Verification App (AVI)** | Flow 2 | OpenID4VP (QR) | Annex A profile — no JAR |
-| **EUDI Wallet (mDoc)** | Flow 3 | OpenID4VP (QR) | HAIP — JAR + JWE + trusted CA |
-| **EUDI Wallet (SD-JWT)** | Flow 4 | OpenID4VP (QR) | HAIP SD-JWT |
-| **Browser extension (fallback)** | Flow 2 | OpenID4VP + postMessage | Same as Annex A |
+The [France Identité playground marketplace](https://playground.france-identite.gouv.fr/marketplace) lists wallets and verifier implementations from across the EU, all demonstrated to be interoperable with one another. This means our credential verifier — using the same OpenID4VP, HAIP, and DC API protocols — can interoperate with any wallet that works with these verifiers.
+
+### Wallets (Actual Wallet Implementations)
+
+| Member State | Wallet | Supported Protocols | Credential Formats | Mapped Flow |
+|-------------|--------|---------------------|-------------------|-------------|
+| 🇫🇷 France | **France Identité** | ISO 18013-7 Annex B, OID4VP 1.0 | mdoc | Flow 1, Flow 2 |
+| 🇪🇺 EU | **EUDI Wallet Referenz** | HAIP, OID4VP 1.0 | mdoc, sd-jwt | Flow 3, Flow 4 |
+| 🇪🇺 EU | **Age Verification App (AVI)** | Annex A OID4VP | mdoc | Flow 2 |
+
+### Verifier Implementations (for Reference)
+
+The following verifiers on the France Identité playground all support OpenID4VP. Any wallet that works with these verifiers will also work with our credential verifier, since we implement the same protocols.
+
+| Member State | Verifier | Key Protocols | Credential Formats |
+|-------------|----------|--------------|-------------------|
+| 🇱🇺 Luxembourg | **Hopae** | OID4VP 1.0, HAIP, ISO 18013-5/7, W3C DC API | mdoc, sd-jwt |
+| 🇸🇪 Sweden | **PassportReader** | OID4VP draft 18/Annex B, OID4VP 1.0 (DCQL, HAIP 1.0), W3C DC API | mdoc, sd-jwt |
+| 🇸🇪 Sweden | **iGrant.io** | OID4VP 1.0, W3C DC API, DCQL, HAIP 1.0 | mdoc, sd-jwt |
+| 🇸🇮 Slovenia | **Lutralabs** | OID4VP 1.0, HAIP 1.0 | mdoc, sd-jwt |
+| 🇳🇱 Netherlands | **Animo** | OID4VP draft 18/24/v1.0 | mdoc, sd-jwt |
+| 🇫🇮 Finland | **Hovi** | OID4VP draft 24/v1.0, ISO 18013-5 (BLE) | mdoc, sd-jwt |
+| 🇮🇹 Italy | **Namirial** | OID4VP 1.0, OID4VCI 1.0 | mdoc, sd-jwt |
+| 🇪🇸 Spain | **hashID** | OID4VP draft 18/20/24/v1.0 | mdoc, sd-jwt |
+| 🇩🇪 Germany | **Lissi** | OID4VCI 1.0, OID4VP 1.0 | mdoc, sd-jwt |
+| 🇷🇴 Romania | **certSIGN** | OID4VP, OID4VCI, ISO 18013-5:2021 | mdoc, sd-jwt |
+| 🇫🇷 France | **DC API Verifier** | OpenID4VP (dc_api.jwt), ISO 18013-7 DeviceRequest over DC API (org-iso-mdoc) | mdoc |
+
+> **Interoperability note:** These verifiers span 10+ EU member states and all implement OpenID4VP — our credential verifier follows the same OpenID4VP and DC API specifications. Your wallet users can use any OID4VP-compatible EU wallet, regardless of which member state issued it.
 
 ### Choosing the Right Flow
 
-| Scenario | Recommended Flow |
-|----------|-----------------|
-| User has France Identité + Android Chrome | Flow 1 (DC API) — browser-native, best UX |
-| France Identité, DC API not available | Flow 2 (OpenID4VP fallback) |
-| EUDI Wallet with mDoc (PID/mDL) | Flow 3 (HAIP mDoc) |
-| EUDI Wallet with SD-JWT (PID) | Flow 4 (HAIP SD-JWT) |
-| Unknown wallet, broad compatibility | Detect DC API first, fall back to OpenID4VP |
+| Wallet / Scenario | Supported Flow | Why |
+|------------------|---------------|-----|
+| **W3C DC API-compatible wallet** (e.g. France Identité, EUDI Wallet Referenz) on Android Chrome | **Flow 1** (DC API) | Browser-native flow — no redirects, best UX. Falls back automatically. |
+| **AV-compatible wallet** (e.g. France Identité, AVI, any OID4VP wallet implementing Annex A) | **Flow 2** (Annex A OpenID4VP) | No JAR, no client certs. Works cross-device or same-device via QR/deep link. |
+| **HAIP-compatible wallet with mDoc** (e.g. EUDI Wallet Referenz with PID/mDL, Hopae) | **Flow 3** (HAIP mDoc) | High-assurance: JAR-signed requests, JWE-encrypted responses, certificate chain trust. |
+| **HAIP-compatible wallet with SD-JWT** (e.g. EUDI Wallet Referenz with PID) | **Flow 4** (HAIP SD-JWT) | High-assurance with selective disclosure. Same HAIP trust model as Flow 3. |
+| **Unknown wallet**, broadest compatibility | Detect DC API → fallback to OpenID4VP | Try Flow 1 first via `navigator.credentials.get()`, if unavailable use Flow 2. |
+| **Cross-device** (e.g. desktop browser + phone wallet) | **Flow 2, 3, or 4** (OpenID4VP via QR) | QR code flow works with any OpenID4VP wallet — Annex A or HAIP. |
 
 ---
 

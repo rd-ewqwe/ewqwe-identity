@@ -3,12 +3,12 @@
 [Introduction](introduction.md)
 
 - [Digital Credential User Journey](./user-journey.md)
-- [The ewQwe Credential Verifier](./credential_verifier_server.md)
-- [Verifier App](./qrcode_app.md)
+- [The ewQwe Credential Verifier server](./credential_verifier_server.md)
+- [The ewQwe Credential Verifier UI](./credential_verifier_ui.md)
 - [The Demo Architecture](./demo_architecture.md)
 - [Age Verification App on Android](./av_wallet_android_studio.md)
 - [EUDI Wallet on Android](./eudi_wallet_android_studio.md)
-- [The Demo Wallet Browser Extension](./demo_wallet_extension.md)
+
 - [The Relying Party Demo Web Application](./demo_webapp.md)
 - [The Webapp -> Wallet Communication Protocol](./webapp_wallet_communication.md)
 - [Credential Specifications](./credential_specifications.md)

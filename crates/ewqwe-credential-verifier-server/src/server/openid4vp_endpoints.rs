@@ -41,11 +41,17 @@ use crate::parameters::ServerParams;
 pub async fn init_transaction(
     req: HttpRequest,
     service: web::Data<Arc<OpenID4VPService>>,
-    params: web::Data<ServerParams>,
+    params: web::Data<Arc<ServerParams>>,
     body: web::Json<InitTransactionRequest>,
 ) -> HttpResponse {
     info!("POST /ewqwe_api/openid4vp/init");
     let request = body.into_inner();
+    let credential_type = request
+        .credential_type
+        .as_deref()
+        .unwrap_or("unspecified")
+        .to_owned();
+    let has_dcql = request.dcql_query.is_some();
 
     // Construct the public URL for the transaction.
     // If `public_root_url` is not set, use the request's scheme and host.
@@ -53,6 +59,13 @@ pub async fn init_transaction(
         let conn = req.connection_info();
         format!("{}://{}", conn.scheme(), conn.host())
     });
+
+    info!(
+        credential_type = %credential_type,
+        has_dcql = %has_dcql,
+        public_url = %public_url,
+        "Processing init transaction request"
+    );
 
     match service.init_transaction(request, &public_url).await {
         Ok(response) => {
@@ -63,7 +76,15 @@ pub async fn init_transaction(
             );
             HttpResponse::Ok().json(response)
         }
-        Err(e) => openid4vp_error_response(e),
+        Err(e) => {
+            error!(
+                credential_type = %credential_type,
+                public_url = %public_url,
+                error = %e,
+                "init_transaction failed"
+            );
+            openid4vp_error_response(e)
+        }
     }
 }
 
@@ -373,7 +394,7 @@ fn openid4vp_error_response(e: OpenID4VPError) -> HttpResponse {
         OpenID4VPError::Crypto(msg) => {
             error!(error = %msg, "Crypto error");
             HttpResponse::InternalServerError()
-                .json(serde_json::json!({"error": "Internal crypto error"}))
+                .json(serde_json::json!({"error": format!("Internal crypto error: {msg}")}))
         }
         OpenID4VPError::Config(msg) => {
             error!(error = %msg, "Config error");
@@ -384,7 +405,7 @@ fn openid4vp_error_response(e: OpenID4VPError) -> HttpResponse {
         OpenID4VPError::Internal(msg) => {
             error!(error = %msg, "Internal error");
             HttpResponse::InternalServerError()
-                .json(serde_json::json!({"error": "Internal server error"}))
+                .json(serde_json::json!({"error": format!("Internal server error: {msg}")}))
         }
     }
 }

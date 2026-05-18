@@ -212,9 +212,9 @@ cd certificates/signer && ./generate_signer_certs.sh
 
 ⚠️ **Never use these development certificates in production.**
 
-## Embedded Verifier App (`ewqwe-verifier-app`)
+## Embedded Credential Verifier UI (`ewqwe-verifier-app`)
 
-The credential verifier ships with an embedded **Verifier App** — a self-contained QR-code-based verification web application that runs as an actix-web scope. It provides a browser UI for generating OpenID4VP transaction QR codes and polling verification results.
+The credential verifier ships with an embedded **Credential Verifier UI** — a self-contained QR-code-based verification web application that runs as an actix-web scope. It provides a browser UI for generating OpenID4VP transaction QR codes and polling verification results.
 
 ### Key Features
 - **User management**: Admin creates/edits users with per-type credential permissions
@@ -226,7 +226,7 @@ The credential verifier ships with an embedded **Verifier App** — a self-conta
 
 ### Configuration
 
-Enable the Verifier App in `credential-server.toml`:
+Enable the Credential Verifier UI in `credential-server.toml`:
 
 ```toml
 [verifier_ui]
@@ -239,7 +239,7 @@ path = "/var/lib/ewqwe/verifier_ui.db"
 
 ### Routes
 
-The Verifier App mounts under `/verifier_ui/`:
+The Credential Verifier UI mounts under `/verifier_ui/`:
 
 | Route | Auth | Description |
 |-------|------|-------------|
@@ -741,7 +741,7 @@ If the head changes concurrently (e.g., another request completed first), the ap
 ## Related Documentation
 
 - [User Journey - Sequence Diagram](./user-journey.md) - Complete credential flow
-- [Verifier App](./qrcode_app.md) - Built-in web UI for credential verification operators
+- [Credential Verifier UI](./qrcode_app.md) - Built-in web UI for credential verification operators
 - [Credential Specifications](./credential_specifications.md) - Credential format reference
 - [DCQL Age Verification](./dcql_age_verification.md) - Query language for credential requests
 - [Digital Credential Browser Storage](./digital_credentials_browser_storage.md) - Browser credential storage

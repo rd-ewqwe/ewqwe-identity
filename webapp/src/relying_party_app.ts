@@ -138,7 +138,8 @@ export class RelyingPartyApp {
     const descriptions: Record<string, string> = {
       "w3c-dc-fallback":
         "Tries W3C Digital Credentials API first, falls back to OpenID4VP if unavailable",
-      "w3c-dc": "Uses navigator.credentials.get() with the wallet extension",
+      "w3c-dc":
+        "Uses navigator.credentials.get() with ISO 18013-7 Annex C (mobile wallets via W3C DC API)",
       "openid4vp-cross-device":
         "OpenID4VP 1.0 cross-device flow - scan QR code with mobile wallet (EUDI Wallet)",
       "openid4vp-same-device":
@@ -200,12 +201,10 @@ export class RelyingPartyApp {
     const bgColor = isHaip ? "bg-blue-950/30" : "bg-green-950/30";
 
     const config = CREDENTIAL_TYPES[this.selectedCredentialType];
-    const formatLabel = config?.format === "dc+sd-jwt"
-      ? "SD-JWT VC"
-      : "MSO MDOC";
-    const formatBadgeColor = config?.format === "dc+sd-jwt"
-      ? "bg-amber-600"
-      : "bg-slate-600";
+    const formatLabel =
+      config?.format === "dc+sd-jwt" ? "SD-JWT VC" : "MSO MDOC";
+    const formatBadgeColor =
+      config?.format === "dc+sd-jwt" ? "bg-amber-600" : "bg-slate-600";
 
     profileContainer.innerHTML = `
       <div class="rounded-lg ${bgColor} ${borderColor} border p-4 mb-6">
@@ -224,8 +223,8 @@ export class RelyingPartyApp {
           <div>
             <span class="text-gray-500">Request Format:</span>
             <span class="ml-2 text-white font-mono">${
-      profile.requestFormat === "jar" ? "Signed JAR" : "Plain JSON"
-    }</span>
+              profile.requestFormat === "jar" ? "Signed JAR" : "Plain JSON"
+            }</span>
           </div>
           <div>
             <span class="text-gray-500">Response Mode:</span>
@@ -234,8 +233,8 @@ export class RelyingPartyApp {
           <div>
             <span class="text-gray-500">URL Scheme:</span>
             <span class="ml-2 text-white font-mono">${
-      profile.urlSchemes[0]
-    }</span>
+              profile.urlSchemes[0]
+            }</span>
           </div>
         </div>
       </div>
@@ -311,11 +310,11 @@ export class RelyingPartyApp {
       // For HAIP with x509_hash scheme, the wallet validates the client_id by
       // computing the SHA-256 hash of the leaf certificate from the JAR's x5c
       // header and comparing it to the hash in client_id.  No DNS SAN hostname
-      // constraint is required (unlike x509_san_dns).  
-      // 
+      // constraint is required (unlike x509_san_dns).
+      //
       // For x509_dns_san, we use demo.ewqwe.local
       // as the public URL hostname for consistency with TLS certificate SANs.
-      // 
+      //
       //For Annex A (redirect_uri scheme) there is no such constraint, so we
       // can use the document origin directly.
 
@@ -371,7 +370,8 @@ export class RelyingPartyApp {
       },
       {
         name: "Crypto API",
-        supported: typeof crypto !== "undefined" &&
+        supported:
+          typeof crypto !== "undefined" &&
           typeof crypto.randomUUID === "function",
         icon: "🔑",
         infoUrl: "https://developer.mozilla.org/docs/Web/API/Crypto",
@@ -388,8 +388,8 @@ export class RelyingPartyApp {
           <div class="text-2xl mb-1">${check.icon}</div>
           <div class="text-xs text-gray-400">${check.name}</div>
           <div class="${
-          check.supported ? "text-green-400" : "text-amber-400"
-        } text-sm font-medium">
+            check.supported ? "text-green-400" : "text-amber-400"
+          } text-sm font-medium">
             ${check.supported ? "✓ Supported" : "⚠ Limited"}
           </div>
         </div>
@@ -525,8 +525,7 @@ export class RelyingPartyApp {
     if (result.success) {
       let warningHtml = "";
       let statusClass = "result-success";
-      let statusIcon =
-        `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+      let statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
       let statusText = "Verification Successful";
 
       let attestationClaims: Record<string, unknown>;
@@ -549,8 +548,7 @@ export class RelyingPartyApp {
           expiryStatus = "expired";
           statusClass = "result-warning";
           statusText = "Verification Successful (Expired)";
-          statusIcon =
-            `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+          statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
           this.logger.log(
             "Attestation is expired, decoding claims for display",
           );
@@ -562,8 +560,7 @@ export class RelyingPartyApp {
           expiryStatus = "not_yet_valid";
           statusClass = "result-warning";
           statusText = "Verification Successful (Not Yet Valid)";
-          statusIcon =
-            `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+          statusIcon = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />`;
           this.logger.log(
             "Attestation is not yet valid, decoding claims for display",
           );
@@ -591,11 +588,12 @@ export class RelyingPartyApp {
       const credentialEntries = Object.entries(attestationClaims).filter(
         ([key]) => !reservedKeys.has(key),
       );
-      const claimsHtml = credentialEntries.length > 0
-        ? credentialEntries
-          .map(([key, value]) => this.renderClaimRow(key, value))
-          .join("")
-        : "";
+      const claimsHtml =
+        credentialEntries.length > 0
+          ? credentialEntries
+              .map(([key, value]) => this.renderClaimRow(key, value))
+              .join("")
+          : "";
 
       if (expiryStatus === "expired") {
         warningHtml = `
@@ -646,15 +644,14 @@ export class RelyingPartyApp {
       `;
     } else {
       resultIcon.setAttribute("class", "w-6 h-6 mr-3 text-red-400");
-      resultIcon.innerHTML =
-        `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
+      resultIcon.innerHTML = `<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />`;
       resultTitle.textContent = "Last Verification Failed";
       resultTitle.setAttribute("class", "result-error");
 
       const errorsHtml = result.errors
         ? result.errors
-          .map((err) => `<li class="text-red-400">${err}</li>`)
-          .join("")
+            .map((err) => `<li class="text-red-400">${err}</li>`)
+            .join("")
         : "";
 
       resultContent.innerHTML = `
@@ -666,10 +663,10 @@ export class RelyingPartyApp {
             <div>
               <p class="text-red-400 font-medium">${result.message}</p>
               ${
-        errorsHtml
-          ? `<ul class="mt-2 list-disc list-inside text-sm">${errorsHtml}</ul>`
-          : ""
-      }
+                errorsHtml
+                  ? `<ul class="mt-2 list-disc list-inside text-sm">${errorsHtml}</ul>`
+                  : ""
+              }
             </div>
           </div>
         </div>

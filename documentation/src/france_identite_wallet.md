@@ -222,7 +222,7 @@ cargo run --features openssl
 
 The France Identité Wallet supports OpenID4VP 1.0. This is the simplest path:
 
-1. **Start the ewQwe Verifier App** (if enabled in config):
+1. **Start the ewQwe Credential Verifier UI** (if enabled in config):
    - Open `https://YOUR_PUBLIC_URL:9443/` in a browser
    - Log in (see the Verifier UI documentation for credentials)
    - Create a new verification request (QR code)
@@ -230,7 +230,7 @@ The France Identité Wallet supports OpenID4VP 1.0. This is the simplest path:
 2. **On the France Identité Wallet:**
    - Open the wallet app
    - Tap **"Scan QR code"** or **"Scanner"**
-   - Scan the QR code displayed by the Verifier App
+   - Scan the QR code displayed by the Credential Verifier UI
    - The wallet will evaluate the OpenID4VP request
    - **If the wallet shows a consent dialog**, proceed to authorize
    - **If the wallet shows an error**, check:
@@ -239,12 +239,12 @@ The France Identité Wallet supports OpenID4VP 1.0. This is the simplest path:
      - The wallet must trust the verifier's certificate
 
 3. **Check the result:**
-   - The Verifier App should show a successful verification
+   - The Credential Verifier UI should show a successful verification
    - The verification journal (if enabled) should record the event
 
 ### Test 2: W3C Digital Credentials API / Annex B Mode
 
-The Annex B flow uses the W3C Digital Credentials API (`navigator.credentials.get()`) with ISO mDoc DeviceRequest/DeviceResponse wrapping. This requires a **browser-based RP** (not the Verifier App):
+The Annex B flow uses the W3C Digital Credentials API (`navigator.credentials.get()`) with ISO mDoc DeviceRequest/DeviceResponse wrapping. This requires a **browser-based RP** (not the Credential Verifier UI):
 
 1. **Ensure the ewQwe webapp is running** and configured for the DC API flow:
    ```bash
