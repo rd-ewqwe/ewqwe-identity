@@ -42,7 +42,7 @@ http {
             # Forward to the backend HTTPS endpoint provided via DESTINATION env var.
             # proxy_ssl_verify off allows self-signed / internal CA certificates on
             # the upstream side.
-            proxy_pass              https://${DESTINATION};
+            proxy_pass              ${DESTINATION};
             proxy_ssl_verify        off;
             proxy_ssl_server_name   on;
 
