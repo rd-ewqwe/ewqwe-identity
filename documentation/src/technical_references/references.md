@@ -7,6 +7,7 @@ This chapter centralizes external references used throughout this documentation.
 - EU Age Verification Profile (Annex A): <https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile>
 - EU Age Verification "Architecture and Technical Specifications": <https://ageverification.dev/docs/architecture-and-technical-specifications.md>
 - EU Age Verification docs (User Journey anchor used in this book): <https://ageverification.dev/av-doc-technical-specification/docs/architecture-and-technical-specifications/#23-user-journey>
+- Age Verification Blueprint (setup guide): <https://ageverification.dev/Setup/>
 
 ## EU Digital Identity Framework (EUDI / eIDAS)
 
@@ -59,6 +60,8 @@ These ISO documents are typically paywalled; the links below are the official IS
 
 ## IETF RFCs (Crypto / Data Formats)
 
+- OAuth 2.0 (RFC 6749): <https://www.rfc-editor.org/rfc/rfc6749.html>
+- JSON Web Token (RFC 7519): <https://www.rfc-editor.org/rfc/rfc7519.html>
 - HPKE (RFC 9180): <https://www.rfc-editor.org/rfc/rfc9180>
 - CBOR (RFC 8949): <https://www.rfc-editor.org/rfc/rfc8949>
 - COSE (RFC 9052): <https://www.rfc-editor.org/rfc/rfc9052>
@@ -81,9 +84,16 @@ These links are useful when validating feasibility and browser support status fo
 - MDN Web Docs (Credential Management API): <https://developer.mozilla.org/en-US/docs/Web/API/Credential_Management_API>
 
 
+## Code Repositories & Reference Implementations
+
+- Age Verifier Frontend (AV web UI): <https://github.com/eu-digital-identity-wallet/av-web-verifier-ui>
+- Verifier Backend (Kotlin reference): <https://github.com/eu-digital-identity-wallet/eudi-srv-web-verifier-endpoint-23220-4-kt>
+- Open Wallet Foundation (mDoc, DCQL, CBOR tooling): <https://github.com/openwallet-foundation-labs>
+
 ## Playgrounds
 
 - France Identité: <https://playground.france-identite.gouv.fr/doc/>
+- France Identité Stelau (proof-of-age API): <https://api.playground.france-identite.gouv.fr/france-titres/stelau-playground/vp/proof-of-age>
 - EUDIW Unfold: <https://playground.france-identite.gouv.fr>
 
 ## Tooling (Deno)

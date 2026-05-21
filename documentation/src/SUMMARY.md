@@ -12,14 +12,11 @@
 
 # Technical References
 
-- [The Webapp -> Wallet Communication Protocol](./webapp_wallet_communication.md)
-- [Credential Specifications](./credential_specifications.md)
-- [Age Verification: ISO mDoc + DCAPI](./age_verification_iso_18013_dcapi.md)
-- [Age Verification: OpenID4VP Fallback](./age_verification_openid4vp.md)
-- [Profile Comparison: ISO 18013-7 Annex B vs HAIP](./annex_b_vs_haip.md)
-- [Annex B Implementation Plan](./annex_b_implementation_plan.md)
-- [France Identité Wallet](./france_identite_wallet.md)
-- [DCQL Age Verification](./dcql_age_verification.md)
-- [Digital Credential Browser Storage](./digital_credentials_browser_storage.md)
-- [Glossary](./glossary.md)
-- [References](./references.md)
+- [The Webapp -> Wallet Communication Protocol](./technical_references/webapp_wallet_communication.md)
+- [Credential Specifications](./technical_references/credential_specifications.md)
+- [Age Verification: ISO mDoc + DCAPI](./technical_references/age_verification_iso_18013_dcapi.md)
+- [Age Verification: OpenID4VP Fallback](./technical_references/age_verification_openid4vp.md)
+- [ISO 18013-7](./technical_references/iso_18013_7.md)
+- [DCQL Age Verification](./technical_references/dcql_age_verification.md)
+- [Glossary](./technical_references/glossary.md)
+- [References](./technical_references/references.md)
