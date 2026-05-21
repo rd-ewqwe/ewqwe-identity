@@ -214,6 +214,7 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
     let server = HttpServer::new(move || {
         // Create an `App` instance and configure the passed data and the various scopes
         let app = App::new()
+            .wrap(super::request_tracing_middleware::RequestTracing)
             .app_data(Data::new(server_params.clone())) // Share the attestation server parameters across the app.
             .app_data(PayloadConfig::new(1_000_000)) // Set the maximum size of the request payload.
             .app_data(JsonConfig::default().limit(1_000_000)); // Set the maximum size of the JSON request payload.
@@ -280,20 +281,24 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
                 "/openid4vp/.well-known/jwks.json",
                 web::get().to(openid4vp_endpoints::get_jwks),
             )
+            // DC API endpoint — wallet-facing (no mTLS).
+            // Receives already-decrypted mDoc DeviceResponse from the RP's browser
+            // (the RP performs HPKE decryption in the browser per ISO 18013-7 Annex C).
+            // No client cert required — wallets/browsers never present client certs.
+            .route(
+                "/dc_api/verify",
+                web::post().to(super::dc_api_endpoint::verify_dc_api),
+            )
+            .route(
+                "/dc_api/nonce",
+                web::get().to(super::dc_api_endpoint::generate_nonce),
+            )
             // ----- RP-facing endpoints — require client cert (SslAuth + EnsureAuth) -----
             .service(
                 web::resource("/verify")
                     .wrap(ensure_auth.clone())
                     .wrap(SslAuth)
                     .route(web::post().to(verify_credential_endpoint)),
-            )
-            // DC API endpoint — receives already-decrypted mDoc DeviceResponse from the RP
-            // (the RP performs HPKE decryption in the browser per ISO 18013-7 Annex C)
-            .service(
-                web::resource("/dc_api/verify")
-                    .wrap(ensure_auth.clone())
-                    .wrap(SslAuth)
-                    .route(web::post().to(super::dc_api_endpoint::verify_dc_api)),
             )
             .service(
                 web::resource("/.well-known/issuer_certs")
@@ -380,14 +385,22 @@ async fn prepare_server(params: Arc<ServerParams>) -> AttResult<actix_web::dev::
     ))
     .client_request_timeout(std::time::Duration::from_secs(10)); // keep 10 seconds timeout for KMIP attestation vectors
 
-    let server = server
-        .on_connect(extract_openssl_peer_certificate)
-        .bind_openssl(address, create_openssl_acceptor(&params.tls_params)?)
-        .map_err(|e| {
-            crate::AttError::Config(format!("Failed binding the OpenSSL TLS connector: {e}"))
-        })?;
+    Ok(if let Some(tls_params) = &params.tls_params {
+        let server = server
+            .on_connect(extract_openssl_peer_certificate)
+            .bind_openssl(address, create_openssl_acceptor(tls_params)?)
+            .map_err(|e| {
+                crate::AttError::Config(format!("Failed binding the OpenSSL TLS connector: {e}"))
+            })?;
+        server.run()
+    } else {
+        let server = server
+            .bind(address)
+            .map_err(|e| crate::AttError::Config(format!("Failed binding the server: {e}")))?;
+        server.run()
+    })
 
-    let server = server.run();
+    // let server = server.run();
 
-    Ok(server)
+    // Ok(server)
 }

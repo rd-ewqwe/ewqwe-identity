@@ -70,7 +70,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         rust_log: None,
         public_root_url: None,
-        tls_params: TlsParams {
+        tls_params: Some(TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")
                 .to_string_lossy()
@@ -90,7 +90,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
                     .to_string(),
             ),
             tls_cipher_suites: None,
-        },
+        }),
         default_username: Some("default_user".to_string()),
         openid4vp_config: OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests
@@ -139,7 +139,7 @@ pub fn make_test_server_params(
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         rust_log: None,
         public_root_url: None,
-        tls_params: TlsParams {
+        tls_params: Some(TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")
                 .to_string_lossy()
@@ -159,7 +159,7 @@ pub fn make_test_server_params(
                     .to_string(),
             ),
             tls_cipher_suites: None,
-        },
+        }),
         default_username: Some("default_user".to_string()),
         openid4vp_config: OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests
@@ -208,7 +208,7 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
         host_name: "127.0.0.1".to_string(),
         host_port: SERVER_PORT_COUNTER.fetch_add(1, std::sync::atomic::Ordering::SeqCst),
         public_root_url: None,
-        tls_params: crate::TlsParams {
+        tls_params: Some(crate::TlsParams {
             server_certificate: certificates_dir
                 .join("ewqwe.server.cert.pem")
                 .to_string_lossy()
@@ -228,7 +228,7 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
                     .to_string(),
             ),
             tls_cipher_suites: None,
-        },
+        }),
         default_username: Some("default_user".to_string()),
         openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60),

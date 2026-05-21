@@ -17,7 +17,7 @@ const APP_CONFIG_DIR: &str = "Credential Server";
 pub struct ServerParams {
     pub host_name: String,
     pub host_port: u16,
-    pub tls_params: TlsParams,
+    pub tls_params: Option<TlsParams>,
     pub default_username: Option<String>,
     pub openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig,
 
@@ -222,14 +222,15 @@ impl ServerParams {
     }
 
     fn resolve_relative_paths(&mut self, base_dir: &Path) {
-        self.tls_params.server_private_key =
-            resolve_path(base_dir, &self.tls_params.server_private_key);
-        self.tls_params.server_certificate =
-            resolve_path(base_dir, &self.tls_params.server_certificate);
-        self.tls_params.server_ca_chain = resolve_path(base_dir, &self.tls_params.server_ca_chain);
+        if let Some(mut tls_params) = self.tls_params.clone() {
+            tls_params.server_private_key = resolve_path(base_dir, &tls_params.server_private_key);
+            tls_params.server_certificate = resolve_path(base_dir, &tls_params.server_certificate);
+            tls_params.server_ca_chain = resolve_path(base_dir, &tls_params.server_ca_chain);
 
-        if let Some(client_ca_cert_chain) = &mut self.tls_params.client_ca_cert_chain {
-            *client_ca_cert_chain = resolve_path(base_dir, client_ca_cert_chain);
+            if let Some(client_ca_cert_chain) = &mut tls_params.client_ca_cert_chain {
+                *client_ca_cert_chain = resolve_path(base_dir, client_ca_cert_chain);
+            }
+            self.tls_params = Some(tls_params);
         }
 
         if let Some(haip_config) = &mut self.openid4vp_config.haip_config {
@@ -278,10 +279,13 @@ impl ServerParams {
 
     /// Path to the PEM certificate for attestation JWT verification.
     /// Falls back to [`TlsParams::server_certificate`] when not configured.
-    pub fn attestation_issuer_certificate_path(&self) -> &str {
+    pub fn attestation_issuer_certificate_path(&self) -> AttResult<&str> {
         self.attestation_issuer_certificate
             .as_deref()
-            .unwrap_or(self.tls_params.server_certificate.as_str())
+            .or_else(|| self.tls_params.as_ref().map(|params| params.server_certificate.as_str()))
+            .ok_or_else(|| {
+                AttError::Config("An attestation issuer certificate must be provided if no TLS certificates are set".to_owned())
+            })
     }
 
     /// Construct tracing configuration to use for initialization.
@@ -298,7 +302,7 @@ impl ServerParams {
         use openssl::nid::Nid;
         use openssl::x509::X509;
 
-        let cert_path = self.attestation_issuer_certificate_path();
+        let cert_path = self.attestation_issuer_certificate_path()?;
         let cert_pem = std::fs::read(cert_path).map_err(|e| {
             AttError::Config(format!(
                 "Failed to read attestation issuer certificate '{cert_path}': {e}"
@@ -329,7 +333,7 @@ impl ServerParams {
         use base64::Engine as _;
         use openssl::x509::X509;
 
-        let cert_path = self.attestation_issuer_certificate_path();
+        let cert_path = self.attestation_issuer_certificate_path().ok()?;
         let cert_pem = std::fs::read(cert_path).ok()?;
         let cert = X509::from_pem(&cert_pem).ok()?;
         let cert_der = cert.to_der().ok()?;
@@ -339,10 +343,19 @@ impl ServerParams {
 
     /// Path to the PEM private key for signing attestation JWTs.
     /// Falls back to [`TlsParams::server_private_key`] when not configured.
-    pub fn attestation_issuer_key_path(&self) -> &str {
+    pub fn attestation_issuer_key_path(&self) -> AttResult<&str> {
         self.attestation_issuer_key
             .as_deref()
-            .unwrap_or(self.tls_params.server_private_key.as_str())
+            .or_else(|| {
+                self.tls_params
+                    .as_ref()
+                    .map(|params| params.server_private_key.as_str())
+            })
+            .ok_or_else(|| {
+                AttError::Config(
+                    "An attestation issuer key must be provided if no TLS key is set".to_owned(),
+                )
+            })
     }
 }
 
@@ -399,11 +412,11 @@ x509_key_path = "certs/server.key.pem"
         assert_eq!(params.host_name, "127.0.0.1");
         assert_eq!(params.host_port, 9443);
         assert_eq!(
-            PathBuf::from(&params.tls_params.server_private_key),
+            PathBuf::from(&params.tls_params.as_ref().unwrap().server_private_key),
             temp_dir.join("certs/server.key.pem")
         );
         assert_eq!(
-            PathBuf::from(&params.tls_params.server_certificate),
+            PathBuf::from(&params.tls_params.as_ref().unwrap().server_certificate),
             temp_dir.join("certs/server.cert.pem")
         );
         assert_eq!(
@@ -518,15 +531,15 @@ rust_log = "info,actix_server=warn"
         assert_eq!(params.disabled_authentication_user(), "local_tests_user");
 
         assert_eq!(
-            PathBuf::from(&params.tls_params.server_private_key),
+            PathBuf::from(&params.tls_params.as_ref().unwrap().server_private_key),
             manifest_dir.join("../certificates/tls/ewqwe.server.key.pem")
         );
         assert_eq!(
-            PathBuf::from(&params.tls_params.server_certificate),
+            PathBuf::from(&params.tls_params.as_ref().unwrap().server_certificate),
             manifest_dir.join("../certificates/tls/ewqwe.server.cert.pem")
         );
         assert_eq!(
-            PathBuf::from(&params.tls_params.server_ca_chain),
+            PathBuf::from(&params.tls_params.as_ref().unwrap().server_ca_chain),
             manifest_dir.join("../certificates/tls/ewqwe.ca.pem")
         );
     }
@@ -611,7 +624,7 @@ qr_code_callback_url = "https://modified.example.com/"
         let params = ServerParams {
             host_name: "127.0.0.1".to_string(),
             host_port: 9443,
-            tls_params: crate::parameters::TlsParams::default(),
+            tls_params: Some(crate::parameters::TlsParams::default()),
             default_username: None,
             rust_log: None,
             public_root_url: None,
@@ -640,7 +653,7 @@ qr_code_callback_url = "https://modified.example.com/"
         let params = ServerParams {
             host_name: "127.0.0.1".to_string(),
             host_port: 9443,
-            tls_params: crate::parameters::TlsParams::default(),
+            tls_params: Some(crate::parameters::TlsParams::default()),
             default_username: None,
             rust_log: None,
             public_root_url: None,

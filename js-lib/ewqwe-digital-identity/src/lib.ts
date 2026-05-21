@@ -64,9 +64,9 @@ export {
   extractAgeThreshold,
   buildAuthorizationRequest,
   buildCrossDeviceAuthorizationRequest,
-} from "./dcql.ts";
+} from "./dcql";
 
-export type { Attestation as AttestationClaims } from "./attestation.ts";
+export type { Attestation as AttestationClaims } from "./attestation";
 export {
   parseAttestation,
   decodeAttestation,
@@ -74,10 +74,10 @@ export {
   importVerifierPublicKey,
   verifyAttestation,
   base64urlDecode,
-} from "./attestation.ts";
+} from "./attestation";
 
-export { EwqweApiClient } from "./api-client.ts";
-export type { ApiClientOptions, FetchFn } from "./api-client.ts";
+export { EwqweApiClient } from "./api-client";
+export type { ApiClientOptions, FetchFn } from "./api-client";
 
 export {
   PROTOCOL_PROFILES,
@@ -86,4 +86,4 @@ export {
   getClaimsForType,
   getProfileForType,
   getProfileIdForType,
-} from "./config.ts";
+} from "./config";

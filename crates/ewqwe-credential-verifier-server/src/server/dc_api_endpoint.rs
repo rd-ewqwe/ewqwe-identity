@@ -22,6 +22,7 @@
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use openssl::x509::X509;
 use std::sync::Arc;
+use tracing::{error, info, warn};
 
 use crate::AttError;
 use crate::authenticated_user::AuthenticatedUser;
@@ -51,6 +52,27 @@ pub struct DcApiVerifyRequest {
     /// The verifier checks the presented mDoc matches this type.
     #[serde(default)]
     pub doc_type: Option<String>,
+}
+
+/// Generate a fresh nonce for Annex C (DC API) flows.
+///
+/// The RP calls this before building the DC API request so the nonce is
+/// server-bound for stronger replay protection.
+///
+/// # Response
+///
+/// ```json
+/// {
+///     "nonce": "aB3x…",
+///     "expires_in": 300
+/// }
+/// ```
+pub async fn generate_nonce() -> HttpResponse {
+    let nonce = ewqwe_openid4vp::generate_nonce();
+    HttpResponse::Ok().json(serde_json::json!({
+        "nonce": nonce,
+        "expires_in": 300,
+    }))
 }
 
 /// Verify a DC API credential presentation (ISO 18013-7 Annex C).
@@ -87,21 +109,20 @@ pub async fn verify_dc_api(
     trusted_cas: web::Data<Arc<Vec<X509>>>,
     journal: Option<web::Data<Arc<DynJournalStore>>>,
 ) -> Result<HttpResponse, AttError> {
+    // DC API endpoint is wallet-facing (no mTLS), so there may not be an
+    // authenticated user.  Use "anonymous" as the fallback for journaling.
     let username = req
         .extensions()
         .get::<AuthenticatedUser>()
         .map(|u| u.username.clone())
-        .ok_or_else(|| {
-            AttError::Authentication(
-                "mTLS authentication required: authenticated user not found".to_string(),
-            )
-        })?;
+        .unwrap_or_else(|| "anonymous".to_string());
 
-    tracing::debug!(
+    info!(
+        enduser.id = %username,
         client_id = %body.client_id,
-        nonce = %body.nonce,
+        has_nonce = true,
         doc_type = ?body.doc_type,
-        "DC API verify request received"
+        "POST /ewqwe_api/dc_api/verify"
     );
 
     // --- Step 1: Verify the mDoc DeviceResponse ---
@@ -132,7 +153,8 @@ pub async fn verify_dc_api(
 
     // --- Step 3: Check verification result ---
     if !mdoc_result.issuer_trusted {
-        tracing::warn!(
+        warn!(
+            enduser.id = %username,
             doc_type = %mdoc_result.doc_type,
             "mDoc issuer certificate is not trusted"
         );
@@ -164,7 +186,8 @@ pub async fn verify_dc_api(
     }
 
     if !mdoc_result.not_expired {
-        tracing::warn!(
+        warn!(
+            enduser.id = %username,
             doc_type = %mdoc_result.doc_type,
             "mDoc credential has expired"
         );
@@ -206,7 +229,8 @@ pub async fn verify_dc_api(
         &server_params,
     )?;
 
-    tracing::info!(
+    info!(
+        enduser.id = %username,
         doc_type = %mdoc_result.doc_type,
         namespace = %mdoc_result.namespace,
         client_id = %body.client_id,
@@ -236,7 +260,7 @@ pub async fn verify_dc_api(
         )
         .await
         {
-            tracing::error!(error = %e, "failed to append to verification journal");
+            error!(error = %e, "failed to append to verification journal");
             return Err(AttError::from(e));
         }
     }

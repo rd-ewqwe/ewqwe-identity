@@ -140,6 +140,8 @@ export class RelyingPartyApp {
         "Tries W3C Digital Credentials API first, falls back to OpenID4VP if unavailable",
       "w3c-dc":
         "Uses navigator.credentials.get() with ISO 18013-7 Annex C (mobile wallets via W3C DC API)",
+      "annex-c":
+        "Pure ISO 18013-7 Annex C: HPKE + CBOR encryptionInfo/deviceRequest (org-iso-mdoc)",
       "openid4vp-cross-device":
         "OpenID4VP 1.0 cross-device flow - scan QR code with mobile wallet (EUDI Wallet)",
       "openid4vp-same-device":
@@ -454,6 +456,7 @@ export class RelyingPartyApp {
         response,
         this.currentRequest,
         this.logger,
+        this.selectedProtocol,
       );
       this.logger.log("Backend verification result", {
         success: verificationResult.success,

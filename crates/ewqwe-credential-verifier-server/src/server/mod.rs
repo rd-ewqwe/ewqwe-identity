@@ -6,6 +6,7 @@ mod ensure_auth_middleware;
 pub(crate) mod journal_endpoints;
 pub(crate) mod openid4vp_endpoints;
 pub(crate) mod qr_verifier;
+pub(crate) mod request_tracing_middleware;
 pub(crate) mod verify_endpoint;
 use crate::AttError;
 

@@ -307,7 +307,7 @@ impl OpenID4VPService {
             public_url,
         );
 
-        tracing::info!(
+        tracing::debug!(
             tx = %transaction_id[..8.min(transaction_id.len())],
             profile = %profile,
             client_id = %client_id,

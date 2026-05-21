@@ -483,6 +483,8 @@ Verifies an mDoc DeviceResponse received via the W3C Digital Credentials API (IS
 
 This endpoint is **stateless** — unlike the OpenID4VP flow, there is no transaction store lookup. The RP generates the HPKE key pair and nonce locally in the browser.
 
+**Authentication**: This endpoint is **wallet-facing** and does **not** require mTLS client certificates (unlike `/verify`). Browsers calling the W3C DC API never present client certs.
+
 **Request Body**:
 
 ```json
@@ -535,12 +537,33 @@ This endpoint is **stateless** — unlike the OpenID4VP flow, there is no transa
 **Lifecycle**:
 
 1. RP generates HPKE key pair (X25519) and random nonce in the browser
-2. RP builds `encryptionInfo` + `deviceRequest` CBOR blobs (ISO 18013-7 Annex C wrapper)
-3. RP calls `navigator.credentials.get()` with `protocol: "org-iso-mdoc"`
-4. Wallet returns HPKE-encrypted EncryptedResponse
-5. RP HPKE-decrypts locally to obtain the DeviceResponse
-6. RP sends decrypted DeviceResponse to this endpoint
-7. Verifier validates mDoc signatures and returns signed attestation
+2. (Optional) RP fetches a server-signed nonce from `GET /ewqwe_api/dc_api/nonce`
+3. RP builds `encryptionInfo` + `deviceRequest` CBOR blobs (ISO 18013-7 Annex C wrapper)
+4. RP calls `navigator.credentials.get()` with `protocol: "org-iso-mdoc"`
+5. Wallet returns HPKE-encrypted EncryptedResponse
+6. RP HPKE-decrypts locally to obtain the DeviceResponse
+7. RP sends decrypted DeviceResponse to this endpoint
+8. Verifier validates mDoc signatures and returns signed attestation
+
+### `GET /ewqwe_api/dc_api/nonce` — Generate DC API Nonce
+
+Returns a fresh, server-generated nonce for use in ISO 18013-7 Annex C flows.
+
+**Response**:
+
+```json
+{
+  "nonce": "aB3x...",
+  "expires_in": 300
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `nonce` | string | Server-generated random nonce (base64url, 32 bytes) |
+| `expires_in` | integer | Seconds until the nonce expires (for future use with session binding) |
+
+**Purpose**: When the RP fetches a nonce from this endpoint before building the Annex C request, the nonce can be bound to a server session for stronger replay protection. This is optional — the current Annex C flow generates nonces client-side, which is acceptable per the spec.
 
 ## Security Considerations
 

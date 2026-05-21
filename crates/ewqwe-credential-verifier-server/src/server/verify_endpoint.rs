@@ -24,6 +24,7 @@ use ewqwe_openid4vp::{
 use openssl::x509::X509;
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
+use tracing::{debug, error, info, warn};
 
 #[derive(Debug, Clone, Deserialize)]
 pub(crate) struct IssuerCertsQuery {
@@ -204,12 +205,12 @@ pub(crate) async fn verify_credential_endpoint(
             )
         })?;
 
-    tracing::debug!(
+    info!(
+        enduser.id = %username,
         vp_token_len = body.vp_token.len(),
-        user = %username,
-        state = ?body.state,
-        client_id = ?body.client_id,
-        "verify_credential request received"
+        has_state = body.state.is_some(),
+        has_client_id = body.client_id.is_some(),
+        "POST /ewqwe_api/verify"
     );
 
     // Step 1 — verify the VP token via the OpenID4VP service.
@@ -256,7 +257,7 @@ pub(crate) async fn verify_credential_endpoint(
         .as_deref()
         .or(result.presentation_nonce.as_deref());
 
-    tracing::debug!(
+    debug!(
         is_valid = result.is_valid,
         not_expired = result.not_expired,
         issuer_trusted = result.issuer_trusted,
@@ -266,7 +267,11 @@ pub(crate) async fn verify_credential_endpoint(
 
     // Step 5 — when verification failed, return a failed attestation.
     if !result.is_valid {
-        tracing::warn!(errors = ?result.errors, "credential verification failed");
+        warn!(
+            enduser.id = %username,
+            errors = ?result.errors,
+            "credential verification failed"
+        );
         let attestation = create_attestation(
             effective_client_id,
             attestation_nonce,
@@ -314,9 +319,10 @@ pub(crate) async fn verify_credential_endpoint(
         &result.namespace,
         &server_params,
     )?;
-    tracing::info!(
+    info!(
+        enduser.id = %username,
         doc_type = ?result.doc_type,
-        client_id = ?body.client_id,
+        has_client_id = body.client_id.is_some(),
         "credential verified"
     );
 
@@ -346,7 +352,7 @@ pub(crate) async fn verify_credential_endpoint(
         )
         .await
         {
-            tracing::error!(error = %e, "failed to append to verification journal");
+            error!(error = %e, "failed to append to verification journal");
             return Err(AttError::from(e));
         }
     }
@@ -403,7 +409,7 @@ pub(crate) fn create_attestation(
         attestation = attestation.with_nonce(n);
     }
 
-    let key_path = server_params.attestation_issuer_key_path();
+    let key_path = server_params.attestation_issuer_key_path()?;
     let private_key_pem = std::fs::read(key_path).map_err(|e| {
         AttError::Config(format!(
             "Failed to read attestation issuer key '{key_path}': {e}"

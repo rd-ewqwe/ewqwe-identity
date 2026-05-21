@@ -57,6 +57,7 @@ The webapp supports five protocol modes:
 | -------- | ----------- | -------- |
 | **W3C DC + fallback** | Tries native W3C Digital Credentials API (`navigator.credentials.get`) first, falls back to OpenID4VP cross-device | Default on **desktop** — works on compatible browsers/devices with a mobile wallet |
 | **W3C DC only** | Uses only the native W3C Digital Credentials API with ISO 18013-7 Annex C | Compatible browsers/devices with a wallet supporting the DC API |
+| **ISO 18013-7 Annex C** | Pure Annex C: HPKE + CBOR `encryptionInfo`/`deviceRequest` blobs with `"org-iso-mdoc"` protocol | Wallets supporting the ISO mDoc format natively via the DC API |
 | **OpenID4VP (Cross-Device)** | Cross-device flow with QR code scanning | Mobile wallets via QR code (EUDI Wallet, AV Apps) |
 | **OpenID4VP (Same-Device)** | Same-device flow with deep link | Default on **mobile** — reliable across all Android/iOS versions |
 | **Simulated** | Mock response for testing without a wallet | Development/testing |

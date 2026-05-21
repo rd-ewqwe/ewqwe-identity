@@ -387,6 +387,113 @@ The following verifiers on the France Identité playground all support OpenID4VP
 
 ---
 
+## ISO 18013-7 Annex B and Annex C — Implementation Gap Analysis
+
+### Terminology Clarification
+
+| ISO 18013-7 Annex | What It Defines | Implemented | Notes |
+|---|---|---|---|
+| **Annex B** | Online mDoc presentation over OpenID4VP | ✅ Yes | Via existing OpenID4VP endpoints + HAIP/JAR support |
+| **Annex C** | W3C Digital Credentials API wrapper (`["dcapi", ...]` CBOR format) | ⚠️ Partial | HPKE key exchange + CBOR blobs exist in `DcApiService` but full flow gaps remain |
+
+### Component-by-Component Analysis
+
+#### 1. Credential Verifier Server (`ewqwe-credential-verifier-server`)
+
+| Feature | Annex B | Annex C | Status |
+|---------|---------|---------|--------|
+| OpenID4VP init / request / direct_post / status endpoints | ✅ Required | ❌ Not used | ✅ Complete for Annex B |
+| HAIP JAR signing + JWE encryption | ✅ Required | ❌ Not used | ✅ Complete |
+| EU AV Profile (redirect_uri, direct_post) | ✅ Required | ❌ Not used | ✅ Complete |
+| mDoc COSE signature verification | ✅ Required | ✅ Required | ✅ Complete (`ewqwe_digital_credential`) |
+| SD-JWT VC verification | ✅ Required | ❌ Not used | ✅ Complete |
+| Attestation JWT creation | ✅ Required | ✅ Required | ✅ Complete |
+| Verification journal | ✅ Required | ✅ Required | ✅ Complete |
+| `/ewqwe_api/dc_api/verify` endpoint | ❌ Not used | ✅ Required | ⚠️ **Requires mTLS** — wallets calling DC API don't have client certs |
+| Nonce endpoint for Annex C | ❌ Not needed | ✅ Recommended | ❌ **Missing** — RP generates nonces locally |
+| TLS reader auth (wallet-facing) | ⚠️ Partial | ❌ Not used | Wallet-facing endpoints use `SslAuth` middleware, wallets don't send client certs |
+
+**Key gaps in server:**
+
+1. **`/ewqwe_api/dc_api/verify` requires mTLS** — The route `web::resource("/dc_api/verify").wrap(ensure_auth).wrap(SslAuth)` requires a client certificate. Annex C wallets (browser-mediated) never present client certs. The DC API endpoint **must be accessible without mTLS** (like the `direct_post` endpoint).
+
+2. **No nonce endpoint** — The Annex C flow requires a nonce from the verifier for binding. Currently the RP generates a nonce locally (`crypto.getRandomValues()`). A `POST /ewqwe_api/dc_api/nonce` endpoint would bind the nonce to a server session.
+
+3. **No separate DC API init endpoint** — Unlike OpenID4VP (which has `/openid4vp/init`), there's no Annex C init endpoint. The RP builds the CBOR blobs entirely client-side.
+
+4. **`get_authorization_request` requires JAR/JWE keys unconditionally** — ✅ *Already fixed in earlier session* — JAR/JWE key extraction is now inside the `ProfileId::Haip` branch.
+
+---
+
+#### 2. Credential Verifier App UI (`ewqwe-credential-verifier-ui`)
+
+| Feature | Annex B | Annex C | Status |
+|---------|---------|---------|--------|
+| QR code generation (`/api/v1/qr/generate`) | ✅ Required | ❌ Not used | ✅ Complete for Annex B |
+| QR status polling (`/api/v1/qr/{id}/status`) | ✅ Required | ❌ Not used | ✅ Complete for Annex B |
+| Inline VP token verification in QR flow | ✅ Required | ❌ Not used | ✅ Complete (`QrCredentialVerifierImpl`) |
+| Admin user management | ✅ Required | ✅ Required | ✅ Complete |
+| Settings / journal | ✅ Required | ✅ Required | ✅ Complete |
+| Credential type selection in UI | ✅ Required | ✅ Required | ⚠️ Basic — no credential claim picker |
+| Annex C (DC API) browser flow | ❌ Not used | ✅ Required | ❌ **Missing** — SPA has no DC API support |
+| HAIP profile selection in UI | ✅ Recommended | ❌ Not used | ❌ **Missing** — UI always uses auto-detected profile |
+
+**Key gaps in UI:**
+
+1. ❌ **No Annex C (DC API) flow** — The Verifier App SPA only generates QR codes (OpenID4VP). It should support:
+   - Generating a DC API request with `protocol: "org-iso-mdoc"`
+   - Calling `navigator.credentials.get()` with the Annex C CBOR wrapper (like `DcApiService` in webapp)
+   - Sending the HPKE-decrypted DeviceResponse to `/ewqwe_api/dc_api/verify`
+   - Displaying verification results
+
+   The SPA at `ui/src/app.ts` has UI handlers for QR but no DC API handlers.
+
+2. ❌ **No credential claim picker** — The UI only allows selecting a credential type, not specific claims (age verification, name, portrait, etc.). The `GenerateQrRequest` model has a `claims: Vec<String>` field but the SPA doesn't expose it.
+
+3. ❌ **No HAIP profile selector** — The QR generation always uses auto-detected profile. The admin should be able to select HAIP vs EU AV Profile.
+
+---
+
+#### 3. RP Webapp (`webapp/`)
+
+| Feature | Annex B | Annex C | Status |
+|---------|---------|---------|--------|
+| `navigator.credentials.get()` with `protocol: "openid4vp"` | ⚠️ Fallback | ❌ Not used | ✅ Complete (DC API JWT flow) |
+| `DcApiService` — HPKE key pair + CBOR blobs | ❌ Not used | ✅ Required | ✅ Complete |
+| `DcApiService.buildRequest()` — encryptionInfo + deviceRequest | ❌ Not used | ✅ Required | ✅ Complete |
+| `DcApiService.parseResponse()` — decrypt DeviceResponse | ❌ Not used | ✅ Required | ✅ Complete |
+| `navigator.credentials.get()` with `protocol: "org-iso-mdoc"` | ❌ Not used | ✅ Required | ❌ **Not wired into `requestCredentials`** — DcApiService exists but is not called |
+| OpenID4VP QR code (cross-device) | ✅ Required | ❌ Not used | ✅ Complete |
+| OpenID4VP deep link (same-device) | ✅ Required | ❌ Not used | ✅ Complete |
+| Protocol fallback (W3C DC → OpenID4VP) | ⚠️ Fallback | ✅ Primary | ✅ Complete (`requestWithFallback`) |
+| Send to backend `/ewqwe_api/verify` | ✅ Required | ✅ Required | ✅ Complete |
+| Send to backend `/ewqwe_api/dc_api/verify` | ❌ Not used | ✅ Required | ❌ **Not used** — webapp sends DC API result to generic verify endpoint |
+| Nonce server endpoint | ❌ Not needed | ✅ Recommended | ❌ **Missing** — RP generates nonce locally |
+
+**Key gaps in webapp:**
+
+1. ❌ **Pure Annex C flow (`protocol: "org-iso-mdoc"`) not wired** — The `DcApiService` class with HPKE + CBOR blob construction exists and is fully functional, but `requestCredentials` doesn't use it. The current `requestViaW3CDC` uses `protocol: "openid4vp"` (DC API JWT), not the pure ISO 18013-7 Annex C format.
+
+2. ❌ **Doesn't use `/ewqwe_api/dc_api/verify` endpoint** — The `sendToBackend` function sends everything to `/ewqwe_api/verify`. For the pure Annex C flow (HPKE-decrypted DeviceResponse), the webapp should send to `/ewqwe_api/dc_api/verify` instead.
+
+3. ⚠️ **Local nonce generation** — The DC API flow generates nonces in-browser. This is acceptable per Annex C but could be strengthened with a server nonce endpoint.
+
+---
+
+### Priority Order for Implementation
+
+1. **Fix `/ewqwe_api/dc_api/verify` — remove mTLS requirement** (server): This is a bug — the DC API endpoint requires client certs that browsers/wallets don't have.
+
+2. **Wire pure Annex C flow into webapp** (webapp): Use `DcApiService.buildRequest()` with `protocol: "org-iso-mdoc"` as the primary W3C DC method, and send decrypted response to `/ewqwe_api/dc_api/verify`.
+
+3. **Add DC API nonce endpoint** (server): `POST /ewqwe_api/dc_api/nonce` returns a server-signed nonce for stronger replay protection.
+
+4. **Add Annex C support to Verifier App SPA** (UI): Add DC API flow alongside QR code flow, enabling admin verifiers to use the browser-native credential picker.
+
+5. **Add HAIP / credential claim selection to Verifier App** (UI): Let admins select HAIP profile and choose specific claims.
+
+---
+
 ## References
 
 - [EU Age Verification Profile (Annex A)](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile/)
@@ -397,6 +504,7 @@ The following verifiers on the France Identité playground all support OpenID4VP
 - [RFC 9101 — JAR](https://datatracker.ietf.org/doc/html/rfc9101)
 - [RFC 9180 — HPKE](https://www.rfc-editor.org/rfc/rfc9180)
 - [W3C Digital Credentials API](https://www.w3.org/TR/digital-credentials/)
+- [ISO 18013-7 Implementation Notes](./notes/iso-18013-7.md)
 - [Annex B vs HAIP Comparison](./annex_b_vs_haip.md)
 - [Annex B Implementation Plan](./annex_b_implementation_plan.md)
 - [France Identité Wallet Testing Guide](./france_identite_wallet.md)

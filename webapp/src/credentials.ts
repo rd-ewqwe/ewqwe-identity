@@ -8,8 +8,14 @@ import type {
   VerifyResponse,
   WalletAuthorizationError,
 } from "@ewqwe/digital-identity";
-import { EwqweApiClient, VerifyRequest } from "@ewqwe/digital-identity";
+import {
+  CREDENTIAL_TYPES,
+  EwqweApiClient,
+  VerifyRequest,
+} from "@ewqwe/digital-identity";
 import type { DebugLogger } from "./debug.ts";
+import { DcApiService } from "./dc_api_service.ts";
+import { base64url } from "rfc4648";
 
 const apiClient = new EwqweApiClient();
 
@@ -73,6 +79,10 @@ export async function requestCredentials(
     case "w3c-dc":
       return await requestViaW3CDC(request, logger);
 
+    case "annex-c":
+      // Pure ISO 18013-7 Annex C flow: HPKE + CBOR via "org-iso-mdoc" protocol
+      return await requestViaAnnexC(request, logger);
+
     case "openid4vp-cross-device":
       // Cross-device flow with QR code (compatible with EUDI Wallet)
       return await requestViaOpenID4VPCrossDevice(request, logger);
@@ -88,6 +98,102 @@ export async function requestCredentials(
     default:
       throw new Error(`Unknown protocol: ${protocol}`);
   }
+}
+
+/**
+ * Pure ISO 18013-7 Annex C flow using the "org-iso-mdoc" protocol.
+ *
+ * Unlike `requestViaW3CDC` (which wraps an OpenID4VP request inside the DC API),
+ * this uses HPKE encryption + CBOR `encryptionInfo`/`deviceRequest` blobs, and
+ * sends the decrypted DeviceResponse to `/ewqwe_api/dc_api/verify`.
+ */
+async function requestViaAnnexC(
+  request: InitTransactionRequest,
+  logger: DebugLogger,
+): Promise<OpenID4VPResponse | null> {
+  const dcApi = new DcApiService();
+
+  // 1. Prepare HPKE key pair and nonce
+  const { publicKeyCoseKey, nonce } = await dcApi.prepareTransaction();
+  const nonceB64 = base64url.stringify(nonce, { pad: false });
+
+  // 2. Determine doc type and claims from the credential type config
+  const credentialConfig =
+    CREDENTIAL_TYPES[request.credential_type ?? "proof-of-age"];
+  if (!credentialConfig) {
+    throw new Error(`Unknown credential type: ${request.credential_type}`);
+  }
+  const docType = credentialConfig.docType;
+  const namespace = credentialConfig.namespace;
+
+  // Build the claim map from the DCQL query, or use sensible defaults
+  let requestedClaims: Record<string, string[]> = {};
+  if (request.dcql_query?.credentials?.[0]?.claims) {
+    // Extract claim names from DCQL query
+    const names: string[] = [];
+    for (const c of request.dcql_query.credentials[0].claims) {
+      const last = c.path[c.path.length - 1];
+      if (typeof last === "string") names.push(last);
+    }
+    requestedClaims[namespace] = names;
+  } else {
+    requestedClaims[namespace] = ["age_over_18"];
+  }
+
+  // 3. Build the Annex C request blobs
+  const annexCRequest = dcApi.buildRequest(
+    nonce,
+    publicKeyCoseKey,
+    docType,
+    requestedClaims,
+  );
+
+  logger.log("Requesting credentials via Annex C (org-iso-mdoc)", {
+    docType,
+    namespace,
+    claims: requestedClaims,
+  });
+
+  // 4. Call the W3C Digital Credentials API with "org-iso-mdoc" protocol
+  const credential = await navigator.credentials.get({
+    digital: {
+      requests: [
+        {
+          protocol: "org-iso-mdoc",
+          data: annexCRequest,
+        },
+      ],
+    },
+  } as CredentialRequestOptions);
+
+  if (!credential) {
+    logger.log("User cancelled the credential request");
+    return null;
+  }
+
+  // 5. Parse and decrypt the response
+  const digitalCredential = credential as unknown as {
+    protocol: string;
+    data: string; // base64url-encoded ["dcapi", { enc, cipherText }]
+  };
+
+  const encryptedData = dcApi.parseResponse(digitalCredential.data);
+  const deviceResponseBytes = await dcApi.decryptResponse(encryptedData);
+  const deviceResponseB64 = base64url.stringify(deviceResponseBytes, {
+    pad: false,
+  });
+
+  logger.log("DeviceResponse decrypted successfully", {
+    deviceResponseLength: deviceResponseBytes.length,
+  });
+
+  // Return as OpenID4VPResponse — `sendToBackend` will route to
+  // `/ewqwe_api/dc_api/verify` when protocol="annex-c".
+  return {
+    vp_token: deviceResponseB64,
+    presentation_submission: undefined,
+    state: "",
+  };
 }
 
 /**
@@ -711,22 +817,88 @@ function getDemoValue(claimId: string | number): unknown {
  * Send credential to backend for verification
  * The backend will proxy the request to the Credential Verifier server
  */
+/**
+ * Result of a credential request — either an OpenID4VP response for the
+ * standard verify endpoint, or a pre-verified DC API result.
+ */
+export interface CredentialRequestResult {
+  /** OpenID4VP response (used with `/ewqwe_api/verify`). */
+  openid4vp?: OpenID4VPResponse;
+  /** Pre-verified attestation from the DC API endpoint (for Annex C flow). */
+  preVerified?: VerifyResponse;
+}
+
+/**
+ * Send the credential data to the backend for verification.
+ *
+ * For OpenID4VP flows this sends to `/ewqwe_api/verify` (which requires mTLS).
+ * For Annex C (DC API) flows this sends to `/ewqwe_api/dc_api/verify` (no mTLS).
+ */
 export async function sendToBackend(
-  response: OpenID4VPResponse,
-  _originalRequest: InitTransactionRequest | null,
+  response: OpenID4VPResponse | CredentialRequestResult,
+  originalRequest: InitTransactionRequest | null,
   logger: DebugLogger,
+  protocol?: string,
 ): Promise<VerifyResponse> {
+  // Annex C flow: response is already a CredentialRequestResult with preVerified data
+  if (
+    protocol === "annex-c" ||
+    (!("vp_token" in response) && "preVerified" in response)
+  ) {
+    const result = response as CredentialRequestResult;
+    if (result.preVerified) {
+      logger.success("Using pre-verified DC API result");
+      return result.preVerified;
+    }
+    // Fall through to normal flow with data
+    response = result.openid4vp ?? (response as OpenID4VPResponse);
+  }
+
+  const ovpResponse = response as OpenID4VPResponse;
+
+  // For Annex C without pre-verification, send to the DC API endpoint
+  if (protocol === "annex-c") {
+    logger.log("Sending to DC API endpoint: POST /ewqwe_api/dc_api/verify");
+    try {
+      const res = await fetch("/ewqwe_api/dc_api/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          device_response_b64: ovpResponse.vp_token,
+          nonce: "", // nonce is embedded in the encryptionInfo, not passed separately here
+          client_id: globalThis.location.origin,
+        }),
+      });
+      if (!res.ok) {
+        const errBody = await res.text().catch(() => "");
+        throw new Error(`DC API verify failed: ${res.status} ${errBody}`);
+      }
+      const result = (await res.json()) as VerifyResponse;
+      logger.success("DC API verification complete", result);
+      return result;
+    } catch (error) {
+      logger.error("DC API verification failed", error);
+      return {
+        success: false,
+        message: "DC API verification failed",
+        attestation: "",
+        errors: [error instanceof Error ? error.message : "Unknown error"],
+      };
+    }
+  }
+
+  // Standard OpenID4VP flow: send to /ewqwe_api/verify
   const backendUrl = "/ewqwe_api/verify";
 
   // When there is no state (DC API same-device flow) the backend cannot look up
   // the client_id from a stored transaction, so we supply it explicitly.
   // In state-based flows the backend resolves client_id from the stored transaction.
-  const client_id = response.state ? undefined : globalThis.location.origin;
+  const client_id = ovpResponse.state ? undefined : globalThis.location.origin;
 
   const body: VerifyRequest = {
-    vp_token: response.vp_token,
-    presentation_submission: response.presentation_submission,
-    state: response.state,
+    vp_token: ovpResponse.vp_token,
+    presentation_submission: ovpResponse.presentation_submission,
+    state: ovpResponse.state,
     client_id,
   };
 

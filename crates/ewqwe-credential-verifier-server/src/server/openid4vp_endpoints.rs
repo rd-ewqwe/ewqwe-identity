@@ -16,16 +16,26 @@
 //! | POST   | `/ewqwe_api/openid4vp/request/{id}`            | Wallet fetches authorization request     |
 //! | GET    | `/ewqwe_api/openid4vp/.well-known/jwks.json`   | Public JWK Set for JAR verification      |
 
-use actix_web::{HttpRequest, HttpResponse, web};
+use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
 use ewqwe_openid4vp::{
     InitTransactionRequest, OpenID4VPError, OpenID4VPResponse, OpenID4VPService,
     WalletAuthorizationError,
 };
 use serde::Deserialize;
 use std::sync::Arc;
-use tracing::{error, info, warn};
+use tracing::{debug, error, info, warn};
 
+use crate::authenticated_user::AuthenticatedUser;
 use crate::parameters::ServerParams;
+
+/// Extract the authenticated username from the request extensions.
+/// Returns `"anonymous"` when authentication is absent (wallet-facing endpoints).
+fn authenticated_user(req: &HttpRequest) -> String {
+    req.extensions()
+        .get::<AuthenticatedUser>()
+        .map(|u| u.username.clone())
+        .unwrap_or_else(|| "anonymous".to_string())
+}
 
 /// Initialize a new OpenID4VP transaction.
 ///
@@ -44,7 +54,8 @@ pub async fn init_transaction(
     params: web::Data<Arc<ServerParams>>,
     body: web::Json<InitTransactionRequest>,
 ) -> HttpResponse {
-    info!("POST /ewqwe_api/openid4vp/init");
+    let user = authenticated_user(&req);
+
     let request = body.into_inner();
     let credential_type = request
         .credential_type
@@ -61,23 +72,26 @@ pub async fn init_transaction(
     });
 
     info!(
+        enduser.id = %user,
         credential_type = %credential_type,
         has_dcql = %has_dcql,
         public_url = %public_url,
-        "Processing init transaction request"
+        "POST /ewqwe_api/openid4vp/init"
     );
 
     match service.init_transaction(request, &public_url).await {
         Ok(response) => {
-            info!(
+            debug!(
+                enduser.id = %user,
                 transaction_id = %response.transaction_id,
                 profile = %response.profile,
-                "Transaction created"
+                "init_transaction completed"
             );
             HttpResponse::Ok().json(response)
         }
         Err(e) => {
             error!(
+                enduser.id = %user,
                 credential_type = %credential_type,
                 public_url = %public_url,
                 error = %e,
@@ -94,10 +108,18 @@ pub async fn init_transaction(
 /// `vp_token`, `presentation_submission`, `nonce`, and `state` for the RP to
 /// forward to `/ewqwe_api/verify`.
 pub async fn get_transaction_status(
+    req: HttpRequest,
     service: web::Data<Arc<OpenID4VPService>>,
     path: web::Path<String>,
 ) -> HttpResponse {
+    let user = authenticated_user(&req);
     let transaction_id = path.into_inner();
+
+    debug!(
+        enduser.id = %user,
+        transaction_id = %transaction_id,
+        "GET /ewqwe_api/openid4vp/status"
+    );
 
     match service.get_transaction_status(&transaction_id).await {
         Ok(status) => HttpResponse::Ok().json(status),
@@ -116,13 +138,18 @@ pub async fn handle_direct_post(
     req: HttpRequest,
     body: web::Bytes,
 ) -> HttpResponse {
-    info!("POST /ewqwe_api/openid4vp/direct_post");
-
+    let user = authenticated_user(&req);
     let content_type = req
         .headers()
         .get("content-type")
         .and_then(|h| h.to_str().ok())
         .unwrap_or("");
+
+    info!(
+        enduser.id = %user,
+        content_type = %content_type,
+        "POST /ewqwe_api/openid4vp/direct_post"
+    );
 
     let result = if content_type.contains("application/x-www-form-urlencoded") {
         handle_form_direct_post(&service, &body).await
@@ -132,7 +159,10 @@ pub async fn handle_direct_post(
 
     match result {
         Ok(()) => {
-            info!("Wallet response stored successfully");
+            info!(
+                enduser.id = %user,
+                "Wallet response stored successfully"
+            );
             // §8.2: Verifier MUST respond HTTP 200 + Content-Type: application/json + `{}`
             // (or {"redirect_uri":"..."} for same-device redirects — not used here).
             HttpResponse::Ok().json(serde_json::json!({}))
@@ -258,18 +288,25 @@ async fn handle_json_direct_post(
 ///
 /// Wallets fetch this via the `request_uri` from the authorization request URI.
 pub async fn get_authorization_request(
+    req: HttpRequest,
     service: web::Data<Arc<OpenID4VPService>>,
     path: web::Path<String>,
 ) -> HttpResponse {
+    let user = authenticated_user(&req);
     let transaction_id = path.into_inner();
     info!(
-        transaction_id_prefix = &transaction_id[..transaction_id.len().min(8)],
+        enduser.id = %user,
+        transaction_id = %transaction_id,
         "GET /ewqwe_api/openid4vp/request"
     );
 
     match service.get_authorization_request(&transaction_id).await {
         Ok(result) => {
-            info!(content_type = %result.content_type, "Returning authorization request");
+            debug!(
+                enduser.id = %user,
+                content_type = %result.content_type,
+                "Returning authorization request"
+            );
             HttpResponse::Ok()
                 .content_type(result.content_type)
                 .body(result.body)
@@ -289,9 +326,15 @@ pub async fn get_authorization_request(
 ///    certificate when not configured).  The corresponding `kid` value is also
 ///    embedded in every attestation JWT header so the RP can look it up by ID.
 pub async fn get_jwks(
+    req: HttpRequest,
     service: web::Data<Arc<OpenID4VPService>>,
     server_params: web::Data<Arc<ServerParams>>,
 ) -> HttpResponse {
+    let user = authenticated_user(&req);
+    debug!(
+        enduser.id = %user,
+        "GET /ewqwe_api/openid4vp/.well-known/jwks.json"
+    );
     let mut keys: Vec<serde_json::Value> = Vec::new();
 
     // JAR signing key — present in HAIP mode only
@@ -318,7 +361,7 @@ fn build_attestation_jwk(server_params: &ServerParams) -> Option<serde_json::Val
     use openssl::bn::BigNumContext;
     use openssl::x509::X509;
 
-    let cert_path = server_params.attestation_issuer_certificate_path();
+    let cert_path = server_params.attestation_issuer_certificate_path().ok()?;
     let cert_pem = std::fs::read(cert_path)
         .map_err(|e| warn!(cert_path, %e, "Failed to read attestation issuer certificate for JWKS"))
         .ok()?;
