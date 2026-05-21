@@ -4,7 +4,7 @@ use crate::parameters::TlsParams;
 use openssl::pkey::PKey;
 use openssl::{
     ssl::{SslAcceptor, SslAcceptorBuilder, SslMethod, SslVerifyMode, SslVersion},
-    x509::{X509, store::X509StoreBuilder},
+    x509::X509,
 };
 use tracing::info;
 use tracing::trace;
@@ -205,34 +205,24 @@ fn configure_cipher_suites(cipher_suites: Option<&String>) -> AttResult<SslAccep
 /// trusted CAs can establish TLS connections.
 pub(crate) fn configure_client_cert_verification(
     builder: &mut SslAcceptorBuilder,
-    ca_cert_pem: &[X509],
+    _ca_cert_pem: &[X509],
 ) -> AttResult<()> {
-    // Load the CA certificates for client verification
-
-    let mut store_builder = X509StoreBuilder::new().map_err(|e| {
-        AttError::Config(format!(
-            "Failed to create X509StoreBuilder for client certificate verification: {e}"
-        ))
-    })?;
-
-    // Add all CA certificates to the store
-    for ca_cert in ca_cert_pem {
-        store_builder.add_cert(ca_cert.to_owned()).map_err(|e| {
-            AttError::Config(format!(
-                "Failed to add CA certificate to X509StoreBuilder: {e}"
-            ))
-        })?;
-    }
-
-    let ca_store = store_builder.build();
-
-    builder.set_verify_cert_store(ca_store).map_err(|e| {
-        AttError::Config(format!(
-            "Failed to set verify cert store in SslAcceptorBuilder: {e}"
-        ))
-    })?;
-    // Request and verify client certificates for mutual TLS
-    builder.set_verify(SslVerifyMode::PEER);
+    // Do NOT request client certificates at the TLS layer.
+    //
+    // The `SslAuth` middleware (applied per-endpoint in start.rs) extracts the
+    // peer certificate from the established TLS connection and enforces client
+    // authentication at the HTTP layer.  Endpoints that need mTLS use `SslAuth`
+    // to reject requests without a valid client cert; wallet-facing endpoints
+    // are accessible without one.
+    //
+    // With SslVerifyMode::PEER, OpenSSL sends a CertificateRequest during
+    // EVERY TLS handshake.  NGINX reverse-proxy workers (which do not have a
+    // client certificate) receive this but cannot respond, causing OpenSSL
+    // to send `tlsv1 alert internal error` and abort the handshake.
+    // Since EnsureAuth + disable_authentication=true inserts a default user
+    // regardless of whether a client cert was presented, we do not need to
+    // request client certs at the TLS level at all.
+    builder.set_verify(SslVerifyMode::NONE);
 
     Ok(())
 }

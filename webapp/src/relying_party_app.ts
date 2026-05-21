@@ -727,11 +727,14 @@ export class RelyingPartyApp {
       typeof value === "string" &&
       value.length > 0
     ) {
-      // Value is standard base64 JPEG (from the mDL portrait byte string)
+      // The portrait value from the mDoc credential is base64url-encoded
+      // (CBOR byte strings use URL-safe base64).  Convert to standard base64
+      // for the data: URI, which does not understand base64url characters.
+      const standardBase64 = value.replace(/-/g, "+").replace(/_/g, "/");
       return `
         <div class="flex justify-between items-center py-2 border-b border-white/10">
           <span class="text-gray-400">${label}</span>
-          <img src="data:image/jpeg;base64,${value}" alt="${label}" class="h-20 w-16 object-cover rounded" />
+          <img src="data:image/jpeg;base64,${standardBase64}" alt="${label}" class="h-20 w-16 object-cover rounded" />
         </div>
       `;
     }

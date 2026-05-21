@@ -11,7 +11,7 @@ docker run -d \
   --name ewqwe-reverse-proxy \
   -p 4080:80 -p 4043:443 \
   -e DOMAIN=id.demo.ewqwe.eu \
-  -e DESTINATION=http://192.168.1.10:9443 \
+  -e DESTINATION=https://192.168.1.10:9443 \
   -e CERTBOT_EMAIL=rd@ewqwe.eu \
   -v letsencrypt:/etc/letsencrypt \
   ewqwe-reverse-proxy
