@@ -76,11 +76,15 @@ export async function requestCredentials(
     case "w3c-dc-fallback":
       return await requestWithFallback(request, logger);
 
-    case "w3c-dc":
-      return await requestViaW3CDC(request, logger);
+    case "w3c-dc-openid4vp":
+      // ISO 18013-7 Annex C, Sub-protocol B: OpenID4VP over DC API.
+      // Passes a standard OpenID4VP request through the DC API
+      // using protocol identifier "openid4vp-v1-unsigned".
+      return await requestViaOpenID4VPOverDCAPI(request, logger);
 
-    case "annex-c":
-      // Pure ISO 18013-7 Annex C flow: HPKE + CBOR via "org-iso-mdoc" protocol
+    case "w3c-dc-iso-mdoc":
+      // ISO 18013-7 Annex C, Sub-protocol A: Raw ISO mDoc.
+      // HPKE + CBOR encryptionInfo/deviceRequest via "org-iso-mdoc".
       return await requestViaAnnexC(request, logger);
 
     case "openid4vp-cross-device":
@@ -101,11 +105,13 @@ export async function requestCredentials(
 }
 
 /**
- * Pure ISO 18013-7 Annex C flow using the "org-iso-mdoc" protocol.
+ * ISO 18013-7 Annex C, Sub-protocol A: Raw ISO mDoc (`org-iso-mdoc`).
  *
- * Unlike `requestViaW3CDC` (which wraps an OpenID4VP request inside the DC API),
- * this uses HPKE encryption + CBOR `encryptionInfo`/`deviceRequest` blobs, and
+ * Uses HPKE encryption + CBOR `encryptionInfo`/`deviceRequest` blobs, and
  * sends the decrypted DeviceResponse to `/ewqwe_api/dc_api/verify`.
+ *
+ * This is the "classic" ISO 18013-7 Annex C protocol (CBOR `["dcapi", ...]`
+ * wrapper with HPKE). Most EUDI wallets prefer Sub-protocol B instead.
  */
 async function requestViaAnnexC(
   request: InitTransactionRequest,
@@ -149,12 +155,13 @@ async function requestViaAnnexC(
   );
 
   logger.log("Requesting credentials via Annex C (org-iso-mdoc)", {
-    docType,
-    namespace,
+    doc_type: docType,
+    namespace: namespace,
     claims: requestedClaims,
+    request: annexCRequest,
   });
 
-  // 4. Call the W3C Digital Credentials API with "org-iso-mdoc" protocol
+  // 4. Call the W3C Digital Credentials API with Sub-protocol A ("org-iso-mdoc")
   const credential = await navigator.credentials.get({
     digital: {
       requests: [
@@ -188,7 +195,7 @@ async function requestViaAnnexC(
   });
 
   // Return as OpenID4VPResponse — `sendToBackend` will route to
-  // `/ewqwe_api/dc_api/verify` when protocol="annex-c".
+  // `/ewqwe_api/dc_api/verify` when protocol="w3c-dc-iso-mdoc".
   return {
     vp_token: deviceResponseB64,
     presentation_submission: undefined,
@@ -197,14 +204,13 @@ async function requestViaAnnexC(
 }
 
 /**
- * W3C Digital Credentials with fallback to OpenID4VP
+ * Desktop fallback chain: Annex C Sub-protocol B → Sub-protocol A → OpenID4VP cross-device.
  *
- * On mobile, skip the W3C DC API entirely and use the OpenID4VP same-device
+ * On mobile, skips W3C DC API entirely and uses the OpenID4VP same-device
  * deep-link flow. Android 15+ Chrome supports the Digital Credentials API,
  * but the system CredentialManager UI is invoked before the wallet can
  * respond — and wallets whose core library does not yet handle the
- * "openid4vp" protocol via DCAPI will fail visibly (e.g. "Unsupported
- * protocol: openid4vp") before the webapp's try/catch fallback can run.
+ * "openid4vp" protocol variant via DCAPI will fail visibly.
  */
 async function requestWithFallback(
   request: InitTransactionRequest,
@@ -217,14 +223,26 @@ async function requestWithFallback(
     return await requestViaOpenID4VPSameDevice(request, logger);
   }
 
-  // Desktop: try W3C DC API first (browser-extension wallet)
+  // Desktop: try Annex C Sub-protocol B first (OpenID4VP over DC API)
   try {
-    const response = await requestViaW3CDC(request, logger);
+    logger.log("Desktop — trying Annex C Sub-protocol B (openid4vp-v1-*)");
+    const response = await requestViaOpenID4VPOverDCAPI(request, logger);
     if (response) {
       return response;
     }
   } catch (error) {
-    logger.log("W3C DC failed, trying OpenID4VP fallback", error);
+    logger.log("Sub-protocol B failed, trying Sub-protocol A", error);
+  }
+
+  // Fallback: Annex C Sub-protocol A (raw ISO mDoc / org-iso-mdoc)
+  try {
+    logger.log("Desktop — trying Annex C Sub-protocol A (org-iso-mdoc)");
+    const response = await requestViaAnnexC(request, logger);
+    if (response) {
+      return response;
+    }
+  } catch (error) {
+    logger.log("Sub-protocol A failed, trying OpenID4VP fallback", error);
   }
 
   logger.log("Desktop — falling back to OpenID4VP cross-device (QR)");
@@ -232,35 +250,54 @@ async function requestWithFallback(
 }
 
 /**
- * Request via W3C Digital Credentials API (native API + extension)
+ * ISO 18013-7 Annex C, Sub-protocol B: OpenID4VP over DC API (`openid4vp-v1-*`).
+ *
+ * Sends a standard OpenID4VP Authorization Request through the W3C Digital
+ * Credentials API instead of via `openid4vp://` deep links. The wallet
+ * receives the request via the DC API (Android CredentialManager / browser
+ * credential chooser) and returns an Authorization Response containing the
+ * `vp_token`.
+ *
+ * The response may be JWE-encrypted (`response_mode: "dc_api.jwt"`) or plain
+ * (`response_mode: "dc_api"`). The RP forwards the VP token to the standard
+ * `/ewqwe_api/verify` endpoint, same as if it arrived via `direct_post`.
+ *
+ * This is the sub-protocol that all major EUDI wallets implement — they reuse
+ * their existing OpenID4VP handler and just replace the deep-link transport
+ * with the DC API.
+ *
+ * @see https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-A
  */
-async function requestViaW3CDC(
+async function requestViaOpenID4VPOverDCAPI(
   request: InitTransactionRequest,
   logger: DebugLogger,
 ): Promise<OpenID4VPResponse | null> {
-  // Build an OpenID4VP Authorization Request from the InitTransactionRequest.
+  // Build a standard OpenID4VP Authorization Request (unsigned).
   // The W3C DC API passes this directly to the wallet as the `data` field.
-  const dcApiRequest: OpenID4VPRequest = {
+  const openid4vpRequest: OpenID4VPRequest = {
     client_id: globalThis.location.origin,
     client_id_scheme: "redirect_uri",
     response_type: "vp_token",
-    response_mode: "direct_post",
+    // Use unencrypted DC API response mode (simplest path).
+    // For production, use "dc_api.jwt" with JWE decryption.
+    response_mode: "dc_api",
     nonce: request.nonce ?? crypto.randomUUID(),
     dcql_query: request.dcql_query,
     client_metadata: request.client_metadata,
   };
 
   logger.log(
-    "Requesting credentials via native Digital Credentials API",
-    dcApiRequest,
+    "Requesting credentials via Annex C Sub-protocol B (openid4vp-v1-*)",
+    openid4vpRequest,
   );
 
   const credential = await navigator.credentials.get({
     digital: {
       requests: [
         {
-          protocol: "openid4vp",
-          data: dcApiRequest,
+          // Per OpenID4VP §A.1: unsigned OpenID4VP request over DC API
+          protocol: "openid4vp-v1-unsigned",
+          data: openid4vpRequest,
         },
       ],
     },
@@ -275,8 +312,13 @@ async function requestViaW3CDC(
     protocol: string;
     data: OpenID4VPResponse;
   };
-  logger.success("Credential received via native API", digitalCredential);
+  logger.success(
+    "Credential received via Annex C Sub-protocol B",
+    digitalCredential,
+  );
 
+  // The response from dc_api is a standard OpenID4VP Authorization Response
+  // containing vp_token. Forward it to the standard /ewqwe_api/verify endpoint.
   return digitalCredential.data;
 }
 
@@ -840,24 +882,11 @@ export async function sendToBackend(
   logger: DebugLogger,
   protocol?: string,
 ): Promise<VerifyResponse> {
-  // Annex C flow: response is already a CredentialRequestResult with preVerified data
-  if (
-    protocol === "annex-c" ||
-    (!("vp_token" in response) && "preVerified" in response)
-  ) {
-    const result = response as CredentialRequestResult;
-    if (result.preVerified) {
-      logger.success("Using pre-verified DC API result");
-      return result.preVerified;
-    }
-    // Fall through to normal flow with data
-    response = result.openid4vp ?? (response as OpenID4VPResponse);
-  }
-
   const ovpResponse = response as OpenID4VPResponse;
 
-  // For Annex C without pre-verification, send to the DC API endpoint
-  if (protocol === "annex-c") {
+  // Annex C Sub-protocol A: raw ISO mDoc via CBOR/HPKE
+  // The response is a pre-decrypted DeviceResponse — send to /ewqwe_api/dc_api/verify
+  if (protocol === "w3c-dc-iso-mdoc") {
     logger.log("Sending to DC API endpoint: POST /ewqwe_api/dc_api/verify");
     try {
       const res = await fetch("/ewqwe_api/dc_api/verify", {
@@ -887,7 +916,10 @@ export async function sendToBackend(
     }
   }
 
-  // Standard OpenID4VP flow: send to /ewqwe_api/verify
+  // Annex C Sub-protocol B (openid4vp-v1-*) and all OpenID4VP flows:
+  // The response is a standard VP token — send to /ewqwe_api/verify
+  // (same endpoint as deep-link OpenID4VP)
+  logger.log(`Sending to backend: POST /ewqwe_api/verify`);
   const backendUrl = "/ewqwe_api/verify";
 
   // When there is no state (DC API same-device flow) the backend cannot look up

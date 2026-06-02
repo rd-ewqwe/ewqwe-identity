@@ -66,13 +66,26 @@ The server implements the following protocols and profiles. The table shows what
 
 ### ISO/IEC 18013-7 Annex C (W3C Digital Credentials API)
 
+Annex C defines **two sub-protocols** over the W3C Digital Credentials API:
+
+| Sub-protocol | Protocol ID | Request | Response | Server endpoint |
+|---|---|---|---|---|
+| **A — Raw ISO mDoc** | `"org-iso-mdoc"` | CBOR `["dcapi", ...]` + CBOR `DeviceRequest` | HPKE-encrypted mDoc in CBOR `["dcapi", ...]` | `POST /ewqwe_api/dc_api/verify` (stateless, pre-decrypted mDoc) |
+| **B — OpenID4VP over DC API** | `"openid4vp-v1-unsigned"` | Standard OpenID4VP Authorization Request (JSON) | Standard VP Token (via `dc_api` or `dc_api.jwt` response mode) | `POST /ewqwe_api/verify` (existing endpoint — no server-side changes needed) |
+
+**For Sub-protocol B**, the wallet returns a standard OpenID4VP Authorization Response. The RP
+forwards the VP token to the existing `/ewqwe_api/verify` endpoint, which processes it identically
+to a token received via `direct_post`. The verifier server does not need to distinguish between
+Annex B (deep link) and Annex C Sub-protocol B (DC API) — both produce the same `vp_token` format.
+
 | Feature | Status | Details |
 |---------|--------|---------|
-| `dc_api/verify` endpoint | ✅ Complete | Receives already-decrypted mDoc DeviceResponse, validates signatures |
+| `dc_api/verify` endpoint | ✅ Complete | Receives already-decrypted mDoc DeviceResponse (Sub-protocol A), validates signatures |
 | Nonce endpoint | ✅ Complete | `GET /ewqwe_api/dc_api/nonce` — server-generated nonce for stronger replay protection |
 | HPKE encryption | ⚠️ Client-side only | HPKE key generation and decryption happen in the browser (RP webapp). Server receives already-decrypted data |
-| Annex C wrapper (`["dcapi", ...]`) | ⚠️ Client-side only | CBOR blob construction and parsing happen in the RP webapp's `DcApiService` |
-| Protocol `"org-iso-mdoc"` | ⚠️ Client-side only | The raw Annex C protocol identifier is not yet wired into the main credential request flow |
+| Annex C wrapper (`["dcapi", ...]`) | ⚠️ Client-side only | CBOR blob construction and parsing happen in the RP webapp's `DcApiService` (Sub-protocol A only) |
+| Protocol `"openid4vp-v1-*"` | ✅ Handled by existing `/ewqwe_api/verify` | Sub-protocol B VP tokens are verified by the standard OpenID4VP endpoint — no server changes needed |
+| Protocol `"org-iso-mdoc"` | ⚠️ Client-side only | The raw Annex C protocol identifier (Sub-protocol A) is wired through `DcApiService` + `/dc_api/verify` |
 
 ### ISO/IEC 18013-7 Annex A (REST API / Device Retrieval)
 
@@ -613,7 +626,7 @@ All journal endpoints require mTLS and username matching.
 | Protocol / Format | Status | What's Missing |
 |-------------------|--------|----------------|
 | **OpenID4VP Annex B** (DCQL, HAIP, EU-AV) | ✅ Complete | No significant gaps. PEX not supported (intentionally — EUDIW mandates DCQL) |
-| **ISO 18013-7 Annex C** (DC API) | ⚠️ Partial | Pure Annex C flow (`protocol: "org-iso-mdoc"`) exists in `DcApiService` but is not yet wired into the main RP webapp request flow. The `/dc_api/verify` endpoint works and accepts decrypted mDoc presentations |
+| **ISO 18013-7 Annex C** (DC API) | ✅ Complete | **Sub-protocol B** (`openid4vp-v1-unsigned` via DC API) is wired as the default desktop flow. **Sub-protocol A** (`org-iso-mdoc` + HPKE) also works via `DcApiService` + `/dc_api/verify`. Both are available in the protocol dropdown. |
 | **ISO 18013-7 Annex A** (REST API) | ❌ Not implemented | No wallet supports this. Would require CBOR DeviceRequest construction and direct HTTP transport |
 | **mso_mdoc verification** | ✅ Complete | Full COSE_Sign1, MSO digest, DeviceSignature, SessionTranscript verification |
 | **SD-JWT VC verification** | ✅ Complete | Full issuer JWT, `x5c` chain, KB-JWT, `_sd` disclosure verification |

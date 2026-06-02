@@ -1,22 +1,28 @@
-//! ISO 18013-7 Annex C / W3C Digital Credentials API support.
+//! ISO 18013-7 Annex C, Sub-protocol A: Raw ISO mDoc ("org-iso-mdoc").
 //!
-//! Implements the browser-side logic for the **EU Age Verification Profile's
-//! primary presentation method**: the W3C Digital Credentials API with the
-//! ISO 18013-7 Annex C wrapper format.
+//! Implements the CBOR + HPKE code path for the W3C Digital Credentials API.
+//! This is the "classic" ISO 18013-7 Annex C flow, where the request and
+//! response are wrapped in CBOR `["dcapi", ...]` arrays and encrypted with HPKE.
 //!
 //! ## Flow
 //!
 //! 1. RP generates a fresh HPKE key pair and a random nonce
 //! 2. RP builds `encryptionInfo` (CBOR → base64url) telling the wallet how to encrypt
 //! 3. RP builds `deviceRequest` (CBOR → base64url) telling the wallet what to present
-//! 4. RP calls `navigator.credentials.get()` with both blobs
+//! 4. RP calls `navigator.credentials.get()` with `protocol: "org-iso-mdoc"`
 //! 5. Wallet returns an HPKE-encrypted `DeviceResponse`
 //! 6. RP HPKE-decrypts the response and sends the plain DeviceResponse to the verifier
 //!
+//! ## Related
+//!
+//! For Annex C Sub-protocol B (OpenID4VP over DC API, `protocol: "openid4vp-v1-*"`),
+//! see `credentials.ts` → `requestViaOpenID4VPOverDCAPI()`.
+//!
 //! ## References
 //! - EU Age Verification Profile Annex A, §A.5
-//! - ISO/IEC 18013-7 Annex C
+//! - ISO/IEC 18013-7 Annex C, Sub-protocol A ("org-iso-mdoc")
 //! - HPKE RFC 9180
+//! - OpenID4VP §A (Sub-protocol B: openid4vp-v1-*)
 
 import { encode as cborEncode, decode as cborDecode } from "cbor-x";
 import { base64url } from "rfc4648";
@@ -84,7 +90,7 @@ export interface DcApiDecryptedResponse {
 // ============================================================================
 
 export class DcApiService {
-  private hpkePrivateKey: CryptoKey | null = null;
+  private hpkePrivateKey: Uint8Array | null = null;
   private nonce: Uint8Array | null = null;
 
   /**
@@ -205,7 +211,7 @@ export class DcApiService {
    * Call this once per verification attempt.
    */
   async prepareTransaction(): Promise<{
-    privateKey: CryptoKey;
+    privateKey: Uint8Array;
     publicKeyCoseKey: CoseKey;
     nonce: Uint8Array;
   }> {

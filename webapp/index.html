@@ -18,7 +18,9 @@
                 <h1 class="text-4xl font-bold mb-2 brand-title">
                     Digital Identity
                 </h1>
-                <p class="text-lg brand-subtitle">Relying Party Webapp Demo</p>
+                <p class="text-lg brand-subtitle">
+                    Relying Party / Verifier Webapp Demo
+                </p>
             </header>
 
             <!-- Main Content -->
@@ -51,27 +53,27 @@
                             >Credential Type</label
                         >
                         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                            <!-- Proof of Age Credential -->
+                            <!-- National ID Credential -->
                             <button
                                 class="credential-type-btn active relative"
-                                data-type="proof-of-age"
+                                data-type="national-id"
                             >
                                 <a
-                                    href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile"
+                                    href="https://data.europa.eu/eli/reg_impl/2024/2977/oj"
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    class="absolute top-2 right-2 text-gray-500/60 hover:text-purple-400 transition-colors text-sm z-10"
-                                    aria-label="Learn more about EU Age Verification Profile"
+                                    class="absolute top-2 right-2 text-gray-500/60 hover:text-green-400 transition-colors text-sm z-10"
+                                    aria-label="Learn more about EU PID Regulation"
                                     onclick="event.stopPropagation()"
                                 >
                                     ⓘ
                                 </a>
                                 <div class="flex items-center">
                                     <div
-                                        class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mr-3"
+                                        class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mr-3"
                                     >
                                         <svg
-                                            class="w-5 h-5 text-purple-400"
+                                            class="w-5 h-5 text-green-400"
                                             fill="none"
                                             stroke="currentColor"
                                             viewBox="0 0 24 24"
@@ -80,16 +82,16 @@
                                                 stroke-linecap="round"
                                                 stroke-linejoin="round"
                                                 stroke-width="2"
-                                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
                                             />
                                         </svg>
                                     </div>
                                     <div class="text-left">
                                         <div class="font-medium">
-                                            Proof of Age
+                                            National ID
                                         </div>
                                         <div class="text-sm text-gray-400">
-                                            EU Age Verification
+                                            EU PID
                                         </div>
                                     </div>
                                 </div>
@@ -139,50 +141,6 @@
                                 </div>
                             </button>
 
-                            <!-- National ID Credential -->
-                            <button
-                                class="credential-type-btn relative"
-                                data-type="national-id"
-                            >
-                                <a
-                                    href="https://data.europa.eu/eli/reg_impl/2024/2977/oj"
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    class="absolute top-2 right-2 text-gray-500/60 hover:text-green-400 transition-colors text-sm z-10"
-                                    aria-label="Learn more about EU PID Regulation"
-                                    onclick="event.stopPropagation()"
-                                >
-                                    ⓘ
-                                </a>
-                                <div class="flex items-center">
-                                    <div
-                                        class="w-10 h-10 rounded-lg bg-green-500/20 flex items-center justify-center mr-3"
-                                    >
-                                        <svg
-                                            class="w-5 h-5 text-green-400"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                stroke-width="2"
-                                                d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <div class="text-left">
-                                        <div class="font-medium">
-                                            National ID
-                                        </div>
-                                        <div class="text-sm text-gray-400">
-                                            EU PID
-                                        </div>
-                                    </div>
-                                </div>
-                            </button>
-
                             <!-- Health ID SD-JWT VC Credential -->
                             <button
                                 class="credential-type-btn relative"
@@ -224,7 +182,100 @@
                                     </div>
                                 </div>
                             </button>
+
+                            <!-- Proof of Age Credential -->
+                            <button
+                                class="credential-type-btn relative"
+                                data-type="proof-of-age"
+                            >
+                                <a
+                                    href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="absolute top-2 right-2 text-gray-500/60 hover:text-purple-400 transition-colors text-sm z-10"
+                                    aria-label="Learn more about EU Age Verification Profile"
+                                    onclick="event.stopPropagation()"
+                                >
+                                    ⓘ
+                                </a>
+                                <div class="flex items-center">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-purple-500/20 flex items-center justify-center mr-3"
+                                    >
+                                        <svg
+                                            class="w-5 h-5 text-purple-400"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                stroke-width="2"
+                                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <div class="text-left">
+                                        <div class="font-medium">
+                                            Proof of Age
+                                        </div>
+                                        <div class="text-sm text-gray-400">
+                                            EU Age Verification
+                                        </div>
+                                    </div>
+                                </div>
+                            </button>
                         </div>
+                    </div>
+
+                    <!-- Claims Selection -->
+                    <div class="mb-6">
+                        <label
+                            class="block text-sm font-medium text-gray-300 mb-3"
+                            >Requested Claims</label
+                        >
+                        <div
+                            id="claims-selection"
+                            class="grid grid-cols-2 md:grid-cols-3 gap-3"
+                        >
+                            <!-- Claims will be rendered here -->
+                        </div>
+                    </div>
+
+                    <!-- Protocol Selection -->
+                    <div class="mb-6">
+                        <label
+                            class="block text-sm font-medium text-gray-300 mb-3"
+                            >Protocol</label
+                        >
+                        <select
+                            id="protocol-select"
+                            class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                        >
+                            <!-- Populated dynamically by relying_party_app.ts -->
+                        </select>
+                        <p
+                            id="protocol-description"
+                            class="mt-2 text-xs text-gray-400"
+                        >
+                            Select a protocol for requesting credentials
+                        </p>
+                        <label
+                            id="x509-san-dns-label"
+                            class="mt-3 flex items-center gap-2 text-xs text-gray-400 cursor-pointer"
+                        >
+                            <input
+                                type="checkbox"
+                                id="use-x509-san-dns"
+                                class="rounded border-white/30 bg-white/10 text-indigo-500 focus:ring-indigo-500"
+                            />
+                            Use
+                            <code class="text-indigo-300">x509_san_dns</code>
+                            insetad of
+                            <code class="text-indigo-300">x509_hash</code>
+                            client_id scheme (unlikely!)
+                        </label>
                     </div>
 
                     <!-- Request Button and Spinner -->
@@ -276,62 +327,9 @@
                         </button>
                     </div>
 
-                    <!-- Profile Information -->
-                    <div id="profile-info" class="mb-2">
-                        <!-- Profile details will be rendered here by rp.ts -->
-                    </div>
-
-                    <!-- Claims Selection -->
-                    <div class="mb-6">
-                        <label
-                            class="block text-sm font-medium text-gray-300 mb-3"
-                            >Requested Claims</label
-                        >
-                        <div
-                            id="claims-selection"
-                            class="grid grid-cols-2 md:grid-cols-3 gap-3"
-                        >
-                            <!-- Claims will be rendered here -->
-                        </div>
-                    </div>
-
-                    <!-- Protocol Selection -->
-                    <div class="mb-8">
-                        <label
-                            class="block text-sm font-medium text-gray-300 mb-3"
-                            >Protocol</label
-                        >
-                        <select
-                            id="protocol-select"
-                            class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                        >
-                            <option value="w3c-dc-fallback">
-                                W3C Digital Credentials with fallback to
-                                OpenID4VP
-                            </option>
-                            <option value="w3c-dc">
-                                W3C Digital Credentials
-                            </option>
-                            <option value="annex-c">
-                                ISO 18013-7 Annex C (org-iso-mdoc)
-                            </option>
-                            <option value="openid4vp-cross-device">
-                                OpenID4VP (Cross-Device / QR Code)
-                            </option>
-                            <option value="openid4vp-same-device">
-                                OpenID4VP (Same-Device / Deep Link)
-                            </option>
-                            <option value="simulated">
-                                Simulated (no wallet call)
-                            </option>
-                        </select>
-                        <p
-                            id="protocol-description"
-                            class="mt-2 text-xs text-gray-400"
-                        >
-                            Uses navigator.credentials.get() with ISO 18013-7
-                            Annex C
-                        </p>
+                    <!-- Profile Information (protocol details) -->
+                    <div id="profile-info" class="mb-6">
+                        <!-- Populated by relying_party_app.ts -->
                     </div>
 
                     <!-- Show Request JSON Toggle -->

@@ -3,6 +3,7 @@ import type {
   CredentialType,
   InitTransactionRequest,
   OpenID4VPResponse,
+  ProfileId,
   VerifyResponse,
 } from "@ewqwe/digital-identity";
 import {
@@ -11,22 +12,89 @@ import {
   decodeAttestation,
   getClaimsForType,
   getDefaultClaims,
-  getProfileForType,
   parseAttestation,
 } from "@ewqwe/digital-identity";
-import { requestCredentials, sendToBackend } from "./credentials.ts";
-import { isMobileDevice } from "./credentials.ts";
+import {
+  isMobileDevice,
+  requestCredentials,
+  sendToBackend,
+} from "./credentials.ts";
 
 /**
  * Relying Party Application - Main controller
  */
+/**
+ * Protocol metadata for the info box — maps each protocol to its
+ * request format, response mode, transport mechanism, and URL scheme / API.
+ */
+interface ProtocolInfo {
+  requestFormat: string;
+  responseMode: string;
+  transport: string;
+  urlScheme: string;
+}
+
 export class RelyingPartyApp {
   private logger: DebugLogger;
-  private selectedCredentialType: CredentialType = "proof-of-age";
+  private selectedCredentialType: CredentialType = "national-id";
   private selectedClaims: Set<string> = new Set();
-  private selectedProtocol: string = isMobileDevice()
-    ? "openid4vp-same-device"
-    : "w3c-dc-fallback";
+  private selectedProtocol: string = RelyingPartyApp.getDeviceDefaultProtocol();
+  private useX509SanDns: boolean = false;
+
+  /**
+   * Protocols allowed for each credential type.
+   * Keys omitted from this map allow all protocols.
+   */
+  private static readonly ALLOWED_PROTOCOLS: Partial<
+    Record<CredentialType, string[]>
+  > = {
+    "proof-of-age": ["openid4vp-same-device", "openid4vp-cross-device"],
+  };
+
+  /**
+   * Returns the appropriate default protocol based on the user's device.
+   * On mobile, same-device (deep link) is the natural flow.
+   * On desktop/laptop, cross-device (QR code) is more practical.
+   */
+  private static getDeviceDefaultProtocol(): string {
+    return isMobileDevice()
+      ? "openid4vp-same-device"
+      : "openid4vp-cross-device";
+  }
+
+  /** Protocol metadata for the info box. */
+  private static readonly PROTOCOL_INFO: Record<string, ProtocolInfo> = {
+    "w3c-dc-openid4vp": {
+      requestFormat: "DC API request with protocol: openid4vp-v1-unsigned",
+      responseMode: "dc_api — via W3C Digital Credentials API",
+      transport: "W3C Digital Credentials API (navigator.credentials.get)",
+      urlScheme: "W3C Digital Credentials API — no URL scheme involved",
+    },
+    "w3c-dc-iso-mdoc": {
+      requestFormat: "DC API request with protocol: org-iso-mdoc (HPKE + CBOR)",
+      responseMode: "dc_api — via W3C Digital Credentials API",
+      transport: "W3C Digital Credentials API (navigator.credentials.get)",
+      urlScheme: "W3C Digital Credentials API — no URL scheme involved",
+    },
+    "w3c-dc-fallback": {
+      requestFormat: "Multiple protocols attempted in sequence",
+      responseMode: "dc_api → direct_post",
+      transport: "W3C Digital Credentials API → OpenID4VP cross-device",
+      urlScheme: "DC API / URL scheme — depends on fallback step",
+    },
+    "openid4vp-cross-device": {
+      requestFormat: "OpenID4VP Authorization Request (QR code)",
+      responseMode: "direct_post — wallet POSTs to response_uri",
+      transport: "Cross-device (QR code scan)",
+      urlScheme: "openid4vp://, eudi-openid4vp://",
+    },
+    "openid4vp-same-device": {
+      requestFormat: "OpenID4VP Authorization Request (redirect deep link)",
+      responseMode: "fragment — response in redirect URL fragment",
+      transport: "Same-device (deep link redirect)",
+      urlScheme: "openid4vp://, eudi-openid4vp://",
+    },
+  };
   private currentRequest: InitTransactionRequest | null = null;
   private currentResponse: OpenID4VPResponse | null = null;
 
@@ -37,7 +105,9 @@ export class RelyingPartyApp {
   initialize(): void {
     this.setupEventListeners();
     this.checkAPISupport();
-    // Sync the <select> element with the JS-computed default (e.g. mobile vs desktop)
+    // Build protocol dropdown with only the options valid for the initial credential type
+    this.buildProtocolOptions();
+    // Sync the <select> element with the JS-computed default
     const protocolSelect = document.getElementById(
       "protocol-select",
     ) as HTMLSelectElement | null;
@@ -55,6 +125,7 @@ export class RelyingPartyApp {
     });
     this.updateClaimsUI();
     this.updateInitTransactionRequest();
+    this.updateX509SanDnsVisibility();
 
     // Restore any verification result that survived a page navigation
     // (same-device flow can trigger a brief page reload when the wallet
@@ -92,9 +163,11 @@ export class RelyingPartyApp {
       .getElementById("protocol-select")
       ?.addEventListener("change", (e) => {
         this.selectedProtocol = (e.target as HTMLSelectElement).value;
-        console.log("Selected protocol:", this.selectedProtocol);
+        this.logger.log("Selected protocol:", this.selectedProtocol);
         this.updateProtocolDescription();
+        this.updateProfileInfo();
         this.updateInitTransactionRequest();
+        this.updateX509SanDnsVisibility();
       });
 
     // Request credentials button
@@ -126,6 +199,19 @@ export class RelyingPartyApp {
       ?.addEventListener("click", () => {
         this.resetUI();
       });
+
+    // x509_san_dns client_id scheme toggle
+    document
+      .getElementById("use-x509-san-dns")
+      ?.addEventListener("change", (e) => {
+        this.useX509SanDns = (e.target as HTMLInputElement).checked;
+        this.logger.log(
+          "x509_san_dns scheme:",
+          this.useX509SanDns ? "enabled" : "disabled",
+        );
+        this.updateProfileInfo();
+        this.updateInitTransactionRequest();
+      });
   }
 
   /**
@@ -136,12 +222,12 @@ export class RelyingPartyApp {
     if (!descEl) return;
 
     const descriptions: Record<string, string> = {
+      "w3c-dc-openid4vp":
+        "Annex C Sub-protocol B: OpenID4VP over DC API (openid4vp-v1-*) — default",
+      "w3c-dc-iso-mdoc":
+        "Annex C Sub-protocol A: Raw ISO mDoc via DC API (org-iso-mdoc / HPKE + CBOR)",
       "w3c-dc-fallback":
-        "Tries W3C Digital Credentials API first, falls back to OpenID4VP if unavailable",
-      "w3c-dc":
-        "Uses navigator.credentials.get() with ISO 18013-7 Annex C (mobile wallets via W3C DC API)",
-      "annex-c":
-        "Pure ISO 18013-7 Annex C: HPKE + CBOR encryptionInfo/deviceRequest (org-iso-mdoc)",
+        "Tries Annex C Sub-protocol B, then Sub-protocol A, then OpenID4VP cross-device",
       "openid4vp-cross-device":
         "OpenID4VP 1.0 cross-device flow - scan QR code with mobile wallet (EUDI Wallet)",
       "openid4vp-same-device":
@@ -160,17 +246,73 @@ export class RelyingPartyApp {
    * - Update the profile information display
    * @param type The credential type to select
    */
+  /**
+   * Build the protocol <select> options based on the current credential type.
+   * Only protocols allowed for the credential type are included.
+   * If the current protocol is not in the allowed set, it is reset to the default.
+   */
+  private buildProtocolOptions(): void {
+    const select = document.getElementById(
+      "protocol-select",
+    ) as HTMLSelectElement | null;
+    if (!select) return;
+
+    const allowed = RelyingPartyApp.ALLOWED_PROTOCOLS[
+      this.selectedCredentialType
+    ] ?? [
+      "w3c-dc-fallback",
+      "openid4vp-same-device",
+      "openid4vp-cross-device",
+      "w3c-dc-openid4vp",
+      "w3c-dc-iso-mdoc",
+    ];
+
+    // If current protocol is not allowed for this credential type, reset to device-appropriate default
+    if (!allowed.includes(this.selectedProtocol)) {
+      const deviceDefault = RelyingPartyApp.getDeviceDefaultProtocol();
+      this.selectedProtocol = allowed.includes(deviceDefault)
+        ? deviceDefault
+        : allowed[0];
+    }
+
+    const optionLabels: Record<string, string> = {
+      "w3c-dc-openid4vp": "Annex C Sub-protocol B: OpenID4VP over DC API",
+      "w3c-dc-iso-mdoc": "Annex C Sub-protocol A: Raw ISO mDoc (HPKE + CBOR)",
+      "w3c-dc-fallback": "Annex C with fallback to OpenID4VP",
+      "openid4vp-cross-device": "OpenID4VP (Cross-Device / QR Code)",
+      "openid4vp-same-device": "OpenID4VP (Same-Device / Deep Link)",
+    };
+
+    select.innerHTML = allowed
+      .map(
+        (value) =>
+          `<option value="${value}">${optionLabels[value] || value}</option>`,
+      )
+      .join("");
+    select.value = this.selectedProtocol;
+  }
+
+  /**
+   * Select a credential type and update the UI accordingly.
+   * - Restricts available protocols to those valid for the credential type
+   * - Resets protocol if the current one is invalid
+   * - Updates claims, request, and profile info
+   */
   private selectCredentialType(type: CredentialType): void {
     this.selectedCredentialType = type;
     this.selectedClaims.clear();
 
-    // Update UI
+    // Update credential type button active state
     document.querySelectorAll(".credential-type-btn").forEach((btn) => {
       btn.classList.toggle(
         "active",
         (btn as HTMLElement).dataset.type === type,
       );
     });
+
+    // Rebuild protocol options for this credential type
+    this.buildProtocolOptions();
+    this.updateProtocolDescription();
 
     // Re-render claims and select defaults
     this.renderClaims();
@@ -185,62 +327,97 @@ export class RelyingPartyApp {
   }
 
   /**
-   * Update the profile information display based on selected credential type
+   * Update the profile information display based on selected credential type and protocol.
+   * Shows protocol-specific metadata (request format, response mode, transport, URL/API)
+   * instead of the static credential-type profile info, so the user sees details
+   * that match the actual selected protocol.
    */
   private updateProfileInfo(): void {
     const profileContainer = document.getElementById("profile-info");
     if (!profileContainer) return;
 
-    const profile = getProfileForType(this.selectedCredentialType);
-    if (!profile) {
+    const config = CREDENTIAL_TYPES[this.selectedCredentialType];
+    if (!config) {
       profileContainer.innerHTML = "";
       return;
     }
 
-    const isHaip = profile.id === "haip";
-    const badgeColor = isHaip ? "bg-blue-600" : "bg-green-600";
-    const borderColor = isHaip ? "border-blue-500/30" : "border-green-500/30";
-    const bgColor = isHaip ? "bg-blue-950/30" : "bg-green-950/30";
+    const isAnnexA = config.profile === "annex-a";
+    const badgeColor = isAnnexA ? "bg-green-600" : "bg-blue-600";
+    const borderColor = isAnnexA ? "border-green-500/30" : "border-blue-500/30";
+    const bgColor = isAnnexA ? "bg-green-950/30" : "bg-blue-950/30";
 
-    const config = CREDENTIAL_TYPES[this.selectedCredentialType];
     const formatLabel =
       config?.format === "dc+sd-jwt" ? "SD-JWT VC" : "MSO MDOC";
     const formatBadgeColor =
       config?.format === "dc+sd-jwt" ? "bg-amber-600" : "bg-slate-600";
 
+    // Get protocol-specific info
+    const protocolInfo = RelyingPartyApp.PROTOCOL_INFO[this.selectedProtocol];
+    const protocolLabel = this.getProtocolLabel(this.selectedProtocol);
+
+    // Determine if this is a W3C DC API based protocol (Annex C)
+    const isAnnexC = [
+      "w3c-dc-openid4vp",
+      "w3c-dc-iso-mdoc",
+      "w3c-dc-fallback",
+    ].includes(this.selectedProtocol);
+    const transportBadgeColor = isAnnexC ? "bg-purple-600" : "bg-indigo-600";
+
     profileContainer.innerHTML = `
       <div class="rounded-lg ${bgColor} ${borderColor} border p-4 mb-6">
         <div class="mb-3">
           <div class="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span class="px-2 py-1 ${badgeColor} text-xs font-semibold rounded-full whitespace-nowrap">${profile.name}</span>
+            <span class="px-2 py-1 ${badgeColor} text-xs font-semibold rounded-full whitespace-nowrap">${config.name}</span>
             <span class="px-2 py-1 ${formatBadgeColor} text-xs font-semibold rounded-full whitespace-nowrap">${formatLabel}</span>
+            <span class="px-2 py-1 ${transportBadgeColor} text-xs font-semibold rounded-full whitespace-nowrap">${protocolLabel}</span>
           </div>
-          <p class="text-gray-400 text-sm">${profile.description}</p>
+          <p class="text-gray-400 text-sm">${protocolInfo?.transport || ""}</p>
         </div>
         <div class="grid grid-cols-2 gap-4 text-sm">
           <div>
-            <span class="text-gray-500">Client ID Scheme:</span>
-            <span class="ml-2 text-white font-mono">${profile.clientIdScheme}</span>
-          </div>
-          <div>
             <span class="text-gray-500">Request Format:</span>
-            <span class="ml-2 text-white font-mono">${
-              profile.requestFormat === "jar" ? "Signed JAR" : "Plain JSON"
-            }</span>
+            <span class="ml-2 text-white font-mono text-xs leading-relaxed">${protocolInfo?.requestFormat || "—"}</span>
           </div>
           <div>
             <span class="text-gray-500">Response Mode:</span>
-            <span class="ml-2 text-white font-mono">${profile.responseMode}</span>
+            <span class="ml-2 text-white font-mono text-xs leading-relaxed">${protocolInfo?.responseMode || "—"}</span>
           </div>
-          <div>
-            <span class="text-gray-500">URL Scheme:</span>
-            <span class="ml-2 text-white font-mono">${
-              profile.urlSchemes[0]
-            }</span>
+          <div class="col-span-2">
+            <span class="text-gray-500">URL Scheme / API:</span>
+            <span class="ml-2 text-white font-mono text-xs leading-relaxed">${protocolInfo?.urlScheme || "—"}</span>
           </div>
         </div>
       </div>
     `;
+  }
+
+  /**
+   * Show or hide the x509_san_dns checkbox based on the selected protocol.
+   */
+  private updateX509SanDnsVisibility(): void {
+    const label = document.getElementById("x509-san-dns-label");
+    if (!label) return;
+    // Only show for OpenID4VP protocols, and never for Proof of Age (Annex A)
+    const isOpenId4Vp =
+      this.selectedProtocol === "openid4vp-same-device" ||
+      this.selectedProtocol === "openid4vp-cross-device";
+    const isProofOfAge = this.selectedCredentialType === "proof-of-age";
+    label.classList.toggle("hidden", !isOpenId4Vp || isProofOfAge);
+  }
+
+  /**
+   * Return a short human-readable label for a protocol value.
+   */
+  private getProtocolLabel(protocol: string): string {
+    const labels: Record<string, string> = {
+      "w3c-dc-openid4vp": "Annex C / OpenID4VP over DC API",
+      "w3c-dc-iso-mdoc": "Annex C / ISO mDoc over DC API",
+      "w3c-dc-fallback": "Annex C / Fallback",
+      "openid4vp-cross-device": "OpenID4VP Cross-Device",
+      "openid4vp-same-device": "OpenID4VP Same-Device",
+    };
+    return labels[protocol] || protocol;
   }
 
   /**
@@ -330,10 +507,18 @@ export class RelyingPartyApp {
       //   publicUrl = globalThis.location.origin;
       // }
 
+      const profile: ProfileId | undefined =
+        this.useX509SanDns &&
+        (this.selectedProtocol === "openid4vp-same-device" ||
+          this.selectedProtocol === "openid4vp-cross-device")
+          ? "haip-x509-san-dns"
+          : undefined;
+
       const request = buildInitTransactionRequest(
         globalThis.location.origin,
         this.selectedCredentialType,
         Array.from(this.selectedClaims),
+        profile,
       );
       this.currentRequest = request;
       requestJson.textContent = JSON.stringify(request, null, 2);
@@ -728,13 +913,17 @@ export class RelyingPartyApp {
       value.length > 0
     ) {
       // The portrait value from the mDoc credential is base64url-encoded
-      // (CBOR byte strings use URL-safe base64).  Convert to standard base64
+      // (CBOR byte strings use URL-safe base64). Convert to standard base64
       // for the data: URI, which does not understand base64url characters.
       const standardBase64 = value.replace(/-/g, "+").replace(/_/g, "/");
+      const mimeType = RelyingPartyApp.detectImageMimeType(standardBase64);
+      const src = `data:${mimeType};base64,${standardBase64}`;
+      // JPEG 2000 is not renderable in browsers; show a placeholder note
+      const altAttr = `${label}${mimeType === "image/jp2" ? " (JPEG 2000 — may not display)" : ""}`;
       return `
         <div class="flex justify-between items-center py-2 border-b border-white/10">
           <span class="text-gray-400">${label}</span>
-          <img src="data:image/jpeg;base64,${standardBase64}" alt="${label}" class="h-20 w-16 object-cover rounded" />
+          <img src="${src}" alt="${altAttr}" class="h-20 w-16 object-cover rounded" />
         </div>
       `;
     }
@@ -744,6 +933,93 @@ export class RelyingPartyApp {
         <span class="font-medium">${this.formatClaimValue(value)}</span>
       </div>
     `;
+  }
+
+  /**
+   * Detect image MIME type from magic bytes encoded in standard base64.
+   * Adds missing `=` padding before decoding.
+   */
+  private static detectImageMimeType(base64Std: string): string {
+    try {
+      // Restore padding — base64 length must be a multiple of 4
+      const padded = base64Std.padEnd(
+        base64Std.length + ((4 - (base64Std.length % 4)) % 4),
+        "=",
+      );
+      // Decode the first 12 bytes (enough for all signatures below)
+      const raw = atob(padded);
+      const bytes = new Uint8Array(raw.length);
+      for (let i = 0; i < raw.length; i++) {
+        bytes[i] = raw.charCodeAt(i);
+      }
+
+      // JPEG (SOI marker \xff\xd8\xff)
+      if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+        return "image/jpeg";
+      }
+
+      // PNG signature \x89PNG\r\n\x1a\n
+      if (
+        bytes[0] === 0x89 &&
+        bytes[1] === 0x50 &&
+        bytes[2] === 0x4e &&
+        bytes[3] === 0x47
+      ) {
+        return "image/png";
+      }
+
+      // GIF87a or GIF89a
+      if (
+        bytes[0] === 0x47 &&
+        bytes[1] === 0x49 &&
+        bytes[2] === 0x46 &&
+        bytes[3] === 0x38 &&
+        (bytes[4] === 0x37 || bytes[4] === 0x39) &&
+        bytes[5] === 0x61
+      ) {
+        return "image/gif";
+      }
+
+      // WebP: RIFF....WEBP (12-byte signature)
+      if (
+        bytes[0] === 0x52 &&
+        bytes[1] === 0x49 &&
+        bytes[2] === 0x46 &&
+        bytes[3] === 0x46 &&
+        bytes[8] === 0x57 &&
+        bytes[9] === 0x45 &&
+        bytes[10] === 0x42 &&
+        bytes[11] === 0x50
+      ) {
+        return "image/webp";
+      }
+
+      // JPEG 2000 — two possible signatures:
+      //   SIZ marker (\x00\x00\x00\x0cjP  ) — JP2 file format
+      //   SOC marker (\xff\x4f\xff\x51) — raw J2K codestream
+      if (
+        (bytes[0] === 0x00 &&
+          bytes[1] === 0x00 &&
+          bytes[2] === 0x00 &&
+          bytes[3] === 0x0c &&
+          bytes[4] === 0x6a &&
+          bytes[5] === 0x50 &&
+          bytes[6] === 0x20 &&
+          bytes[7] === 0x20) ||
+        (bytes[0] === 0xff &&
+          bytes[1] === 0x4f &&
+          bytes[2] === 0xff &&
+          bytes[3] === 0x51)
+      ) {
+        return "image/jp2";
+      }
+
+      // Default fallback — assume JPEG
+      return "image/jpeg";
+    } catch {
+      // If decoding fails for any reason, fall back to JPEG
+      return "image/jpeg";
+    }
   }
 
   /**

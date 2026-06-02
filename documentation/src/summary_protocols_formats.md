@@ -34,16 +34,54 @@ ISO/IEC 18013-7 defines how mobile driving licences (mDLs) and generic mDocs are
 
 ### Annex C: W3C Digital Credentials API (DC API)
 
+Annex C defines two sub-protocols that both run over the W3C Digital Credentials API
+(`navigator.credentials.get({ digital: ... })`). The browser/OS handles wallet discovery,
+invocation, and user consent via a credential chooser, then delivers the request to the
+user-selected wallet.
+
+#### Sub-protocol A: Raw ISO mDoc (`org-iso-mdoc`)
+
+The classic ISO 18013-7 Annex C payload: a CBOR-structured request with HPKE encryption.
+
 | Aspect | Detail |
 |--------|--------|
+| **Protocol identifier** | `org-iso-mdoc` |
 | **Invocation** | Browser API: `navigator.credentials.get({ digital: { requests: [...] } })` |
-| **Request payload** | ISO 18013-7 Annex C wrapper `["dcapi", { nonce, recipientPublicKey }]` + CBOR `DeviceRequest` |
-| **Response payload** | HPKE-encrypted mDoc inside the `["dcapi", { enc, cipherText }]` wrapper |
+| **Request payload** | `["dcapi", { nonce, recipientPublicKey }]` (CBOR) + CBOR `DeviceRequest` — both base64url-encoded as opaque strings in the `data` field |
+| **Response payload** | HPKE-encrypted mDoc inside the `["dcapi", { enc, cipherText }]` CBOR wrapper — returned as an opaque string in the `data` field |
 | **Encryption** | HPKE (X25519 + HKDF-SHA256 + AES-128-GCM) |
-| **Transport** | Browser/OS handles wallet invocation; BLE proximity checks + relay servers for cross-device |
-| **Trust model** | Trust based on web origins and platform-verified App Links |
-| **Developer impact** | Minimal — browser handles wallet discovery and session binding |
-| **Wallet support** | **All major EUDI wallets** (wraps OpenID4VP request as `dc_api.jwt`) |
+| **Wallet support** | Rare — most wallets do not implement a separate CBOR/HPKE code path just for Annex C |
+
+#### Sub-protocol B: OpenID4VP over DC API (`openid4vp-v1-*`)
+
+This is what wallets actually implement. The verifier sends a **standard OpenID4VP Authorization
+Request** (with `dcql_query`, `nonce`, `client_metadata`), and the wallet returns a VP Token
+— all tunnelled through the DC API instead of via `openid4vp://` deep links or `direct_post`.
+
+| Aspect | Detail |
+|--------|--------|
+| **Protocol identifiers** | `openid4vp-v1-unsigned`, `openid4vp-v1-signed`, `openid4vp-v1-multisigned` (see [OpenID4VP §A.1](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-A.1)) |
+| **Invocation** | Browser API: `navigator.credentials.get({ digital: { requests: [...] } })` |
+| **Request payload** | Standard OpenID4VP Authorization Request parameters as JSON in the `data` field: `response_type`, `response_mode`, `nonce`, `dcql_query`, `client_metadata`, optionally `client_id` and `request` for signed requests |
+| **Response payload** | OpenID4VP Authorization Response containing the `vp_token`, optionally JWE-encrypted (`response_mode: "dc_api.jwt"`): the encrypted JWT is returned as a JSON string in the `data` field |
+| **Response modes** | `dc_api` (unencrypted JSON, not recommended) or `dc_api.jwt` (JWE-encrypted Authorization Response — the wallet encrypts the `vp_token` using the verifier's public key from `client_metadata.jwks`, per [OpenID4VP §8.3](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.3)) |
+| **Wallet support** | **Theoretical — not yet confirmed in production.** The EUDI Wallet Core library includes DC API handling code, but production wallets (France Identité, EUDI Wallet DE, IT Wallet, Spanish EUDIW) do not yet recognize the `openid4vp` protocol identifier inside the DC API handler. See [demo_webapp.md](./demo_webapp.md#why-w3c-digital-credentials-is-disabled-on-mobile) for details. |
+
+#### Summary comparison
+
+| Aspect | `org-iso-mdoc` | `openid4vp-v1-*` |
+|--------|----------------|-------------------|
+| **Payload format** | CBOR (`["dcapi", ...]`) | JSON (OpenID4VP) |
+| **Encryption** | HPKE (mandatory) | JWE (`dc_api.jwt`, mandatory by modern profiles) |
+| **Request structure** | `encryptionInfo` + `deviceRequest` CBOR blobs | `dcql_query`, `nonce`, `client_metadata` |
+| **Response structure** | CBOR-encoded HPKE ciphertext | JWE-encrypted VP Token |
+| **Wallet implementation** | Separate code path (CBOR + COSE + HPKE) | Reuses OpenID4VP logic from Annex B |
+| **Adoption** | Low | **Not yet demonstrated in production** — documented as broken on Android 15+ in practice (see [demo_webapp.md](./demo_webapp.md#why-w3c-digital-credentials-is-disabled-on-mobile)) |
+
+**In short**: "Wraps OpenID4VP as `dc_api.jwt`" means the wallet receives a standard OpenID4VP
+Authorization Request through the DC API, processes it with its existing OpenID4VP handler,
+then encrypts the resulting VP Token as a JWE (using `response_mode: dc_api.jwt`) before
+returning it through the DC API.
 
 ---
 
@@ -61,7 +99,7 @@ ISO/IEC 18013-7 defines how mobile driving licences (mDLs) and generic mDocs are
 | **Privacy model** | Double-blind: verifier gets binary yes/no without user identity; issuer cannot see where credential is used |
 | **Client ID scheme** | `redirect_uri` (fallback only) |
 | **Credential format** | `mso_mdoc` (`eu.europa.ec.av.1`) |
-| **Wallet support** | France Identité, EUDI Wallet Referenz, AVI, any AV-compatible wallet |
+| **Wallet support** | AV-compatible wallets (EUDI Wallet Referenz, AVI) via Annex B deep-link fallback. Annex C (W3C DC API) is the *specified* primary method, but no wallet has demonstrated working Annex C support in production as of mid-2026. |
 
 ### High Assurance Interoperability Profile (HAIP)
 
@@ -127,7 +165,14 @@ Wallet support for ISO/IEC 18013-7 annexes across major European member states (
 |--------|-----------|---------|-------|--------|---------|-------|-------|
 | **ISO 18013-7 Annex A** | HTTP REST API | CBOR DeviceRequest/Response | Network-layer encryption | ❌ Not implemented | ❌ Not implemented | ❌ Not implemented | ❌ Not implemented |
 | **ISO 18013-7 Annex B** | `openid4vp://`, `direct_post` | DCQL (JSON) | JAR + TLS | ✅ Production, DCQL + JAR | ✅ Beta/Sandbox, DCQL + JAR | ✅ Production, DCQL + JAR | ✅ Pilot, DCQL + JAR |
-| **ISO 18013-7 Annex C** | `navigator.credentials.get()` | Encapsulated OID4VP (`dc_api.jwt`) | Web origins + App Links | ✅ Wraps DCQL | ✅ Wraps DCQL | ✅ Wraps DCQL, OS-level wallet | ✅ Prioritised for web |
+| **ISO 18013-7 Annex C** | `navigator.credentials.get()` | **Sub-protocol A**: CBOR `["dcapi",...]` + HPKE
+**Sub-protocol B**: OpenID4VP JSON + JWE (`dc_api.jwt`) | Web origins + App Links | ⚠️ Sub-protocol B: in development — EUDI Wallet Core added DC API support, but the `openid4vp` protocol identifier is not yet recognised by production wallets (see note below)
+❌ Sub-protocol A: not implemented | ⚠️ Sub-protocol B: in development (same limitation)
+❌ Sub-protocol A: not implemented | ⚠️ Sub-protocol B: in development (same limitation)
+❌ Sub-protocol A: not implemented | ⚠️ Sub-protocol B: in development (same limitation)
+❌ Sub-protocol A: not implemented |
+
+> **Note on Annex C**: While the EUDI Wallet Core library includes DC API plumbing, production wallets reject the `openid4vp` protocol identifier with "Unsupported protocol" errors. The W3C DC API Annex C flow is therefore **not functional** with any current EUDI wallet. All wallets use Annex B (deep-link OpenID4VP) for production flows. See the [webapp documentation](./demo_webapp.md#why-w3c-digital-credentials-is-disabled-on-mobile) for the full technical analysis.
 | **OpenID4VP HAIP** | OpenID4VP, `direct_post.jwt` | DCQL | Strict JAR + EU Trust List | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR |
 | **EUDIW EU-AV Blueprint** | Priority: Annex C → Annex B | DCQL (minimal disclosure) | No JAR | ✅ Drops JAR for privacy | ✅ Drops JAR for privacy | ✅ Drops JAR for privacy | ✅ Core focus, drops JAR |
 

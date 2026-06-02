@@ -3,6 +3,7 @@ import tailwindcss from "tailwindcss";
 import autoprefixer from "autoprefixer";
 import * as path from "node:path";
 import basicSsl from "@vitejs/plugin-basic-ssl";
+import https from "node:https";
 
 // Shared proxy target for the Rust credential verifier.
 // secure:false accepts the self-signed dev certificate on localhost:9443.
@@ -62,7 +63,9 @@ export default defineConfig({
     },
   },
   server: {
-    https: true,
+    https: {
+      /* handled by plugin (basicSsl) */
+    } as any as https.ServerOptions,
     host: "0.0.0.0",
     port: 5174,
     proxy: {
@@ -82,5 +85,16 @@ export default defineConfig({
       ],
     },
   },
-  plugins: [basicSsl()],
+  plugins: [
+    basicSsl({
+      /** name of certification */
+      name: "demo.webapp",
+      /** custom trust domains */
+      domains: ["*.ewqwe.eu"],
+      /** optional, days before certificate expires */
+      ttlDays: 30,
+      // /** custom certification directory */
+      // certDir: '/Users/.../.devServer/cert',
+    }),
+  ],
 });

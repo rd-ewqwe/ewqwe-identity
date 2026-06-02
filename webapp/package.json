@@ -10,17 +10,19 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@ewqwe/digital-identity": "file:../js-lib/ewqwe-digital-identity",
+    "@noble/curves": "^2.2.0",
     "cbor-x": "^1.6.0",
     "jose": "^5.9.6",
     "rfc4648": "^1.5.0"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
+    "@types/node": "^20.19.41",
+    "@vitejs/plugin-basic-ssl": "^2.1.4",
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
     "typescript": "^6.0.0",
-    "vite": "^8.0.0",
-    "@vitejs/plugin-basic-ssl": "^2.1.4"
+    "vite": "^8.0.0"
   }
 }

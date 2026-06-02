@@ -19,7 +19,9 @@ use crate::types::{
 /// EU Age Verification namespace.
 pub const EU_AV_NAMESPACE: &str = "eu.europa.ec.av.1";
 /// EU Age Verification document type.
-pub const EU_AV_DOCTYPE: &str = "eu.europa.ec.av.1.mdoc";
+/// NOTE: EUDI credentials use the namespace string as their doctype,
+/// unlike ISO 18013-5 mDL which appends ".mDL".
+pub const EU_AV_DOCTYPE: &str = "eu.europa.ec.av.1";
 
 /// ISO 18013-5 mobile driver's license namespace.
 pub const ISO_MDL_NAMESPACE: &str = "org.iso.18013.5.1";
@@ -53,7 +55,7 @@ pub fn build_age_verification_query(age_threshold: Option<u8>) -> DCQLQuery {
             id: "eu_av_proof".to_string(),
             format: "mso_mdoc".to_string(),
             meta: DCQLCredentialMeta {
-                doctype_value: Some(EU_AV_NAMESPACE.to_string()),
+                doctype_value: Some(EU_AV_DOCTYPE.to_string()),
                 vct_values: None,
                 type_values: None,
             },
@@ -92,7 +94,7 @@ pub fn build_age_verification_query_with_fallback(age_threshold: Option<u8>) -> 
                 id: "eu_av_proof".to_string(),
                 format: "mso_mdoc".to_string(),
                 meta: DCQLCredentialMeta {
-                    doctype_value: Some(EU_AV_NAMESPACE.to_string()),
+                    doctype_value: Some(EU_AV_DOCTYPE.to_string()),
                     vct_values: None,
                     type_values: None,
                 },

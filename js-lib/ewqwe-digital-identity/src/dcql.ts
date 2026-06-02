@@ -13,6 +13,7 @@
 import type {
   CredentialType,
   InitTransactionRequest,
+  ProfileId,
   VpFormats,
 } from "./types.js";
 import { CREDENTIAL_TYPES } from "./config.js";
@@ -287,6 +288,7 @@ export function buildInitTransactionRequest(
   publicUrl: string,
   credentialType: CredentialType,
   selectedClaims: string[],
+  profile?: ProfileId,
 ): InitTransactionRequest {
   const config = CREDENTIAL_TYPES[credentialType];
   if (!config) {
@@ -349,6 +351,7 @@ export function buildInitTransactionRequest(
     dcql_query: dcqlQuery,
     nonce: generateNonce(),
     credential_type: credentialType,
+    profile,
     client_metadata: {
       client_name: "ewQwe Digital Credentials Demo",
       vp_formats,

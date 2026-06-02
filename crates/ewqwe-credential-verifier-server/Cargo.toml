@@ -35,6 +35,8 @@ ewqwe_credential_verifier_ui = { workspace = true }
 ewqwe_logging = { workspace = true }
 ewqwe_openid4vp = { workspace = true }
 futures = { workspace = true }
+hayro-jpeg2000 = { workspace = true }
+image = { workspace = true }
 jsonwebtoken = { workspace = true }
 openssl = { workspace = true, features = ["vendored"] }
 reqwest = { workspace = true, features = [

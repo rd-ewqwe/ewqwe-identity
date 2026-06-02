@@ -49,7 +49,9 @@ ewqwe_logging = { path = "crates/ewqwe-logging" }
 ewqwe_openid4vp = { path = "crates/ewqwe-openid4vp" }
 eyre = "0.6.12"
 futures = "0.3.31"
+hayro-jpeg2000 = "0.3"
 hex = { version = "0.4.3", features = ["serde"] }
+image = { version = "0.25", default-features = false, features = ["jpeg", "png", "gif", "webp", "bmp", "tga", "tiff"] }
 humantime = "2.1.0"
 humantime-serde = "1.1.1"
 iso8601 = { version = "0.6", features = ["serde"] }

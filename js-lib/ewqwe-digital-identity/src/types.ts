@@ -19,7 +19,7 @@ import type { DCQLQuery } from "./dcql.js";
 // ============================================================================
 
 /** Protocol profile identifier. */
-export type ProfileId = "haip" | "annex-a";
+export type ProfileId = "haip" | "haip-x509-san-dns" | "annex-a";
 
 /** Client ID scheme (OpenID4VP 1.0 §5.9). */
 export type ClientIdScheme =

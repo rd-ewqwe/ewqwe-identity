@@ -164,10 +164,38 @@ fn parse_document(doc: &Cbor) -> Result<DecodedMdoc> {
         namespaces.insert(ns_name, claims);
     }
 
-    Ok(DecodedMdoc {
+    let decoded = DecodedMdoc {
         doc_type,
         namespaces,
-    })
+    };
+
+    tracing::info!(
+        doc_type = %decoded.doc_type,
+        namespace_count = decoded.namespaces.len(),
+        "Decoded mDoc presentation"
+    );
+    for (ns, claims) in &decoded.namespaces {
+        for (claim_name, _) in claims.iter().take(20) {
+            tracing::debug!(
+                namespace = %ns,
+                claim = %claim_name,
+                "mDoc claim found"
+            );
+        }
+    }
+    // Specifically log portrait if present
+    if let Some(ns_claims) = decoded.namespaces.get("eu.europa.ec.eudi.pid.1") {
+        if let Some(portrait) = ns_claims.get("portrait") {
+            let data_str = serde_json::to_string(portrait).unwrap_or_default();
+            tracing::info!(
+                portrait_len = data_str.len(),
+                portrait_prefix = %data_str.chars().take(40).collect::<String>(),
+                "Portrait claim found in PID namespace"
+            );
+        }
+    }
+
+    Ok(decoded)
 }
 
 fn parse_issuer_signed_item(val: &Cbor) -> Result<(String, serde_json::Value)> {

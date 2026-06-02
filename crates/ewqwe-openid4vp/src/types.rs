@@ -486,8 +486,10 @@ impl DCQLQuery {
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 pub enum ProfileId {
-    /// High Assurance Interoperability Profile for EUDI Wallets.
+    /// High Assurance Interoperability Profile for EUDI Wallets (x509_hash client_id scheme).
     Haip,
+    /// HAIP variant using x509_san_dns client_id scheme
+    HaipX509SanDns,
     /// EU Age Verification Profile (Annex A) for age verification apps.
     AnnexA,
 }
@@ -496,6 +498,7 @@ impl std::fmt::Display for ProfileId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             ProfileId::Haip => write!(f, "haip"),
+            ProfileId::HaipX509SanDns => write!(f, "haip-x509-san-dns"),
             ProfileId::AnnexA => write!(f, "annex-a"),
         }
     }
@@ -741,6 +744,10 @@ pub struct VerifyCredentialResponse {
     /// Errors (if failed).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub errors: Option<Vec<String>>,
+
+    /// Warnings (non-fatal issues, e.g. untrusted issuer chain bypassed).
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub warnings: Option<Vec<String>>,
 }
 
 /// Details about the verification process.
@@ -1227,6 +1234,8 @@ pub struct VpTokenVerificationResult {
     pub issuer_trusted: bool,
     /// Human-readable errors accumulated during verification.
     pub errors: Vec<String>,
+    /// Human-readable warnings (e.g. issuer trust bypassed for known issuers).
+    pub warnings: Vec<String>,
     /// Extracted credential claims (as a JSON value).
     pub claims: serde_json::Value,
     /// Credential document type (e.g. `"org.iso.18013.5.1.mDL"`).

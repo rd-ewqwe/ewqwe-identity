@@ -241,6 +241,20 @@ impl OpenID4VPService {
                     "eudi-openid4vp://",
                 )
             }
+            ProfileId::HaipX509SanDns => {
+                let jar_key = self.jar_key.as_ref().ok_or_else(|| {
+                    OpenID4VPError::Config(
+                        "Unable to initialize transaction: HAIP is not configured; the JAR keys are not configured"
+                            .into(),
+                    )
+                })?;
+                (
+                    format!("x509_san_dns:{}", jar_key.san_dns_name),
+                    ClientIdScheme::X509SanDns,
+                    ResponseMode::DirectPostJwt,
+                    "eudi-openid4vp://",
+                )
+            }
             ProfileId::AnnexA => (
                 format!("redirect_uri:{response_uri}"),
                 ClientIdScheme::RedirectUri,
@@ -311,7 +325,7 @@ impl OpenID4VPService {
             tx = %transaction_id[..8.min(transaction_id.len())],
             profile = %profile,
             client_id = %client_id,
-            "Transaction created"
+            "Authorization request created"
         );
 
         // Generate QR code SVG as a data URL so the frontend can display it
@@ -398,7 +412,10 @@ impl OpenID4VPService {
             "vp_formats_supported": base_formats,
         });
 
-        if transaction.profile == ProfileId::Haip {
+        if matches!(
+            transaction.profile,
+            ProfileId::Haip | ProfileId::HaipX509SanDns
+        ) {
             let jar_key = self.jar_key.as_ref().ok_or_else(|| {
                 OpenID4VPError::Config(
                     "HAIP is not configured; JAR signing key not available for JAR signing".into(),
@@ -786,6 +803,7 @@ impl OpenID4VPService {
             not_expired: verification_result.not_expired,
             issuer_trusted: verification_result.issuer_trusted,
             errors: verification_result.errors,
+            warnings: verification_result.warnings,
             claims,
             doc_type,
             namespace,
@@ -814,7 +832,7 @@ impl OpenID4VPService {
         dcql_query: &DCQLQuery,
         _public_url: &str,
     ) -> String {
-        if profile == ProfileId::Haip {
+        if matches!(profile, ProfileId::Haip | ProfileId::HaipX509SanDns) {
             // HAIP: wallet fetches signed JAR from request_uri
             format!(
                 "{}?client_id={}&request_uri={}",

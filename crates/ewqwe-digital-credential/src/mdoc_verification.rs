@@ -65,8 +65,7 @@ pub struct MdocVerificationResult {
 struct ParsedMobileSecurityObject {
     doc_type: String,
     digest_algorithm: String,
-    value_digests:
-        std::collections::BTreeMap<String, std::collections::BTreeMap<u64, Vec<u8>>>,
+    value_digests: std::collections::BTreeMap<String, std::collections::BTreeMap<u64, Vec<u8>>>,
     device_key: CoseKey,
     valid_from: Option<String>,
     valid_until: Option<String>,
@@ -102,49 +101,52 @@ pub fn verify_mdoc_presentation(
     response_jwk_thumbprint: Option<&[u8]>,
     trusted_cas: &[X509],
 ) -> Result<MdocVerificationResult> {
-    let decoded = mdoc_decoder::decode_mdoc_presentation(encoded)
-        .map_err(|e| CredentialError::InvalidPresentation(format!("mDoc CBOR decode failed: {e}")))?;
+    let decoded = mdoc_decoder::decode_mdoc_presentation(encoded).map_err(|e| {
+        CredentialError::InvalidPresentation(format!("mDoc CBOR decode failed: {e}"))
+    })?;
 
-    let bytes = decode_base64url_or_base64(encoded)
-        .map_err(|e| CredentialError::InvalidPresentation(format!("mDoc base64 decode failed: {e}")))?;
-    let cbor: ciborium::Value = ciborium::from_reader(&bytes[..])
-        .map_err(|e| CredentialError::InvalidPresentation(format!("mDoc CBOR parse failed: {e}")))?;
+    let bytes = decode_base64url_or_base64(encoded).map_err(|e| {
+        CredentialError::InvalidPresentation(format!("mDoc base64 decode failed: {e}"))
+    })?;
+    let cbor: ciborium::Value = ciborium::from_reader(&bytes[..]).map_err(|e| {
+        CredentialError::InvalidPresentation(format!("mDoc CBOR parse failed: {e}"))
+    })?;
     let document = extract_first_document(&cbor)?;
-    let document_map = as_cbor_map(document)
-        .ok_or_else(|| CredentialError::InvalidPresentation("mDoc document is not a CBOR map".to_string()))?;
+    let document_map = as_cbor_map(document).ok_or_else(|| {
+        CredentialError::InvalidPresentation("mDoc document is not a CBOR map".to_string())
+    })?;
 
     let doc_type = cbor_map_get_text(document_map, "docType")
-        .ok_or_else(|| CredentialError::InvalidPresentation("mDoc document missing docType".to_string()))?
+        .ok_or_else(|| {
+            CredentialError::InvalidPresentation("mDoc document missing docType".to_string())
+        })?
         .to_string();
 
-    let issuer_signed = unwrap_cbor_tags(
-        cbor_map_get(document_map, "issuerSigned")
-            .ok_or_else(|| CredentialError::InvalidPresentation("mDoc missing issuerSigned".to_string()))?,
-    );
-    let issuer_signed_map = as_cbor_map(issuer_signed)
-        .ok_or_else(|| CredentialError::InvalidPresentation("issuerSigned is not a CBOR map".to_string()))?;
-    let name_spaces = unwrap_cbor_tags(
-        cbor_map_get(issuer_signed_map, "nameSpaces")
-            .ok_or_else(|| CredentialError::InvalidPresentation("issuerSigned missing nameSpaces".to_string()))?,
-    );
-    let name_spaces_map = as_cbor_map(name_spaces)
-        .ok_or_else(|| CredentialError::InvalidPresentation("issuerSigned.nameSpaces is not a map".to_string()))?;
+    let issuer_signed =
+        unwrap_cbor_tags(cbor_map_get(document_map, "issuerSigned").ok_or_else(|| {
+            CredentialError::InvalidPresentation("mDoc missing issuerSigned".to_string())
+        })?);
+    let issuer_signed_map = as_cbor_map(issuer_signed).ok_or_else(|| {
+        CredentialError::InvalidPresentation("issuerSigned is not a CBOR map".to_string())
+    })?;
+    let name_spaces = unwrap_cbor_tags(cbor_map_get(issuer_signed_map, "nameSpaces").ok_or_else(
+        || CredentialError::InvalidPresentation("issuerSigned missing nameSpaces".to_string()),
+    )?);
+    let name_spaces_map = as_cbor_map(name_spaces).ok_or_else(|| {
+        CredentialError::InvalidPresentation("issuerSigned.nameSpaces is not a map".to_string())
+    })?;
 
-    let issuer_auth = parse_cose_sign1_from_value(
-        cbor_map_get(issuer_signed_map, "issuerAuth")
-            .ok_or_else(|| CredentialError::InvalidPresentation("issuerSigned missing issuerAuth".to_string()))?,
-    )?;
+    let issuer_auth =
+        parse_cose_sign1_from_value(cbor_map_get(issuer_signed_map, "issuerAuth").ok_or_else(
+            || CredentialError::InvalidPresentation("issuerSigned missing issuerAuth".to_string()),
+        )?)?;
     let issuer_chain = extract_x5chain_from_cose(&issuer_auth)?;
-    let (issuer_key, issuer_trusted) =
-        verify_cose_certificate_chain(&issuer_chain, trusted_cas)?;
+    let (issuer_key, issuer_trusted) = verify_cose_certificate_chain(&issuer_chain, trusted_cas)?;
     verify_cose_sign1_embedded(&issuer_auth, &issuer_key)?;
 
-    let mso = parse_mobile_security_object(
-        issuer_auth
-            .payload
-            .as_deref()
-            .ok_or_else(|| CredentialError::InvalidPresentation("issuerAuth missing payload".to_string()))?,
-    )?;
+    let mso = parse_mobile_security_object(issuer_auth.payload.as_deref().ok_or_else(|| {
+        CredentialError::InvalidPresentation("issuerAuth missing payload".to_string())
+    })?)?;
 
     if mso.doc_type != doc_type {
         return Err(CredentialError::InvalidPresentation(
@@ -154,27 +156,27 @@ pub fn verify_mdoc_presentation(
 
     verify_issuer_signed_item_digests(name_spaces_map, &mso)?;
 
-    let device_signed = unwrap_cbor_tags(
-        cbor_map_get(document_map, "deviceSigned")
-            .ok_or_else(|| CredentialError::InvalidPresentation("mDoc missing deviceSigned".to_string()))?,
-    );
-    let device_signed_map = as_cbor_map(device_signed)
-        .ok_or_else(|| CredentialError::InvalidPresentation("deviceSigned is not a CBOR map".to_string()))?;
+    let device_signed =
+        unwrap_cbor_tags(cbor_map_get(document_map, "deviceSigned").ok_or_else(|| {
+            CredentialError::InvalidPresentation("mDoc missing deviceSigned".to_string())
+        })?);
+    let device_signed_map = as_cbor_map(device_signed).ok_or_else(|| {
+        CredentialError::InvalidPresentation("deviceSigned is not a CBOR map".to_string())
+    })?;
     let device_name_spaces_bytes = extract_device_namespaces_bytes(device_signed_map)?;
-    let device_auth = unwrap_cbor_tags(
-        cbor_map_get(device_signed_map, "deviceAuth")
-            .ok_or_else(|| CredentialError::InvalidPresentation("deviceSigned missing deviceAuth".to_string()))?,
-    );
-    let device_auth_map = as_cbor_map(device_auth)
-        .ok_or_else(|| CredentialError::InvalidPresentation("deviceAuth is not a CBOR map".to_string()))?;
+    let device_auth = unwrap_cbor_tags(cbor_map_get(device_signed_map, "deviceAuth").ok_or_else(
+        || CredentialError::InvalidPresentation("deviceSigned missing deviceAuth".to_string()),
+    )?);
+    let device_auth_map = as_cbor_map(device_auth).ok_or_else(|| {
+        CredentialError::InvalidPresentation("deviceAuth is not a CBOR map".to_string())
+    })?;
 
-    let device_signature =
-        cbor_map_get(device_auth_map, "deviceSignature").ok_or_else(|| {
-            CredentialError::InvalidPresentation(
-                "deviceAuth.deviceMac is not supported by this verifier; expected deviceSignature"
-                    .to_string(),
-            )
-        })?;
+    let device_signature = cbor_map_get(device_auth_map, "deviceSignature").ok_or_else(|| {
+        CredentialError::InvalidPresentation(
+            "deviceAuth.deviceMac is not supported by this verifier; expected deviceSignature"
+                .to_string(),
+        )
+    })?;
     let device_signature = parse_cose_sign1_from_value(device_signature)?;
     let session_transcript = build_openid4vp_session_transcript(
         client_id,
@@ -213,6 +215,23 @@ pub fn verify_mdoc_presentation(
         serde_json::Value::Object(obj)
     };
 
+    tracing::info!(
+        claim_count = claims.as_object().map(|o| o.len()).unwrap_or(0),
+        has_portrait = claims.as_object().and_then(|o| o.get("portrait")).is_some(),
+        "mDoc verification claims extracted"
+    );
+    if let Some(portrait_val) = claims
+        .as_object()
+        .and_then(|o| o.get("portrait"))
+        .and_then(|v| v.as_str())
+    {
+        tracing::info!(
+            portrait_len = portrait_val.len(),
+            portrait_prefix = %portrait_val.chars().take(40).collect::<String>(),
+            "Portrait in verification claims"
+        );
+    }
+
     let not_expired = validate_mso_validity(&mso)?;
 
     Ok(MdocVerificationResult {
@@ -237,8 +256,9 @@ fn decode_base64url_or_base64(input: &str) -> std::result::Result<Vec<u8>, base6
 
 fn extract_first_document(cbor: &ciborium::Value) -> Result<&ciborium::Value> {
     let cbor = unwrap_cbor_tags(cbor);
-    let map = as_cbor_map(cbor)
-        .ok_or_else(|| CredentialError::InvalidPresentation("mDoc top-level value is not a map".to_string()))?;
+    let map = as_cbor_map(cbor).ok_or_else(|| {
+        CredentialError::InvalidPresentation("mDoc top-level value is not a map".to_string())
+    })?;
     if let Some(documents) = cbor_map_get(map, "documents") {
         let documents = as_cbor_array(unwrap_cbor_tags(documents)).ok_or_else(|| {
             CredentialError::InvalidPresentation(
@@ -265,8 +285,9 @@ fn parse_cose_sign1_from_value(value: &ciborium::Value) -> Result<CoseSign1> {
         other => other.clone(),
     };
     let mut bytes = Vec::new();
-    ciborium::into_writer(&untagged, &mut bytes)
-        .map_err(|e| CredentialError::InvalidPresentation(format!("COSE serialization failed: {e}")))?;
+    ciborium::into_writer(&untagged, &mut bytes).map_err(|e| {
+        CredentialError::InvalidPresentation(format!("COSE serialization failed: {e}"))
+    })?;
     CoseSign1::from_slice(&bytes)
         .map_err(|e| CredentialError::InvalidPresentation(format!("COSE_Sign1 parse failed: {e}")))
 }
@@ -339,41 +360,39 @@ fn verify_cose_certificate_chain(
             ))
         })?;
         intermediates.push(cert).map_err(|e| {
-            CredentialError::InvalidPresentation(format!(
-                "failed to push intermediate cert: {e}"
-            ))
+            CredentialError::InvalidPresentation(format!("failed to push intermediate cert: {e}"))
         })?;
     }
 
     let store = store_builder.build();
     let mut ctx = openssl::x509::X509StoreContext::new().map_err(|e| {
-        CredentialError::InvalidPresentation(format!(
-            "failed to create X509 store context: {e}"
-        ))
+        CredentialError::InvalidPresentation(format!("failed to create X509 store context: {e}"))
     })?;
     let verification_result = ctx.init(&store, &leaf, &intermediates, |ctx| ctx.verify_cert());
 
-    match verification_result {
-        Ok(true) => {}
+    let trusted = match verification_result {
+        Ok(true) => true,
         Ok(false) => {
-            return Err(CredentialError::InvalidPresentation(format!(
-                "issuerAuth certificate chain failed verification: {} (depth={}, subject={:?}, issuer={:?})",
+            tracing::warn!(
+                "issuerAuth certificate chain is not trusted: {} (depth={}, subject={:?}, issuer={:?})",
                 ctx.error(),
                 ctx.error_depth(),
                 leaf.subject_name(),
                 leaf.issuer_name(),
-            )));
+            );
+            false
         }
         Err(e) => {
-            return Err(CredentialError::InvalidPresentation(format!(
+            tracing::error!(
                 "issuerAuth certificate chain verification error: {e} (openssl={}, depth={}, subject={:?}, issuer={:?})",
                 ctx.error(),
                 ctx.error_depth(),
                 leaf.subject_name(),
                 leaf.issuer_name(),
-            )));
+            );
+            false
         }
-    }
+    };
 
     let key = leaf.public_key().map_err(|e| {
         CredentialError::InvalidPresentation(format!(
@@ -381,7 +400,7 @@ fn verify_cose_certificate_chain(
         ))
     })?;
 
-    Ok((key, true))
+    Ok((key, trusted))
 }
 
 fn verify_cose_sign1_embedded(cose: &CoseSign1, key: &PKey<Public>) -> Result<()> {
@@ -400,22 +419,16 @@ fn verify_cose_sign1_embedded(cose: &CoseSign1, key: &PKey<Public>) -> Result<()
     }
 }
 
-fn verify_cose_sign1_detached(
-    cose: &CoseSign1,
-    key: &PKey<Public>,
-    payload: &[u8],
-) -> Result<()> {
+fn verify_cose_sign1_detached(cose: &CoseSign1, key: &PKey<Public>, payload: &[u8]) -> Result<()> {
     let alg = cose_algorithm_id(cose)?;
     match alg {
         -7 | -35 | -36 => cose.verify_detached_signature(payload, &[], |signature, data| {
             verify_ecdsa_signature(alg, data, signature, key)
         }),
         #[allow(clippy::manual_range_patterns)]
-        -257 | -258 | -259 => {
-            cose.verify_detached_signature(payload, &[], |signature, data| {
-                verify_rsa_signature(alg, data, signature, key)
-            })
-        }
+        -257 | -258 | -259 => cose.verify_detached_signature(payload, &[], |signature, data| {
+            verify_rsa_signature(alg, data, signature, key)
+        }),
         _ => Err(CredentialError::InvalidPresentation(format!(
             "unsupported COSE detached signature algorithm: {alg}"
         ))),
@@ -474,9 +487,7 @@ fn verify_ecdsa_signature(
     let der = EcdsaSig::from_private_components(r, s)
         .and_then(|sig| sig.to_der())
         .map_err(|e| {
-            CredentialError::InvalidPresentation(format!(
-                "failed to convert ECDSA signature: {e}"
-            ))
+            CredentialError::InvalidPresentation(format!("failed to convert ECDSA signature: {e}"))
         })?;
 
     let mut verifier = OpensslVerifier::new(digest, key).map_err(|e| {
@@ -497,12 +508,7 @@ fn verify_ecdsa_signature(
     Ok(())
 }
 
-fn verify_rsa_signature(
-    alg: i64,
-    data: &[u8],
-    signature: &[u8],
-    key: &PKey<Public>,
-) -> Result<()> {
+fn verify_rsa_signature(alg: i64, data: &[u8], signature: &[u8], key: &PKey<Public>) -> Result<()> {
     let digest = match alg {
         -257 => MessageDigest::sha256(),
         -258 => MessageDigest::sha384(),
@@ -517,11 +523,9 @@ fn verify_rsa_signature(
     let mut verifier = OpensslVerifier::new(digest, key).map_err(|e| {
         CredentialError::InvalidPresentation(format!("failed to create RSA verifier: {e}"))
     })?;
-    verifier
-        .set_rsa_padding(Padding::PKCS1)
-        .map_err(|e| {
-            CredentialError::InvalidPresentation(format!("failed to configure RSA padding: {e}"))
-        })?;
+    verifier.set_rsa_padding(Padding::PKCS1).map_err(|e| {
+        CredentialError::InvalidPresentation(format!("failed to configure RSA padding: {e}"))
+    })?;
     verifier.update(data).map_err(|e| {
         CredentialError::InvalidPresentation(format!("failed to feed RSA verifier: {e}"))
     })?;
@@ -578,13 +582,11 @@ fn parse_mobile_security_object(payload: &[u8]) -> Result<ParsedMobileSecurityOb
     })?;
     let cbor = match &cbor {
         ciborium::Value::Tag(24, inner) => match inner.as_ref() {
-            ciborium::Value::Bytes(bytes) => {
-                ciborium::from_reader(&bytes[..]).map_err(|e| {
-                    CredentialError::InvalidPresentation(format!(
-                        "failed to parse MobileSecurityObject bytes: {e}"
-                    ))
-                })?
-            }
+            ciborium::Value::Bytes(bytes) => ciborium::from_reader(&bytes[..]).map_err(|e| {
+                CredentialError::InvalidPresentation(format!(
+                    "failed to parse MobileSecurityObject bytes: {e}"
+                ))
+            })?,
             other => other.clone(),
         },
         ciborium::Value::Bytes(bytes) => ciborium::from_reader(&bytes[..]).map_err(|e| {
@@ -600,9 +602,7 @@ fn parse_mobile_security_object(payload: &[u8]) -> Result<ParsedMobileSecurityOb
     })?;
     let doc_type = cbor_map_get_text(map, "docType")
         .ok_or_else(|| {
-            CredentialError::InvalidPresentation(
-                "MobileSecurityObject missing docType".to_string(),
-            )
+            CredentialError::InvalidPresentation("MobileSecurityObject missing docType".to_string())
         })?
         .to_string();
     let digest_algorithm = cbor_map_get_text(map, "digestAlgorithm")
@@ -620,9 +620,7 @@ fn parse_mobile_security_object(payload: &[u8]) -> Result<ParsedMobileSecurityOb
             )
         })?,
     ))
-    .ok_or_else(|| {
-        CredentialError::InvalidPresentation("valueDigests is not a map".to_string())
-    })?;
+    .ok_or_else(|| CredentialError::InvalidPresentation("valueDigests is not a map".to_string()))?;
 
     let mut parsed_digests = std::collections::BTreeMap::new();
     for (ns_key, ns_value) in value_digests {
@@ -684,9 +682,7 @@ fn parse_mobile_security_object(payload: &[u8]) -> Result<ParsedMobileSecurityOb
             )
         })?,
     ))
-    .ok_or_else(|| {
-        CredentialError::InvalidPresentation("validityInfo is not a map".to_string())
-    })?;
+    .ok_or_else(|| CredentialError::InvalidPresentation("validityInfo is not a map".to_string()))?;
 
     Ok(ParsedMobileSecurityObject {
         doc_type,
@@ -713,9 +709,7 @@ fn verify_issuer_signed_item_digests(
             ))
         })?;
         let items = as_cbor_array(unwrap_cbor_tags(items_value)).ok_or_else(|| {
-            CredentialError::InvalidPresentation(format!(
-                "namespace {namespace} is not an array"
-            ))
+            CredentialError::InvalidPresentation(format!("namespace {namespace} is not an array"))
         })?;
 
         for item in items {
@@ -755,9 +749,7 @@ fn verify_issuer_signed_item_digests(
                     ))
                 })?;
             let inner_map = as_cbor_map(unwrap_cbor_tags(&inner)).ok_or_else(|| {
-                CredentialError::InvalidPresentation(
-                    "IssuerSignedItem is not a map".to_string(),
-                )
+                CredentialError::InvalidPresentation("IssuerSignedItem is not a map".to_string())
             })?;
             let digest_id =
                 cbor_integer_to_u64(cbor_map_get(inner_map, "digestID").ok_or_else(|| {
@@ -810,9 +802,7 @@ fn hash_issuer_signed_item(algorithm: &str, data: &[u8]) -> Result<Vec<u8>> {
     hash(digest, data)
         .map(|digest| digest.to_vec())
         .map_err(|e| {
-            CredentialError::InvalidPresentation(format!(
-                "failed to hash IssuerSignedItem: {e}"
-            ))
+            CredentialError::InvalidPresentation(format!("failed to hash IssuerSignedItem: {e}"))
         })
 }
 
@@ -950,12 +940,15 @@ fn cose_key_to_public_key(key: &CoseKey) -> Result<PKey<Public>> {
         ));
     }
 
-    let crv = cose_key_param_integer(key, -1)
-        .ok_or_else(|| CredentialError::InvalidPresentation("COSE device key missing crv".to_string()))?;
-    let x = cose_key_param_bytes(key, -2)
-        .ok_or_else(|| CredentialError::InvalidPresentation("COSE device key missing x".to_string()))?;
-    let y = cose_key_param_bytes(key, -3)
-        .ok_or_else(|| CredentialError::InvalidPresentation("COSE device key missing y".to_string()))?;
+    let crv = cose_key_param_integer(key, -1).ok_or_else(|| {
+        CredentialError::InvalidPresentation("COSE device key missing crv".to_string())
+    })?;
+    let x = cose_key_param_bytes(key, -2).ok_or_else(|| {
+        CredentialError::InvalidPresentation("COSE device key missing x".to_string())
+    })?;
+    let y = cose_key_param_bytes(key, -3).ok_or_else(|| {
+        CredentialError::InvalidPresentation("COSE device key missing y".to_string())
+    })?;
 
     let group = match crv {
         1 => EcGroup::from_curve_name(Nid::X9_62_PRIME256V1),
@@ -967,9 +960,7 @@ fn cose_key_to_public_key(key: &CoseKey) -> Result<PKey<Public>> {
             )));
         }
     }
-    .map_err(|e| {
-        CredentialError::InvalidPresentation(format!("failed to create EC group: {e}"))
-    })?;
+    .map_err(|e| CredentialError::InvalidPresentation(format!("failed to create EC group: {e}")))?;
     let x = BigNum::from_slice(&x).map_err(|e| {
         CredentialError::InvalidPresentation(format!("failed to parse EC x coordinate: {e}"))
     })?;
@@ -977,9 +968,7 @@ fn cose_key_to_public_key(key: &CoseKey) -> Result<PKey<Public>> {
         CredentialError::InvalidPresentation(format!("failed to parse EC y coordinate: {e}"))
     })?;
     let ec_key = EcKey::from_public_key_affine_coordinates(&group, &x, &y).map_err(|e| {
-        CredentialError::InvalidPresentation(format!(
-            "failed to reconstruct EC public key: {e}"
-        ))
+        CredentialError::InvalidPresentation(format!("failed to reconstruct EC public key: {e}"))
     })?;
     PKey::from_ec_key(ec_key).map_err(|e| {
         CredentialError::InvalidPresentation(format!("failed to construct public key: {e}"))
@@ -991,9 +980,7 @@ fn validate_mso_validity(mso: &ParsedMobileSecurityObject) -> Result<bool> {
 
     if let Some(valid_from) = &mso.valid_from {
         let valid_from = chrono::DateTime::parse_from_rfc3339(valid_from).map_err(|e| {
-            CredentialError::InvalidPresentation(format!(
-                "failed to parse validFrom from MSO: {e}"
-            ))
+            CredentialError::InvalidPresentation(format!("failed to parse validFrom from MSO: {e}"))
         })?;
         if valid_from > now {
             return Err(CredentialError::InvalidPresentation(

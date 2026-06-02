@@ -182,6 +182,7 @@ pub async fn verify_dc_api(
             }),
             attestation,
             errors: Some(errors),
+            warnings: None,
         }));
     }
 
@@ -214,6 +215,7 @@ pub async fn verify_dc_api(
             }),
             attestation,
             errors: Some(errors),
+            warnings: None,
         }));
     }
 
@@ -275,6 +277,7 @@ pub async fn verify_dc_api(
         }),
         attestation,
         errors: None,
+        warnings: None,
     }))
 }
 

@@ -1,8 +1,15 @@
 # Summary
 
 - [Introduction](introduction.md)
+
+# The Digital Identity Ecosystem
+
 - [Summary of Protocols and Formats](./summary_protocols_formats.md)
 - [Digital Credential User Journey](./user-journey.md)
+
+
+# The ewQwe Identity Suite
+
 - [The ewQwe Credential Verifier server](./credential_verifier_server.md)
 - [The ewQwe Credential Verifier UI](./credential_verifier_ui.md)
 - [The Demo Architecture](./demo_architecture.md)

@@ -16,12 +16,23 @@ use crate::types::{
 // Protocol Profiles
 // ============================================================================
 
-/// HAIP profile — High Assurance Interoperability Profile for EUDI Wallets.
+/// HAIP profile — High Assurance Interoperability Profile for EUDI Wallets (x509_hash scheme).
 pub const PROFILE_HAIP: ProtocolProfile = ProtocolProfile {
     id: ProfileId::Haip,
     name: "HAIP",
     description: "High Assurance Interoperability Profile for EUDI Wallets",
     client_id_scheme: ClientIdScheme::X509Hash,
+    response_mode: ResponseMode::DirectPostJwt,
+    url_schemes: &["eudi-openid4vp://", "openid4vp://"],
+    requires_jar_signing: true,
+};
+
+/// HAIP variant using x509_san_dns client_id scheme (used by France Identité wallet).
+pub const PROFILE_HAIP_X509_SAN_DNS: ProtocolProfile = ProtocolProfile {
+    id: ProfileId::HaipX509SanDns,
+    name: "HAIP (x509_san_dns)",
+    description: "HAIP with x509_san_dns client_id scheme",
+    client_id_scheme: ClientIdScheme::X509SanDns,
     response_mode: ResponseMode::DirectPostJwt,
     url_schemes: &["eudi-openid4vp://", "openid4vp://"],
     requires_jar_signing: true,
@@ -42,6 +53,7 @@ pub const PROFILE_ANNEX_A: ProtocolProfile = ProtocolProfile {
 pub fn get_profile(id: ProfileId) -> &'static ProtocolProfile {
     match id {
         ProfileId::Haip => &PROFILE_HAIP,
+        ProfileId::HaipX509SanDns => &PROFILE_HAIP_X509_SAN_DNS,
         ProfileId::AnnexA => &PROFILE_ANNEX_A,
     }
 }
@@ -253,6 +265,11 @@ pub fn determine_profile(
         Some("proof-of-age") | Some("proof_of_age") => ProfileId::AnnexA,
         _ => ProfileId::Haip,
     }
+}
+
+/// Check if a profile requires JAR signing (HAIP and its variants).
+pub fn profile_requires_jar(profile: ProfileId) -> bool {
+    matches!(profile, ProfileId::Haip | ProfileId::HaipX509SanDns)
 }
 
 /// Get the default claims (first 5) for a credential type.

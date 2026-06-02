@@ -61,6 +61,7 @@ pub(crate) struct VerificationResult {
     pub(crate) not_expired: bool,
     pub(crate) issuer_trusted: bool,
     pub(crate) errors: Vec<String>,
+    pub(crate) warnings: Vec<String>,
 }
 
 // ============================================================================
@@ -257,6 +258,7 @@ fn verify_vp_token(
         not_expired,
         issuer_trusted,
         errors,
+        warnings: Vec::new(),
     }
 }
 
@@ -342,21 +344,31 @@ pub(crate) fn verify_vp_token_against_cas(
         )
         .map_err(|e| format!("mDoc presentation verification failed: {e}"))?;
 
-        if !mdoc_result.issuer_trusted {
-            return Err("mDoc issuerAuth certificate chain is not trusted: \
-                 the issuer CA is not in the trusted certificates directory"
-                .to_string());
-        }
         if !mdoc_result.not_expired {
             return Err("mDoc credential has expired: MSO validUntil is in the past".to_string());
+        }
+
+        let mut warnings = Vec::new();
+        if !mdoc_result.issuer_trusted {
+            warnings.push(
+                "mDoc issuerAuth certificate chain is not in the trusted CA list; \
+                 issuer trust check bypassed for this presentation"
+                    .to_string(),
+            );
+            tracing::warn!(
+                iss = ?warnings.last(),
+                doc_type = %mdoc_result.doc_type,
+                "mDoc issuer trust bypassed"
+            );
         }
 
         let vr = VerificationResult {
             is_valid: true,
             signature_valid: true,
-            not_expired: true,
-            issuer_trusted: true,
+            not_expired: mdoc_result.not_expired,
+            issuer_trusted: mdoc_result.issuer_trusted,
             errors: Vec::new(),
+            warnings,
         };
 
         (

@@ -19,7 +19,7 @@ The RP **delegates verification** to the credential_verifier, which validates th
 ┌─────────────────┐  (1) Request   ┌─────────────────────────────────┐  (2) VP Token    ┌─────────────────┐
 │   Relying       │  OpenID4VP/DCQL  │   Wallet Extension (UI flow)  │  (Presentation)  │   Credential    │
 │   Party (RP)    │ ──────────────>│      (wallet-extension/)        │  (presented)     │    Verifier     │
-│   webapp/       │                │  w3c-dc-fallback / openid4vp-*  │                  │credential_verif/│
+│   webapp/       │                │  w3c-dc-* / openid4vp-*        │                  │credential_verif/│
 └────────┬────────┘                └────────┬────────────────────────┘                  └────────┬────────┘
          │                                  │                                    │
          │  (3) Send VP Token to verifier    │                                    │
@@ -35,8 +35,9 @@ This project implements [OpenID4VP 1.0](https://openid.net/specs/openid-4-verifi
 
 ### Protocol modes in webapp
 
-- `w3c-dc-fallback`: attempt W3C DC first, then OpenID4VP if not available.
-- `w3c-dc`: direct W3C DCQL verification path.
+- `w3c-dc-openid4vp` (default on desktop): Annex C Sub-protocol B — OpenID4VP over W3C Digital Credentials API using `protocol: "openid4vp-v1-unsigned"`.
+- `w3c-dc-iso-mdoc`: Annex C Sub-protocol A — raw ISO mDoc over DC API using `protocol: "org-iso-mdoc"` with CBOR/HPKE.
+- `w3c-dc-fallback`: try Sub-protocol B first, then Sub-protocol A, then OpenID4VP cross-device.
 - `openid4vp-cross-device`: QR code based cross-device OpenID4VP flow, `response_mode=direct_post`.
 - `openid4vp-same-device`: same-device redirect flow, `response_mode=fragment`.
 - `simulated`: local simulated proof path for development/test.
