@@ -96,6 +96,7 @@ These links are useful when validating feasibility and browser support status fo
 - France Identité Stelau (proof-of-age API): <https://api.playground.france-identite.gouv.fr/france-titres/stelau-playground/vp/proof-of-age>
 - EUDIW Unfold: <https://playground.france-identite.gouv.fr>
 - Germany EUDI Wallet: <https://eudi-wallet.gov.de/en/ecosystem-knowledge-center>
+- Moldova: <https://egov-moldova.github.io/egov4dev/guides/evo-wallet/>
 
 ## Tooling (Deno)
 
