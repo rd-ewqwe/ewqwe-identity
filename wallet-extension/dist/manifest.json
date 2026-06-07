@@ -1,0 +1,54 @@
+{
+  "manifest_version": 3,
+  "name": "EU Age Verification Wallet",
+  "version": "0.1.0",
+  "description": "Digital wallet for EU Age Verification - stores and presents Proof of Age attestations, mDL, and PID credentials",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "https://*/*",
+    "http://localhost:*/*"
+  ],
+  "protocol_handlers": [
+    {
+      "protocol": "web+av",
+      "name": "EU Age Verification Wallet",
+      "uriTemplate": "popup/popup.html?av=%s"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "EU Age Verification Wallet"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://*/*", "http://localhost:*/*"],
+      "js": ["content/content-script.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["popup/popup.html"],
+      "matches": ["https://*/*", "http://localhost:*/*"]
+    }
+  ]
+}

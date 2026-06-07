@@ -15,18 +15,6 @@ pub enum VerifierAppDbBackend {
         /// Filesystem path to the SQLite database file.
         path: String,
     },
-
-    /// PostgreSQL — recommended for multi-instance / HA deployments.
-    Postgres {
-        /// `postgres://user:password@host/db` style connection URL.
-        url: String,
-    },
-
-    /// MySQL / MariaDB.
-    Mysql {
-        /// `mysql://user:password@host/db` style connection URL.
-        url: String,
-    },
 }
 
 /// Top-level configuration section for the Verifier UI.
@@ -47,14 +35,6 @@ pub enum VerifierAppDbBackend {
 /// # SQLite file (persistent, single-instance):
 /// # backend = "sqlite_file"
 /// # path    = "/var/lib/ewqwe/verifier_ui.db"
-///
-/// # PostgreSQL (HA / multi-instance):
-/// # backend = "postgres"
-/// # url     = "postgres://ewqwe:ewqwe@localhost/ewqwe"
-///
-/// # MySQL / MariaDB:
-/// # backend = "mysql"
-/// # url     = "mysql://ewqwe:ewqwe@localhost/ewqwe"
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct VerifierUiConfig {
@@ -156,25 +136,6 @@ mod tests {
                 assert_eq!(path, "/var/lib/ewqwe/verifier_ui.db");
             }
             _ => panic!("Expected SqliteFile backend"),
-        }
-    }
-
-    #[test]
-    fn test_toml_mysql_backend() {
-        let toml_str = r#"
-            enabled = true
-
-            [db]
-            backend = "mysql"
-            url = "mysql://ewqwe:ewqwe@localhost/ewqwe"
-        "#;
-
-        let config: VerifierUiConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
-        match config.db {
-            VerifierAppDbBackend::Mysql { url } => {
-                assert_eq!(url, "mysql://ewqwe:ewqwe@localhost/ewqwe");
-            }
-            _ => panic!("Expected Mysql backend"),
         }
     }
 

@@ -145,17 +145,7 @@ impl ServerParams {
             params.tracing_config.rust_log = Some(rust_log);
         }
 
-        // Ensure optional tracing config gets defaults.
-        // Do not overwrite explicit values set by config, especially rust_log.
-        if params.tracing_config.service_name.is_empty() {
-            params.tracing_config.service_name = "credential_verifier".to_string();
-        }
 
-        // Keep defaults for other optionals only if not set.
-        let default_tracing = ewqwe_logging::TracingConfig::default();
-        if params.tracing_config.otlp.is_none() {
-            params.tracing_config.otlp = default_tracing.otlp;
-        }
 
         let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
         params.resolve_relative_paths(base_dir);

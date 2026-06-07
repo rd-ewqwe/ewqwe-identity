@@ -37,7 +37,7 @@ The [AV App Android source code](https://github.com/eu-digital-identity-wallet/a
 
 This section describes how to run the **ewQwe fork** of the AV App together with the ewQwe Relying Party Demo Webapp for end-to-end Annex A testing on a local Android emulator.
 
-**Repository**: <https://github.com/bgrieder/av-app-android-wallet-ui>
+**Repository**: <https://github.com/rd-ewqwe/av-app-android-wallet-ui>
 
 ### Prerequisites
 
@@ -50,7 +50,7 @@ This section describes how to run the **ewQwe fork** of the AV App together with
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/bgrieder/av-app-android-wallet-ui.git
+git clone https://github.com/rd-ewqwe/av-app-android-wallet-ui.git
 cd av-app-android-wallet-ui
 ```
 

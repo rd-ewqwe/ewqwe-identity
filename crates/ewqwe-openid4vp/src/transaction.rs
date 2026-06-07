@@ -8,18 +8,13 @@
 //! |-------------------------|--------------------------------------------------|
 //! | `InMemoryTransactionStore` | In-process `HashMap` (default)               |
 //! | `SqliteTransactionStore`   | SQLite in-memory or file                     |
-//! | `PostgresTransactionStore` | PostgreSQL via `sqlx`                        |
-//! | `RedisTransactionStore`    | Redis (TTL-native expiry, no cleanup thread) |
 //!
 //! The enum [`DynTransactionStore`] wraps whichever backend is active and
 //! implements [`TransactionStore`] by dispatching to the inner value.  Use
 //! [`DynTransactionStore::new`] to build one from [`TransactionStoreParams`].
 
 use crate::error::OpenID4VPResult;
-use crate::stores::{
-    InMemoryTransactionStore, PostgresTransactionStore, RedisTransactionStore,
-    SqliteTransactionStore,
-};
+use crate::stores::{InMemoryTransactionStore, SqliteTransactionStore};
 use crate::types::{OpenID4VPTransaction, TransactionStatus};
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
@@ -42,19 +37,6 @@ pub enum TransactionStoreBackend {
         /// Filesystem path to the SQLite database file.
         path: String,
     },
-
-    /// PostgreSQL — connect via a `postgres://` connection URL.
-    Postgres {
-        /// `postgres://user:password@host/db` style URL.
-        url: String,
-    },
-
-    /// Redis — connect via a `redis://` connection URL.
-    /// Transactions are stored with a TTL so Redis handles expiry automatically.
-    Redis {
-        /// `redis://[password@]host[:port][/db]` style URL.
-        url: String,
-    },
 }
 
 /// Configuration for the transaction store.
@@ -69,14 +51,6 @@ pub enum TransactionStoreBackend {
 /// # SQLite file:
 /// # backend = "sqlite_file"
 /// # path    = "/var/lib/ewqwe/transactions.db"
-///
-/// # PostgreSQL:
-/// # backend = "postgres"
-/// # url     = "postgres://user:pass@localhost/ewqwe"
-///
-/// # Redis (TTL-native expiry — no cleanup thread):
-/// # backend = "redis"
-/// # url     = "redis://127.0.0.1:6379"
 /// ```
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct TransactionStoreParams {
@@ -90,8 +64,8 @@ pub struct TransactionStoreParams {
 
 /// Async interface for the transaction store.
 ///
-/// All methods are `async` so that network-backed implementations (Postgres,
-/// Redis) do not need to block a thread.
+/// All methods are `async` so that network-backed implementations do not
+/// need to block a thread.
 ///
 /// The `state` field is treated as a unique lookup key for the OpenID4VP
 /// authorization response lifecycle. Implementations must not allow two
@@ -140,8 +114,6 @@ pub trait TransactionStore: Send + Sync {
 /// Build with [`DynTransactionStore::new`].
 pub enum DynTransactionStore {
     Sqlite(SqliteTransactionStore),
-    Postgres(PostgresTransactionStore),
-    Redis(RedisTransactionStore),
     InMemory(InMemoryTransactionStore),
 }
 
@@ -159,14 +131,6 @@ impl DynTransactionStore {
                 let store = SqliteTransactionStore::new_file(path, ttl_secs).await?;
                 Ok(Self::Sqlite(store))
             }
-            TransactionStoreBackend::Postgres { url } => {
-                let store = PostgresTransactionStore::new(url, ttl_secs).await?;
-                Ok(Self::Postgres(store))
-            }
-            TransactionStoreBackend::Redis { url } => {
-                let store = RedisTransactionStore::new(url, ttl_secs).await?;
-                Ok(Self::Redis(store))
-            }
         }
     }
 }
@@ -178,8 +142,6 @@ impl TransactionStore for DynTransactionStore {
     async fn set(&self, transaction: OpenID4VPTransaction) -> OpenID4VPResult<()> {
         match self {
             Self::Sqlite(s) => s.set(transaction).await,
-            Self::Postgres(s) => s.set(transaction).await,
-            Self::Redis(s) => s.set(transaction).await,
             Self::InMemory(s) => s.set(transaction).await,
         }
     }
@@ -187,8 +149,6 @@ impl TransactionStore for DynTransactionStore {
     async fn get(&self, id: &str) -> OpenID4VPResult<Option<OpenID4VPTransaction>> {
         match self {
             Self::Sqlite(s) => s.get(id).await,
-            Self::Postgres(s) => s.get(id).await,
-            Self::Redis(s) => s.get(id).await,
             Self::InMemory(s) => s.get(id).await,
         }
     }
@@ -196,8 +156,6 @@ impl TransactionStore for DynTransactionStore {
     async fn find_by_state(&self, state: &str) -> OpenID4VPResult<Option<OpenID4VPTransaction>> {
         match self {
             Self::Sqlite(s) => s.find_by_state(state).await,
-            Self::Postgres(s) => s.find_by_state(state).await,
-            Self::Redis(s) => s.find_by_state(state).await,
             Self::InMemory(s) => s.find_by_state(state).await,
         }
     }
@@ -205,8 +163,6 @@ impl TransactionStore for DynTransactionStore {
     async fn delete(&self, id: &str) -> OpenID4VPResult<bool> {
         match self {
             Self::Sqlite(s) => s.delete(id).await,
-            Self::Postgres(s) => s.delete(id).await,
-            Self::Redis(s) => s.delete(id).await,
             Self::InMemory(s) => s.delete(id).await,
         }
     }
@@ -214,8 +170,6 @@ impl TransactionStore for DynTransactionStore {
     async fn update_status(&self, id: &str, status: TransactionStatus) -> OpenID4VPResult<()> {
         match self {
             Self::Sqlite(s) => s.update_status(id, status).await,
-            Self::Postgres(s) => s.update_status(id, status).await,
-            Self::Redis(s) => s.update_status(id, status).await,
             Self::InMemory(s) => s.update_status(id, status).await,
         }
     }
@@ -226,8 +180,6 @@ impl TransactionStore for DynTransactionStore {
     {
         match self {
             Self::Sqlite(s) => s.update(id, f).await,
-            Self::Postgres(s) => s.update(id, f).await,
-            Self::Redis(s) => s.update(id, f).await,
             Self::InMemory(s) => s.update(id, f).await,
         }
     }
@@ -238,8 +190,6 @@ impl TransactionStore for DynTransactionStore {
     {
         match self {
             Self::Sqlite(s) => s.update_by_state(state, f).await,
-            Self::Postgres(s) => s.update_by_state(state, f).await,
-            Self::Redis(s) => s.update_by_state(state, f).await,
             Self::InMemory(s) => s.update_by_state(state, f).await,
         }
     }
@@ -247,8 +197,6 @@ impl TransactionStore for DynTransactionStore {
     async fn is_expired(&self, id: &str) -> OpenID4VPResult<bool> {
         match self {
             Self::Sqlite(s) => s.is_expired(id).await,
-            Self::Postgres(s) => s.is_expired(id).await,
-            Self::Redis(s) => s.is_expired(id).await,
             Self::InMemory(s) => s.is_expired(id).await,
         }
     }

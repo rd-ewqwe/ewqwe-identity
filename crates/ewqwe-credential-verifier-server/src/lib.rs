@@ -8,6 +8,7 @@ pub mod journal;
 pub use ewqwe_credential_verifier_ui;
 
 mod server;
+pub use server::services::{ServerComponents, configure_services};
 pub use server::start_server;
 
 mod error;

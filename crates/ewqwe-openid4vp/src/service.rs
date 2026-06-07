@@ -130,7 +130,7 @@ pub struct OpenID4VPService {
     /// Key material for JWE encryption (HAIP profile). If `None`, JWE encryption is disabled.
     jwe_key: Option<JweKeyMaterial>,
 
-    /// Pluggable transaction store (SQLite / Postgres / Redis / in-memory).
+    /// Pluggable transaction store (SQLite / in-memory).
     transactions: DynTransactionStore,
 
     /// Time-to-live for transactions in seconds. Used for cleanup and expiration logic.
@@ -871,7 +871,7 @@ mod tests {
 
     fn test_config() -> OpenID4VPServiceConfig {
         let base = env!("CARGO_MANIFEST_DIR");
-        let cert_dir = format!("{base}/../../certificates/signer");
+        let cert_dir = format!("{base}/../../../certificates/signer");
 
         OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests

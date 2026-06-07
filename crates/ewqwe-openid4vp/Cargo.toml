@@ -19,10 +19,10 @@ chrono = { workspace = true }
 ewqwe_digital_credential = { workspace = true }
 openssl = { workspace = true, features = ["vendored"] }
 qrcode = { workspace = true }
-redis = { workspace = true, features = ["aio", "tokio-comp"] }
+
 serde = { workspace = true }
 serde_json = { workspace = true }
-sqlx = { workspace = true, features = ["sqlite", "postgres"] }
+sqlx = { workspace = true, features = ["sqlite"] }
 thiserror = { workspace = true }
 tokio = { workspace = true, features = ["sync", "time"] }
 tracing = { workspace = true }

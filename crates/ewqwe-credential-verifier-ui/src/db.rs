@@ -6,7 +6,7 @@ use crate::{
     config::{VerifierAppDbBackend, VerifierUiConfig},
     error::VerifierAppResult,
     models::{NewUserRecord, UserChanges, VerifierAppUser},
-    stores::{MysqlVerifierAppStore, PostgresVerifierAppStore, SqliteVerifierAppStore},
+    stores::SqliteVerifierAppStore,
 };
 
 // ============================================================================
@@ -59,8 +59,6 @@ pub trait VerifierAppStore: Send + Sync {
 /// Wraps any supported backend behind a single concrete type.
 pub enum DynVerifierUiStore {
     Sqlite(SqliteVerifierAppStore),
-    Postgres(PostgresVerifierAppStore),
-    Mysql(MysqlVerifierAppStore),
 }
 
 impl DynVerifierUiStore {
@@ -77,14 +75,6 @@ impl DynVerifierUiStore {
                 let store = SqliteVerifierAppStore::new_file(path).await?;
                 Ok(Self::Sqlite(store))
             }
-            VerifierAppDbBackend::Postgres { url } => {
-                let store = PostgresVerifierAppStore::new(url).await?;
-                Ok(Self::Postgres(store))
-            }
-            VerifierAppDbBackend::Mysql { url } => {
-                let store = MysqlVerifierAppStore::new(url).await?;
-                Ok(Self::Mysql(store))
-            }
         }
     }
 }
@@ -96,43 +86,28 @@ impl DynVerifierUiStore {
 #[async_trait]
 impl VerifierAppStore for DynVerifierUiStore {
     async fn user_count(&self) -> VerifierAppResult<u64> {
-        match self {
-            Self::Sqlite(s) => s.user_count().await,
-            Self::Postgres(s) => s.user_count().await,
-            Self::Mysql(s) => s.user_count().await,
-        }
+        let Self::Sqlite(s) = self;
+        s.user_count().await
     }
 
     async fn create_user(&self, record: &NewUserRecord) -> VerifierAppResult<VerifierAppUser> {
-        match self {
-            Self::Sqlite(s) => s.create_user(record).await,
-            Self::Postgres(s) => s.create_user(record).await,
-            Self::Mysql(s) => s.create_user(record).await,
-        }
+        let Self::Sqlite(s) = self;
+        s.create_user(record).await
     }
 
     async fn get_user_by_email(&self, email: &str) -> VerifierAppResult<Option<VerifierAppUser>> {
-        match self {
-            Self::Sqlite(s) => s.get_user_by_email(email).await,
-            Self::Postgres(s) => s.get_user_by_email(email).await,
-            Self::Mysql(s) => s.get_user_by_email(email).await,
-        }
+        let Self::Sqlite(s) = self;
+        s.get_user_by_email(email).await
     }
 
     async fn get_user_by_id(&self, id: &str) -> VerifierAppResult<Option<VerifierAppUser>> {
-        match self {
-            Self::Sqlite(s) => s.get_user_by_id(id).await,
-            Self::Postgres(s) => s.get_user_by_id(id).await,
-            Self::Mysql(s) => s.get_user_by_id(id).await,
-        }
+        let Self::Sqlite(s) = self;
+        s.get_user_by_id(id).await
     }
 
     async fn list_users(&self, active_only: bool) -> VerifierAppResult<Vec<VerifierAppUser>> {
-        match self {
-            Self::Sqlite(s) => s.list_users(active_only).await,
-            Self::Postgres(s) => s.list_users(active_only).await,
-            Self::Mysql(s) => s.list_users(active_only).await,
-        }
+        let Self::Sqlite(s) = self;
+        s.list_users(active_only).await
     }
 
     async fn update_user(
@@ -140,34 +115,22 @@ impl VerifierAppStore for DynVerifierUiStore {
         id: &str,
         changes: &UserChanges,
     ) -> VerifierAppResult<VerifierAppUser> {
-        match self {
-            Self::Sqlite(s) => s.update_user(id, changes).await,
-            Self::Postgres(s) => s.update_user(id, changes).await,
-            Self::Mysql(s) => s.update_user(id, changes).await,
-        }
+        let Self::Sqlite(s) = self;
+        s.update_user(id, changes).await
     }
 
     async fn delete_user(&self, id: &str) -> VerifierAppResult<()> {
-        match self {
-            Self::Sqlite(s) => s.delete_user(id).await,
-            Self::Postgres(s) => s.delete_user(id).await,
-            Self::Mysql(s) => s.delete_user(id).await,
-        }
+        let Self::Sqlite(s) = self;
+        s.delete_user(id).await
     }
 
     async fn get_setting(&self, key: &str) -> VerifierAppResult<Option<String>> {
-        match self {
-            Self::Sqlite(s) => s.get_setting(key).await,
-            Self::Postgres(s) => s.get_setting(key).await,
-            Self::Mysql(s) => s.get_setting(key).await,
-        }
+        let Self::Sqlite(s) = self;
+        s.get_setting(key).await
     }
 
     async fn set_setting(&self, key: &str, value: &str) -> VerifierAppResult<()> {
-        match self {
-            Self::Sqlite(s) => s.set_setting(key, value).await,
-            Self::Postgres(s) => s.set_setting(key, value).await,
-            Self::Mysql(s) => s.set_setting(key, value).await,
-        }
+        let Self::Sqlite(s) = self;
+        s.set_setting(key, value).await
     }
 }

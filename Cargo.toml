@@ -2,7 +2,7 @@
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.92.0"
-authors = ["Bruno Grieder <bruno.grieder@eqwwe.com>"]
+authors = ["ewQwe R&D <rd@ewqwe.eu>"]
 license = "BUSL-1.1" # "Business Source License 1.1" # "Business Source License 1.1"
 license-file = "LICENSE"
 repository = ""
