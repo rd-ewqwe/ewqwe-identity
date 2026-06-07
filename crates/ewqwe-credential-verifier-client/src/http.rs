@@ -10,7 +10,10 @@ use async_trait::async_trait;
 use serde::{Serialize, de::DeserializeOwned};
 use url::Url;
 
-use crate::{ClientOptions, error::{ApiError, Result}};
+use crate::{
+    ClientOptions,
+    error::{ApiError, Result},
+};
 
 // ============================================================================
 // HttpClient trait
@@ -68,14 +71,12 @@ impl DefaultHttpClient {
         }
 
         // mTLS client certificate
-        if let (Some(cert_pem), Some(key_pem)) =
-            (options.client_cert_pem, options.client_key_pem)
-        {
-            let identity =
-                reqwest::Identity::from_pkcs8_pem(cert_pem.as_bytes(), key_pem.as_bytes())
-                    .map_err(|e| {
-                        ApiError::Config(format!("invalid client cert/key PEM: {e}"))
-                    })?;
+        if let (Some(cert_pem), Some(key_pem)) = (options.client_cert_pem, options.client_key_pem) {
+            // reqwest Identity::from_pem expects a single PEM with both
+            // certificate and private key concatenated together.
+            let combined = format!("{cert_pem}\n{key_pem}");
+            let identity = reqwest::Identity::from_pem(combined.as_bytes())
+                .map_err(|e| ApiError::Config(format!("invalid client cert/key PEM: {e}")))?;
             builder = builder.identity(identity);
         }
 
@@ -117,7 +118,7 @@ impl HttpClient for DefaultHttpClient {
     }
 }
 
-    /// Convert a `reqwest::Response` into `Result<R>`, mapping non-2xx to
+/// Convert a `reqwest::Response` into `Result<R>`, mapping non-2xx to
 /// [`ApiError::Server`] and JSON parse failures to [`ApiError::Decode`].
 async fn parse_response<R: DeserializeOwned>(response: reqwest::Response) -> Result<R> {
     let status = response.status();
@@ -145,7 +146,7 @@ async fn parse_response<R: DeserializeOwned>(response: reqwest::Response) -> Res
 ///
 /// ```rust,no_run
 /// # use std::sync::Arc;
-/// # use ewqwe_digital_identity::{EwqweApiClient, HttpClient};
+/// # use ewqwe_credential_verifier_client::{EwqweApiClient, HttpClient};
 /// # use url::Url;
 /// // Share the stub between the client and the test assertions:
 /// // let stub = Arc::new(MyStub::new());

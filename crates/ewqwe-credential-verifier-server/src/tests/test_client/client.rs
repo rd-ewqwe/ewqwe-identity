@@ -39,11 +39,11 @@ use reqwest::{Certificate, Client, Identity, Response};
 use serde::{Serialize, de::DeserializeOwned};
 use tracing::{debug, error, trace};
 
-const EC_CERTIFICATES_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../certificates/tls");
+const EC_CERTIFICATES_PATH: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../certificates/tls");
 
 const USER1_P12_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/../certificates/tls/ewqwe.user1.p12"
+    "/../../certificates/tls/ewqwe.user1.p12"
 );
 const USER_P12_PASSWORD: &str = "secret";
 
@@ -89,13 +89,14 @@ impl TestClient {
         key_path: &str,
     ) -> AttResult<Self> {
         let cookie_store = Arc::new(TestCookieStore::new());
-        let cert_pem = std::fs::read(cert_path).map_err(|e| {
+        let cert_pem = std::fs::read_to_string(cert_path).map_err(|e| {
             AttError::Config(format!("Failed to read client certificate file: {e}"))
         })?;
-        let key_pem = std::fs::read(key_path).map_err(|e| {
+        let key_pem = std::fs::read_to_string(key_path).map_err(|e| {
             AttError::Config(format!("Failed to read client private key file: {e}"))
         })?;
-        let identity = Identity::from_pkcs8_pem(&cert_pem, &key_pem).map_err(|e| {
+        let combined = format!("{cert_pem}\n{key_pem}");
+        let identity = Identity::from_pem(combined.as_bytes()).map_err(|e| {
             AttError::Config(format!("Failed to parse client cert/key identity: {e}"))
         })?;
 

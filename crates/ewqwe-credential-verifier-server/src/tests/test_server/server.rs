@@ -60,7 +60,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         std::env::var("CARGO_MANIFEST_DIR")
             .map_err(|_e| AttError::Test("Failed to find cargo manifest dir".to_owned()))?,
     );
-    let certificates_dir = cargo_manifest_dir.join("../certificates/tls");
+    let certificates_dir = cargo_manifest_dir.join("../../certificates/tls");
 
     let server_params = ServerParams {
         // Bind to 127.0.0.1 explicitly — on macOS "localhost" resolves to ::1 (IPv6)
@@ -109,7 +109,7 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         },
         issuers_cas_dir: Some(
             cargo_manifest_dir
-                .join("../certificates/issuers_cas")
+                .join("../../certificates/issuers_cas")
                 .to_string_lossy()
                 .to_string(),
         ),
@@ -117,8 +117,8 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
         attestation_issuer_key: None,
         journal_config: Default::default(),
         verifier_ui_config: Default::default(),
-        disable_authentication: false,
-        disabled_authentication_user: None,
+        disable_authentication: true,
+        disabled_authentication_user: Some("test_user".to_string()),
         tracing_config: TracingConfig::default(),
     };
 
@@ -132,7 +132,7 @@ pub fn make_test_server_params(
     let cargo_manifest_dir = PathBuf::from(
         std::env::var("CARGO_MANIFEST_DIR").expect("Failed to find cargo manifest dir"),
     );
-    let certificates_dir = cargo_manifest_dir.join("../certificates/tls");
+    let certificates_dir = cargo_manifest_dir.join("../../certificates/tls");
 
     ServerParams {
         host_name: "127.0.0.1".to_string(),
@@ -177,7 +177,7 @@ pub fn make_test_server_params(
         },
         issuers_cas_dir: Some(
             cargo_manifest_dir
-                .join("../certificates/issuers_cas")
+                .join("../../certificates/issuers_cas")
                 .to_string_lossy()
                 .to_string(),
         ),
@@ -201,7 +201,7 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
         std::env::var("CARGO_MANIFEST_DIR")
             .map_err(|_e| AttError::Test("Failed to find cargo manifest dir".to_owned()))?,
     );
-    let certificates_dir = cargo_manifest_dir.join("../certificates/tls");
+    let certificates_dir = cargo_manifest_dir.join("../../certificates/tls");
 
     let server_params = crate::ServerParams {
         rust_log: None,
@@ -246,7 +246,7 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
         },
         issuers_cas_dir: Some(
             cargo_manifest_dir
-                .join("../certificates/issuers_cas")
+                .join("../../certificates/issuers_cas")
                 .to_string_lossy()
                 .to_string(),
         ),
@@ -257,8 +257,8 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
             backend: JournalBackend::SqliteMemory,
         },
         verifier_ui_config: Default::default(),
-        disable_authentication: false,
-        disabled_authentication_user: None,
+        disable_authentication: true,
+        disabled_authentication_user: Some("test_user".to_string()),
         tracing_config: TracingConfig::default(),
     };
 

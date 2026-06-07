@@ -119,7 +119,7 @@ mod tests {
 
         let config: VerifierUiConfig = toml::from_str(toml_str).expect("Failed to parse TOML");
         assert!(config.enabled);
-        assert_eq!(config.app_name.as_deref(), Some("My Verifier UI"));
+        assert_eq!(config.app_name.as_deref(), Some("My Verifier App"));
         assert_eq!(
             config.logo_url.as_deref(),
             Some("https://example.com/logo.png")
@@ -143,7 +143,7 @@ mod tests {
     fn test_toml_public_url_and_credential_types() {
         let toml_str = r#"
             enabled = true
-            public_url = "https://verifier.example.com:9443"
+            qr_code_callback_url = "https://verifier.example.com:9443"
             allowed_credential_types = ["proof-of-age", "mdl"]
 
             [db]

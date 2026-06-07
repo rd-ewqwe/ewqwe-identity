@@ -145,8 +145,6 @@ impl ServerParams {
             params.tracing_config.rust_log = Some(rust_log);
         }
 
-
-
         let base_dir = path.parent().unwrap_or_else(|| Path::new("."));
         params.resolve_relative_paths(base_dir);
 
@@ -522,15 +520,15 @@ rust_log = "info,actix_server=warn"
 
         assert_eq!(
             PathBuf::from(&params.tls_params.as_ref().unwrap().server_private_key),
-            manifest_dir.join("../certificates/tls/ewqwe.server.key.pem")
+            manifest_dir.join("../../certificates/tls/ewqwe.server.key.pem")
         );
         assert_eq!(
             PathBuf::from(&params.tls_params.as_ref().unwrap().server_certificate),
-            manifest_dir.join("../certificates/tls/ewqwe.server.cert.pem")
+            manifest_dir.join("../../certificates/tls/ewqwe.server.cert.pem")
         );
         assert_eq!(
             PathBuf::from(&params.tls_params.as_ref().unwrap().server_ca_chain),
-            manifest_dir.join("../certificates/tls/ewqwe.ca.pem")
+            manifest_dir.join("../../certificates/tls/ewqwe.ca.pem")
         );
     }
 

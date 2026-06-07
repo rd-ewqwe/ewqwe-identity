@@ -442,7 +442,9 @@ async fn test_verify_chain_detects_tampering() {
 
 #[actix_web::test]
 async fn test_journal_entries_endpoint_requires_tls() -> AttResult<()> {
-    let ctx = start_journal_test_server().await?;
+    let mut params = make_test_server_params(false, "");
+    params.journal_config.enabled = true;
+    let ctx = start_test_server(params).await?;
     let client = TestClient::new(&ctx.base_url())?;
 
     // Without a client certificate the endpoint must reject with 401.
@@ -480,7 +482,9 @@ async fn test_journal_entries_endpoint_allows_disable_authentication_without_cer
 
 #[actix_web::test]
 async fn test_journal_verify_endpoint_requires_tls() -> AttResult<()> {
-    let ctx = start_journal_test_server().await?;
+    let mut params = make_test_server_params(false, "");
+    params.journal_config.enabled = true;
+    let ctx = start_test_server(params).await?;
     let client = TestClient::new(&ctx.base_url())?;
 
     let response = client
@@ -499,7 +503,9 @@ async fn test_journal_verify_endpoint_requires_tls() -> AttResult<()> {
 
 #[actix_web::test]
 async fn test_journal_download_endpoint_requires_tls() -> AttResult<()> {
-    let ctx = start_journal_test_server().await?;
+    let mut params = make_test_server_params(false, "");
+    params.journal_config.enabled = true;
+    let ctx = start_test_server(params).await?;
     let client = TestClient::new(&ctx.base_url())?;
 
     let response = client
@@ -519,11 +525,12 @@ async fn test_journal_download_endpoint_requires_tls() -> AttResult<()> {
 #[actix_web::test]
 async fn test_journal_entries_empty_for_new_user() -> AttResult<()> {
     let ctx = start_journal_test_server().await?;
-    // user1.acme.com is the CN of ewqwe.user1.cert.pem
+    // start_journal_test_server uses disable_authentication=true, so the
+    // authenticated user is the injected test_user, not the mTLS CN.
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/ewqwe_api/journal/user1.acme.com/entries")
+        .get_raw("/ewqwe_api/journal/test_user/entries")
         .await?;
 
     assert_eq!(
@@ -571,7 +578,7 @@ async fn test_journal_chain_verify_empty() -> AttResult<()> {
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/ewqwe_api/journal/user1.acme.com/verify")
+        .get_raw("/ewqwe_api/journal/test_user/verify")
         .await?;
 
     assert_eq!(response.status(), reqwest::StatusCode::OK);
@@ -600,7 +607,7 @@ async fn test_journal_download_returns_json_file() -> AttResult<()> {
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
 
     let response = client
-        .get_raw("/ewqwe_api/journal/user1.acme.com/download")
+        .get_raw("/ewqwe_api/journal/test_user/download")
         .await?;
 
     assert_eq!(response.status(), reqwest::StatusCode::OK);
@@ -616,7 +623,7 @@ async fn test_journal_download_returns_json_file() -> AttResult<()> {
         "Download endpoint must set Content-Disposition: attachment"
     );
     assert!(
-        content_disposition.contains("journal_user1.acme.com.json"),
+        content_disposition.contains("journal_test_user.json"),
         "Download filename should match username: {content_disposition}"
     );
 

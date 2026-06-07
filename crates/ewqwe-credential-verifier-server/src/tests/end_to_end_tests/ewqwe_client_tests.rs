@@ -39,7 +39,7 @@ use crate::{
 // Test-only HTTP transport
 // ============================================================================
 
-const EC_CERTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../certificates/tls");
+const EC_CERTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../certificates/tls");
 
 /// An [`HttpClient`] implementation for tests that:
 /// - Accepts the test server's self-signed certificate without validating the

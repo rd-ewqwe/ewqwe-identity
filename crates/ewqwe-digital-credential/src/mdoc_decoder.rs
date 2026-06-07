@@ -184,15 +184,17 @@ fn parse_document(doc: &Cbor) -> Result<DecodedMdoc> {
         }
     }
     // Specifically log portrait if present
-    if let Some(ns_claims) = decoded.namespaces.get("eu.europa.ec.eudi.pid.1") {
-        if let Some(portrait) = ns_claims.get("portrait") {
-            let data_str = serde_json::to_string(portrait).unwrap_or_default();
-            tracing::info!(
-                portrait_len = data_str.len(),
-                portrait_prefix = %data_str.chars().take(40).collect::<String>(),
-                "Portrait claim found in PID namespace"
-            );
-        }
+    if let Some(portrait) = decoded
+        .namespaces
+        .get("eu.europa.ec.eudi.pid.1")
+        .and_then(|ns| ns.get("portrait"))
+    {
+        let data_str = serde_json::to_string(portrait).unwrap_or_default();
+        tracing::info!(
+            portrait_len = data_str.len(),
+            portrait_prefix = %data_str.chars().take(40).collect::<String>(),
+            "Portrait claim found in PID namespace"
+        );
     }
 
     Ok(decoded)

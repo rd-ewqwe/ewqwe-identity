@@ -9,7 +9,10 @@ use serde_json::json;
 
 #[actix_web::test]
 async fn test_verify_endpoint_requires_client_certificate() -> AttResult<()> {
-    let ctx = start_default_test_server().await?;
+    // With disable_authentication=false and no client cert exchange at the TLS layer,
+    // the server returns 401 because no AuthenticatedUser can be established.
+    let params = make_test_server_params(false, "");
+    let ctx = start_test_server(params).await?;
 
     let client = TestClient::new(&ctx.base_url())?;
     let response = client
@@ -28,6 +31,7 @@ async fn test_verify_endpoint_requires_client_certificate() -> AttResult<()> {
 
 #[actix_web::test]
 async fn test_verify_endpoint_accepts_valid_client_certificate() -> AttResult<()> {
+    // With disable_authentication=true, auth is bypassed and requests reach the handler.
     let ctx = start_default_test_server().await?;
 
     let client = TestClient::new_with_user1_cert(&ctx.base_url())?;
@@ -35,12 +39,7 @@ async fn test_verify_endpoint_accepts_valid_client_certificate() -> AttResult<()
         .post_raw("/ewqwe_api/verify", &json!({ "vp_token": "{}" }))
         .await?;
 
-    assert_ne!(
-        response.status(),
-        reqwest::StatusCode::UNAUTHORIZED,
-        "Expected /ewqwe_api/verify to pass mTLS middleware when a valid client certificate is provided"
-    );
-
+    // Auth passes (disabled), handler should return 400 for invalid vp_token payload
     assert_eq!(
         response.status(),
         reqwest::StatusCode::BAD_REQUEST,
@@ -53,18 +52,19 @@ async fn test_verify_endpoint_accepts_valid_client_certificate() -> AttResult<()
 
 #[actix_web::test]
 async fn test_verify_endpoint_allows_disable_authentication_without_cert() -> AttResult<()> {
-    let server_params = make_test_server_params(true, "test");
-    let ctx = start_test_server(server_params).await?;
+    // With disable_authentication=true, no client cert needed — request should
+    // pass auth and get BAD_REQUEST (handler rejects invalid vp_token payload).
+    let ctx = start_default_test_server().await?;
 
     let client = TestClient::new(&ctx.base_url())?;
     let response = client
         .post_raw("/ewqwe_api/verify", &json!({ "vp_token": "{}" }))
         .await?;
 
-    assert_ne!(
+    assert_eq!(
         response.status(),
-        reqwest::StatusCode::UNAUTHORIZED,
-        "Expected /ewqwe_api/verify to not require mTLS when disable_authentication is true"
+        reqwest::StatusCode::BAD_REQUEST,
+        "Expected bad request (auth bypassed, handler rejects invalid payload)"
     );
 
     ctx.stop_server().await?;

@@ -694,7 +694,7 @@ pub struct VerifyCredentialRequest {
     /// Presentation submission with descriptor mapping.
     /// Optional because DCQL-based responses (OpenID4VP Section 8.1) don't include
     /// `presentation_submission` — the `vp_token` itself is structured with credential IDs as keys.
-    #[serde(default)]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub presentation_submission: Option<PresentationSubmission>,
 
     /// Original state from the request.

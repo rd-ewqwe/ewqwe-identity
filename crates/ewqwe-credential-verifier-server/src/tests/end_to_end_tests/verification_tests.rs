@@ -3,13 +3,13 @@
 //! Each test proves the *complete* credential signing ↔ verification round-trip
 //! without relying on any pre-provisioned keys or certificates:
 //!
-//! 1. **EU Age Verification Profile SD-JWT VC** (`eu.europa.ec.av.1`)  
+//! 1. **EU Age Verification Profile SD-JWT VC** (`eu.europa.ec.av.1`)
 //!    → `over_18 = true` claim successfully verified and attested.
 //!
-//! 2. **EUDI PID mDoc** (ISO/IEC 18013-5 `DeviceResponse`, `eu.europa.ec.eudi.pid.1`)  
+//! 2. **EUDI PID mDoc** (ISO/IEC 18013-5 `DeviceResponse`, `eu.europa.ec.eudi.pid.1`)
 //!    → full COSE_Sign1 IssuerAuth + DeviceSignature chain verified.
 //!
-//! 3. **EUDI PID SD-JWT VC** (`eu.europa.ec.eudi.pid.1`)  
+//! 3. **EUDI PID SD-JWT VC** (`eu.europa.ec.eudi.pid.1`)
 //!    → `given_name`, `age_over_18` claims present in signed attestation.
 //!
 //! Credentials are built by the [`ewqwe_digital_credential`] crate, which
@@ -59,7 +59,7 @@ use crate::{
 };
 
 // Path to EC test certificates (same constant used in ewqwe_client_tests.rs).
-const EC_CERTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../certificates/tls");
+const EC_CERTS_DIR: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../certificates/tls");
 
 // ============================================================================
 // Shared helpers
@@ -242,9 +242,9 @@ fn make_temp_ca_dir() -> (PathBuf, String) {
 /// Build `ServerParams` pointing `credential_issuer_ca_dir` at `ca_dir_path`.
 ///
 /// All other parameters are identical to the standard `make_test_server_params`
-/// defaults: EC test certificates, mTLS on, authentication required.
+/// defaults: EC test certificates, default user authentication.
 fn server_params_with_ca_dir(ca_dir_path: &str) -> crate::ServerParams {
-    let mut params = make_test_server_params(false, "");
+    let mut params = make_test_server_params(true, "test_user");
     params.issuers_cas_dir = Some(ca_dir_path.to_owned());
     params
 }
@@ -255,7 +255,7 @@ fn server_params_with_ca_dir(ca_dir_path: &str) -> crate::ServerParams {
 
 /// Full round-trip verification of an **EU Age Verification Profile** SD-JWT VC.
 ///
-/// Credential type: `eu.europa.ec.av.1`  
+/// Credential type: `eu.europa.ec.av.1`
 /// Expected claim in attestation: `credential_claims.over_18 = true`
 #[actix_web::test]
 async fn e2e_full_verification_eu_age_profile_sd_jwt() -> AttResult<()> {
@@ -332,9 +332,9 @@ async fn e2e_full_verification_eu_age_profile_sd_jwt() -> AttResult<()> {
 
 /// Full round-trip verification of a **EUDI PID mDoc** `DeviceResponse`.
 ///
-/// Credential type: `eu.europa.ec.eudi.pid.1` (ISO 18013-5)  
+/// Credential type: `eu.europa.ec.eudi.pid.1` (ISO 18013-5)
 /// Verifies: COSE_Sign1 IssuerAuth chain, MSO digest integrity, and
-/// DeviceSignature bound to the OpenID4VP `SessionTranscript`.  
+/// DeviceSignature bound to the OpenID4VP `SessionTranscript`.
 /// Expected claims: `given_name`, `age_over_18`.
 #[actix_web::test]
 async fn e2e_full_verification_eudi_mdoc() -> AttResult<()> {
@@ -425,7 +425,7 @@ async fn e2e_full_verification_eudi_mdoc() -> AttResult<()> {
 
 /// Full round-trip verification of a **EUDI PID SD-JWT VC**.
 ///
-/// Credential type: `eu.europa.ec.eudi.pid.1` (SD-JWT).  
+/// Credential type: `eu.europa.ec.eudi.pid.1` (SD-JWT).
 /// Expected claims: `given_name`, `age_over_18`.
 #[actix_web::test]
 async fn e2e_full_verification_eudi_sd_jwt() -> AttResult<()> {

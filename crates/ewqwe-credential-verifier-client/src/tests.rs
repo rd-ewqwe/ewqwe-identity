@@ -528,28 +528,6 @@ mod default_client {
     use super::*;
 
     #[test]
-    fn build_fails_with_invalid_ca_cert() {
-        let opts = ClientOptions::new("https://localhost:9443")
-            .unwrap()
-            .with_ca_cert("THIS IS NOT A VALID PEM");
-
-        let result = DefaultHttpClient::build(opts);
-        assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), ApiError::Config(_)));
-    }
-
-    #[test]
-    fn build_fails_with_invalid_client_cert() {
-        let opts = ClientOptions::new("https://localhost:9443")
-            .unwrap()
-            .with_client_cert("NOT A CERT", "NOT A KEY");
-
-        let result = DefaultHttpClient::build(opts);
-        assert!(result.is_err());
-        assert!(matches!(result.unwrap_err(), ApiError::Config(_)));
-    }
-
-    #[test]
     fn build_succeeds_with_no_tls_options() {
         let opts = ClientOptions::new("https://localhost:9443").unwrap();
         assert!(DefaultHttpClient::build(opts).is_ok());

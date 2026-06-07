@@ -15,9 +15,9 @@
 //! frameworks that already manage an HTTP stack.
 //!
 //! ```rust,no_run
-//! use ewqwe_digital_identity::{EwqweApiClient, ClientOptions};
+//! use ewqwe_credential_verifier_client::{EwqweApiClient, ClientOptions};
 //!
-//! # async fn example() -> ewqwe_digital_identity::Result<()> {
+//! # async fn example() -> ewqwe_credential_verifier_client::Result<()> {
 //! let client = EwqweApiClient::new(ClientOptions::new("https://localhost:9443")?)?;
 //! # Ok(())
 //! # }

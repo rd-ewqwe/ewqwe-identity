@@ -871,7 +871,7 @@ mod tests {
 
     fn test_config() -> OpenID4VPServiceConfig {
         let base = env!("CARGO_MANIFEST_DIR");
-        let cert_dir = format!("{base}/../../../certificates/signer");
+        let cert_dir = format!("{base}/../../certificates/signer");
 
         OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests
