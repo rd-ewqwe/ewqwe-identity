@@ -40,7 +40,7 @@ export default defineConfig({
   server: {
     https: true,
     host: "0.0.0.0",
-    port: 5175,
+    port: 5174,
     proxy: {
       "/api": backendProxy,
       "/ewqwe_api": backendProxy,

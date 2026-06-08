@@ -1,0 +1,126 @@
+/**
+ * Settings — app branding, user language, and credential claims selection.
+ *
+ * Depends on: state (DOM helpers, currentUser), i18n (loadI18n, getSavedLang,
+ *             setSavedLang, detectBrowserLang, currentLang),
+ *             routing (buildNav)
+ */
+
+import { apiFetch } from "../api.ts";
+import type { AppSettings } from "../types.ts";
+import { $, toast, i18n, currentUser, applyBranding } from "./state.ts";
+import {
+  loadI18n,
+  getSavedLang,
+  setSavedLang,
+  detectBrowserLang,
+  t,
+} from "./i18n.ts";
+import { currentLang } from "./state.ts";
+import { buildNav } from "./routing.ts";
+
+// ── Load settings ─────────────────────────────────────────────────────────
+
+export async function loadSettings(): Promise<void> {
+  try {
+    const settings = await apiFetch<AppSettings>("/settings");
+    ($("settings-app-name") as HTMLInputElement).value =
+      settings.app_name ?? "";
+    ($("settings-logo-url") as HTMLInputElement).value =
+      settings.logo_url ?? "";
+  } catch {
+    // ignore
+  }
+
+  const langSelect = $("settings-language") as HTMLSelectElement | null;
+  if (langSelect) {
+    const saved = getSavedLang();
+    langSelect.value = saved ?? "default";
+  }
+
+  loadClaimsSettings();
+}
+
+function loadClaimsSettings(): void {
+  try {
+    const pidClaims: string[] = JSON.parse(
+      localStorage.getItem("verifier_ui_pid_claims") ??
+        JSON.stringify(["age_over_18", "portrait"]),
+    );
+    document
+      .querySelectorAll<HTMLInputElement>(".pid-claim-cb")
+      .forEach((cb) => {
+        cb.checked = pidClaims.includes(cb.value);
+      });
+  } catch {
+    // ignore
+  }
+
+  try {
+    const mdlClaims: string[] = JSON.parse(
+      localStorage.getItem("verifier_ui_mdl_claims") ??
+        JSON.stringify(["age_over_18", "portrait"]),
+    );
+    document
+      .querySelectorAll<HTMLInputElement>(".mdl-claim-cb")
+      .forEach((cb) => {
+        cb.checked = mdlClaims.includes(cb.value);
+      });
+  } catch {
+    // ignore
+  }
+}
+
+// ── Save settings ─────────────────────────────────────────────────────────
+
+export async function saveSettings(): Promise<void> {
+  const pidChecked = document.querySelectorAll(".pid-claim-cb:checked").length;
+  const mdlChecked = document.querySelectorAll(".mdl-claim-cb:checked").length;
+  if (pidChecked === 0 || mdlChecked === 0) {
+    toast(
+      i18n["claims_min_one"] ??
+        "Select at least one claim per credential type.",
+      false,
+    );
+    return;
+  }
+
+  if (currentUser?.role === "admin") {
+    try {
+      const body = {
+        app_name: ($("settings-app-name") as HTMLInputElement).value.trim(),
+        logo_url: ($("settings-logo-url") as HTMLInputElement).value.trim(),
+      };
+      await apiFetch<unknown>("/admin/settings", { method: "PUT", body });
+    } catch (err) {
+      toast((err as Error).message, false);
+      return;
+    }
+  }
+
+  const langSelect = $("settings-language") as HTMLSelectElement | null;
+  if (langSelect) {
+    const lang = langSelect.value;
+    setSavedLang(lang);
+    const effectiveLang = lang === "default" ? detectBrowserLang() : lang;
+    if (effectiveLang !== currentLang) {
+      await loadI18n(effectiveLang);
+      buildNav();
+    }
+  }
+
+  const pidClaims: string[] = [];
+  document
+    .querySelectorAll<HTMLInputElement>(".pid-claim-cb:checked")
+    .forEach((cb) => pidClaims.push(cb.value));
+  localStorage.setItem("verifier_ui_pid_claims", JSON.stringify(pidClaims));
+
+  const mdlClaims: string[] = [];
+  document
+    .querySelectorAll<HTMLInputElement>(".mdl-claim-cb:checked")
+    .forEach((cb) => mdlClaims.push(cb.value));
+  localStorage.setItem("verifier_ui_mdl_claims", JSON.stringify(mdlClaims));
+
+  await applyBranding();
+  toast(t("settings_saved"), true);
+}

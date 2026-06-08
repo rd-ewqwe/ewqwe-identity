@@ -1,4 +1,4 @@
-//! HTTP route handlers for the Verifier App.
+//! HTTP route handlers for the Verifier UI.
 
 use actix_identity::Identity;
 use actix_web::{HttpMessage, HttpRequest, HttpResponse, web};
@@ -65,9 +65,9 @@ async fn current_user(
     identity: Option<Identity>,
     store: &DynVerifierUiStore,
 ) -> Option<UserResponse> {
-    trace!("Verifier App: session user lookup {}", identity.is_some());
+    trace!("Verifier UI: session user lookup {}", identity.is_some());
     let id = identity?.id().ok()?;
-    trace!(user_id = %id, "Verifier App: session user lookup");
+    trace!(user_id = %id, "Verifier UI: session user lookup");
     match store.get_user_by_id(&id).await {
         Ok(Some(user)) if user.is_active => Some(UserResponse::from(user)),
         _ => None,
@@ -129,7 +129,7 @@ pub async fn bootstrap(
         tracing::warn!("Failed to create identity session after bootstrap: {e}");
     }
 
-    tracing::info!(email = %email, "Verifier App: superadmin created via bootstrap");
+    tracing::info!(email = %email, "Verifier UI: superadmin created via bootstrap");
     HttpResponse::Created().json(UserResponse::from(user))
 }
 
@@ -178,7 +178,7 @@ pub async fn login(
         return internal_error("session creation failed");
     }
 
-    tracing::info!(email = %email, "Verifier App: user logged in");
+    tracing::info!(email = %email, "Verifier UI: user logged in");
     HttpResponse::Ok().json(UserResponse::from(user))
 }
 
@@ -220,7 +220,7 @@ pub async fn generate_qr(
     config: web::Data<Arc<VerifierUiConfig>>,
     body: web::Json<crate::models::GenerateQrRequest>,
 ) -> HttpResponse {
-    trace!("Verifier App: QR generation requested");
+    trace!("Verifier UI: QR generation requested");
 
     let user = match current_user(identity, &store).await {
         Some(u) => u,
@@ -264,11 +264,11 @@ pub async fn generate_qr(
         format!("{}://{}", conn.scheme(), conn.host())
     });
 
-    info!(user_id = %user.id, credential_type = %credential_type, callback_url = %public_url, claims = ?body.claims,
-          "Verifier App: generating QR Code");
-
     // Determine profile from credential type.
     let profile = determine_profile(Some(credential_type), None);
+
+    info!(user_id = %user.id, credential_type = %credential_type, callback_url = %public_url, claims = ?body.claims, profile = ?profile,
+          "Verifier UI: generating QR Code");
 
     // Build DCQL query: use specified claims if provided, otherwise use defaults.
     let dcql_query = if body.claims.is_empty() {
@@ -293,7 +293,7 @@ pub async fn generate_qr(
     let resp = match service.init_transaction(init_req, &public_url).await {
         Ok(r) => r,
         Err(e) => {
-            tracing::error!("Verifier App: init_transaction failed: {e}");
+            tracing::error!("Verifier UI: init_transaction failed: {e}");
             return internal_error("failed to create verification transaction");
         }
     };
@@ -312,7 +312,7 @@ pub async fn generate_qr(
         user_id = %user.id,
         transaction_id = %resp.transaction_id,
         credential_type = %credential_type,
-        "Verifier App: QR transaction created"
+        "Verifier UI: QR transaction created"
     );
 
     HttpResponse::Ok().json(json!({
@@ -684,7 +684,7 @@ pub async fn get_settings(
         _ => config
             .app_name
             .clone()
-            .unwrap_or_else(|| "Verifier App".to_string()),
+            .unwrap_or_else(|| "Verifier UI".to_string()),
     };
     let logo_url = match store.get_setting("logo_url").await {
         Ok(v) => v.or_else(|| config.logo_url.clone()),
