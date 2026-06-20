@@ -6,29 +6,28 @@ The SPA is built from `crates/ewqwe-verifier-app/ui/` and served from the root U
 
 ## Overview
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                  Credential Verifier  (:9443)                           │
-│                                                                         │
-│   GET  /                              → SPA index.html (dist/)          │
-│   GET  /assets/*                      → bundled JS/CSS assets           │
-│   GET  /logo.png                      → logo image                      │
-│   GET  /api/v1/i18n?lang=<code>       → locale strings (JSON)           │
-│   POST /api/v1/setup/bootstrap        → one-time admin creation         │
-│   GET  /api/v1/setup/status           → bootstrap status (public)       │
-│   POST /api/v1/auth/login                                               │
-│   POST /api/v1/auth/logout                                              │
-│   GET  /api/v1/auth/me                                                  │
-│   POST /api/v1/qr/generate            → OpenID4VP QR transaction        │
-│   GET  /api/v1/qr/{id}/status                                           │
-│   GET  /api/v1/settings               → public app settings             │
-│   PUT  /api/v1/admin/settings         → (admin role only)               │
-│   GET  /api/v1/admin/users            → (admin role only)               │
-│   POST /api/v1/admin/users            → (admin role only)               │
-│   PUT  /api/v1/admin/users/{id}       → (admin role only)               │
-│   DELETE /api/v1/admin/users/{id}     → (admin role only)               │
-│   GET  /api/v1/admin/journal          → (admin role only)               │
-└─────────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    subgraph CREDENTIAL_VERIFIER["Credential Verifier (:9443)"]
+        SPA["GET / → SPA index.html (dist/)"]
+        ASSETS["GET /assets/* → bundled JS/CSS"]
+        LOGO["GET /logo.png → logo image"]
+        I18N["GET /api/v1/i18n?lang=&lt;code&gt; → locale strings"]
+        SETUP_BOOT["POST /api/v1/setup/bootstrap → one-time admin creation"]
+        SETUP_STAT["GET /api/v1/setup/status → bootstrap status (public)"]
+        LOGIN["POST /api/v1/auth/login"]
+        LOGOUT["POST /api/v1/auth/logout"]
+        ME["GET /api/v1/auth/me"]
+        QR_GEN["POST /api/v1/qr/generate → OpenID4VP QR transaction"]
+        QR_STAT["GET /api/v1/qr/{id}/status"]
+        SETTINGS["GET /api/v1/settings → public app settings"]
+        ADM_SETTINGS["PUT /api/v1/admin/settings → (admin)"]
+        ADM_USERS_L["GET /api/v1/admin/users → (admin)"]
+        ADM_USERS_C["POST /api/v1/admin/users → (admin)"]
+        ADM_USERS_U["PUT /api/v1/admin/users/{id} → (admin)"]
+        ADM_USERS_D["DELETE /api/v1/admin/users/{id} → (admin)"]
+        ADM_JOURNAL["GET /api/v1/admin/journal → (admin)"]
+    end
 ```
 
 ---
@@ -39,7 +38,8 @@ The SPA must be built before the credential verifier can serve it.
 
 ```bash
 cd crates/ewqwe-verifier-app/ui
-npm run build          # outputs to dist/
+pnpm install
+pnpm build          # outputs to dist/
 ```
 
 The `credential-server.toml` `[verifier_ui]` section tells the server where to find the built assets:
@@ -374,46 +374,54 @@ All API endpoints are under `/api/v1/` and require `Content-Type: application/js
 
 ## Source Layout
 
-```
-crates/ewqwe-verifier-app/
-├── src/
-│   ├── lib.rs            — module root + route registration
-│   ├── config.rs         — VerifierAppConfig struct (includes ui_dist_path)
-│   ├── auth.rs           — argon2id password hashing/verification
-│   ├── db.rs             — VerifierAppStore trait + DynVerifierAppStore dispatch
-│   ├── error.rs          — VerifierAppError, VerifierAppResult
-│   ├── models.rs         — DTOs: UserResponse, LoginRequest, …
-│   ├── qr_user_map.rs    — in-memory transaction→user attribution map
-│   ├── routes.rs         — HTTP handlers (API + i18n embedded assets)
-│   ├── stores/
-│   │   ├── sqlite.rs     — SQLite backend (in-memory or file)
-│   │   ├── postgres.rs   — PostgreSQL backend
-│   │   └── mysql.rs      — MySQL / MariaDB backend
-│   └── static/
-│       ├── logo.png      — ewQwe logo (copied to ui/public/ for the SPA)
-│       └── i18n/
-│           ├── en.json   — English
-│           ├── de.json   — German
-│           ├── fr.json   — French
-│           ├── it.json   — Italian
-│           ├── es.json   — Spanish
-│           ├── sv.json   — Swedish
-│           ├── pl.json   — Polish
-│           ├── cs.json   — Czech
-│           └── hr.json   — Croatian
-└── ui/                    — Vite+TypeScript+Tailwind SPA
-    ├── package.json       — scripts: dev, build, preview
-    ├── vite.config.ts     — proxy to https://localhost:9443
-    ├── tailwind.config.js
-    ├── tsconfig.json
-    ├── index.html         — SPA entry point
-    ├── public/
-    │   └── logo.png       — served as /logo.png
-    ├── src/
-    │   ├── main.ts        — entry: imports styles, calls initApp()
-    │   ├── app.ts         — all application logic
-    │   ├── api.ts         — apiFetch() with base /api/v1
-    │   ├── types.ts       — TypeScript interfaces
-    │   └── styles.css     — Tailwind + custom CSS
-    └── dist/              — output of `npm run build` (git-ignored)
+```mermaid
+graph TD
+    subgraph SRC["src/"]
+        LIB["lib.rs — module root + route registration"]
+        CONFIG["config.rs — VerifierAppConfig"]
+        AUTH["auth.rs — argon2id password hashing"]
+        DB["db.rs — VerifierAppStore trait"]
+        ERR["error.rs — VerifierAppError"]
+        MODELS["models.rs — DTOs"]
+        QR["qr_user_map.rs — transaction→user map"]
+        ROUTES["routes.rs — HTTP handlers"]
+        subgraph STORES["stores/"]
+            SQLITE["sqlite.rs — SQLite"]
+            PG["postgres.rs — PostgreSQL"]
+            MYSQL["mysql.rs — MySQL"]
+        end
+        subgraph STATIC["static/"]
+            LOGO_PNG["logo.png — ewQwe logo"]
+            subgraph I18N["i18n/"]
+                EN["en.json — English"]
+                DE["de.json — German"]
+                FR["fr.json — French"]
+                IT["it.json — Italian"]
+                ES["es.json — Spanish"]
+                SV["sv.json — Swedish"]
+                PL["pl.json — Polish"]
+                CS["cs.json — Czech"]
+                HR["hr.json — Croatian"]
+            end
+        end
+    end
+    subgraph UI["ui/ — Vite+TypeScript+Tailwind SPA"]
+        PKG["package.json"]
+        VITE_CFG["vite.config.ts"]
+        TW["tailwind.config.js"]
+        TS_CFG["tsconfig.json"]
+        INDEX["index.html — entry point"]
+        PUBLIC["public/logo.png"]
+        subgraph UI_SRC["src/"]
+            MAIN["main.ts — entry"]
+            APP["app.ts — app logic"]
+            API["api.ts — apiFetch()"]
+            TYPES["types.ts — interfaces"]
+            CSS["styles.css — Tailwind + custom"]
+        end
+        DIST["dist/ — build output"]
+    end
+
+    ROOT["crates/ewqwe-verifier-app/"] --> SRC
+    ROOT --> UI
 ```

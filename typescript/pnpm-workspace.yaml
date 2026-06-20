@@ -1,0 +1,9 @@
+packages:
+  - "ewqwe-digital-identity"
+  - "demo-webapp"
+
+allowBuilds:
+  cbor-extract: false
+  esbuild: false
+
+onlyBuiltDependencies: ["cbor-extract", "esbuild"]

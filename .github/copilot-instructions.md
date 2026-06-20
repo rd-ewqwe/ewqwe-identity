@@ -15,18 +15,16 @@ Standards: W3C Digital Credentials API, ISO/IEC 18013-5 (mDL/mDoc), OpenID4VP 1.
 
 The RP **delegates verification** to the credential_verifier, which validates the VP token (OpenID4VP / W3C DCQL) and returns a signed attestation (JWT or COSE). A dedicated `crates/openid4vp/` module contains shared request/response parsing, DCQL evaluation, and HAIP/JAR support.
 
-```
-┌─────────────────┐  (1) Request   ┌─────────────────────────────────┐  (2) VP Token    ┌─────────────────┐
-│   Relying       │  OpenID4VP/DCQL  │   Wallet Extension (UI flow)  │  (Presentation)  │   Credential    │
-│   Party (RP)    │ ──────────────>│      (wallet-extension/)        │  (presented)     │    Verifier     │
-│   webapp/       │                │  w3c-dc-* / openid4vp-*        │                  │credential_verif/│
-└────────┬────────┘                └────────┬────────────────────────┘                  └────────┬────────┘
-         │                                  │                                    │
-         │  (3) Send VP Token to verifier    │                                    │
-         └─────────────────────────────────>│                                    │
-                                                                                 │
-         <─────────────────────────────────────────────────────────────────────────
-                            (4) Return signed attestation (proof is valid)
+```mermaid
+sequenceDiagram
+    participant RP as Relying Party (RP)<br/>webapp/
+    participant Wallet as Wallet Extension<br/>wallet-extension/
+    participant Verifier as Credential Verifier<br/>credential_verif/
+
+    RP->>Wallet: (1) Request OpenID4VP/DCQL
+    Wallet->>Verifier: (2) VP Token (Presentation)
+    RP-->>Verifier: (3) Send VP Token to verifier
+    Verifier-->>RP: (4) Return signed attestation<br/>(proof is valid)
 ```
 
 ## OpenID4VP + W3C DCQL Flows

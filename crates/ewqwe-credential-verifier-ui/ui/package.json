@@ -8,6 +8,10 @@
     "build": "vite build",
     "preview": "vite preview"
   },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  },
   "devDependencies": {
     "autoprefixer": "^10.4.0",
     "http-proxy": "1.18.1",

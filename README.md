@@ -19,9 +19,9 @@ This is the **open-core** (BSL-1.1) repository. The enterprise version with OTLP
 │   ├── ewqwe-credential-verifier-client/ ─ RP client library
 │   ├── ewqwe-credential-verifier-ui/     ─ Web UI (SQLite)
 │   └── ewqwe-credential-verifier-server/ ─ Server + routes
-├── webapp/         ─ Relying Party (TypeScript/Deno)
-├── wallet-extension/ ─ Wallet extension (TypeScript)
-├── js-lib/          ─ Shared JS library
+├── typescript/     ─ pnpm workspace (TypeScript/Node.js)
+│   ├── ewqwe-digital-identity/ ─ Shared JS library (@ewqwe/digital-identity)
+│   └── demo-webapp/            ─ Relying Party demo (@ewqwe/demo-webapp)
 ├── documentation/   ─ mdBook docs
 └── certificates/    ─ Dev/test certificates only
 ```
@@ -29,8 +29,7 @@ This is the **open-core** (BSL-1.1) repository. The enterprise version with OTLP
 ## Prerequisites
 
 - **Rust** 1.70+ (install via [rustup](https://rustup.rs))
-- **Deno** v1.40+ (for webapp — install via [deno.land](https://deno.land))
-- **Node.js/npm** (for verifier UI)
+- **pnpm** >= 9 (for TypeScript workspace — install via `npm install -g pnpm`)
 - **Redis** (required for credential verifier sessions)
 
 ## Build & Run
@@ -51,28 +50,34 @@ cargo run -- -p ewqwe_credential_verifier_server -- \
 
 > **Note:** The open-core uses SQLite and in-memory stores by default. No PostgreSQL or Redis setup is needed for basic operation.
 
-### Webapp (Relying Party)
+### TypeScript Workspace (Relying Party Demo & Shared Library)
 
 ```bash
-cd webapp
-deno task dev     # starts on http://localhost:5174
+cd typescript
+pnpm install
+pnpm --filter @ewqwe/digital-identity build
+pnpm dev          # starts demo-webapp on https://localhost:5174
 ```
 
-### Wallet Extension
-
-```bash
-cd wallet-extension
-deno task dev     # starts on http://localhost:5173
-```
+See the [TypeScript workspace README](typescript/README.md) for more details.
 
 ### Verifier UI (Admin Dashboard)
 
-The Verifier UI is embedded in `crates/ewqwe-credential-verifier-ui/`. Build the SPA:
+The Verifier UI is an embedded SPA in `crates/ewqwe-credential-verifier-ui/ui/`. Build with:
 
 ```bash
 cd crates/ewqwe-credential-verifier-ui/ui
-deno task build
+pnpm install
+pnpm build
 ```
+
+For development with hot-reload and API proxy to the credential verifier:
+
+```bash
+pnpm dev          # starts on https://localhost:5174
+```
+
+See the [crate README](crates/ewqwe-credential-verifier-ui/README.md) for more details.
 
 ## Publishing to crates.io
 
@@ -91,7 +96,7 @@ cargo publish -p ewqwe_credential_verifier_server
 
 ```mermaid
 graph TD
-    RP["Relying Party (webapp/)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>(ewqwe-credential-verifier-server)"]
+    RP["Relying Party (typescript/demo-webapp/)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>(ewqwe-credential-verifier-server)"]
     VERIFIER -->|validates VP Token| CRYPTO["ewqwe-digital-credential"]
     VERIFIER -->|transaction lifecycle| OPENID4VP["ewqwe-openid4vp"]
     VERIFIER -->|serves UI| UI["ewqwe-credential-verifier-ui"]

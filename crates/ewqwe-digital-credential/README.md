@@ -26,20 +26,21 @@ Supported credential formats and profiles:
 
 ## Architecture
 
-```
-ewqwe_digital_credential
-├── CredentialIssuer             ← high-level API (ephemeral PKI + build helpers)
-│   ├── build_eu_age_sd_jwt()  → SD-JWT VC  (eu.europa.ec.av.1)
-│   ├── build_eudi_sd_jwt()    → SD-JWT VC  (eu.europa.ec.eudi.pid.1)
-│   └── build_eudi_mdoc()      → mDoc DeviceResponse (ISO 18013-5)
-├── sd_jwt                       ← low-level SD-JWT VC builder functions
-├── sd_jwt_verification          ← SD-JWT VC decoding + x5c/KB-JWT verification
-├── mdoc                         ← low-level mDoc/DeviceResponse builder functions
-├── mdoc_decoder                 ← lightweight mDoc CBOR claim extraction (no crypto)
-├── mdoc_verification            ← full mDoc COSE + certificate chain verification
-├── pki                          ← X.509 CA and issuer leaf cert generation
-├── error                        ← CredentialError / Result type alias
-└── util                         ← shared helpers (CBOR, SHA-256, timestamps)
+```mermaid
+graph TD
+    CI["ewqwe_digital_credential"] --> Issuer["CredentialIssuer<br/>high-level API (ephemeral PKI)"]
+    CI --> SD["sd_jwt<br/>low-level SD-JWT VC builder"]
+    CI --> SDV["sd_jwt_verification<br/>SD-JWT decoding + x5c/KB-JWT verify"]
+    CI --> MD["mdoc<br/>low-level mDoc builder"]
+    CI --> MDD["mdoc_decoder<br/>lightweight CBOR claim extraction"]
+    CI --> MDV["mdoc_verification<br/>full COSE + certificate chain verify"]
+    CI --> PKI["pki<br/>X.509 CA + issuer leaf cert gen"]
+    CI --> ERR["error<br/>CredentialError / Result alias"]
+    CI --> UTIL["util<br/>CBOR, SHA-256, timestamps"]
+
+    Issuer --> EU["build_eu_age_sd_jwt() → SD-JWT VC<br/>eu.europa.ec.av.1"]
+    Issuer --> EUDI["build_eudi_sd_jwt() → SD-JWT VC<br/>eu.europa.ec.eudi.pid.1"]
+    Issuer --> MDOC["build_eudi_mdoc() → mDoc DeviceResponse<br/>ISO 18013-5"]
 ```
 
 ---

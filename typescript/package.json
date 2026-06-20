@@ -1,0 +1,15 @@
+{
+  "name": "@ewqwe/workspace",
+  "private": true,
+  "scripts": {
+    "build": "pnpm --recursive build",
+    "dev": "pnpm --recursive --parallel dev",
+    "test": "pnpm --recursive test",
+    "typecheck": "pnpm --recursive typecheck",
+    "lint": "pnpm --recursive lint"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=9.0.0"
+  }
+}

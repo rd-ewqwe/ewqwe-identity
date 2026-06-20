@@ -18,20 +18,17 @@ The W3C Digital Credentials API **does not store credentials in the browser**. I
 2. **User Agents (Browsers)** - Mediating the request and presenting a credential chooser
 3. **Holders (Wallets)** - Applications that store and manage digital credentials
 
-```text
-┌─────────────────┐     navigator.credentials.get()     ┌─────────────────┐
-│   Relying       │ ──────────────────────────────────> │     Browser     │
-│   Party (RP)    │                                     │   (User Agent)  │
-│   webapp/       │                                     │                 │
-└─────────────────┘                                     └────────┬────────┘
-                                                                 │
-                                                    Credential Chooser UI
-                                                                 │
-                                                        ┌────────▼────────┐
-                                                        │  Wallet App     │
-                                                        │  (Holder)       │
-                                                        │  wallet/        │
-                                                        └─────────────────┘
+```mermaid
+sequenceDiagram
+    participant RP as Relying Party (RP)<br/>webapp/
+    participant Browser as Browser (User Agent)
+    participant Wallet as Wallet App (Holder)<br/>wallet/
+
+    RP->>Browser: navigator.credentials.get()
+    Browser->>Browser: Credential Chooser UI
+    Browser->>Wallet: select wallet
+    Wallet-->>Browser: credential response
+    Browser-->>RP: credential
 ```
 
 ### Key Points

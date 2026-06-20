@@ -26,40 +26,23 @@ The plan is organised into **three phases**:
 
 ## Current Architecture (as-is)
 
-```
-┌─────────────┐  OpenID4VP  ┌──────────────────────┐
-│   Wallet    │ ──────────> │  Credential Verifier  │
-│ (mDoc only) │             │  (ewqwe-credential-   │
-│             │             │   verifier-server)    │
-└─────────────┘             └──────────────────────┘
-                                   │
-                                   │ ewqwe_openid4vp
-                                   │ (transaction mgmt)
-                                   ▼
-                            ┌───────────────┐
-                            │ ewqwe_digital │
-                            │ _credential   │
-                            │ (mDoc verify) │
-                            └───────────────┘
+```mermaid
+graph LR
+    Wallet["Wallet (mDoc only)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>ewqwe-credential-verifier-server"]
+    VERIFIER --> OID4VP["ewqwe_openid4vp<br/>(transaction mgmt)"]
+    VERIFIER --> DIGITAL["ewqwe_digital_credential<br/>(mDoc verify)"]
 ```
 
 The wallet sends a VP Token (DCQL-wrapped) via OpenID4VP `direct_post`; the verifier extracts the base64url-encoded mDoc DeviceResponse and verifies it.
 
 ## Target Architecture (with Annex B)
 
-```
-┌─────────────┐          ┌──────────────┐         ┌──────────────────────┐
-│   Wallet    │ DC API   │   Browser    │  POST   │  Credential Verifier │
-│ (mDoc only) │ <─────── │ (W3C DC API) │ ──────> │                      │
-│             │          │              │         │  Annex B endpoint    │
-└─────────────┘          │ webapp / RP  │         │  (new)               │
-                         └──────────────┘         │                      │
-                                                  │  ewqwe_openid4vp     │
-                                                  │  (unchanged)         │
-                                                  │                      │
-                                                  │  ewqwe_digital_      │
-                                                  │  credential (reuse)  │
-                                                  └──────────────────────┘
+```mermaid
+graph LR
+    Wallet["Wallet (mDoc only)"] <-->|DC API| BROWSER["Browser (W3C DC API)<br/>webapp / RP"]
+    BROWSER -->|POST| VERIFIER["Credential Verifier<br/>Annex B endpoint (new)"]
+    VERIFIER --> OID4VP["ewqwe_openid4vp (unchanged)"]
+    VERIFIER --> DIGITAL["ewqwe_digital_credential (reuse)"]
 ```
 
 Two parallel paths:

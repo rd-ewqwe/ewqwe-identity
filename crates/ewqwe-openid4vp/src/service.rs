@@ -35,7 +35,6 @@ use crate::{
 
 use crate::config::determine_profile;
 use serde::{Deserialize, Serialize};
-use tracing::info;
 
 /// Generate a compact, URL-safe random token.
 ///
