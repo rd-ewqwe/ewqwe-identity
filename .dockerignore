@@ -1,0 +1,30 @@
+# Dependencies
+target/
+node_modules/
+typescript/**/node_modules/
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Documentation
+documentation/
+
+# Certificates (generated at build time for dev certs, mounted in production)
+certificates/signer/*.pem
+certificates/tls/*.pem
+certificates/issuers_cas/*.pem
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Build artifacts (SPA dist is built inside the Docker build)
+**/dist/

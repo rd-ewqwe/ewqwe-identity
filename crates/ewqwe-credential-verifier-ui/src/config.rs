@@ -82,10 +82,10 @@ pub struct VerifierUiConfig {
     /// at the root URL (`/`).  Build with:
     ///
     /// ```bash
-    /// cd crates/ewqwe-verifier-app/ui && deno task build
+    /// cd crates/ewqwe-credential-verifier-ui/ui && pnpm build
     /// ```
     ///
-    /// Example: `"./crates/ewqwe-verifier-app/ui/dist"`
+    /// Example: `"./crates/ewqwe-credential-verifier-ui/ui/dist"`
     #[serde(default)]
     pub ui_dist_path: Option<String>,
 

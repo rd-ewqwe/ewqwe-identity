@@ -250,6 +250,11 @@ impl ServerParams {
         {
             *path = resolve_path(base_dir, path);
         }
+
+        // Resolve the UI dist path (relative to the config file directory).
+        if let Some(ref mut dist_path) = self.verifier_ui_config.ui_dist_path {
+            *dist_path = resolve_path(base_dir, dist_path);
+        }
     }
 }
 

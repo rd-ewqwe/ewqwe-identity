@@ -196,7 +196,7 @@ async fn prepare_server(
                     app = app
                         .service(actix_files::Files::new("/", dist_path).index_file("index.html"));
                 } else {
-                    tracing::warn!(
+                    tracing::trace!(
                         path = %dist_path,
                         "Verifier App ui_dist_path not found — SPA will not be served"
                     );

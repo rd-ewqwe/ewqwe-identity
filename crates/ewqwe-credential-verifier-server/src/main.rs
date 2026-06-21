@@ -7,10 +7,10 @@
 //!
 //! ```bash
 //! # With an explicit config file path
-//! cargo run --features openssl -- /path/to/credential-server.toml
+//! cargo run -p ewqwe_credential_verifier_server -- /path/to/credential-server.toml
 //!
 //! # From a TOML configuration file in the current directory or the platform config directory
-//! cargo run --features openssl
+//! cargo run -p ewqwe_credential_verifier_server
 //! ```
 
 use ewqwe_credential_verifier_server::{ServerParams, start_server};

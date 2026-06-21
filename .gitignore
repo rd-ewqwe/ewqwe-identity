@@ -9,3 +9,6 @@ demo.apk
 
 # IDE
 .idea/
+
+# Local SQLite databases for development
+db-data/
