@@ -250,9 +250,60 @@ impl ServerParams {
             *path = resolve_path(base_dir, path);
         }
 
+        // Resolve the SQLite file path in the OpenID4VP transaction store if present.
+        if let ewqwe_openid4vp::TransactionStoreBackend::SqliteFile { path } =
+            &mut self.openid4vp_config.transaction_store.backend
+        {
+            *path = resolve_path(base_dir, path);
+        }
+
+        // Resolve the SQLite file path in the Verifier UI database if present.
+        if let ewqwe_credential_verifier_ui::config::VerifierAppDbBackend::SqliteFile { path } =
+            &mut self.verifier_ui_config.db
+        {
+            *path = resolve_path(base_dir, path);
+        }
+
         // Resolve the UI dist path (relative to the config file directory).
         if let Some(ref mut dist_path) = self.verifier_ui_config.ui_dist_path {
             *dist_path = resolve_path(base_dir, dist_path);
+        }
+
+        // Ensure parent directories exist for all resolved SQLite database files.
+        // SQLite's create_if_missing(true) creates the file but not its parent.
+        fn ensure_parent(path: &str, label: &str) {
+            if let Some(parent) = Path::new(path).parent()
+                && !parent.exists()
+            {
+                info!(
+                    "Creating parent directory for {} database: {}",
+                    label,
+                    parent.display()
+                );
+                if let Err(e) = fs::create_dir_all(parent) {
+                    tracing::warn!(
+                        "Failed to create parent directory for {} database: {}",
+                        label,
+                        e
+                    );
+                }
+            }
+        }
+
+        if let crate::journal::JournalBackend::SqliteFile { path } = &self.journal_config.backend {
+            ensure_parent(path, "journal");
+        }
+
+        if let ewqwe_openid4vp::TransactionStoreBackend::SqliteFile { path } =
+            &self.openid4vp_config.transaction_store.backend
+        {
+            ensure_parent(path, "transaction store");
+        }
+
+        if let ewqwe_credential_verifier_ui::config::VerifierAppDbBackend::SqliteFile { path } =
+            &self.verifier_ui_config.db
+        {
+            ensure_parent(path, "verifier UI");
         }
     }
 }

@@ -97,21 +97,39 @@ The Rust build assumes the SPA has already been built — `ui/dist/` is embedded
 
 ### Development (SPA with hot-reload)
 
+Start the credential verifier server (in one terminal, from the project root):
+
+```bash
+cargo run -p ewqwe_credential_verifier_server -- \
+  crates/ewqwe-credential-verifier-server/credential-server.toml
+```
+
+Start the Vite dev server (in another terminal, from the `ui/` directory):
+
 ```bash
 cd crates/ewqwe-credential-verifier-ui/ui
-pnpm dev            # starts Vite dev server on https://localhost:5174
+pnpm dev            # starts Vite dev server on port 9888
                     # proxies /api, /ewqwe_api, /.well-known, /version to
-                    # the credential verifier backend at https://192.168.1.10:9443
+                    # the credential verifier backend
 ```
+
+> **Important:** Before starting, adjust the `backendProxy.target` URL in
+> [`ui/vite.config.ts`](ui/vite.config.ts) to match the address of your running
+> credential verifier backend (e.g. `https://localhost:9443` or
+> `https://192.168.1.90:9443`).
+
+Both processes need to be running simultaneously. The Vite dev server proxies API
+requests to the Rust backend, giving you hot-reload for the SPA while the backend
+handles real OpenID4VP transactions.
 
 ## Testing
 
-### Rust
+### Rust Tests
 
 ```bash
 cargo test -p ewqwe_credential_verifier_ui
 ```
 
-### SPA
+### SPA Tests
 
 The frontend uses vanilla TypeScript with no test framework currently configured. Tests can be added via Vitest in `ui/vitest.config.ts`.

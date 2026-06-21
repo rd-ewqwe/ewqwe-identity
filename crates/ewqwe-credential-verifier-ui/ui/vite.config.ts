@@ -22,7 +22,7 @@ function stripSecureCookie(proxyRes: {
 // secure:false accepts the self-signed dev certificate on localhost:9443.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const backendProxy = {
-  target: "https://192.168.1.10:9443",
+  target: "https://192.168.1.90:9443",
   changeOrigin: true,
   secure: false,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -38,8 +38,9 @@ export default defineConfig({
     emptyOutDir: true,
   },
   server: {
+    allowedHosts: true,
     host: "0.0.0.0",
-    port: 5174,
+    port: 9888,
     proxy: {
       "/api": backendProxy,
       "/ewqwe_api": backendProxy,
@@ -47,5 +48,5 @@ export default defineConfig({
       "/version": backendProxy,
     },
   },
-  plugins: [mkcert()],
+  // plugins: [mkcert()],
 });
