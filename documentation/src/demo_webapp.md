@@ -309,7 +309,6 @@ cd credential_verifier
 cat > credential-server.toml <<'EOF'
 host_name = "0.0.0.0"
 host_port = 9443
-default_username = "demo-user"
 
 [tls_params]
 server_private_key = "src/tests/certificates/ec/ewqwe.server.key.pem"

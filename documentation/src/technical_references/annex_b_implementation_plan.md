@@ -480,78 +480,42 @@ async function verifyAge() {
 
 ## Appendix: ISO 18013-7 (Annex B) Data Flow Breakdown
 
-```
-RP (Browser)                                                    Wallet (Android)
-    |                                                               |
-    |  1. Generate HPKE key pair locally                             |
-    |     (X25519 + AES-128-GCM)                                    |
-    |  2. Generate random 16-byte nonce locally                      |
-    |  3. Build encryptionInfo:                                      |
-    |     CBOR(["dcapi", {                                           |
-    |       nonce: bstr,                                             |
-    |       recipientPublicKey: COSE_Key                             |
-    |     }])                                                        |
-    |  4. Build DeviceRequest:                                       |
-    |     CBOR({ docRequests: [{                                    |
-    |       docType: "eu.europa.ec.av.1",                            |
-    |       itemsRequest: {                                          |
-    |         nameSpaces: {                                          |
-    |           "eu.europa.ec.av.1": { age_over_18: true }           |
-    |         }                                                      |
-    |       }                                                        |
-    |     }]})                                                       |
-    |  5. Base64url-encode both blobs                                 |
-    |                                                                 |
-    |  ------------------------------------->                         |
-    |  navigator.credentials.get({                                    |
-    |    digital: { requests: [{                                      |
-    |      protocol: "org-iso-mdoc",                                  |
-    |      encryptionInfo, deviceRequest                              |
-    |    }]}                                                          |
-    |  })                                                             |
-    |                                                                 |
-    |                                                  6. Parse encryptionInfo
-    |                                                  7. Parse DeviceRequest
-    |                                                  8. Select matching credential
-    |                                                  9. Build DeviceResponse (CBOR)
-    |                                                 10. HPKE encrypt:
-    |                                                     cipherText = HPKE.encrypt(
-    |                                                       DeviceResponse CBOR,
-    |                                                       recipientPublicKey
-    |                                                     )
-    |                                                 11. Build EncryptedResponse:
-    |                                                     CBOR(["dcapi", {
-    |                                                       enc: bstr,
-    |                                                       cipherText: bstr
-    |                                                     }])
-    |                                                 12. Base64url-encode
-    |                                                                 |
-    |  <-------------------------------------                          |
-    |  Promise resolves with { data: base64url(EncryptedResponse) }   |
-    |                                                                 |
-    | 13. Base64url-decode EncryptedResponse                          |
-    | 14. Extract enc and cipherText from CBOR wrapper                |
-    | 15. HPKE decrypt: DeviceResponse = HPKE.open(                   |
-    |       cipherText,                                               |
-    |       recipientPrivateKey,                                      |
-    |       enc                                                        |
-    |     )                                                           |
-    | 16. Send [deviceResponse, nonce, client_id] to verifier         |
-    |                                                                 |
-    |  ------------------------------------->                         |
-    |  POST /ewqwe_api/dc_api/verify                                  |
-    |                                                                 |
-    |                                                   Verifier      |
-    |                                             17. Verify mDoc:
-    |                                                 - decode CBOR DeviceResponse
-    |                                                 - validate IssuerAuth COSE_Sign1
-    |                                                 - check certificate chain
-    |                                                 - verify nonce binding
-    |                                             18. Sign attestation JWT
-    |                                             19. Write to journal
-    |                                                                 |
-    |  <-------------------------------------                          |
-    |  { success: true, claims, attestation_jwt }                      |
+```mermaid
+sequenceDiagram
+    participant RP as RP (Browser)
+    participant Wallet as Wallet (Android)
+    participant Verifier as Verifier
+
+    Note over RP: 1. Generate HPKE key pair locally<br/>(X25519 + AES-128-GCM)
+    Note over RP: 2. Generate random 16-byte nonce locally
+    Note over RP: 3. Build encryptionInfo:<br/>CBOR(["dcapi", { nonce, recipientPublicKey }])
+    Note over RP: 4. Build DeviceRequest:<br/>CBOR({ docRequests: [{<br/>  docType: "eu.europa.ec.av.1",<br/>  itemsRequest: { nameSpaces: {<br/>    "eu.europa.ec.av.1": { age_over_18: true }<br/>  } } }] })
+    Note over RP: 5. Base64url-encode both blobs
+
+    RP->>Wallet: navigator.credentials.get({<br/>  digital: { requests: [{<br/>    protocol: "org-iso-mdoc",<br/>    encryptionInfo, deviceRequest<br/>  }] } })
+
+    Note over Wallet: 6. Parse encryptionInfo
+    Note over Wallet: 7. Parse DeviceRequest
+    Note over Wallet: 8. Select matching credential
+    Note over Wallet: 9. Build DeviceResponse (CBOR)
+    Note over Wallet: 10. HPKE encrypt:<br/>cipherText = HPKE.encrypt(<br/>DeviceResponse CBOR, recipientPublicKey)
+    Note over Wallet: 11. Build EncryptedResponse:<br/>CBOR(["dcapi", { enc, cipherText }])
+    Note over Wallet: 12. Base64url-encode
+
+    Wallet-->>RP: Promise resolves with<br/>{ data: base64url(EncryptedResponse) }
+
+    Note over RP: 13. Base64url-decode EncryptedResponse
+    Note over RP: 14. Extract enc and cipherText from CBOR wrapper
+    Note over RP: 15. HPKE decrypt:<br/>DeviceResponse = HPKE.open(<br/>cipherText, recipientPrivateKey, enc)
+    Note over RP: 16. Send [deviceResponse, nonce, client_id] to verifier
+
+    RP->>Verifier: POST /ewqwe_api/dc_api/verify
+
+    Note over Verifier: 17. Verify mDoc:<br/>- decode CBOR DeviceResponse<br/>- validate IssuerAuth COSE_Sign1<br/>- check certificate chain<br/>- verify nonce binding
+    Note over Verifier: 18. Sign attestation JWT
+    Note over Verifier: 19. Write to journal
+
+    Verifier-->>RP: { success: true, claims, attestation_jwt }
 ```
 
 ## References

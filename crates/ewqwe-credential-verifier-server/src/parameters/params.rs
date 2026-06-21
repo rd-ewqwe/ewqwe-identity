@@ -18,7 +18,6 @@ pub struct ServerParams {
     pub host_name: String,
     pub host_port: u16,
     pub tls_params: Option<TlsParams>,
-    pub default_username: Option<String>,
     pub openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig,
 
     /// Logging/tracing configuration.
@@ -618,7 +617,6 @@ qr_code_callback_url = "https://modified.example.com/"
             host_name: "127.0.0.1".to_string(),
             host_port: 9443,
             tls_params: Some(crate::parameters::TlsParams::default()),
-            default_username: None,
             rust_log: None,
             public_root_url: None,
             openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig {
@@ -647,7 +645,6 @@ qr_code_callback_url = "https://modified.example.com/"
             host_name: "127.0.0.1".to_string(),
             host_port: 9443,
             tls_params: Some(crate::parameters::TlsParams::default()),
-            default_username: None,
             rust_log: None,
             public_root_url: None,
             openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig {

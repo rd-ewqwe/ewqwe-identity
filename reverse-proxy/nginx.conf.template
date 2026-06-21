@@ -1,0 +1,59 @@
+# Full nginx configuration template.
+# ${DESTINATION} and ${DOMAIN} are substituted by entrypoint.sh using envsubst.
+# nginx's own $-variables such as $host are left intact.
+
+events {
+    worker_connections 1024;
+}
+
+http {
+    # HTTP: serve ACME renewal challenges and redirect everything else to HTTPS.
+    server {
+        listen 80;
+        server_name ${DOMAIN};
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/certbot;
+        }
+
+        location / {
+            return 301 https://$host$request_uri;
+        }
+    }
+
+    # HTTPS: TLS termination with Let's Encrypt certificate, proxy to backend.
+    server {
+        listen 443 ssl;
+        server_name ${DOMAIN};
+
+        ssl_certificate     /etc/letsencrypt/live/${DOMAIN}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/${DOMAIN}/privkey.pem;
+
+        ssl_protocols             TLSv1.2 TLSv1.3;
+        ssl_ciphers               ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:DHE-RSA-AES128-GCM-SHA256;
+        ssl_prefer_server_ciphers off;
+        ssl_session_cache         shared:SSL:10m;
+        ssl_session_timeout       1d;
+        ssl_session_tickets       off;
+
+        add_header Strict-Transport-Security "max-age=63072000; includeSubDomains" always;
+
+        location / {
+            # Forward to the backend HTTPS endpoint provided via DESTINATION env var.
+            # proxy_ssl_verify off allows self-signed / internal CA certificates on
+            # the upstream side.
+            proxy_pass              ${DESTINATION};
+            proxy_ssl_verify        off;
+            proxy_ssl_server_name   on;
+
+            proxy_http_version      1.1;
+            proxy_set_header        Host              $host;
+            proxy_set_header        X-Real-IP         $remote_addr;
+            proxy_set_header        X-Forwarded-For   $proxy_add_x_forwarded_for;
+            proxy_set_header        X-Forwarded-Proto $scheme;
+            proxy_set_header        Connection        "";
+            proxy_read_timeout      90s;
+            proxy_connect_timeout   10s;
+        }
+    }
+}

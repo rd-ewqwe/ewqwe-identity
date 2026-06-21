@@ -13,6 +13,11 @@ This set-up assumes you have a reverse proxy or load balancer in front of the se
 that answers requests to `https://verifier.your-domain.com` and forwards them without
 TLS to the server's `9888` port.
 
+The repository provides a ready-to-use [NGINX + Certbot reverse proxy](../reverse-proxy/)
+that obtains Let's Encrypt TLS certificates automatically and proxies traffic to
+the HTTP-mode verifier. See its [README](../reverse-proxy/README.md) for setup
+instructions.
+
 ```bash
 # Build from the repository root
 docker build -t ewqwe/credential-verifier -f container/Dockerfile .
@@ -20,6 +25,7 @@ docker build -t ewqwe/credential-verifier -f container/Dockerfile .
 # Run (HTTP mode, ephemeral SQLite, public URL via env var)
 docker run --rm -p 9888:9888 \
   -e PUBLIC_ROOT_URL="https://verifier.your-domain.com" \
+  --name credential-verifier \
   ewqwe/credential-verifier
 ```
 
@@ -50,6 +56,7 @@ docker run --rm -p 9888:9888 \
   -e RUST_LOG="info,ewqwe_credential_verifier_server=debug" \
   -e SESSION_SECRET="$(openssl rand -hex 32)" \
   -v db-data:/data \
+  --name credential-verifier \
   ewqwe/credential-verifier
 ```
 
@@ -213,7 +220,7 @@ to build a custom image.
 
 ### Directory Layout on a Kubernetes Pod
 
-```
+```text
 /data/
   credential-server.toml          ← ConfigMap (optional — env vars can drive defaults)
   transactions.db                 ← PersistentVolume

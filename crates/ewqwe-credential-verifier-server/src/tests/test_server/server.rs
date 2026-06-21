@@ -91,7 +91,6 @@ pub async fn start_default_test_server() -> AttResult<TestsContext> {
             ),
             tls_cipher_suites: None,
         }),
-        default_username: Some("default_user".to_string()),
         openid4vp_config: OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests
             transaction_store: Default::default(),
@@ -160,7 +159,6 @@ pub fn make_test_server_params(
             ),
             tls_cipher_suites: None,
         }),
-        default_username: Some("default_user".to_string()),
         openid4vp_config: OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60), // 1 minute for tests
             transaction_store: Default::default(),
@@ -229,7 +227,6 @@ pub async fn start_journal_test_server() -> AttResult<TestsContext> {
             ),
             tls_cipher_suites: None,
         }),
-        default_username: Some("default_user".to_string()),
         openid4vp_config: ewqwe_openid4vp::OpenID4VPServiceConfig {
             transaction_ttl_secs: Some(60),
             transaction_store: Default::default(),

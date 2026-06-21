@@ -450,7 +450,6 @@ The server uses a TOML configuration file. It searches for `credential-server.to
 ```toml
 host_name = "0.0.0.0"
 host_port = 9443
-default_username = "demo-user"
 public_root_url = "https://verifier.example.com:9443"
 disable_authentication = true
 disabled_authentication_user = "local_tests_user"
