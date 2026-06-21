@@ -13,7 +13,8 @@
     "eu-av"
   ],
   "author": "ewQwe",
-  "license": "MIT",
+  "license": "BUSL-1.1",
+  "licenseFile": "LICENSE",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",

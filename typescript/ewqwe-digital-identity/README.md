@@ -2,11 +2,25 @@
 
 npm-compatible JavaScript/TypeScript library for EU Digital Identity (OpenID4VP, DCQL, mDoc, SD-JWT VC).
 
+Part of the [ewQwe TypeScript workspace](../README.md). When used inside the workspace the
+library is resolved via pnpm's `workspace:*` protocol. Published to npm for external consumers.
+
 ## Installation
+
+### As an npm dependency (external consumer)
 
 ```bash
 npm install @ewqwe/digital-identity
 ```
+
+### Inside the pnpm workspace
+
+```bash
+# From typescript/ root — build the library
+pnpm --filter @ewqwe/digital-identity build
+```
+
+The library is linked into consumers via `workspace:*` in the workspace root.
 
 ## Usage
 
@@ -140,9 +154,9 @@ const publicKey = await importVerifierPublicKey(pemOrSpki);
 const claims = await verifyAttestation(jwtToken, publicKey);
 ```
 
-## API Client (new)
+## API Client
 
-`@ewqwe/digital-identity` now exports `EwqweApiClient` for server-side and browser client code, with a pluggable `fetch` implementation.
+`@ewqwe/digital-identity` exports `EwqweApiClient` for server-side and browser client code, with a pluggable `fetch` implementation.
 
 ```ts
 import { EwqweApiClient } from '@ewqwe/digital-identity';
@@ -159,7 +173,7 @@ const tx = await apiClient.initOpenID4VPTransaction({
 
 const status = await apiClient.getOpenID4VPTransactionStatus(tx.transaction_id);
 const verify = await apiClient.verifyPresentation({
-  vp_token: '<wp_token>',
+  vp_token: '<vp_token>',
   presentation_submission: null,
 });
 ```

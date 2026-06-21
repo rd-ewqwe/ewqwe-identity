@@ -66,9 +66,9 @@ pnpm --filter @ewqwe/demo-webapp dev
 
 ## Dependency Graph
 
-```
-@ewqwe/demo-webapp
-  └── @ewqwe/digital-identity  (workspace:*)
+```mermaid
+graph LR
+    WEBAPP["@ewqwe/demo-webapp"] -->|workspace:*| LIB["@ewqwe/digital-identity"]
 ```
 
 The demo-webapp imports types and utilities from `@ewqwe/digital-identity` via the
@@ -106,24 +106,12 @@ A demo Relying Party application (vanilla TypeScript, no framework) that:
 
 ## Workspace Structure
 
-```
-typescript/
-├── package.json                 # Root workspace config
-├── pnpm-workspace.yaml          # Workspace package declarations
-├── pnpm-lock.yaml               # Lockfile (single source of truth)
-├── .npmrc                       # pnpm configuration
-└── ewqwe-digital-identity/      # @ewqwe/digital-identity package
-│   ├── package.json
-│   ├── tsconfig.json
-│   ├── vite.config.ts
-│   ├── vitest.config.ts
-│   └── src/
-└── demo-webapp/                 # @ewqwe/demo-webapp package
-    ├── package.json
-    ├── tsconfig.json
-    ├── vite.config.ts
-    ├── tailwind.config.js
-    ├── postcss.config.js
-    ├── index.html
-    └── src/
+```mermaid
+graph TD
+    ROOT["typescript/"] --> PKG_JSON["package.json — workspace config"]
+    ROOT --> YAML["pnpm-workspace.yaml — package declarations"]
+    ROOT --> LOCK["pnpm-lock.yaml — lockfile"]
+    ROOT --> NPMRC[".npmrc — pnpm config"]
+    ROOT --> IDENTITY["ewqwe-digital-identity/<br/>@ewqwe/digital-identity"]
+    ROOT --> WEBAPP["demo-webapp/<br/>@ewqwe/demo-webapp"]
 ```

@@ -5,6 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
+homepage.workspace = true
 description = "EU Age Verification and EUDI credential building and signing — SD-JWT, mDoc (ISO 18013-5), ephemeral PKI"
 
 [lib]

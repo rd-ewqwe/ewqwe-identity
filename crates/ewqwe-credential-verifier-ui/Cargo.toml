@@ -5,6 +5,7 @@ edition.workspace = true
 rust-version.workspace = true
 authors.workspace = true
 license.workspace = true
+homepage.workspace = true
 repository.workspace = true
 description = "Credential Verifier UI — embedded age-verification web application for the ewQwe credential verifier server"
 

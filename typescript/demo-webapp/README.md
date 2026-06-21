@@ -16,54 +16,54 @@ via OpenID4VP.
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v18+
+- [pnpm](https://pnpm.io/) >= 9
 - The **credential verifier** Rust server must be running (see root README)
 
-### Running
+### Running (inside the workspace)
+
+From the workspace root (`typescript/`):
 
 ```bash
-# Install dependencies (first time only)
-npm install
+# Install all dependencies and link workspace packages
+pnpm install
 
-# Start Vite dev server (starts both the frontend dev server and API proxy)
-npm run dev
+# Build the shared library first (this package depends on it)
+pnpm --filter @ewqwe/digital-identity build
+
+# Start the demo-webapp dev server
+pnpm --filter @ewqwe/demo-webapp dev
+```
+
+Or run everything in parallel watch mode:
+
+```bash
+pnpm dev
 ```
 
 The application will be available at `https://localhost:5174`
 
-The Vite dev server proxies `/ewqwe_api/*` requests directly to the credential
-verifier (`https://127.0.0.1:9443` by default). The proxy uses `secure: false`
-to accept the self-signed dev certificate. No separate proxy process is needed.
-
-### Building for Production
+### Running standalone (not recommended)
 
 ```bash
-npm run build
+cd typescript/demo-webapp
+pnpm install
+pnpm dev
+```
+
+> **Note**: Standalone usage requires the `@ewqwe/digital-identity` library to be
+> built first. Prefer running from the workspace root with `pnpm dev` which handles
+> the build order automatically.
+
+## Building for Production
+
+```bash
+pnpm build
 ```
 
 ### Preview Production Build
 
 ```bash
-npm run preview
-```
-
-## Project Structure
-
-```
-webapp/
-├── package.json         # Node.js dependencies and scripts
-├── tsconfig.json        # TypeScript configuration
-├── vite.config.ts       # Vite configuration (includes API proxy)
-├── tailwind.config.js   # Tailwind CSS configuration
-├── postcss.config.js    # PostCSS configuration
-├── index.html           # Main HTML entry point
-└── src/
-    ├── main.ts         # Application entry point
-    ├── relying_party_app.ts  # Relying Party application logic
-    ├── credentials.ts  # Credential request/verification logic
-    ├── dc_api_service.ts  # W3C Digital Credentials API service
-    ├── hpke.ts         # HPKE crypto utilities
-    ├── debug.ts        # Debug logging utilities
-    └── styles.css      # Tailwind CSS styles
+pnpm preview
 ```
 
 ## How It Works
@@ -74,13 +74,14 @@ This means:
 
 - **No separate proxy process needed** — Vite's built-in `http-proxy` handles
   forwarding, with `secure: false` to accept the local self-signed TLS cert.
-- **HTTPS in dev** — `vite-plugin-mkcert` generates a trusted local CA and
-  certificate on first run so the browser accepts the dev server's HTTPS.
+- **HTTPS in dev** — `@vitejs/plugin-basic-ssl` generates a certificate on first run
+  so the browser accepts the dev server's HTTPS.
 - **Error logging** — proxy errors and upstream response bodies are logged
   directly in the Vite terminal output.
 
-The shared `@ewqwe/digital-identity` library is resolved via a Vite alias to
-`../js-lib/ewqwe-digital-identity/src/lib.ts` for live TypeScript transpilation.
+The `@ewqwe/digital-identity` library is resolved via the pnpm workspace
+protocol (`workspace:*` in `package.json`). pnpm symlinks it directly into
+`node_modules`, so no manual path alias is needed.
 
 ## Environment Variables
 

@@ -2,6 +2,8 @@
   "name": "@ewqwe/demo-webapp",
   "version": "0.1.0",
   "private": true,
+  "license": "MIT",
+  "licenseFile": "LICENSE",
   "type": "module",
   "scripts": {
     "dev": "vite",
