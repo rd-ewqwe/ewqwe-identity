@@ -80,7 +80,7 @@ export async function generateQR(): Promise<void> {
   try {
     const data = await apiFetch<QrResponse>("/qr/generate", {
       method: "POST",
-      body: { credential_type: credType, claims: ["age_over_18", "portrait"] },
+      body: { credential_type: credType, claims: ["age_over_18"] },
     });
 
     setCurrentTransactionId(data.transaction_id);
