@@ -11,6 +11,7 @@ import {
   hide,
   show,
   toast,
+  escapeHtml,
   currentUser,
   serverAllowedTypes,
   pollTimer,
@@ -67,6 +68,39 @@ export function setupQRPage(): void {
   }
 }
 
+// ── Helpers ──────────────────────────────────────────────────────────────
+
+/**
+ * Read the saved claims for a given credential type from localStorage.
+ * Falls back to ["age_over_18"] when nothing has been saved yet.
+ */
+function getClaimsForCredentialType(credType: string): string[] {
+  let storageKey: string;
+  if (credType === "mdl") {
+    storageKey = "verifier_ui_mdl_claims";
+  } else {
+    // "proof-of-age" and "national-id" both use pid claims
+    storageKey = "verifier_ui_pid_claims";
+  }
+
+  try {
+    return JSON.parse(localStorage.getItem(storageKey) ?? "null") as string[];
+  } catch {
+    return ["age_over_18"];
+  }
+}
+
+/** Format a claim value for display — trims long strings, shows booleans/text. */
+function formatClaimValue(val: unknown): string {
+  if (typeof val === "boolean") return val ? "✓" : "✗";
+  if (typeof val === "string") {
+    // Truncate long strings (e.g. base64 portraits)
+    return val.length > 60 ? val.slice(0, 57) + "…" : val;
+  }
+  if (val === null || val === undefined) return "—";
+  return String(val);
+}
+
 // ── Generate QR ───────────────────────────────────────────────────────────
 
 export async function generateQR(): Promise<void> {
@@ -78,9 +112,10 @@ export async function generateQR(): Promise<void> {
   show("qr-area-loading");
 
   try {
+    const claims = getClaimsForCredentialType(credType);
     const data = await apiFetch<QrResponse>("/qr/generate", {
       method: "POST",
-      body: { credential_type: credType, claims: ["age_over_18"] },
+      body: { credential_type: credType, claims },
     });
 
     setCurrentTransactionId(data.transaction_id);
@@ -164,6 +199,7 @@ async function pollStatus(txId: string): Promise<void> {
       stopPolling();
       hideAllQRStates();
 
+      // ── age_over_18 badge ──────────────────────────────────────
       const ageEl = $("qr-age-result");
       if (ageEl) {
         if (data.age_over_18 === true) {
@@ -180,6 +216,25 @@ async function pollStatus(txId: string): Promise<void> {
           ageEl.classList.add("hidden");
         }
       }
+
+      // ── All verified claims ────────────────────────────────────
+      const claimsContainer = $("qr-verified-claims");
+      const claimsList = $("qr-claims-list");
+      if (claimsContainer && claimsList && data.verified_claims) {
+        const entries = Object.entries(data.verified_claims);
+        if (entries.length > 0) {
+          claimsList.innerHTML = entries
+            .map(
+              ([key, val]) =>
+                `<div class="flex justify-between gap-2 py-0.5"><span class="text-white/60">${escapeHtml(key)}</span><span class="text-white text-right truncate max-w-[60%]">${escapeHtml(formatClaimValue(val))}</span></div>`,
+            )
+            .join("");
+          claimsContainer.classList.remove("hidden");
+        } else {
+          claimsContainer.classList.add("hidden");
+        }
+      }
+
       show("qr-area-verified");
     } else if (
       status === "failed" ||

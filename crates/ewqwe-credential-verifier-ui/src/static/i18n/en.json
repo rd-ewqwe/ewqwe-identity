@@ -91,6 +91,7 @@
   "time": "Time",
   "action": "Action",
   "verifier": "Verifier",
+  "verified_claims": "Verified Claims",
   "detail": "Detail",
   "status": "Status",
   "actions": "Actions",

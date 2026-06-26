@@ -91,6 +91,7 @@
   "time": "Ora",
   "action": "Azione",
   "verifier": "Verificatore",
+  "verified_claims": "Attributi verificati",
   "detail": "Dettaglio",
   "status": "Stato",
   "actions": "Azioni",

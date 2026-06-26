@@ -91,6 +91,7 @@
   "time": "Tid",
   "action": "Åtgärd",
   "verifier": "Verifierare",
+  "verified_claims": "Verifierade attribut",
   "detail": "Detalj",
   "status": "Status",
   "actions": "Åtgärder",

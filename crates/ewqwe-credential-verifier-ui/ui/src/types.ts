@@ -21,6 +21,8 @@ export interface QrStatus {
   expires_in: number;
   errors?: string[];
   age_over_18?: boolean | null;
+  /** Serialised map of verified claims from the presented credential. */
+  verified_claims?: Record<string, unknown>;
 }
 
 export interface AppSettings {
