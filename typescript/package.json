@@ -1,6 +1,7 @@
 {
   "name": "@ewqwe/workspace",
-  "private": true,
+  "license": "MIT",
+  "private": false,
   "scripts": {
     "build": "pnpm --recursive build",
     "dev": "pnpm --recursive --parallel dev",

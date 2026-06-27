@@ -1,30 +1,3 @@
-# ewQwe Identity — Open Core Licensing
-
-This repository contains components under two different licenses:
-
-1. **GNU Affero General Public License v3.0 (AGPL-3.0)**: Applies to the core verifier server, protocol engines, and administration interfaces.
-2. **MIT License**: Applies to developer client SDKs, shared integration libraries, and demonstration applications.
-
----
-
-## License Breakdown by Component
-
-| Component / Directory | Description | License |
-| :--- | :--- | :--- |
-| `crates/ewqwe-credential-verifier-client` | Core verifier client sdk | **AGPL-3.0** |
-| `crates/ewqwe-credential-verifier-server` | Core verifier server & routing architecture | **AGPL-3.0** |
-| `crates/ewqwe-credential-verifier-ui` | Embedded operator dashboard UI | **AGPL-3.0** |
-| `crates/ewqwe-digital-credential` | Cryptographic credential building (SD-JWT, mDoc) | **AGPL-3.0** |
-| `crates/ewqwe-logging` | Logging utilities | **AGPL-3.0** |
-| `crates/ewqwe-openid4vp` | OpenID4VP protocol and transaction engine | **AGPL-3.0** |
-| `typescript/ewqwe-digital-identity` | Shared JS/TS library published to npm | **MIT** |
-| `typescript/demo-webapp` | Relying Party (RP) integration example application | **MIT** |
-
----
-
-## Full License Texts
-
-### 1. GNU Affero General Public License v3.0 (AGPL-3.0)
 GNU AFFERO GENERAL PUBLIC LICENSE
 Version 3, 19 November 2007
 
@@ -233,26 +206,3 @@ Also add information on how to contact you by electronic and paper mail.
 If your software can interact with users remotely through a computer network, you should also make sure that it provides a way for users to get its source. For example, if your program is a web application, its interface could display a "Source" link that leads users to an archive of the code. There are many ways you could offer source, and different solutions will be better for different programs; see section 13 for the specific requirements.
 
 You should also get your employer (if you work as a programmer) or school, if any, to sign a "copyright disclaimer" for the program, if necessary. For more information on this, and how to apply and follow the GNU AGPL, see <https://www.gnu.org/licenses/>.
-
-### 2. The MIT License
-MIT License
-
-Copyright (c) [2026] [NILIMI SAS]
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.

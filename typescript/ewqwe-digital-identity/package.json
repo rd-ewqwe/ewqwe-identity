@@ -1,6 +1,7 @@
 {
   "name": "@ewqwe/digital-identity",
   "version": "0.1.0",
+  "license": "MIT",
   "description": "JavaScript/TypeScript library for EU Digital Identity (OpenID4VP, DCQL, mDoc, SD-JWT VC, Age Verification)",
   "keywords": [
     "digital-identity",
@@ -13,8 +14,6 @@
     "eu-av"
   ],
   "author": "ewQwe",
-  "license": "BUSL-1.1",
-  "licenseFile": "LICENSE",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -35,7 +34,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/ewqwe-identity/ewqwe-identity.git",
-    "directory": "js-lib/ewqwe-digital-identity"
+    "directory": "typescript/ewqwe-digital-identity"
   },
   "scripts": {
     "build": "vite build && tsc --emitDeclarationOnly --declaration --declarationDir dist --outDir dist",
