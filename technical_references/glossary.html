@@ -1,0 +1,441 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Glossary - ewQwe Digital Identity</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="shortcut icon" href="../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../custom-theme-b78cf314.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-3b89128e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-e68e16c9.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">ewQwe Digital Identity</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="glossary"><a class="header" href="#glossary">Glossary</a></h1>
+<p>This glossary defines acronyms and terminology used across the ewQwe Age Verification project and the broader EU digital identity ecosystem.</p>
+<hr>
+<h2 id="a"><a class="header" href="#a">A</a></h2>
+<p><strong>ARF</strong> — <em>Architecture and Reference Framework</em>
+The EU Commission’s technical blueprint for the European Digital Identity Wallet ecosystem. Defines the architecture, roles, and interoperability requirements for all EUDI components.</p>
+<p><strong>Attestation</strong>
+A digitally-signed document issued by a trusted authority that asserts facts about a subject (e.g. “this person is over 18”). The general term used in the EU ARF for any credential or verifiable document, whether mDL, PID, or any other type.</p>
+<p><strong>AVI</strong> — <em>Age Verification App Instance</em>
+Term used in the EU Age Verification Profile for the wallet-side component that stores and presents Proof of Age attestations. Corresponds to the <code>wallet/</code> component in this project.</p>
+<hr>
+<h2 id="b"><a class="header" href="#b">B</a></h2>
+<p><strong>Binding Proof</strong> → see <em>Holder Binding Proof</em></p>
+<hr>
+<h2 id="c"><a class="header" href="#c">C</a></h2>
+<p><strong>CBOR</strong> — <em>Concise Binary Object Representation</em> (RFC 7049 / RFC 8949)
+A binary data serialization format, similar to JSON but more compact. Used extensively in mDoc/mDL credentials. All mso_mdoc structures are CBOR-encoded.</p>
+<p><strong>CDDL</strong> — <em>Concise Data Definition Language</em> (RFC 8610)
+A schema language for describing CBOR data structures. Used in ISO 18013-5 to formally define mDoc structures.</p>
+<p><strong>CIR</strong> — <em>Commission Implementing Regulation</em>
+EU regulatory acts that specify technical details of the EUDI Wallet framework. CIR 2024/2977 defines the PID attribute set.</p>
+<p><strong><code>client_id</code></strong>
+In OpenID4VP, the identifier of the Relying Party (Verifier). The format depends on the <code>client_id_scheme</code>:</p>
+<ul>
+<li><code>redirect_uri:https://rp.example.com/cb</code> — RP identified by its redirect URI (AnnexA profile)</li>
+<li><code>x509_san_dns:rp.example.com</code> — RP identified by a DNS SAN in its X.509 certificate (HAIP profile)</li>
+<li><code>x509_hash:&lt;base64url_sha256&gt;</code> — RP identified by the SHA‑256 hash of its leaf X.509 certificate (HAIP profile, <strong>recommended</strong> over <code>x509_san_dns</code>)</li>
+</ul>
+<p><strong>cnf</strong> — <em>Confirmation Claim</em> (RFC 7800)
+A JWT claim that contains the holder’s public key (usually as a <code>jwk</code>). Used in SD-JWT VCs to bind the credential to a specific cryptographic key, enabling holder binding.</p>
+<p><strong>COSE</strong> — <em>CBOR Object Signing and Encryption</em> (RFC 8152 / RFC 9052)
+The CBOR equivalent of JOSE (JSON Object Signing and Encryption). Defines:</p>
+<ul>
+<li><code>COSE_Sign1</code> — single-signer signatures</li>
+<li><code>COSE_Mac0</code> — message authentication codes</li>
+<li><code>COSE_Encrypt0</code> / <code>COSE_Encrypt</code> — encryption structures</li>
+</ul>
+<p><strong>COSE_Sign1</strong>
+A COSE structure for a signed object with a single signer. Used for MSO (issuer auth) and device signatures in mso_mdoc. Structure: <code>[protected_header, unprotected_header, payload, signature]</code>.</p>
+<hr>
+<h2 id="d"><a class="header" href="#d">D</a></h2>
+<p><strong>DC API</strong> — <em>Digital Credentials API</em>
+A W3C browser API (<code>navigator.credentials.get()</code>) that enables web pages to request verifiable credentials from wallets. Replaces the earlier WebAuthn-based flow for identity credentials.</p>
+<p><strong>DCQL</strong> — <em>Digital Credentials Query Language</em>
+A JSON-based query language used in OpenID4VP <code>dcql_query</code> parameter to specify which credential types and claims are requested. More expressive than Presentation Exchange (PE).</p>
+<p><strong>DeviceAuthentication</strong>
+An mDL CBOR structure that the device (holder) signs to prove session binding. Contains: <code>["DeviceAuthentication", SessionTranscript, DocType, DeviceNameSpacesBytes]</code>. The signed bytes are <code>DeviceAuthenticationBytes = Tag(24, bstr(cbor(DeviceAuthentication)))</code>.</p>
+<p><strong>DeviceSigned</strong>
+The part of an mDoc <code>Document</code> that contains the device-generated signature (<code>DeviceAuth</code>) and any device-disclosed namespaces. Proves the holder controls the credential’s device key.</p>
+<p><strong>Disclosure</strong> (SD-JWT)
+A base64url-encoded JSON array <code>[salt, claim_name, claim_value]</code> that reveals a single selectively-disclosed claim. The holder includes chosen Disclosures in a presentation.</p>
+<p><strong>docType</strong>
+The CBOR text string identifier for an mDoc credential type. Examples:</p>
+<ul>
+<li><code>org.iso.18013.5.1.mDL</code> — Mobile Driver’s Licence</li>
+<li><code>eu.europa.ec.eudi.pid.1</code> — EU Person Identification Data</li>
+<li><code>eu.europa.ec.eudi.ageproof.1</code> — EU Age Verification (AVI profile)</li>
+</ul>
+<hr>
+<h2 id="e"><a class="header" href="#e">E</a></h2>
+<p><strong>EUDI Wallet</strong> — <em>European Union Digital Identity Wallet</em>
+The EU-standardised digital wallet app (Android/iOS) for holding and presenting European Digital Identity documents. Governed by the EU ARF.</p>
+<p><strong>EC</strong> — <em>Elliptic Curve</em>
+Cryptographic scheme used for compact key sizes and signatures. Common curves in this project:</p>
+<ul>
+<li><strong>P-256</strong> (secp256r1): used for ES256 signatures, JWK thumbprints</li>
+<li><strong>P-384</strong> (secp384r1): used for ES384 signatures</li>
+</ul>
+<hr>
+<h2 id="h"><a class="header" href="#h">H</a></h2>
+<p><strong>HAIP</strong> — <em>High Assurance Interoperability Profile</em>
+An OpenID4VP profile requiring JARM (<code>response_mode=direct_post.jwt</code>) and X.509-based RP authentication (<code>client_id_scheme=x509_hash</code>). Provides higher security guarantees than the basic profile.</p>
+<p><strong>Holder</strong>
+The entity (person, organisation) who possesses a credential and presents it to verifiers. In this project, corresponds to the wallet / AVI.</p>
+<p><strong>Holder Binding Proof</strong>
+Proof that the holder of a credential controls the private key bound to it. This prevents credential theft — a stolen credential is useless without the binding key.</p>
+<ul>
+<li>In <strong>mso_mdoc</strong>: the <code>DeviceSigned</code> block containing a <code>COSE_Sign1</code> over <code>DeviceAuthenticationBytes</code> signed with the device private key</li>
+<li>In <strong>SD-JWT VC</strong>: the Key Binding JWT (KB-JWT) signed with the key in the <code>cnf.jwk</code> claim</li>
+</ul>
+<p>See <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.3">OpenID4VP §5.3</a>.</p>
+<hr>
+<h2 id="i"><a class="header" href="#i">I</a></h2>
+<p><strong>ISO 18013-5</strong>
+The ISO standard defining the Mobile Driver’s Licence (mDL) data model and presentation protocol. Basis for the mso_mdoc credential format and the COSE-based signing scheme used across EU digital credentials.</p>
+<p><strong>Issuer</strong>
+A trusted authority that issues credentials (attests facts about a subject). Signs the MSO (mDL) or the JWT (SD-JWT VC).</p>
+<p><strong>IssuerSigned</strong>
+The part of an mDoc <code>Document</code> containing the issuer-authenticated claims and the MSO (<code>COSE_Sign1</code>). Enables selective disclosure — only the chosen <code>IssuerSignedItem</code> entries are revealed.</p>
+<p><strong>IssuerSignedItem</strong>
+A single disclosed claim in an mso_mdoc document. Contains: <code>digestID</code>, <code>random</code> (salt), <code>elementIdentifier</code> (claim name), <code>elementValue</code> (claim value). Encoded as <code>Tag(24, bstr(cbor(IssuerSignedItem)))</code>.</p>
+<hr>
+<h2 id="j"><a class="header" href="#j">J</a></h2>
+<p><strong>JARM</strong> — <em>JWT Secured Authorization Response Mode</em>
+An extension of OAuth 2.0 that wraps authorization responses in a JWT. In OpenID4VP, <code>response_mode=direct_post.jwt</code> uses JWE/JWS to encrypt/sign the VP Token response from wallet to RP. Required by the HAIP profile.</p>
+<p><strong>JWE</strong> — <em>JSON Web Encryption</em> (RFC 7516)
+A standard for encrypting data as a JSON structure. Used in JARM to encrypt the VP Token when <code>response_mode=direct_post.jwt</code>.</p>
+<p><strong>JWK</strong> — <em>JSON Web Key</em> (RFC 7517)
+A JSON representation of a cryptographic key (EC or RSA). The verifier’s JWK is used to encrypt JARM responses; its thumbprint is included in the <code>SessionTranscript</code> for HAIP flows.</p>
+<p><strong>JWK Thumbprint</strong> (RFC 7638)
+A SHA-256 hash of the canonical JSON representation of a JWK. Used in the <code>OID4VPHandoverInfo</code> to bind the session transcript to the verifier’s encryption key.</p>
+<p><strong>JWS</strong> — <em>JSON Web Signature</em> (RFC 7515)
+A standard for signing data as a JSON structure. The basis for standard JWTs and SD-JWT VC issuer signatures.</p>
+<p><strong>JWT</strong> — <em>JSON Web Token</em> (RFC 7519)
+A compact, URL-safe representation of claims signed (and optionally encrypted) as JSON.</p>
+<hr>
+<h2 id="k"><a class="header" href="#k">K</a></h2>
+<p><strong>KB-JWT</strong> — <em>Key Binding JWT</em>
+The trailing JWT in an SD-JWT presentation that proves the holder controls the key in <code>cnf.jwk</code>. Contains <code>aud</code>, <code>nonce</code>, <code>iat</code>, and <code>sd_hash</code>. Required for holder binding in SD-JWT VC presentations.</p>
+<hr>
+<h2 id="m"><a class="header" href="#m">M</a></h2>
+<p><strong>mDL</strong> — <em>Mobile Driver’s Licence</em>
+A digital driving licence defined by ISO/IEC 18013-5. Uses the <code>mso_mdoc</code> credential format with docType <code>org.iso.18013.5.1.mDL</code>.</p>
+<p><strong>mDoc</strong> / <strong>mso_mdoc</strong>
+Short for “Mobile Document” / “Mobile Security Object + mDoc”. The credential format defined in ISO 18013-5 using CBOR encoding and COSE signing. Used for mDL, EU PID, EU Age Verification, and other digital documents.</p>
+<p><strong>MSO</strong> — <em>Mobile Security Object</em>
+The signed CBOR data structure embedded in an mDoc’s <code>issuerAuth</code> COSE_Sign1. Contains SHA-256 digests of each claim (rather than the values themselves), enabling selective disclosure while maintaining issuer authenticity.</p>
+<hr>
+<h2 id="n"><a class="header" href="#n">N</a></h2>
+<p><strong>Namespace</strong>
+In mDL/mDoc, claims are grouped into namespaces (CBOR text strings). Examples:</p>
+<ul>
+<li><code>org.iso.18013.5.1</code> — Core mDL attributes (given_name, birth_date, etc.)</li>
+<li><code>org.iso.18013.5.1.aamva</code> — North American additions</li>
+<li><code>eu.europa.ec.eudi.pid.1</code> — EU PID attributes</li>
+</ul>
+<p><strong>nonce</strong>
+A random value included in an Authorization Request to prevent replay attacks. Bound into the <code>SessionTranscript</code> (mDL) or KB-JWT (SD-JWT VC) of the presentation.</p>
+<hr>
+<h2 id="o"><a class="header" href="#o">O</a></h2>
+<p><strong>OID4VP</strong> / <strong>OpenID4VP</strong> — <em>OpenID for Verifiable Presentations</em>
+The protocol used to request and receive Verifiable Presentations from a wallet. Builds on OAuth 2.0 authorization flows. Supports both mso_mdoc and SD-JWT VC credential formats. Key specs versions: 1.0 (current stable).</p>
+<p><strong>OID4VCI</strong> / <strong>OpenID4VCI</strong> — <em>OpenID for Verifiable Credential Issuance</em>
+The companion protocol to OID4VP for issuing credentials into wallets.</p>
+<hr>
+<h2 id="p"><a class="header" href="#p">P</a></h2>
+<p><strong>PE</strong> — <em>Presentation Exchange</em>
+An older query language for specifying credential requirements in OID4VP, defined by the Decentralized Identity Foundation (DIF). Being superseded by DCQL in newer profiles.</p>
+<p><strong>PID</strong> — <em>Person Identification Data</em>
+The EU digital identity credential containing core identity attributes (name, birth date, nationality, etc.). Specified in CIR 2024/2977. Available in both <code>mso_mdoc</code> and <code>SD-JWT VC</code> formats.</p>
+<p><strong>Presentation</strong> / <strong>VP</strong>
+A holder-constructed object that packages one or more credentials (or selective disclosures from them) together with holder binding proof, for transmission to a verifier. In OpenID4VP the main artifact is called the <strong>VP Token</strong>.</p>
+<p><strong>Proof of Age (PoA)</strong> / <strong>Age Verification Attestation</strong>
+A credential or derived presentation that proves an age threshold (e.g. “over 18”) without revealing exact birth date. Core use case of this project.</p>
+<hr>
+<h2 id="r"><a class="header" href="#r">R</a></h2>
+<p><strong>RP</strong> — <em>Relying Party</em>
+The service or application that requests and verifies credentials. Also called <strong>Verifier</strong>. In this project, corresponds to the <code>webapp/</code> component.</p>
+<p><strong>response_mode</strong>
+OpenID4VP parameter controlling how the wallet returns the VP Token:</p>
+<ul>
+<li><code>fragment</code> — appended to redirect URI as URL fragment (same-device, cross-origin)</li>
+<li><code>direct_post</code> — wallet POSTs to <code>response_uri</code> (cross-device or CORS-friendly)</li>
+<li><code>direct_post.jwt</code> — wallet POSTs a JWE/JWS-wrapped VP Token (HAIP/JARM)</li>
+<li><code>dc_api</code> — delivered via browser DC API (no redirect needed)</li>
+<li><code>dc_api.jwt</code> — DC API with JARM wrapping</li>
+</ul>
+<p><strong>response_uri</strong>
+The URL to which the wallet POSTs the VP Token in <code>direct_post</code> and <code>direct_post.jwt</code> modes.</p>
+<hr>
+<h2 id="s"><a class="header" href="#s">S</a></h2>
+<p><strong>Salted Hashing</strong>
+The mechanism used for selective disclosure in both mDL and SD-JWT. Each claim is combined with a random salt before hashing. This prevents a verifier from guessing undisclosed claim values by brute-forcing the hash.</p>
+<p><strong>SAN</strong> — <em>Subject Alternative Name</em>
+An X.509 certificate extension field listing alternative identities for the certificate subject (DNS names, IP addresses, email). Used in <code>x509_san_dns</code> client_id scheme to identify RPs.</p>
+<p><strong>SD-JWT VC</strong> — <em>Selective Disclosure JWT for Verifiable Credentials</em>
+A credential format combining standard JWTs with selective disclosure via SHA-256 commitments. Defined in <a href="https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc.html">IETF SD-JWT VC</a>.</p>
+<p><strong>SessionTranscript</strong>
+An mDL CBOR structure that ties a device signature to a specific presentation session. For OID4VP flows it contains the <code>OID4VPHandover</code>, which commits to the <code>client_id</code>, <code>nonce</code>, <code>response_uri</code>, and (for HAIP) the verifier’s JWK thumbprint.</p>
+<p><strong><code>_sd</code></strong>
+The JSON array in an SD-JWT VC issuer JWT that holds base64url-encoded SHA-256 digests of the Disclosures. The holder reveals values by including the matching Disclosures in the presentation.</p>
+<p><strong><code>_sd_alg</code></strong>
+The hash algorithm used for Disclosure digests in SD-JWT VCs. Currently always <code>sha-256</code>.</p>
+<hr>
+<h2 id="t"><a class="header" href="#t">T</a></h2>
+<p><strong>Tag(24)</strong> — <code>#6.24(bstr)</code>
+A CBOR semantic tag applied to a byte string to indicate that its content is CBOR-encoded. Extensively used in mDL:</p>
+<ul>
+<li><code>IssuerSignedItemBytes = #6.24(bstr .cbor IssuerSignedItem)</code></li>
+<li><code>DeviceAuthenticationBytes = #6.24(bstr .cbor DeviceAuthentication)</code></li>
+<li><code>DeviceNameSpacesBytes = #6.24(bstr .cbor DeviceNameSpaces)</code></li>
+</ul>
+<p>The full <code>Tag(24, bstr(...))</code> encoding must be hashed/signed, not just the inner bytes.</p>
+<hr>
+<h2 id="v"><a class="header" href="#v">V</a></h2>
+<p><strong>VC</strong> / <strong>Verifiable Credential</strong>
+A tamper-evident credential whose authorship can be cryptographically verified. The W3C Verifiable Credentials Data Model provides a general framework; mso_mdoc and SD-JWT VC are two concrete serialisations.</p>
+<p><strong>Verifiable Presentation</strong> / <strong>VP</strong>
+A holder-generated package wrapping one or more Verifiable Credentials and a binding proof. Transmitted to a verifier (RP) in response to a presentation request.</p>
+<p><strong>Verifier</strong> → see <em>RP</em></p>
+<p><strong>VP Token</strong>
+The OpenID4VP parameter name for the value carrying the Verifiable Presentation. For mso_mdoc it is the base64url-encoded <code>DeviceResponse</code>; for SD-JWT VC it is the SD-JWT string.</p>
+<p><strong>vct</strong> — <em>Verifiable Credential Type</em>
+A URI in SD-JWT VC that identifies the type/schema of the credential. E.g. <code>https://credentials.example.com/identity_credential</code>.</p>
+<hr>
+<h2 id="w"><a class="header" href="#w">W</a></h2>
+<p><strong>W3C DC API</strong> → see <em>DC API</em></p>
+<p><strong>Wallet</strong>
+The software (mobile app or browser extension) that stores, manages, and presents digital credentials on behalf of the holder. In this project: the <code>wallet-extension/</code> browser wallet or the EUDI Android Wallet.</p>
+<hr>
+<h2 id="x"><a class="header" href="#x">X</a></h2>
+<p><strong>x5chain</strong> (COSE header label 33)
+An unprotected COSE header containing a DER-encoded X.509 certificate chain. Used in mDL <code>issuerAuth</code> to carry the issuer certificate for chain verification.</p>
+<p><strong>x5c</strong> (JOSE header)
+The JSON/JWT equivalent of <code>x5chain</code>. An array of base64-encoded DER X.509 certificates. Used in JAR (JWT Authorization Request) to carry the RP’s certificate for <code>x509_hash</code> / <code>x509_san_dns</code> verification.</p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../technical_references/dcql_age_verification.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../technical_references/references.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../technical_references/dcql_age_verification.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../technical_references/references.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

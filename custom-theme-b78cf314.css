@@ -1,0 +1,160 @@
+/* Custom theme with ewQwe branding */
+
+:root {
+  /* --bg : #191f39; */
+  --bg : #151c35;
+  --ewqwe-bg: #181f38;
+  --ewqwe-indigo: #7358cf;
+  --ewqwe-indigo-soft: rgba(115, 88, 207, 0.2);
+  --links: #7358cf;
+  --links-hover: #8a72d9;
+  --sidebar-active: #16a34a; /* #ffb454 */
+  --table-alternate-bg:#181f38;
+}
+
+html,
+body,
+.content,
+.menu-bar,
+.sidebar,
+.sidebar .sidebar-scrollbox {
+  background-color: var(--ewqwe-bg);
+}
+
+body {
+  color: #e5e9ff;
+}
+
+.sidebar .sidebar-scrollbox::before {
+  content: "";
+  display: block;
+  height: 84px;
+  margin: 14px 16px 20px;
+  background: url("./ewqwe_logo.png") center center / contain no-repeat;
+}
+
+/* Add subtle purple gradient to sidebar header */
+.sidebar .sidebar-scrollbox {
+  border-right: 1px solid var(--ewqwe-indigo-soft);
+}
+
+/* Style chapter links with indigo/purple */
+.chapter li.part-title {
+  color: var(--ewqwe-indigo);
+  opacity: 0.9;
+}
+
+.chapter li a:hover {
+  color: var(--ewqwe-indigo);
+}
+
+.chapter li a.active {
+  color: #9f87eb;
+  background: linear-gradient(90deg, rgba(115, 88, 207, 0.18), transparent);
+  border-left: 3px solid var(--ewqwe-indigo);
+}
+
+/* Style headers with subtle purple */
+h1, h2 {
+  color: inherit;
+  border-bottom-color: rgba(115, 88, 207, 0.28);
+}
+
+h1 {
+  background: linear-gradient(135deg, #9f87eb, var(--ewqwe-indigo));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Code blocks - subtle purple accent */
+.hljs {
+  border-left: 3px solid rgba(115, 88, 207, 0.4);
+}
+
+/* Navigation buttons */
+.nav-chapters a {
+  color: var(--ewqwe-indigo);
+  transition: all 0.2s ease;
+}
+
+.nav-chapters a:hover {
+  color: #9f87eb;
+  text-decoration: none;
+}
+
+/* Search bar highlight */
+#searchbar:focus {
+  border-color: var(--ewqwe-indigo);
+  outline: 2px solid rgba(115, 88, 207, 0.25);
+}
+
+/* Menu bar with subtle gradient */
+.menu-bar {
+  border-bottom: 1px solid var(--ewqwe-indigo-soft);
+}
+
+/* Dark theme adjustments */
+.ayu, .coal, .navy {
+  --links: #9f87eb;
+  --links-hover: #b39ff0;
+}
+
+.ayu h1, .coal h1, .navy h1 {
+  background: linear-gradient(135deg, #b39ff0, var(--ewqwe-indigo));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.ayu .chapter li a.active,
+.coal .chapter li a.active,
+.navy .chapter li a.active {
+  background: linear-gradient(90deg, rgba(115, 88, 207, 0.22), transparent);
+  border-left: 3px solid #9f87eb;
+}
+
+/* Subtle purple accent on tables */
+table thead {
+  background: linear-gradient(180deg, rgba(115, 88, 207, 0.08), transparent);
+  border-bottom: 2px solid rgba(115, 88, 207, 0.38);
+}
+
+/* Blockquote accent */
+blockquote {
+  border-left-color: var(--ewqwe-indigo);
+  background: rgba(115, 88, 207, 0.08);
+}
+
+.ayu blockquote, .coal blockquote, .navy blockquote {
+  background: rgba(115, 88, 207, 0.1);
+}
+
+/* Inline code subtle highlight */
+:not(pre) > .hljs {
+  background: rgba(115, 88, 207, 0.12);
+  color: #c7b8f6;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+.ayu :not(pre) > .hljs,
+.coal :not(pre) > .hljs,
+.navy :not(pre) > .hljs {
+  background: rgba(115, 88, 207, 0.18);
+  color: #d4c7f8;
+}
+
+@media (max-width: 1080px) {
+  .sidebar .sidebar-scrollbox::before {
+    height: 64px;
+    margin: 10px 12px 14px;
+  }
+}
+
+@media (max-width: 620px) {
+  .sidebar .sidebar-scrollbox::before {
+    height: 52px;
+    margin: 8px 10px 10px;
+  }
+}

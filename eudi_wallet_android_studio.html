@@ -1,0 +1,1057 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>EUDI Wallet on Android - ewQwe Digital Identity</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="shortcut icon" href="favicon-f4c7a024.png">
+        <link rel="stylesheet" href="css/variables-8adf115d.css">
+        <link rel="stylesheet" href="css/general-0392ca55.css">
+        <link rel="stylesheet" href="css/chrome-fc474251.css">
+        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="custom-theme-b78cf314.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "searchindex-3b89128e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="toc-e68e16c9.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">ewQwe Digital Identity</h1>
+
+                    <div class="right-buttons">
+                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="installing-the-eudi-android-wallet-on-android-studio"><a class="header" href="#installing-the-eudi-android-wallet-on-android-studio">Installing the EUDI Android Wallet on Android Studio</a></h1>
+<h2 id="what-is-the-eudi-wallet"><a class="header" href="#what-is-the-eudi-wallet">What is the EUDI Wallet?</a></h2>
+<p>The <strong>EUDI Wallet</strong> (European Digital Identity Wallet) is the official reference implementation of the EU Digital Identity Wallet, developed by the European Commission. It allows EU citizens to securely store and present digital credentials such as:</p>
+<ul>
+<li><strong>EU Personal Identification Data (PID)</strong> - Digital identity credentials</li>
+<li><strong>Mobile Driving Licence (mDL)</strong> - ISO 18013-5 compliant digital driving licences</li>
+<li><strong>Age verification attestations</strong> - Proof of age without revealing exact birth date</li>
+</ul>
+<p>The wallet implements key standards including <strong>OpenID4VP</strong> (for verifiable presentations), <strong>OpenID4VCI</strong> (for credential issuance), and <strong>ISO 18013-5</strong> (for mDL). It serves as the reference implementation for testing interoperability with Relying Parties and Credential Verifiers.</p>
+<p>The <a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui">EUDI Android Wallet source code</a> is open source and available on GitHub.</p>
+<blockquote>
+<p><strong>Important: EUDI Wallet vs. Age Verification App</strong></p>
+<p>There are <strong>two separate wallet applications</strong> with different purposes:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Wallet</th><th>Profile</th><th>Client ID Schemes</th><th>Credentials</th><th>URL Scheme</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>EUDI Wallet</strong></td><td>HAIP (High Assurance)</td><td><code>x509_san_dns</code>, <code>x509_hash</code></td><td>PID, mDL, various</td><td><code>eudi-openid4vp://</code></td></tr>
+<tr><td><strong>Age Verification App</strong></td><td>Annex A</td><td><code>redirect_uri</code></td><td>Proof of Age only</td><td><code>av://</code></td></tr>
+</tbody>
+</table>
+</div>
+<p>The <strong>EUDI Wallet</strong> (this guide) does <strong>not</strong> support the <code>redirect_uri</code> client ID scheme mandated by the EU Age Verification Profile (Annex A). To test Annex A-compliant age verification, you need the <a href="./av_wallet_android_studio.html">Age Verification App</a> instead.</p>
+<p><strong>For testing with the EUDI Wallet</strong>, your Relying Party must:</p>
+<ol>
+<li>Use the <code>x509_san_dns</code> or <code>x509_hash</code> client ID scheme</li>
+<li>Sign Authorization Requests as JWTs with an <code>x5c</code> certificate chain in the header</li>
+<li>Add your verifier’s root CA certificate to the wallet’s <a href="#adding-trusted-verifier-certificates">Reader Trust Store</a></li>
+</ol>
+<p>See the <a href="./user-journey.html">User Journey</a> for a detailed comparison of both profiles.</p>
+</blockquote>
+<h2 id="ewqwe-demo-setup"><a class="header" href="#ewqwe-demo-setup">ewQwe Demo Setup</a></h2>
+<blockquote>
+<p><strong>⚠️ FOR TESTING ONLY</strong> — The ewQwe fork uses debug-only CA pinning to trust the ewQwe
+self-signed test certificates. These modifications <strong>must not</strong> be used in production.
+Release builds use the standard EUDI trust store with no overrides.</p>
+</blockquote>
+<p>This section describes how to run the <strong>ewQwe fork</strong> of the EUDI Wallet together with the ewQwe Relying Party Demo Webapp for end-to-end HAIP testing on a local Android emulator.</p>
+<p><strong>Repository</strong>: <a href="https://github.com/rd-ewqwe/android-eudi-haip-wallet/">https://github.com/rd-ewqwe/android-eudi-haip-wallet/</a></p>
+<h3 id="ewqwe-demo-prerequisites"><a class="header" href="#ewqwe-demo-prerequisites">ewQwe Demo Prerequisites</a></h3>
+<ul>
+<li>Android Studio installed (see <a href="#installing-android-studio">Installing Android Studio</a>)</li>
+<li>ewQwe Demo Webapp running (see <a href="./demo_webapp.html">Demo Webapp</a>)</li>
+<li>ewQwe Credential Verifier running on port 9443</li>
+</ul>
+<h3 id="step-1-clone-the-repository"><a class="header" href="#step-1-clone-the-repository">Step 1: Clone the Repository</a></h3>
+<pre><code class="language-bash">git clone https://github.com/rd-ewqwe/android-eudi-haip-wallet.git
+cd android-eudi-haip-wallet
+</code></pre>
+<h3 id="step-2-create-and-start-the-emulator"><a class="header" href="#step-2-create-and-start-the-emulator">Step 2: Create and Start the Emulator</a></h3>
+<p>Run the provided setup script from the project root. The script requires a rootable (Google APIs, non-Play Store) system image:</p>
+<pre><code class="language-bash">./start_ewqwe_eudi_emulator.sh
+</code></pre>
+<p><strong>What this script does:</strong></p>
+<ol>
+<li>Installs the correct Android system image if not already present</li>
+<li>Creates a custom AVD named <code>EUDI_Dev_Device</code> (Pixel 6 Pro profile)</li>
+<li>Enables hardware keyboard passthrough for typing on the emulator</li>
+<li>Starts the emulator with <code>-writable-system</code> (required for host mapping)</li>
+<li><strong>Maps <code>demo.ewqwe.local</code> inside the emulator to your machine’s LAN IP address</strong> — this allows the wallet to reach your local dev servers</li>
+</ol>
+<blockquote>
+<p>To map <code>demo.ewqwe.local</code> manually (if you already have a running emulator):</p>
+<pre><code class="language-bash">adb root &amp;&amp; adb shell "echo '10.0.2.2  demo.ewqwe.local' &gt;&gt; /etc/hosts"
+</code></pre>
+</blockquote>
+<blockquote>
+<p><strong>Physical device?</strong> The emulator’s <code>10.0.2.2</code> alias is emulator-only. For a physical Android
+device on your LAN, use <a href="#local-network-dns-setup">Local Network DNS Setup</a> instead.</p>
+</blockquote>
+<h3 id="step-3-build-and-run-the-app"><a class="header" href="#step-3-build-and-run-the-app">Step 3: Build and Run the App</a></h3>
+<ol>
+<li>Open the project in Android Studio</li>
+<li>Select the <code>app</code> module and the <code>EUDI_Dev_Device</code> emulator</li>
+<li>Click <strong>Run</strong> (▶️) to deploy and start the EUDI Wallet app</li>
+</ol>
+<h3 id="step-4-initialize-documents"><a class="header" href="#step-4-initialize-documents">Step 4: Initialize Documents</a></h3>
+<p>Once the app is running on the emulator:</p>
+<ol>
+<li>Follow the on-screen prompts to create a <strong>PIN code</strong></li>
+<li>Tap the <strong>“+”</strong> icon and select <strong>“Add a Document from List”</strong></li>
+<li>Select both <strong>“mDL (MSO MDOC)”</strong> and <strong>“PID (MSO MDOC)”</strong> from the <code>https://euidw.dev</code> issuer</li>
+<li>When prompted for the country, select <strong>“Form EU”</strong></li>
+<li>Fill in the test form, submit it, and authorize the issuance</li>
+</ol>
+<h3 id="step-5-open-the-relying-party-demo-webapp"><a class="header" href="#step-5-open-the-relying-party-demo-webapp">Step 5: Open the Relying Party Demo Webapp</a></h3>
+<ol>
+<li>Open <strong>Chrome</strong> on the Android emulator</li>
+<li>Navigate to <code>https://demo.ewqwe.local:5174</code></li>
+<li>Proceed past the certificate warning (expected — the demo uses a self-signed certificate)</li>
+<li>The Demo Webapp should load</li>
+</ol>
+<h3 id="step-6-request-haip-credentials"><a class="header" href="#step-6-request-haip-credentials">Step 6: Request HAIP Credentials</a></h3>
+<ol>
+<li>From the webapp, select a HAIP credential type (mDL or National ID) and initiate a request</li>
+<li>This triggers a deep link that opens the EUDI Wallet</li>
+<li>The wallet validates the certificate chain against the ewQwe CA bundled in <code>assets/ewqwe_dev_cas/</code> and proceeds</li>
+<li>Approve the credential sharing in the wallet</li>
+<li>The webapp displays the verified claims</li>
+</ol>
+<h3 id="debug-certificate-trust-technical-details"><a class="header" href="#debug-certificate-trust-technical-details">Debug Certificate Trust (Technical Details)</a></h3>
+<p>The ewQwe fork uses <strong>debug-only CA pinning</strong> instead of trust-all bypasses. In <code>DEBUG</code> builds only:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Mechanism</th><th>File</th><th>What it does</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>CA-pinned TLS</strong></td><td><code>network-logic/.../di/NetworkModule.kt</code></td><td>Loads <code>assets/ewqwe_dev_cas/*.pem</code> into a <code>KeyStore</code> and builds an <code>X509TrustManager</code> from it. Standard hostname verification still applies. No-op in <code>RELEASE</code> builds.</td></tr>
+<tr><td><strong>CA-pinned Reader Trust Store</strong></td><td><code>core-logic/.../di/LogicCoreModule.kt</code></td><td>Passes the same CA certificates as trust anchors to <code>ReaderTrustStore.getDefault()</code>. JAR <code>x5c</code> chains are validated against these CAs. No-op in <code>RELEASE</code> builds; production trust anchors from <code>WalletCoreConfigImpl.configureReaderTrustStore()</code> apply instead.</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Adding a new developer CA:</strong> drop a <code>.pem</code> or <code>.crt</code> file into
+<code>resources-logic/src/main/assets/ewqwe_dev_cas/</code> and rebuild — no code change required.</p>
+<hr>
+<h2 id="local-network-dns-setup"><a class="header" href="#local-network-dns-setup">Local Network DNS Setup</a></h2>
+<p>The <code>x509_san_dns</code> three-way binding rule means <code>demo.ewqwe.local</code> must be
+DNS-resolvable on every device used for testing. There are two approaches:</p>
+<h3 id="option-a--android-emulator-easiest"><a class="header" href="#option-a--android-emulator-easiest">Option A — Android Emulator (easiest)</a></h3>
+<p>The emulator uses <code>10.0.2.2</code> as its alias for the host machine. The setup script injects the
+mapping automatically; to do it manually:</p>
+<pre><code class="language-bash">adb root &amp;&amp; adb shell "echo '10.0.2.2  demo.ewqwe.local' &gt;&gt; /etc/hosts"
+</code></pre>
+<h3 id="option-b--physical-android-device-via-dnsmasq-lan"><a class="header" href="#option-b--physical-android-device-via-dnsmasq-lan">Option B — Physical Android Device via <code>dnsmasq</code> (LAN)</a></h3>
+<p><code>dnsmasq</code> turns your dev Mac into a local DNS server that resolves <code>demo.ewqwe.local</code> to your
+machine’s LAN IP for any device on the same Wi-Fi network.</p>
+<p><strong>1. Install and configure dnsmasq:</strong></p>
+<pre><code class="language-bash">brew install dnsmasq
+
+# Replace &lt;YOUR-LAN-IP&gt; with your machine's LAN address (e.g. 192.168.1.42)
+# Find it with: ipconfig getifaddr en0
+echo "address=/demo.ewqwe.local/&lt;YOUR-LAN-IP&gt;" &gt;&gt; /opt/homebrew/etc/dnsmasq.conf
+
+sudo brew services restart dnsmasq
+</code></pre>
+<p><strong>2. Verify it works on your Mac:</strong></p>
+<pre><code class="language-bash">dig @127.0.0.1 demo.ewqwe.local
+# Should resolve to your LAN IP
+</code></pre>
+<p><strong>3. Point the Android device at your Mac’s DNS:</strong></p>
+<p>On the Android device: <strong>Settings → Wi-Fi → long-press your network → Modify network →
+Advanced → IP settings: Static</strong> then set <strong>DNS 1</strong> to <code>&lt;YOUR-LAN-IP&gt;</code>.</p>
+<blockquote>
+<p>No root access required on the Android device. Any device on your Wi-Fi that uses this DNS
+setting will resolve <code>demo.ewqwe.local</code> correctly.</p>
+</blockquote>
+<h3 id="custom-hostnames"><a class="header" href="#custom-hostnames">Custom Hostnames</a></h3>
+<p>If you regenerate the test certificates with a different DNS SAN (e.g. your machine’s mDNS name),
+update <code>public_root_url</code> in
+<a href="../credential_verifier/credential-server.toml"><code>credential_verifier/credential-server.toml</code></a> to
+match, and use the same hostname in your DNS setup.</p>
+<hr>
+<h2 id="quick-start-download-apk-directly-no-build-required"><a class="header" href="#quick-start-download-apk-directly-no-build-required">Quick Start: Download APK Directly (No Build Required)</a></h2>
+<p>You don’t need to build the EUDI Wallet from source. The easiest way to install it is to download the pre-built APK directly from GitHub using Chrome on the Android emulator:</p>
+<ol>
+<li><strong>Install Android Studio</strong> and create an emulator (see <a href="#setting-up-an-android-emulator">Setting Up an Android Emulator</a>)</li>
+<li><strong>Enable Developer Mode on the emulator</strong> (see <a href="#enabling-developer-mode-on-android">Enabling Developer Mode</a>) - this is required before installing external APKs</li>
+<li><strong>Open Chrome</strong> on the emulator</li>
+<li>Navigate to <a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/releases">EUDI Wallet Releases</a></li>
+<li>Download the latest APK (e.g., <code>app-demo-debug.apk</code>)</li>
+<li>Open the downloaded file and tap <strong>Install</strong></li>
+<li>If prompted about “unknown sources”, allow Chrome to install apps</li>
+</ol>
+<blockquote>
+<p><strong>Note</strong>: Use the <code>demo</code> variant for testing with the EU demo infrastructure, or <code>dev</code> for development environments.</p>
+</blockquote>
+<hr>
+<p>This guide also explains how to build the wallet from source if you need to modify the code or debug the application.</p>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ul>
+<li><a href="#ewqwe-demo-setup">ewQwe Demo Setup</a></li>
+<li><a href="#local-network-dns-setup">Local Network DNS Setup</a></li>
+<li><a href="#haip-profile-requirements">HAIP Profile Requirements</a></li>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#installing-android-studio">Installing Android Studio</a></li>
+<li><a href="#cloning-and-building-the-eudi-wallet">Cloning and Building the EUDI Wallet</a></li>
+<li><a href="#setting-up-an-android-emulator">Setting Up an Android Emulator</a></li>
+<li><a href="#running-on-a-physical-device">Running on a Physical Device</a></li>
+<li><a href="#enabling-developer-mode-on-android">Enabling Developer Mode on Android</a></li>
+<li><a href="#installing-external-apks">Installing External APKs</a></li>
+<li><a href="#debugging-a-webapp-with-android-studio">Debugging a Webapp with Android Studio</a></li>
+<li><a href="#viewing-eudi-wallet-logs">Viewing EUDI Wallet Logs</a></li>
+<li><a href="#adding-trusted-verifier-certificates">Adding Trusted Verifier Certificates</a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#references">References</a></li>
+</ul>
+<h2 id="haip-profile-requirements"><a class="header" href="#haip-profile-requirements">HAIP Profile Requirements</a></h2>
+<p>The EUDI Wallet implements the <strong>High Assurance Interoperability Profile (HAIP)</strong>, which is more restrictive than the Annex A profile used by the Age Verification App. Your Relying Party must meet these requirements to work with the EUDI Wallet:</p>
+<h3 id="1-client-id-scheme-x509_san_dns-or-x509_hash"><a class="header" href="#1-client-id-scheme-x509_san_dns-or-x509_hash">1. Client ID Scheme: <code>x509_san_dns</code> or <code>x509_hash</code></a></h3>
+<p>The EUDI Wallet only accepts these client identifier schemes:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Scheme</th><th>Format</th><th>Trust Verification</th></tr>
+</thead>
+<tbody>
+<tr><td><code>x509_san_dns</code></td><td><code>x509_san_dns:&lt;DNS&gt;</code></td><td>Verifier’s certificate must have a <code>dNSName</code> SAN matching the client ID (e.g. <code>x509_san_dns:demo.ewqwe.local</code> for the demo certs)</td></tr>
+<tr><td><code>x509_hash</code></td><td><code>x509_hash:sha-256:base64url_encoded_hash</code></td><td>Verifier’s certificate must match the hash</td></tr>
+</tbody>
+</table>
+</div>
+<p>The <strong><code>redirect_uri</code></strong> scheme from Annex A is <strong>not supported</strong> by the EUDI Wallet.</p>
+<h4 id="the-three-way-binding-constraint-x509_san_dns"><a class="header" href="#the-three-way-binding-constraint-x509_san_dns">The Three-Way Binding Constraint (<code>x509_san_dns</code>)</a></h4>
+<p>When using <code>x509_san_dns</code>, the wallet unconditionally enforces three conditions that form a
+transitive equality chain:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Property</th><th>Must equal</th><th>Enforced by</th></tr>
+</thead>
+<tbody>
+<tr><td><code>client_id</code> bare value (e.g. <code>demo.ewqwe.local</code>)</td><td>A <code>dNSName</code> entry in the <strong>leaf certificate</strong> SAN of the JAR’s <code>x5c</code> header</td><td><code>RequestAuthenticator</code> in <code>eudi-lib-jvm-openid4vp-kt</code></td></tr>
+<tr><td><code>response_uri</code> <strong>hostname</strong></td><td>The <code>client_id</code> bare value</td><td><code>RequestObjectValidator</code> in <code>eudi-lib-jvm-openid4vp-kt</code></td></tr>
+<tr><td>TLS server cert SAN</td><td>The <code>response_uri</code> hostname</td><td>Standard TLS hostname verification</td></tr>
+</tbody>
+</table>
+</div>
+<p>By transitivity: <strong>the hostname where the wallet posts the VP Token must be a DNS SAN on the JAR
+signing certificate.</strong></p>
+<blockquote>
+<p><strong><code>response_uri</code> vs <code>request_uri</code></strong> — These are two distinct URLs that happen to share the same
+hostname in this project:</p>
+<ul>
+<li><code>request_uri</code>: the endpoint the wallet <strong>fetches</strong> the signed Authorization Request (JAR) from</li>
+<li><code>response_uri</code>: the endpoint the wallet <strong>posts the VP Token to</strong> (<code>direct_post</code> / <code>direct_post.jwt</code>)</li>
+</ul>
+<p>The host-match check applies to <code>response_uri</code>, not <code>request_uri</code>.</p>
+</blockquote>
+<p>Both checks live in the <strong>upstream Maven library</strong> <code>eudi-lib-jvm-openid4vp-kt</code> — they cannot be
+bypassed through wallet application code. The practical consequence for local network testing is
+that <code>demo.ewqwe.local</code> must be DNS-resolvable on every test device.
+See <a href="#local-network-dns-setup">Local Network DNS Setup</a> for options.</p>
+<h3 id="2-signed-authorization-request-jar"><a class="header" href="#2-signed-authorization-request-jar">2. Signed Authorization Request (JAR)</a></h3>
+<p>All Authorization Requests must be signed JWTs. The JWT header must include:</p>
+<ul>
+<li><code>alg</code>: Signing algorithm (e.g., <code>ES256</code> for P-256 ECDSA)</li>
+<li><code>x5c</code>: X.509 certificate chain as an array of base64-encoded certificates (leaf first)</li>
+<li><code>kid</code>: Key identifier (typically the certificate’s thumbprint)</li>
+</ul>
+<p>Example JWT header:</p>
+<pre><code class="language-json">{
+  "alg": "ES256",
+  "typ": "oauth-authz-req+jwt",
+  "x5c": [
+    "MIIBtjCCAVygAwIBAgIUEo...",  // Leaf certificate
+    "MIIBxjCCAWygAwIBAgIUAb..."   // Intermediate CA
+  ],
+  "kid": "7SJZ5d9..."
+}
+</code></pre>
+<h3 id="3-response-mode-direct_postjwt"><a class="header" href="#3-response-mode-direct_postjwt">3. Response Mode: <code>direct_post.jwt</code></a></h3>
+<p>The EUDI Wallet uses <code>response_mode=direct_post.jwt</code>, meaning the VP Token is wrapped in a signed JWT before being POSTed to the <code>response_uri</code>. Your RP must be able to unwrap and verify this JWT.</p>
+<h3 id="4-reader-trust-store"><a class="header" href="#4-reader-trust-store">4. Reader Trust Store</a></h3>
+<p>The <strong>root CA</strong> that signed your verifier’s certificate must be present in the wallet’s Reader Trust Store. The EUDI Wallet comes pre-configured with EU PID issuer CAs, but does not include public CAs like Let’s Encrypt by default.</p>
+<p>If your verifier uses a Let’s Encrypt certificate or a custom CA, you must <a href="#adding-trusted-verifier-certificates">rebuild the wallet with your root CA</a>.</p>
+<h3 id="why-these-requirements"><a class="header" href="#why-these-requirements">Why These Requirements?</a></h3>
+<p>The HAIP profile is designed for <strong>high-assurance credentials</strong> like PID and mDL, where:</p>
+<ul>
+<li>The verifier’s identity must be cryptographically proven (via certificate chain)</li>
+<li>Trust is established through a pre-defined set of trusted CAs</li>
+<li>Credential data requires stronger protection (JWT-wrapped responses)</li>
+</ul>
+<p>For age verification scenarios where these high-assurance requirements are not necessary, use the <a href="./av_wallet_android_studio.html">Age Verification App</a> with the simpler Annex A profile.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<p>Before you begin, ensure you have:</p>
+<ul>
+<li><strong>macOS</strong> (Sonoma or later recommended) or <strong>Windows 10/11</strong> or <strong>Linux</strong></li>
+<li>At least <strong>16 GB of RAM</strong> (recommended for running emulators)</li>
+<li>At least <strong>20 GB of free disk space</strong> for Android Studio, SDKs, and emulators</li>
+<li>A stable internet connection for downloading SDKs and dependencies</li>
+<li><strong>JDK 21</strong> (Android Studio will manage this, but external builds may require it)</li>
+</ul>
+<h3 id="minimum-device-requirements-for-eudi-wallet"><a class="header" href="#minimum-device-requirements-for-eudi-wallet">Minimum Device Requirements for EUDI Wallet</a></h3>
+<p>The EUDI Android Wallet requires:</p>
+<ul>
+<li><strong>API level 29 (Android 10)</strong> or higher</li>
+</ul>
+<h2 id="installing-android-studio"><a class="header" href="#installing-android-studio">Installing Android Studio</a></h2>
+<p>Android Studio is the official IDE for Android development, provided by Google. It includes everything you need to build, test, and debug Android applications. It runs on <strong>macOS</strong>, <strong>Windows</strong>, and <strong>Linux</strong>.</p>
+<h3 id="step-1-download-android-studio"><a class="header" href="#step-1-download-android-studio">Step 1: Download Android Studio</a></h3>
+<ol>
+<li>Visit the official <a href="https://developer.android.com/studio">Android Studio download page</a></li>
+<li>Click <strong>Download Android Studio</strong></li>
+<li>Accept the terms and conditions</li>
+<li>Choose the appropriate version for your operating system:</li>
+</ol>
+<p><strong>macOS:</strong></p>
+<ul>
+<li><strong>Mac with Apple chip</strong> (M1, M2, M3, M4 - all Macs since late 2020)</li>
+<li><strong>Mac with Intel chip</strong> (older Macs)</li>
+</ul>
+<p><strong>Windows:</strong></p>
+<ul>
+<li>Download the <code>.exe</code> installer (64-bit recommended)</li>
+</ul>
+<p><strong>Linux:</strong></p>
+<ul>
+<li>Download the <code>.tar.gz</code> archive for your architecture</li>
+</ul>
+<h3 id="step-2-install-android-studio"><a class="header" href="#step-2-install-android-studio">Step 2: Install Android Studio</a></h3>
+<h4 id="macos"><a class="header" href="#macos">macOS</a></h4>
+<ol>
+<li>Open the downloaded <code>.dmg</code> file</li>
+<li>Drag <strong>Android Studio</strong> to the <strong>Applications</strong> folder</li>
+<li>Launch Android Studio from the Applications folder</li>
+<li>If prompted with a security warning, click <strong>Open</strong></li>
+</ol>
+<h4 id="windows"><a class="header" href="#windows">Windows</a></h4>
+<ol>
+<li>Run the downloaded <code>.exe</code> installer</li>
+<li>Follow the installation wizard</li>
+<li>Choose installation location (default is recommended)</li>
+<li>Select whether to import previous settings</li>
+</ol>
+<h4 id="linux"><a class="header" href="#linux">Linux</a></h4>
+<ol>
+<li>
+<p>Extract the <code>.tar.gz</code> archive:</p>
+<pre><code class="language-bash">tar -xzf android-studio-*.tar.gz
+</code></pre>
+</li>
+<li>
+<p>Move to <code>/opt</code> (optional but recommended):</p>
+<pre><code class="language-bash">sudo mv android-studio /opt/
+</code></pre>
+</li>
+<li>
+<p>Run the studio script:</p>
+<pre><code class="language-bash">/opt/android-studio/bin/studio.sh
+</code></pre>
+</li>
+<li>
+<p>Optionally create a desktop entry via <strong>Tools → Create Desktop Entry</strong></p>
+</li>
+</ol>
+<h3 id="step-3-complete-setup-wizard-all-platforms"><a class="header" href="#step-3-complete-setup-wizard-all-platforms">Step 3: Complete Setup Wizard (All Platforms)</a></h3>
+<ol>
+<li>Follow the Setup Wizard:
+<ul>
+<li>Choose <strong>Standard</strong> installation for most users</li>
+<li>Accept license agreements for SDK components</li>
+<li>Wait for the SDK and additional components to download</li>
+</ul>
+</li>
+</ol>
+<h3 id="step-4-verify-installation"><a class="header" href="#step-4-verify-installation">Step 4: Verify Installation</a></h3>
+<p>After installation completes:</p>
+<ol>
+<li>Android Studio opens to the Welcome screen</li>
+<li>You should see options like “New Project”, “Open”, and “More Actions”</li>
+<li>The Android SDK is installed at:
+<ul>
+<li><strong>macOS</strong>: <code>~/Library/Android/sdk</code></li>
+<li><strong>Windows</strong>: <code>%LOCALAPPDATA%\Android\Sdk</code></li>
+<li><strong>Linux</strong>: <code>~/Android/Sdk</code></li>
+</ul>
+</li>
+</ol>
+<blockquote>
+<p><strong>Source</strong>: <a href="https://developer.android.com/studio/install">Android Developers - Install Android Studio</a></p>
+</blockquote>
+<h2 id="cloning-and-building-the-eudi-wallet"><a class="header" href="#cloning-and-building-the-eudi-wallet">Cloning and Building the EUDI Wallet</a></h2>
+<h3 id="step-1-clone-the-wallet-repository"><a class="header" href="#step-1-clone-the-wallet-repository">Step 1: Clone the wallet Repository</a></h3>
+<pre><code class="language-bash">git clone https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui.git
+cd eudi-app-android-wallet-ui
+</code></pre>
+<h3 id="step-2-open-in-android-studio"><a class="header" href="#step-2-open-in-android-studio">Step 2: Open in Android Studio</a></h3>
+<ol>
+<li>Launch Android Studio</li>
+<li>Click <strong>Open</strong></li>
+<li>Navigate to the cloned <code>eudi-app-android-wallet-ui</code> folder</li>
+<li>Click <strong>Open</strong></li>
+<li>Wait for Gradle sync to complete (this may take several minutes on first run)</li>
+</ol>
+<h3 id="step-3-select-build-variant"><a class="header" href="#step-3-select-build-variant">Step 3: Select Build Variant</a></h3>
+<p>The EUDI Wallet has different build configurations:</p>
+<p><strong>Product Flavors:</strong></p>
+<ul>
+<li><code>Dev</code> - Connects to development environment services</li>
+<li><code>Demo</code> - Connects to demo environment services</li>
+</ul>
+<p><strong>Build Types:</strong></p>
+<ul>
+<li><code>Debug</code> - Full logging enabled (recommended for development)</li>
+<li><code>Release</code> - No logging (production-ready)</li>
+</ul>
+<p>To select a build variant:</p>
+<ol>
+<li>Go to <strong>Build → Select Build Variant</strong></li>
+<li>In the Build Variants panel, find the <code>:app</code> module</li>
+<li>Click the dropdown under “Active Build Variant”</li>
+<li>Select your preferred variant (e.g., <code>demoDebug</code> for testing)</li>
+</ol>
+<h3 id="step-4-build-the-project"><a class="header" href="#step-4-build-the-project">Step 4: Build the Project</a></h3>
+<ol>
+<li>Go to <strong>Build → Make Project</strong> (or press <code>Cmd + F9</code>)</li>
+<li>Wait for the build to complete</li>
+<li>Check the Build output window for any errors</li>
+</ol>
+<blockquote>
+<p><strong>Source</strong>: <a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/blob/main/wiki/how_to_build.md">EUDI Wallet - How to Build</a></p>
+</blockquote>
+<h2 id="setting-up-an-android-emulator"><a class="header" href="#setting-up-an-android-emulator">Setting Up an Android Emulator</a></h2>
+<p>An Android emulator allows you to run Android apps on your Mac without a physical device.</p>
+<h3 id="step-1-open-virtual-device-manager"><a class="header" href="#step-1-open-virtual-device-manager">Step 1: Open Virtual Device Manager</a></h3>
+<ol>
+<li>In Android Studio, click <strong>More Actions</strong> on the Welcome screen
+<ul>
+<li>Or go to <strong>Tools → Device Manager</strong> if a project is open</li>
+</ul>
+</li>
+<li>Click <strong>Virtual Device Manager</strong></li>
+</ol>
+<h3 id="step-2-create-a-virtual-device"><a class="header" href="#step-2-create-a-virtual-device">Step 2: Create a Virtual Device</a></h3>
+<ol>
+<li>Click <strong>Create Virtual Device</strong> (or the <strong>+</strong> button)</li>
+<li>Choose a device definition:
+<ul>
+<li>Select a phone like <strong>Pixel 7</strong> or <strong>Pixel 8</strong></li>
+<li>Devices with the <strong>Play Store icon</strong> (▶️) support Google Play Services</li>
+<li>For EUDI Wallet, choose a device with Play Store support</li>
+</ul>
+</li>
+<li>Click <strong>Next</strong></li>
+</ol>
+<h3 id="step-3-select-a-system-image"><a class="header" href="#step-3-select-a-system-image">Step 3: Select a System Image</a></h3>
+<ol>
+<li>Choose an Android version:
+<ul>
+<li><strong>API 34</strong> (Android 14) or higher is recommended</li>
+<li>Ensure the ABI matches your Mac:
+<ul>
+<li><strong>arm64-v8a</strong> for Apple Silicon Macs (M1/M2/M3)</li>
+<li><strong>x86_64</strong> for Intel Macs</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>Click <strong>Download</strong> if the image isn’t already installed</li>
+<li>Wait for the download to complete, then click <strong>Next</strong></li>
+</ol>
+<h3 id="step-4-configure-the-emulator"><a class="header" href="#step-4-configure-the-emulator">Step 4: Configure the Emulator</a></h3>
+<ol>
+<li>Give your virtual device a name (optional)</li>
+<li>Adjust advanced settings if needed:
+<ul>
+<li><strong>RAM</strong>: 2048 MB minimum, 4096 MB recommended</li>
+<li><strong>VM Heap</strong>: 512 MB minimum</li>
+<li><strong>Graphics</strong>: Hardware (for better performance)</li>
+</ul>
+</li>
+<li>Click <strong>Finish</strong></li>
+</ol>
+<h3 id="step-5-launch-the-emulator"><a class="header" href="#step-5-launch-the-emulator">Step 5: Launch the Emulator</a></h3>
+<ol>
+<li>In the Device Manager, find your virtual device</li>
+<li>Click the <strong>Play</strong> button (▶️) to start the emulator</li>
+<li>Wait for Android to boot (first boot takes longer)</li>
+</ol>
+<blockquote>
+<p><strong>Source</strong>: <a href="https://developer.android.com/studio/run/managing-avds">Android Developers - Create and Manage Virtual Devices</a></p>
+</blockquote>
+<h2 id="running-on-a-physical-device"><a class="header" href="#running-on-a-physical-device">Running on a Physical Device</a></h2>
+<p>Running on a physical Android device provides the most accurate testing experience.</p>
+<h3 id="step-1-enable-developer-mode"><a class="header" href="#step-1-enable-developer-mode">Step 1: Enable Developer Mode</a></h3>
+<p>See the <a href="#enabling-developer-mode-on-android">Enabling Developer Mode</a> section below.</p>
+<h3 id="step-2-enable-usb-debugging"><a class="header" href="#step-2-enable-usb-debugging">Step 2: Enable USB Debugging</a></h3>
+<ol>
+<li>On your Android device, go to <strong>Settings → Developer options</strong></li>
+<li>Enable <strong>USB debugging</strong></li>
+<li>Optionally enable <strong>Install via USB</strong> for APK installation</li>
+</ol>
+<h3 id="step-3-connect-your-device"><a class="header" href="#step-3-connect-your-device">Step 3: Connect Your Device</a></h3>
+<ol>
+<li>Connect your Android device to your Mac via USB</li>
+<li>On your Android device, a prompt appears asking to <strong>Allow USB debugging</strong></li>
+<li>Check <strong>Always allow from this computer</strong> (optional)</li>
+<li>Tap <strong>Allow</strong></li>
+</ol>
+<h3 id="step-4-verify-connection"><a class="header" href="#step-4-verify-connection">Step 4: Verify Connection</a></h3>
+<ol>
+<li>
+<p>In Android Studio, your device should appear in the device dropdown (top toolbar)</p>
+</li>
+<li>
+<p>Alternatively, run in Terminal:</p>
+<pre><code class="language-bash">~/Library/Android/sdk/platform-tools/adb devices
+</code></pre>
+</li>
+<li>
+<p>You should see your device listed</p>
+</li>
+</ol>
+<h3 id="step-5-run-the-app"><a class="header" href="#step-5-run-the-app">Step 5: Run the App</a></h3>
+<ol>
+<li>Select your device from the device dropdown</li>
+<li>Click <strong>Run</strong> (▶️) or press <code>Ctrl + R</code></li>
+<li>The app will be installed and launched on your device</li>
+</ol>
+<blockquote>
+<p><strong>Source</strong>: <a href="https://developer.android.com/studio/run/device">Android Developers - Run Apps on a Hardware Device</a></p>
+</blockquote>
+<h2 id="enabling-developer-mode-on-android"><a class="header" href="#enabling-developer-mode-on-android">Enabling Developer Mode on Android</a></h2>
+<p>Developer Mode unlocks advanced options required for app development and APK installation.</p>
+<h3 id="steps-to-enable-developer-mode"><a class="header" href="#steps-to-enable-developer-mode">Steps to Enable Developer Mode</a></h3>
+<ol>
+<li>Open <strong>Settings</strong> on your Android device</li>
+<li>Scroll down and tap <strong>About phone</strong> (or <strong>About device</strong>)</li>
+<li>Find <strong>Build number</strong> (may be under <strong>Software information</strong> on Samsung devices)</li>
+<li><strong>Tap “Build number” 7 times</strong> in quick succession</li>
+<li>You’ll see messages counting down: “You are now X steps away from being a developer”</li>
+<li>After 7 taps, you’ll see: <strong>“You are now a developer!”</strong></li>
+<li>If prompted, enter your device PIN or password</li>
+</ol>
+<h3 id="access-developer-options"><a class="header" href="#access-developer-options">Access Developer Options</a></h3>
+<p>After enabling Developer Mode:</p>
+<ol>
+<li>Go back to <strong>Settings</strong></li>
+<li>Scroll down to find <strong>Developer options</strong> (usually near the bottom)</li>
+<li>Tap to open and configure developer settings</li>
+</ol>
+<h3 id="key-developer-options"><a class="header" href="#key-developer-options">Key Developer Options</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Option</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>USB debugging</strong></td><td>Required for connecting to Android Studio</td></tr>
+<tr><td><strong>Install via USB</strong></td><td>Allow APK installation over USB</td></tr>
+<tr><td><strong>Stay awake</strong></td><td>Screen stays on while charging (useful during development)</td></tr>
+<tr><td><strong>Select debug app</strong></td><td>Choose which app to debug</td></tr>
+<tr><td><strong>OEM unlocking</strong></td><td>Required for bootloader unlocking (advanced)</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p><strong>Source</strong>: <a href="https://developer.android.com/studio/debug/dev-options">Android Developers - Configure On-Device Developer Options</a></p>
+</blockquote>
+<h2 id="installing-external-apks"><a class="header" href="#installing-external-apks">Installing External APKs</a></h2>
+<p>You can install APK files (Android Package files) from external sources like GitHub releases.</p>
+<blockquote>
+<p><strong>Important</strong>: Before installing external APKs on an emulator or physical device, you must first <a href="#enabling-developer-mode-on-android">enable Developer Mode</a>. This unlocks the ability to install apps from unknown sources.</p>
+</blockquote>
+<h3 id="method-1-download-with-chrome-on-the-emulator-recommended"><a class="header" href="#method-1-download-with-chrome-on-the-emulator-recommended">Method 1: Download with Chrome on the Emulator (Recommended)</a></h3>
+<p>The simplest method - no ADB commands required:</p>
+<ol>
+<li>Start the Android emulator</li>
+<li>Enable Developer Mode on the emulator (tap Build Number 7 times in Settings &gt; About)</li>
+<li>Open <strong>Chrome</strong> on the emulator</li>
+<li>Navigate to <a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/releases">EUDI Wallet Releases</a></li>
+<li>Tap the APK file to download (e.g., <code>app-demo-debug.apk</code>)</li>
+<li>Once downloaded, tap the notification or open from Downloads</li>
+<li>Tap <strong>Install</strong> when prompted</li>
+<li>If asked about “Install unknown apps”, enable it for Chrome and retry</li>
+</ol>
+<h3 id="method-2-using-adb-android-debug-bridge"><a class="header" href="#method-2-using-adb-android-debug-bridge">Method 2: Using ADB (Android Debug Bridge)</a></h3>
+<p>This is the most reliable method for development:</p>
+<pre><code class="language-bash"># Navigate to your platform-tools directory (or add it to PATH)
+cd ~/Library/Android/sdk/platform-tools
+
+# Install an APK file
+./adb install /path/to/your-app.apk
+
+# For emulator, use the -e flag
+./adb -e install /path/to/your-app.apk
+
+# For specific device, use the -s flag with device serial
+./adb -s &lt;device_serial&gt; install /path/to/your-app.apk
+
+# Force reinstall (overwrite existing app)
+./adb install -r /path/to/your-app.apk
+</code></pre>
+<h3 id="method-2-drag-and-drop-emulator-only"><a class="header" href="#method-2-drag-and-drop-emulator-only">Method 2: Drag and Drop (Emulator Only)</a></h3>
+<p>For Android emulators:</p>
+<ol>
+<li>Start the emulator</li>
+<li>Download the APK file to your Mac</li>
+<li>Drag and drop the APK file onto the emulator window</li>
+<li>The APK will be installed automatically</li>
+</ol>
+<h3 id="method-3-using-device-file-manager"><a class="header" href="#method-3-using-device-file-manager">Method 3: Using Device File Manager</a></h3>
+<ol>
+<li>Transfer the APK to your device (via USB, cloud storage, or download)</li>
+<li>Open a file manager app on your Android device</li>
+<li>Navigate to the APK file</li>
+<li>Tap the APK to install</li>
+<li>If prompted, enable “Install from unknown sources”</li>
+</ol>
+<h3 id="installing-eudi-wallet-apk-from-github-releases"><a class="header" href="#installing-eudi-wallet-apk-from-github-releases">Installing EUDI Wallet APK from GitHub Releases</a></h3>
+<ol>
+<li>Go to <a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/releases">EUDI Wallet Releases</a></li>
+<li>Download the latest APK file (e.g., <code>app-demo-debug.apk</code>)</li>
+<li>Install using one of the methods above</li>
+</ol>
+<blockquote>
+<p><strong>Source</strong>: <a href="https://developer.android.com/tools/adb">Android Developers - ADB Commands</a></p>
+</blockquote>
+<h2 id="debugging-a-webapp-with-android-studio"><a class="header" href="#debugging-a-webapp-with-android-studio">Debugging a Webapp with Android Studio</a></h2>
+<p>You can debug web applications running in Chrome on Android using Chrome DevTools and Android Studio.</p>
+<h3 id="method-1-chrome-devtools-remote-debugging"><a class="header" href="#method-1-chrome-devtools-remote-debugging">Method 1: Chrome DevTools Remote Debugging</a></h3>
+<p>This is the most common method for debugging webapps:</p>
+<h4 id="step-1-enable-usb-debugging"><a class="header" href="#step-1-enable-usb-debugging">Step 1: Enable USB Debugging</a></h4>
+<ol>
+<li>Enable Developer Mode on your Android device (see above)</li>
+<li>Enable <strong>USB debugging</strong> in Developer options</li>
+<li>Connect your device via USB</li>
+</ol>
+<h4 id="step-2-enable-remote-debugging-in-chrome"><a class="header" href="#step-2-enable-remote-debugging-in-chrome">Step 2: Enable Remote Debugging in Chrome</a></h4>
+<ol>
+<li>
+<p>Open <strong>Chrome</strong> on your Android device</p>
+</li>
+<li>
+<p>Navigate to your webapp URL</p>
+</li>
+<li>
+<p>On your <strong>Mac</strong>, open Chrome and go to:</p>
+<pre><code class="language-text">chrome://inspect/#devices
+</code></pre>
+</li>
+<li>
+<p>Your Android device should appear with open tabs listed</p>
+</li>
+<li>
+<p>Click <strong>Inspect</strong> next to the tab you want to debug</p>
+</li>
+<li>
+<p>Chrome DevTools opens, connected to your mobile Chrome</p>
+</li>
+</ol>
+<h4 id="features-available"><a class="header" href="#features-available">Features Available</a></h4>
+<ul>
+<li><strong>Elements panel</strong>: Inspect and modify DOM</li>
+<li><strong>Console</strong>: View logs and run JavaScript</li>
+<li><strong>Network</strong>: Monitor network requests</li>
+<li><strong>Sources</strong>: Debug JavaScript with breakpoints</li>
+<li><strong>Performance</strong>: Profile rendering performance</li>
+<li><strong>Application</strong>: Inspect storage, service workers, etc.</li>
+</ul>
+<h3 id="method-2-android-studios-chrome-tab-debugging"><a class="header" href="#method-2-android-studios-chrome-tab-debugging">Method 2: Android Studio’s Chrome Tab Debugging</a></h3>
+<p>Android Studio can also connect to Chrome tabs:</p>
+<ol>
+<li>Connect your Android device</li>
+<li>In Android Studio, go to <strong>View → Tool Windows → App Inspection</strong></li>
+<li>Select your device</li>
+<li>Choose the Chrome process</li>
+<li>Use the inspection tools to debug</li>
+</ol>
+<h3 id="method-3-debugging-webviews-in-native-apps"><a class="header" href="#method-3-debugging-webviews-in-native-apps">Method 3: Debugging WebViews in Native Apps</a></h3>
+<p>If your webapp runs inside an Android app’s WebView:</p>
+<ol>
+<li>
+<p>The app must enable WebView debugging:</p>
+<pre><code class="language-java">WebView.setWebContentsDebuggingEnabled(true);
+</code></pre>
+</li>
+<li>
+<p>Connect your device via USB</p>
+</li>
+<li>
+<p>Open <code>chrome://inspect/#devices</code> in Chrome on your Mac</p>
+</li>
+<li>
+<p>WebViews appear separately from Chrome tabs</p>
+</li>
+<li>
+<p>Click <strong>Inspect</strong> to debug</p>
+</li>
+</ol>
+<h3 id="debugging-tips"><a class="header" href="#debugging-tips">Debugging Tips</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Scenario</th><th>Solution</th></tr>
+</thead>
+<tbody>
+<tr><td>Device not appearing</td><td>Ensure USB debugging is enabled; try different USB cable</td></tr>
+<tr><td>Slow connection</td><td>Use USB 3.0 port; close unnecessary DevTools panels</td></tr>
+<tr><td>Cannot inspect HTTPS</td><td>Ensure valid/trusted certificates or use <code>--ignore-certificate-errors</code></td></tr>
+<tr><td>Emulator debugging</td><td>Use <code>10.0.2.2</code> instead of <code>localhost</code> to access host machine</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p><strong>Sources</strong>:</p>
+<ul>
+<li><a href="https://developer.chrome.com/docs/devtools/remote-debugging/">Chrome Developers - Remote Debugging on Android</a></li>
+<li><a href="https://developer.android.com/studio/debug/layout-inspector">Android Developers - Debug Your Layout</a></li>
+</ul>
+</blockquote>
+<h2 id="viewing-eudi-wallet-logs"><a class="header" href="#viewing-eudi-wallet-logs">Viewing EUDI Wallet Logs</a></h2>
+<p>When debugging OpenID4VP flows or diagnosing wallet errors, you can inspect the EUDI Wallet’s runtime logs using <strong>Logcat</strong> — Android’s standard logging system. The easiest approach is to use the <strong>Logcat</strong> tab built into Android Studio (located in the bottom panel): select your emulator from the device dropdown, then filter by the wallet’s package name <code>eu.europa.ec.euidiw</code> to isolate its output. You can further narrow the results by searching for tags such as <code>OpenId4Vp</code>, <code>PresentationManager</code>, or <code>WalletCore</code>. Alternatively, you can use <code>adb</code> from the command line:</p>
+<pre><code class="language-bash"># Stream logs for the EUDI Wallet process only
+adb logcat --pid=$(adb shell pidof eu.europa.ec.euidiw)
+
+# Or filter by relevant tags
+adb logcat -s "OpenId4VpManager" "PresentationManager" "WalletCore"
+
+# Or grep for wallet-related keywords across all logs
+adb logcat | grep -iE "eudi|openid4vp|presentation|mdoc|wallet"
+</code></pre>
+<blockquote>
+<p><strong>Tip</strong>: If you installed <code>adb</code> via Android Studio, the binary is located at <code>~/Library/Android/sdk/platform-tools/adb</code>. Add it to your <code>PATH</code> for convenience.</p>
+</blockquote>
+<h2 id="adding-trusted-verifier-certificates"><a class="header" href="#adding-trusted-verifier-certificates">Adding Trusted Verifier Certificates</a></h2>
+<p>When using the <code>x509_san_dns</code> client ID scheme for OpenID4VP, the EUDI Wallet validates the verifier’s x5c certificate chain against a built-in <strong>Reader Trust Store</strong>. By default, this trust store only contains EU PID Issuer CA certificates (e.g., <code>pidissuerca02_eu</code>, <code>dc4eu</code>, <code>r45_staging</code>). If your verifier uses a certificate signed by a different CA — such as Let’s Encrypt — the wallet will reject the request with:</p>
+<pre><code class="language-text">CERTIFICATE_PATH_ERROR: Trust anchor for certification path not found.
+Invalid resolution: InvalidJarJwt(cause=Untrusted x5c)
+</code></pre>
+<p>To fix this, you must build the wallet from source with your CA’s root certificate added to the trust store.</p>
+<h3 id="step-1-identify-your-root-ca"><a class="header" href="#step-1-identify-your-root-ca">Step 1: Identify Your Root CA</a></h3>
+<p>Determine which root CA signed your verifier’s certificate. For a Let’s Encrypt certificate, inspect the chain:</p>
+<pre><code class="language-bash">openssl x509 -in your_fullchain.pem -noout -issuer
+# issuer= /C=US/O=Let's Encrypt/CN=E7
+
+# The E7 intermediate is signed by ISRG Root X1
+</code></pre>
+<p>Let’s Encrypt uses two root CAs:</p>
+<ul>
+<li><strong>ISRG Root X1</strong> (RSA) — signs E-series and R-series intermediates (via cross-sign)</li>
+<li><strong>ISRG Root X2</strong> (ECDSA) — signs E-series intermediates natively</li>
+</ul>
+<h3 id="step-2-download-the-root-ca-certificates"><a class="header" href="#step-2-download-the-root-ca-certificates">Step 2: Download the Root CA Certificates</a></h3>
+<pre><code class="language-bash"># Download ISRG Root X1
+curl -s https://letsencrypt.org/certs/isrgrootx1.pem \
+  -o resources-logic/src/main/res/raw/isrg_root_x1.pem
+
+# Download ISRG Root X2
+curl -s https://letsencrypt.org/certs/isrg-root-x2.pem \
+  -o resources-logic/src/main/res/raw/isrg_root_x2.pem
+</code></pre>
+<p>Verify the downloaded certificates:</p>
+<pre><code class="language-bash">openssl x509 -in resources-logic/src/main/res/raw/isrg_root_x1.pem -noout -subject -issuer
+# subject= /C=US/O=Internet Security Research Group/CN=ISRG Root X1
+# issuer= /C=US/O=Internet Security Research Group/CN=ISRG Root X1
+</code></pre>
+<h3 id="step-3-update-the-reader-trust-store-configuration"><a class="header" href="#step-3-update-the-reader-trust-store-configuration">Step 3: Update the Reader Trust Store Configuration</a></h3>
+<p>Edit the <code>WalletCoreConfigImpl.kt</code> for your build flavor (e.g., <code>demo</code>):</p>
+<pre><code class="language-text">core-logic/src/demo/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
+</code></pre>
+<p>Add your root certificates to the <code>configureReaderTrustStore</code> call:</p>
+<pre><code class="language-kotlin">configureReaderTrustStore(
+    context,
+    R.raw.pidissuerca02_cz,
+    R.raw.pidissuerca02_ee,
+    R.raw.pidissuerca02_eu,
+    R.raw.pidissuerca02_lu,
+    R.raw.pidissuerca02_nl,
+    R.raw.pidissuerca02_pt,
+    R.raw.pidissuerca02_ut,
+    R.raw.dc4eu,
+    R.raw.r45_staging,
+    R.raw.isrg_root_x1,   // Let's Encrypt RSA root
+    R.raw.isrg_root_x2    // Let's Encrypt ECDSA root
+)
+</code></pre>
+<h3 id="step-4-build-and-install"><a class="header" href="#step-4-build-and-install">Step 4: Build and Install</a></h3>
+<pre><code class="language-bash">./gradlew :app:installDemoDebug
+</code></pre>
+<p>This will build and install the updated wallet on your connected emulator or device. The wallet will now accept verifier certificates signed by Let’s Encrypt.</p>
+<blockquote>
+<p><strong>Note</strong>: If you use a different CA (e.g., your own self-signed root CA), follow the same steps: place your root CA <code>.pem</code> file in <code>resources-logic/src/main/res/raw/</code> and add its resource reference to <code>configureReaderTrustStore()</code>. Only <strong>root CA</strong> certificates need to be added — intermediates are validated through the x5c chain provided in the JAR JWT header.
+<strong>Source</strong>: <a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/blob/main/wiki/configuration.md">EUDI Wallet Configuration Guide</a></p>
+</blockquote>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<h3 id="common-issues"><a class="header" href="#common-issues">Common Issues</a></h3>
+<h4 id="gradle-sync-failed"><a class="header" href="#gradle-sync-failed">Gradle Sync Failed</a></h4>
+<pre><code class="language-text">Error: Could not find com.android.tools.build:gradle:X.X.X
+</code></pre>
+<p><strong>Solution</strong>:</p>
+<ol>
+<li>Check your internet connection</li>
+<li>Go to <strong>File → Invalidate Caches → Invalidate and Restart</strong></li>
+<li>Try <strong>File → Sync Project with Gradle Files</strong></li>
+</ol>
+<h4 id="emulator-wont-start"><a class="header" href="#emulator-wont-start">Emulator Won’t Start</a></h4>
+<p><strong>On Apple Silicon Macs</strong>:</p>
+<ul>
+<li>Ensure you downloaded an ARM64 system image</li>
+<li>Check Rosetta 2 is installed: <code>softwareupdate --install-rosetta</code></li>
+</ul>
+<p><strong>General</strong>:</p>
+<ul>
+<li>Increase RAM allocation in emulator settings</li>
+<li>Close other memory-intensive applications</li>
+<li>Try cold boot: <strong>Device Manager → Right-click device → Cold Boot Now</strong></li>
+</ul>
+<h4 id="adb-device-not-found"><a class="header" href="#adb-device-not-found">ADB Device Not Found</a></h4>
+<pre><code class="language-bash"># Restart ADB server
+~/Library/Android/sdk/platform-tools/adb kill-server
+~/Library/Android/sdk/platform-tools/adb start-server
+</code></pre>
+<h4 id="eudi-wallet-build-errors"><a class="header" href="#eudi-wallet-build-errors">EUDI Wallet Build Errors</a></h4>
+<ul>
+<li>Ensure JDK 21 is configured: <strong>Android Studio → Preferences → Build, Execution, Deployment → Build Tools → Gradle → Gradle JDK</strong></li>
+<li>Try <strong>Build → Clean Project</strong> followed by <strong>Build → Rebuild Project</strong></li>
+</ul>
+<h2 id="references"><a class="header" href="#references">References</a></h2>
+<h3 id="official-documentation"><a class="header" href="#official-documentation">Official Documentation</a></h3>
+<ul>
+<li><a href="https://developer.android.com/studio/install">Android Studio Installation Guide</a> - Google</li>
+<li><a href="https://developer.android.com/studio/run/managing-avds">Android Virtual Device Manager</a> - Google</li>
+<li><a href="https://developer.android.com/studio/debug/dev-options">Configure Developer Options</a> - Google</li>
+<li><a href="https://developer.android.com/tools/adb">ADB Command Reference</a> - Google</li>
+<li><a href="https://developer.chrome.com/docs/devtools/remote-debugging/">Chrome Remote Debugging</a> - Google</li>
+</ul>
+<h3 id="eudi-wallet-documentation"><a class="header" href="#eudi-wallet-documentation">EUDI Wallet Documentation</a></h3>
+<ul>
+<li><a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui">EUDI Android Wallet Repository</a> - European Commission</li>
+<li><a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/blob/main/wiki/how_to_build.md">EUDI Wallet How to Build Guide</a> - European Commission</li>
+<li><a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/blob/main/wiki/configuration.md">EUDI Wallet Configuration Guide</a> - European Commission</li>
+</ul>
+<h3 id="additional-resources"><a class="header" href="#additional-resources">Additional Resources</a></h3>
+<ul>
+<li><a href="https://www.xda-developers.com/how-install-android-apps-macos/">XDA Developers - Install Android Apps on macOS</a> - Guide to running Android apps on Mac</li>
+<li><a href="https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework">EUDI Wallet Architecture Reference Framework</a> - Technical specifications</li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="av_wallet_android_studio.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="demo_webapp.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="av_wallet_android_studio.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="demo_webapp.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="elasticlunr-ef4e11c1.min.js"></script>
+        <script src="mark-09e88c2c.min.js"></script>
+        <script src="searcher-09f2665d.js"></script>
+
+        <script src="clipboard-1626706a.min.js"></script>
+        <script src="highlight-abc7f01d.js"></script>
+        <script src="book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="mermaid-eefea253.min.js"></script>
+        <script src="mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

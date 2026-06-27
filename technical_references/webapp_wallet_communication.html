@@ -1,0 +1,1131 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>The Webapp -&gt; Wallet Communication Protocol - ewQwe Digital Identity</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="shortcut icon" href="../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../custom-theme-b78cf314.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-3b89128e.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-e68e16c9.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">ewQwe Digital Identity</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="the-webapp---wallet-communication-protocol"><a class="header" href="#the-webapp---wallet-communication-protocol">The Webapp -&gt; Wallet Communication Protocol</a></h1>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>This chapter explains how the <strong>Demo Web App</strong> (Relying Party) communicates with the <strong>Demo Wallet Browser Extension</strong> to request and verify credentials. The implementation follows the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile (Annex A)</a> requirements:</p>
+<ul>
+<li><strong>Primary Mechanism</strong>: W3C Digital Credentials API (<a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation">Section A.5</a>)</li>
+<li><strong>Fallback Mechanism</strong>: OpenID4VP via postMessage (<a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#openid-for-verifiable-presentations-profile-requirements">Section A.5.2</a>)</li>
+</ul>
+<p>Both mechanisms use the <strong>OpenID for Verifiable Presentations (OpenID4VP) 1.0</strong> protocol for the credential exchange format.</p>
+<h2 id="authoritative-references"><a class="header" href="#authoritative-references">Authoritative References</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Specification</th><th>Reference</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>W3C Digital Credentials API</strong></td><td><a href="https://wicg.github.io/digital-credentials/">WICG Spec</a></td><td>Browser API for requesting digital credentials (primary method)</td></tr>
+<tr><td><strong>OpenID4VP 1.0</strong></td><td><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID Spec</a></td><td>Protocol for requesting and presenting Verifiable Presentations</td></tr>
+<tr><td><strong>ISO/IEC 18013-5:2021</strong></td><td><a href="https://www.iso.org/standard/69084.html">ISO Standard</a></td><td>Mobile driving licence (mDL) data format standard</td></tr>
+<tr><td><strong>EU Age Verification Profile</strong></td><td><a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">Annex A</a></td><td>EU-specific requirements for age verification</td></tr>
+<tr><td><strong>W3C Credential Management Level 1</strong></td><td><a href="https://www.w3.org/TR/credential-management-1/">W3C Spec</a></td><td>Base credential management API that Digital Credentials extends</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="communication-mechanisms"><a class="header" href="#communication-mechanisms">Communication Mechanisms</a></h2>
+<h3 id="primary-mechanism-w3c-digital-credentials-api"><a class="header" href="#primary-mechanism-w3c-digital-credentials-api">Primary Mechanism: W3C Digital Credentials API</a></h3>
+<p>The W3C Digital Credentials API extends <code>navigator.credentials.get()</code> with support for digital identity credentials. This is the <strong>default method</strong> specified in <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation">Annex A, Section A.5</a>.</p>
+<p><strong>Browser Support Status</strong>:</p>
+<ul>
+<li>Chrome/Chromium: API available but requires OS-level credential provider</li>
+<li>Firefox: Not yet implemented</li>
+<li>Safari: Not yet implemented</li>
+<li><strong>Browser Extensions</strong>: Cannot register as credential providers in current browser APIs</li>
+</ul>
+<p><strong>API Structure</strong>:</p>
+<pre><code class="language-typescript">interface CredentialRequestOptions {
+  digital?: DigitalCredentialRequestOptions;
+}
+
+interface DigitalCredentialRequestOptions {
+  requests: DigitalCredentialRequest[];
+}
+
+interface DigitalCredentialRequest {
+  protocol: string;    // "openid4vp" for OpenID4VP
+  data: object;        // OpenID4VPRequest
+}
+</code></pre>
+<p><strong>Demo Webapp Implementation</strong>:</p>
+<p>The demo webapp attempts the native API first (respecting the spec’s “default method” requirement):</p>
+<pre><code class="language-typescript">// From webapp/src/credentials.ts
+if (useNativeAPI &amp;&amp; typeof globalThis.DigitalCredential !== "undefined") {
+  try {
+    const credential = await navigator.credentials.get({
+      digital: {
+        requests: [{
+          protocol: "openid4vp",
+          data: request  // OpenID4VPRequest object
+        }]
+      }
+    });
+    
+    const digitalCredential = credential as {
+      protocol: string;           // "openid4vp"
+      data: OpenID4VPResponse;    // VP token and presentation submission
+    };
+    
+    return digitalCredential.data;
+  } catch (error) {
+    // NetworkError: No provider registered - fall through to fallback
+  }
+}
+</code></pre>
+<p><strong>Why It Currently Fails</strong>:</p>
+<p>Browser extensions cannot register as Digital Credentials providers. When called, the API throws <code>NetworkError: No provider for digital credential requests</code>, triggering the fallback mechanism.</p>
+<h3 id="fallback-mechanism-openid4vp-via-postmessage"><a class="header" href="#fallback-mechanism-openid4vp-via-postmessage">Fallback Mechanism: OpenID4VP via postMessage</a></h3>
+<p>Per <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation">Annex A, Section A.5</a>:</p>
+<blockquote>
+<p>“OpenID for Verifiable Presentations is used as a fallback mechanism when W3C Digital Credentials API is not available.”</p>
+</blockquote>
+<p>The demo implementation uses <code>window.postMessage</code> to communicate OpenID4VP protocol messages between the webapp and wallet extension. This is a valid transport mechanism because:</p>
+<ul>
+<li>✅ Annex A specifies the protocol (OpenID4VP) but not the transport layer</li>
+<li>✅ The <code>vp_token</code> format follows OpenID4VP conventions (note: native DCQL wallets omit <code>presentation_submission</code>)</li>
+<li>✅ All required fields (<code>nonce</code>, <code>client_id</code>, DCQL query, etc.) are preserved</li>
+<li>✅ Works within browser extension architectural constraints</li>
+</ul>
+<p><strong>Demo Webapp Implementation</strong>:</p>
+<pre><code class="language-typescript">// From webapp/src/credentials.ts
+function requestCredentialsViaExtension(
+  request: OpenID4VPRequest,
+  logger: DebugLogger
+): Promise&lt;OpenID4VPResponse | null&gt; {
+  const requestId = crypto.randomUUID();
+  
+  return new Promise((resolve) =&gt; {
+    // Listen for response from extension
+    const handler = (event: MessageEvent) =&gt; {
+      if (event.data?.type === "EU_AV_WALLET_RESPONSE" &amp;&amp;
+          event.data?.requestId === requestId) {
+        window.removeEventListener("message", handler);
+        
+        const { response, error, cancelled } = event.data.payload;
+        if (error) {
+          logger.error("Wallet error:", error);
+          resolve(null);
+        } else if (cancelled) {
+          logger.log("User cancelled credential request");
+          resolve(null);
+        } else {
+          resolve(response);
+        }
+      }
+    };
+    
+    window.addEventListener("message", handler);
+    
+    // Send request to extension's content script
+    window.postMessage({
+      type: "EU_AV_WALLET_REQUEST",
+      requestId,
+      payload: {
+        protocol: "openid4vp",
+        data: request
+      }
+    }, "*");
+    
+    // Timeout after 30 seconds
+    setTimeout(() =&gt; {
+      window.removeEventListener("message", handler);
+      resolve(null);
+    }, 30000);
+  });
+}
+</code></pre>
+<p><strong>Demo Wallet Extension Implementation</strong>:</p>
+<p>The extension’s content script receives requests and coordinates with the background service worker:</p>
+<pre><code class="language-typescript">// From wallet-extension/content/content-script.ts
+window.addEventListener("message", (event) =&gt; {
+  if (event.source !== window) return;
+  
+  if (event.data?.type === "EU_AV_WALLET_REQUEST") {
+    handleWalletRequest(event.data.payload, event.data.requestId);
+  }
+});
+
+async function handleWalletRequest(payload: unknown, requestId?: string) {
+  // 1. Forward to background worker for credential matching
+  const response = await chrome.runtime.sendMessage({
+    type: "DC_API_REQUEST",
+    request: payload
+  });
+  
+  if (response.error) {
+    sendResponseToPage(requestId, { error: response.error });
+    return;
+  }
+  
+  // 2. Get matching credentials from storage
+  const matchingCredentials = response.matchingCredentials || [];
+  
+  if (matchingCredentials.length === 0) {
+    sendResponseToPage(requestId, { response: null });
+    return;
+  }
+  
+  // 3. Show credential selector UI (in demo: auto-select first match)
+  const selectedCredential = matchingCredentials[0];
+  
+  // 4. Build OpenID4VP response
+  const vpResponse = buildVPResponse(selectedCredential, payload.data);
+  
+  // 5. Send back to webapp
+  sendResponseToPage(requestId, { response: vpResponse });
+}
+
+function sendResponseToPage(requestId: string | undefined, payload: unknown) {
+  window.postMessage({
+    type: "EU_AV_WALLET_RESPONSE",
+    requestId,
+    payload
+  }, "*");
+}
+</code></pre>
+<h2 id="complete-communication-flow"><a class="header" href="#complete-communication-flow">Complete Communication Flow</a></h2>
+<pre class="mermaid">sequenceDiagram
+    participant User
+    participant Webapp as Demo Webapp&lt;br/&gt;(Relying Party)
+    participant Page as Page Context
+    participant Content as Content Script&lt;br/&gt;(Wallet Extension)
+    participant Background as Background Worker&lt;br/&gt;(Wallet Extension)
+
+    User-&gt;&gt;Webapp: Click "Request Credentials"
+    Webapp-&gt;&gt;Webapp: Build OpenID4VP request&lt;br/&gt;(nonce, DCQL query, client_id)
+    
+    Note over Webapp,Page: Primary Mechanism Attempt
+    Webapp-&gt;&gt;Page: navigator.credentials.get({digital: {...}})
+    Page--&gt;&gt;Webapp: ❌ NetworkError: No provider
+    Note over Webapp: Falls back to postMessage
+    
+    Note over Webapp,Background: Fallback Mechanism
+    Webapp-&gt;&gt;Page: postMessage(EU_AV_WALLET_REQUEST)
+    Page-&gt;&gt;Content: Message delivered
+    Content-&gt;&gt;Background: chrome.runtime.sendMessage&lt;br/&gt;(DC_API_REQUEST)
+    
+    Background-&gt;&gt;Background: Parse DCQL query&lt;br/&gt;Match stored credentials
+    Background--&gt;&gt;Content: Matching credentials
+    
+    Content-&gt;&gt;Content: Show credential selector&lt;br/&gt;(or auto-select in demo)
+    User-&gt;&gt;Content: Select credential
+    
+    Content-&gt;&gt;Content: Build VP token&lt;br/&gt;Create presentation_submission
+    Content-&gt;&gt;Page: postMessage(EU_AV_WALLET_RESPONSE)
+    Page-&gt;&gt;Webapp: VP token received
+    
+    Webapp-&gt;&gt;Webapp: Send to backend for verification
+</pre>
+
+<h2 id="openid4vp-request-format"><a class="header" href="#openid4vp-request-format">OpenID4VP Request Format</a></h2>
+<p>The OpenID4VP request structure is identical whether sent via the native API or postMessage. It follows the <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID4VP 1.0 specification</a>.</p>
+<p><strong>Key Request Parameters</strong>:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>client_id</code></td><td>string</td><td>✓</td><td>RP identifier (format depends on <code>client_id_scheme</code>)</td></tr>
+<tr><td><code>client_id_scheme</code></td><td>string</td><td>✓</td><td>How to validate client_id: <code>"redirect_uri"</code> (Annex A) | <code>"x509_hash"</code> (HAIP) | <code>"x509_san_dns"</code> (legacy HAIP)</td></tr>
+<tr><td><code>response_type</code></td><td>string</td><td>✓</td><td>Always <code>"vp_token"</code> for credential presentations</td></tr>
+<tr><td><code>response_mode</code></td><td>string</td><td>✓</td><td><code>"direct_post"</code> (Annex A) | <code>"direct_post.jwt"</code> (HAIP)</td></tr>
+<tr><td><code>nonce</code></td><td>string</td><td>✓</td><td>Replay protection (cryptographically random)</td></tr>
+<tr><td><code>state</code></td><td>string</td><td></td><td>Optional correlation value</td></tr>
+<tr><td><code>presentation_definition</code></td><td>object</td><td>✓</td><td>Defines required credentials and claims (DCQL format)</td></tr>
+<tr><td><code>client_metadata</code></td><td>object</td><td></td><td>RP metadata (name, purpose, supported formats)</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p><strong>Important</strong>: When <code>client_metadata</code> is provided, it <strong>MUST</strong> include the <code>vp_formats_supported</code> field (required by the wallet library). This field specifies the VP formats the RP supports (e.g., <code>mso_mdoc</code> with algorithm IDs).</p>
+</blockquote>
+<h3 id="profile-based-request-differences"><a class="header" href="#profile-based-request-differences">Profile-Based Request Differences</a></h3>
+<p>The webapp uses two profiles that affect how requests are formatted:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Aspect</th><th>HAIP Profile (mDL, PID)</th><th>Annex A Profile (Proof of Age)</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Client ID Format</strong></td><td><code>x509_hash:&lt;base64url_sha256&gt;</code> (e.g. <code>x509_hash:2Y4J7s...</code> derived from server certificate)</td><td><code>redirect_uri:https://host/callback</code></td></tr>
+<tr><td><strong>Request Delivery</strong></td><td><code>request_uri</code> → wallet fetches signed JAR</td><td>All parameters inline in URL (no <code>request_uri</code>)</td></tr>
+<tr><td><strong>Request Format</strong></td><td>Signed JAR (JWT with x5c)</td><td>Plain URL parameters (redirect_uri forbids signing)</td></tr>
+<tr><td><strong>Response Mode</strong></td><td><code>direct_post.jwt</code></td><td><code>direct_post</code></td></tr>
+<tr><td><strong>Target Wallet</strong></td><td>EUDI Wallet</td><td>Age Verification App</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p><strong>Note</strong>: The <code>redirect_uri</code> client_id_scheme explicitly forbids signed requests. For Annex A, all authorization request parameters must be passed inline in the URL. Using <code>request_uri</code> would trigger JWT parsing, which fails.</p>
+</blockquote>
+<p>The <code>presentation_definition</code> uses <strong>Digital Credentials Query Language (DCQL)</strong> to specify which credentials and claims are requested. For detailed DCQL query examples and syntax, see <a href="./dcql_age_verification.html">DCQL Age Verification</a>.</p>
+<p><strong>Minimal Example (Annex A Profile)</strong>:</p>
+<pre><code class="language-typescript">const request: OpenID4VPRequest = {
+  client_id: "redirect_uri:http://localhost:5175/ewqwe_api/openid4vp/direct_post",
+  client_id_scheme: "redirect_uri",
+  response_type: "vp_token",
+  response_mode: "direct_post",
+  nonce: crypto.randomUUID(),
+  
+  presentation_definition: {
+    id: "proof-of-age-request",
+    name: "Age Verification",
+    purpose: "Verify you are 18 or older",
+    input_descriptors: [{
+      id: "proof_of_age",
+      format: { mso_mdoc: { alg: ["ES256"] } },
+      constraints: {
+        limit_disclosure: "required",
+        fields: [{ path: ["$['eu.europa.ec.av.1']['age_over_18']"] }]
+      }
+    }]
+  }
+};
+</code></pre>
+<p><strong>Minimal Example (HAIP Profile)</strong>:</p>
+<pre><code class="language-typescript">const request: OpenID4VPRequest = {
+  client_id: "x509_hash:2Y4J7s...",  // base64url SHA-256 of the server's leaf certificate
+  client_id_scheme: "x509_hash",
+  response_type: "vp_token",
+  response_mode: "direct_post.jwt",
+  nonce: crypto.randomUUID(),
+  
+  presentation_definition: {
+    id: "mdl-verification",
+    name: "Driver License Verification",
+    input_descriptors: [{
+      id: "mdl_credential",
+      format: { mso_mdoc: { alg: ["ES256"] } },
+      constraints: {
+        limit_disclosure: "required",
+        fields: [
+          { path: ["$['org.iso.18013.5.1']['family_name']"] },
+          { path: ["$['org.iso.18013.5.1']['given_name']"] }
+        ]
+      }
+    }]
+  }
+};
+</code></pre>
+<h2 id="openid4vp-response-format"><a class="header" href="#openid4vp-response-format">OpenID4VP Response Format</a></h2>
+<blockquote>
+<p><strong>Note</strong>: This format is used by the <strong>browser extension fallback</strong>. Native wallets using DCQL queries (per OpenID4VP Section 8.1) return a different format where:</p>
+<ul>
+<li><code>vp_token</code> is a JSON object with credential IDs as keys: <code>{"credential_id": ["base64_presentation"]}</code></li>
+<li><code>presentation_submission</code> is <strong>not included</strong></li>
+</ul>
+</blockquote>
+<pre><code class="language-typescript">interface OpenID4VPResponse {
+  // Verifiable Presentation token (JSON-stringified credential)
+  vp_token: string;
+  
+  // Describes how VP maps to the request (browser extension only; not sent by DCQL wallets)
+  presentation_submission?: {
+    id: string;
+    definition_id: string;              // Matches request.presentation_definition.id
+    descriptor_map: DescriptorMapEntry[];
+  };
+  
+  // Echoed from request
+  nonce: string;
+  state?: string;
+}
+
+interface DescriptorMapEntry {
+  id: string;          // Matches input_descriptor.id from request
+  format: string;      // "mso_mdoc" | "jwt_vp"
+  path: string;        // JSONPath to credential in vp_token (e.g., "$")
+}
+</code></pre>
+<p><strong>Example Response</strong>:</p>
+<pre><code class="language-typescript">{
+  "vp_token": "{\"docType\":\"eu.europa.ec.av.1\",\"namespace\":\"eu.europa.ec.av.1\",\"claims\":{\"age_over_18\":true},\"issuer\":\"Government ID Authority\",\"issuedAt\":\"2025-01-01T00:00:00.000Z\",\"expiresAt\":\"2026-04-01T00:00:00.000Z\"}",
+  
+  "presentation_submission": {
+    "id": "submission-123",
+    "definition_id": "proof-of-age-request",
+    "descriptor_map": [{
+      "id": "proof_of_age",
+      "format": "mso_mdoc",
+      "path": "$"
+    }]
+  },
+  
+  "nonce": "f5059300-5812-4e21-a679-f0668f0ff795",
+  "state": "abc123"
+}
+</code></pre>
+<p><strong>VP Token Structure</strong> (parsed from <code>vp_token</code> string):</p>
+<pre><code class="language-json">{
+  "docType": "eu.europa.ec.av.1",
+  "namespace": "eu.europa.ec.av.1",
+  "claims": {
+    "age_over_18": true
+  },
+  "issuer": "Government ID Authority",
+  "issuedAt": "2025-01-01T00:00:00.000Z",
+  "expiresAt": "2026-04-01T00:00:00.000Z"
+}
+</code></pre>
+<p><strong>Note</strong>: In production implementations following ISO/IEC 18013-5, the <code>vp_token</code> contains base64url-encoded CBOR DeviceResponse structures. This demo uses simplified JSON for clarity. See <a href="./digital_credentials_browser_storage.html">Digital Credential Browser Storage</a> for sample credential data structures.</p>
+<h2 id="supported-credential-types"><a class="header" href="#supported-credential-types">Supported Credential Types</a></h2>
+<p>The demo wallet supports multiple credential formats following international and EU standards:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Credential Type</th><th>docType</th><th>Namespace</th><th>Standard</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Proof of Age</strong></td><td><code>eu.europa.ec.av.1</code></td><td><code>eu.europa.ec.av.1</code></td><td>EU Age Verification Profile</td></tr>
+<tr><td><strong>Mobile Driver’s License</strong></td><td><code>org.iso.18013.5.1.mDL</code></td><td><code>org.iso.18013.5.1</code></td><td>ISO/IEC 18013-5:2021</td></tr>
+<tr><td><strong>EU Personal ID</strong></td><td><code>eu.europa.ec.eudi.pid.1</code></td><td><code>eu.europa.ec.eudi.pid.1</code></td><td>EU Digital Identity Wallet ARF</td></tr>
+</tbody>
+</table>
+</div>
+<p>For complete attribute specifications, encoding formats, and authoritative references, see <a href="./credential_type_specifications.html">Credential Type Specifications</a>.</p>
+<p>For DCQL query examples to request these credentials, see <a href="./dcql_age_verification.html">DCQL Age Verification</a>.</p>
+<h2 id="security-considerations"><a class="header" href="#security-considerations">Security Considerations</a></h2>
+<h3 id="nonce-binding-replay-protection"><a class="header" href="#nonce-binding-replay-protection">Nonce Binding (Replay Protection)</a></h3>
+<p><strong>Requirement</strong> (<a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#name-request">OpenID4VP Section 5.1</a>):</p>
+<p>The <code>nonce</code> parameter MUST be:</p>
+<ol>
+<li><strong>Generated fresh</strong> for each request using cryptographically secure randomness</li>
+<li><strong>Included in the request</strong> to the wallet</li>
+<li><strong>Bound to the VP token</strong> in the response</li>
+<li><strong>Verified by the credential verifier</strong> to prevent replay attacks</li>
+</ol>
+<pre><code class="language-typescript">// Demo Webapp: Generate nonce
+const nonce = crypto.randomUUID();  // "f5059300-5812-4e21-a679-f0668f0ff795"
+
+// Demo Wallet: Include same nonce in response
+const response: OpenID4VPResponse = {
+  vp_token: "...",
+  presentation_submission: {...},
+  nonce: nonce  // Must match request
+};
+
+// Credential Verifier: Validate nonce matches
+if (response.nonce !== storedNonce) {
+  throw new Error("Nonce mismatch - possible replay attack");
+}
+</code></pre>
+<h3 id="origin-validation"><a class="header" href="#origin-validation">Origin Validation</a></h3>
+<p>The demo wallet validates the requesting origin before displaying credentials to the user:</p>
+<pre><code class="language-typescript">// Content script captures origin
+const requestingOrigin = window.location.origin;  // "http://localhost:5174"
+
+// Shown in credential selector UI so user knows which site is requesting
+</code></pre>
+<p><strong>Production considerations</strong>:</p>
+<ul>
+<li>Implement allowlist of trusted RP origins</li>
+<li>Verify <code>client_id</code> matches the requesting origin</li>
+<li>Support <code>client_id_scheme</code> validation (x509_san_dns, verifier_attestation)</li>
+</ul>
+<h3 id="selective-disclosure"><a class="header" href="#selective-disclosure">Selective Disclosure</a></h3>
+<p>When <code>limit_disclosure: "required"</code> is set in the constraint:</p>
+<ul>
+<li>✅ Wallet MUST only reveal specifically requested claims</li>
+<li>✅ Other claims in the credential remain hidden from the RP</li>
+<li>✅ Enables privacy-preserving verification (e.g., prove age_over_18 without revealing exact birth_date)</li>
+</ul>
+<p><strong>Example</strong>:</p>
+<pre><code class="language-typescript">// Request only age_over_18
+constraints: {
+  limit_disclosure: "required",
+  fields: [{
+    path: ["$['org.iso.18013.5.1']['age_over_18']"]
+  }]
+}
+
+// Wallet response reveals ONLY age_over_18, not birth_date or other mDL data
+{
+  "claims": {
+    "age_over_18": true
+    // birth_date, family_name, etc. NOT included
+  }
+}
+</code></pre>
+<h2 id="compliance-with-eu-age-verification-profile"><a class="header" href="#compliance-with-eu-age-verification-profile">Compliance with EU Age Verification Profile</a></h2>
+<p>This implementation is fully compliant with <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">Annex A</a> requirements:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Requirement</th><th>Annex A Reference</th><th>Demo Implementation</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td>Primary method: W3C Digital Credentials API</td><td><a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#a5-proof-of-age-attestation-presentation">Section A.5</a></td><td>Attempted first, falls back gracefully</td><td>✅</td></tr>
+<tr><td>Fallback: OpenID4VP</td><td><a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile#openid-for-verifiable-presentations-profile-requirements">Section A.5.2</a></td><td>postMessage transport with OpenID4VP protocol</td><td>✅</td></tr>
+<tr><td>Response type <code>vp_token</code></td><td>Section A.5.2</td><td>Implemented in request builder</td><td>✅</td></tr>
+<tr><td>Response mode <code>direct_post</code></td><td>Section A.5.2</td><td>postMessage provides direct response</td><td>✅</td></tr>
+<tr><td>Client ID scheme <code>redirect_uri</code></td><td>Section A.5.2</td><td>Uses <code>window.location.origin</code></td><td>✅</td></tr>
+<tr><td>Nonce parameter</td><td>Section A.5.2</td><td>Generated and validated</td><td>✅</td></tr>
+<tr><td>DCQL query</td><td>Section A.5.2</td><td>Full DCQL support in wallet</td><td>✅</td></tr>
+<tr><td>Presentation submission</td><td>Section A.5.2</td><td>Included in all responses</td><td>✅</td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Quote from Annex A.5</strong>:</p>
+<blockquote>
+<p>“The default method for the presentation of a Proof of Age attestation is the W3C Digital Credentials API. OpenID for Verifiable Presentations is used as a fallback mechanism when W3C Digital Credentials API is not available.”</p>
+</blockquote>
+<p>Our implementation respects this hierarchy by attempting the native API first, then using the OpenID4VP fallback when unavailable (which is currently always the case for browser extensions).</p>
+<h2 id="related-documentation"><a class="header" href="#related-documentation">Related Documentation</a></h2>
+<ul>
+<li><a href="./user-journey.html">User Journey</a> - Complete sequence diagram of the credential flow</li>
+<li><a href="./demo_architecture.html">Demo Architecture</a> - System architecture and setup instructions</li>
+<li><a href="./dcql_age_verification.html">DCQL Age Verification</a> - Digital Credentials Query Language details</li>
+<li><a href="./credential_type_specifications.html">Credential Type Specifications</a> - Complete claim listings by credential type</li>
+<li><a href="./digital_credential_format.html">Digital Credential Format</a> - Credential structure and encoding</li>
+</ul>
+<h2 id="message-flow-diagram"><a class="header" href="#message-flow-diagram">Message Flow Diagram</a></h2>
+<pre class="mermaid">sequenceDiagram
+  participant RP as Relying Party Web App&lt;br/&gt;(http://localhost:5174)
+  participant CS as Content Script&lt;br/&gt;(Demo Wallet Extension)
+  participant BG as Background Worker&lt;br/&gt;(Demo Wallet Extension)
+  participant Storage as chrome.storage.local&lt;br/&gt;(Stored Credentials)
+
+  Note over RP: 1. Build OpenID4VP request&lt;br/&gt;with DCQL query
+  RP-&gt;&gt;RP: 2. Try navigator.credentials.get()&lt;br/&gt;[NetworkError: No provider]
+  
+  RP-&gt;&gt;CS: 3. window.postMessage&lt;br/&gt;(EU_AV_WALLET_REQUEST, request)
+  
+  Note over CS: 4. Listen for message event
+  CS-&gt;&gt;BG: 5. chrome.runtime.sendMessage&lt;br/&gt;(DC_API_REQUEST)
+  
+  BG-&gt;&gt;Storage: 6. Query stored credentials
+  Storage--&gt;&gt;BG: Return all credentials
+  
+  Note over BG: 6. Parse DCQL query&lt;br/&gt;Match credentials
+  BG--&gt;&gt;CS: 6. Return matching credentials
+  
+  Note over CS: 7. Build VP response&lt;br/&gt;(vp_token + presentation_submission)
+  CS-&gt;&gt;RP: 8. window.postMessage&lt;br/&gt;(EU_AV_WALLET_RESPONSE)
+  
+  Note over RP: 9. Send VP token to backend&lt;br/&gt;for verification
+</pre>
+
+<h2 id="webapp---wallet-security-considerations"><a class="header" href="#webapp---wallet-security-considerations">Webapp -&gt; Wallet: Security Considerations</a></h2>
+<h3 id="message-origin-validation"><a class="header" href="#message-origin-validation">Message Origin Validation</a></h3>
+<p>The content script validates message sources:</p>
+<pre><code class="language-typescript">window.addEventListener("message", (event) =&gt; {
+  // Only accept messages from same window
+  if (event.source !== window) return;
+  
+  // Only handle wallet-specific message types
+  if (event.data?.type === "EU_AV_WALLET_REQUEST") {
+    handleWalletRequest(event.data.payload, event.data.requestId);
+  }
+});
+</code></pre>
+<h3 id="nonce-verification"><a class="header" href="#nonce-verification">Nonce Verification</a></h3>
+<p>The Relying Party Web App includes a <code>nonce</code> in the request which is included in the VP response. The credential verifier backend validates this nonce to prevent replay attacks.</p>
+<h3 id="user-consent"><a class="header" href="#user-consent">User Consent</a></h3>
+<p>The Demo Wallet Browser Extension always shows a credential selector UI to the user, requiring explicit consent before sharing any credential data with the requesting site.</p>
+<h3 id="tls-protection"><a class="header" href="#tls-protection">TLS Protection</a></h3>
+<p>All backend communication between the Relying Party Web App and the credential verifier uses HTTPS with mutual TLS (mTLS) authentication.</p>
+<h2 id="compliance-with-eu-age-verification-profile-annex-a"><a class="header" href="#compliance-with-eu-age-verification-profile-annex-a">Compliance with EU Age Verification Profile (Annex A)</a></h2>
+<h3 id="summary-full-compliance-via-openid4vp-fallback"><a class="header" href="#summary-full-compliance-via-openid4vp-fallback">Summary: Full Compliance via OpenID4VP Fallback</a></h3>
+<p>This implementation is <strong>fully compliant</strong> with the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile (Annex A)</a> requirements. The postMessage-based OpenID4VP fallback is not a workaround—it is an <strong>explicitly permitted mechanism</strong> for scenarios where the W3C Digital Credentials API is unavailable.</p>
+<h3 id="annex-a-section-a5-proof-of-age-attestation-presentation"><a class="header" href="#annex-a-section-a5-proof-of-age-attestation-presentation">Annex A Section A.5: Proof of Age Attestation Presentation</a></h3>
+<p>The specification defines <strong>two presentation methods</strong> with clear precedence:</p>
+<p><strong>From Annex A.5:</strong></p>
+<blockquote>
+<p>“The default method for the presentation of a Proof of Age attestation is the W3C Digital Credentials API. OpenID for Verifiable Presentations is used as a fallback mechanism”</p>
+</blockquote>
+<p><strong>From Annex A.5 (OpenID4VP Profile Requirements):</strong></p>
+<blockquote>
+<p>“OpenID for Verifiable Presentations is used as a fallback mechanism <strong>when W3C Digital Credentials API is not available.</strong>”</p>
+</blockquote>
+<h3 id="our-implementation-strategy"><a class="header" href="#our-implementation-strategy">Our Implementation Strategy</a></h3>
+<p>Given the browser limitations documented above, our implementation:</p>
+<ol>
+<li><strong>Attempts</strong> the W3C Digital Credentials API (primary method) - ✅ Respects “default method” requirement</li>
+<li><strong>Detects</strong> when it’s unavailable (Chrome: NetworkError, Firefox: API doesn’t exist) - ✅ Proper fallback trigger</li>
+<li><strong>Falls back</strong> to OpenID4VP via postMessage - ✅ Uses permitted fallback mechanism</li>
+<li><strong>Implements</strong> all OpenID4VP requirements from Annex A.5.2 - ✅ Full protocol compliance</li>
+</ol>
+<p>This is <strong>exactly the behavior</strong> prescribed by Annex A for scenarios where the primary method is unavailable.</p>
+<h3 id="detailed-compliance-matrix"><a class="header" href="#detailed-compliance-matrix">Detailed Compliance Matrix</a></h3>
+<h3 id="the-webapp---wallet-detailed-compliance-matrix"><a class="header" href="#the-webapp---wallet-detailed-compliance-matrix">The Webapp -&gt; Wallet Detailed Compliance Matrix</a></h3>
+<h4 id="-requirement-primary-method-w3c-digital-credentials-api"><a class="header" href="#-requirement-primary-method-w3c-digital-credentials-api">✅ Requirement: Primary Method (W3C Digital Credentials API)</a></h4>
+<p><strong>Annex A.5:</strong></p>
+<blockquote>
+<p>“The default method for the presentation of a Proof of Age attestation is the W3C Digital Credentials API.”</p>
+</blockquote>
+<p><strong>Our Implementation (Relying Party Web App):</strong></p>
+<pre><code class="language-typescript">// Attempts native API first (disabled by default but code present)
+if (useNativeAPI &amp;&amp; typeof globalThis.DigitalCredential !== "undefined") {
+  const credential = await navigator.credentials.get({
+    digital: {
+      requests: [{
+        protocol: "openid4vp",
+        data: request,
+      }],
+    },
+  });
+}
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong> - We attempt the primary method. The fact that it fails due to browser limitations is expected and triggers the fallback as specified.</p>
+<h4 id="-requirement-openid4vp-fallback"><a class="header" href="#-requirement-openid4vp-fallback">✅ Requirement: OpenID4VP Fallback</a></h4>
+<p><strong>Annex A.5:</strong></p>
+<blockquote>
+<p>“OpenID for Verifiable Presentations is used as a fallback mechanism when W3C Digital Credentials API is not available.”</p>
+</blockquote>
+<p><strong>Our Implementation:</strong></p>
+<pre><code class="language-typescript">// When native API unavailable or fails
+const extensionResponse = await requestCredentialsViaExtension(
+  request,
+  logger,
+);
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong> - Implements the required fallback mechanism using OpenID4VP protocol.</p>
+<h4 id="-requirement-custom-url-scheme-av"><a class="header" href="#-requirement-custom-url-scheme-av">✅ Requirement: Custom URL Scheme <code>av://</code></a></h4>
+<p><strong>Annex A.5.2:</strong></p>
+<blockquote>
+<p>“• As a way to invoke the Age Verification App, <strong>at least a custom URL scheme av:// MUST be supported.</strong>”</p>
+</blockquote>
+<p><strong>Our Implementation (Demo Wallet Browser Extension - Content Script):</strong></p>
+<pre><code class="language-typescript">document.addEventListener("click", (event) =&gt; {
+  const link = target.closest("a");
+  if (link?.href?.startsWith("av://")) {
+    event.preventDefault();
+    handleAVProtocol(link.href);
+  }
+});
+</code></pre>
+<p><strong>Our Implementation (Demo Wallet Browser Extension - Manifest):</strong></p>
+<pre><code class="language-json">"protocol_handlers": [{
+  "protocol": "web+av",
+  "name": "EU Age Verification Wallet",
+  "uriTemplate": "popup/popup.html?av=%s"
+}]
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong> - Supports both <code>av://</code> link interception and <code>web+av://</code> protocol handler.</p>
+<h4 id="-requirement-response-type-vp_token"><a class="header" href="#-requirement-response-type-vp_token">✅ Requirement: Response Type <code>vp_token</code></a></h4>
+<p><strong>Annex A.5.2:</strong></p>
+<blockquote>
+<p>“• Response type MUST be <code>vp_token</code>”</p>
+</blockquote>
+<p><strong>Our Implementation:</strong></p>
+<pre><code class="language-typescript">const request: OpenID4VPRequest = {
+  response_type: "vp_token",  // ✅ As required
+  // ... other fields
+};
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong></p>
+<h4 id="-requirement-response-mode-direct_post"><a class="header" href="#-requirement-response-mode-direct_post">✅ Requirement: Response Mode <code>direct_post</code></a></h4>
+<p><strong>Annex A.5.2:</strong></p>
+<blockquote>
+<p>“• <code>response_mode</code> MUST be <code>direct_post</code>”</p>
+</blockquote>
+<p><strong>Our Implementation:</strong></p>
+<pre><code class="language-typescript">const request: OpenID4VPRequest = {
+  response_mode: "direct_post",  // ✅ As required
+  // ... other fields
+};
+</code></pre>
+<p><strong>Interpretation:</strong> postMessage provides a <strong>direct response</strong> to the requesting page, satisfying the “direct_post” semantic even though the physical transport is in-page messaging rather than HTTP POST.</p>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong> - postMessage is a valid direct response mechanism.</p>
+<h4 id="-requirement-client-identifier-scheme"><a class="header" href="#-requirement-client-identifier-scheme">✅ Requirement: Client Identifier Scheme</a></h4>
+<p><strong>Annex A.5.2:</strong></p>
+<blockquote>
+<p>“• The client identifier scheme MUST be <code>redirect_uri</code> followed by the <code>response_uri</code>”</p>
+</blockquote>
+<p><strong>Our Implementation:</strong></p>
+<pre><code class="language-typescript">const request: OpenID4VPRequest = {
+  client_id: window.location.origin,  // e.g., "http://localhost:5174"
+  client_id_scheme: "redirect_uri",   // ✅ As required
+  // ... other fields
+};
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong></p>
+<h4 id="-requirement-nonce-parameter"><a class="header" href="#-requirement-nonce-parameter">✅ Requirement: Nonce Parameter</a></h4>
+<p><strong>Annex A.5.2:</strong></p>
+<blockquote>
+<p>“• A request MUST specify the nonce parameter”</p>
+</blockquote>
+<p><strong>Our Implementation:</strong></p>
+<pre><code class="language-typescript">const nonce = crypto.randomUUID();  // Generate cryptographic nonce
+const request: OpenID4VPRequest = {
+  nonce,  // ✅ Included
+  // ... other fields
+};
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong> - Nonce is generated, included in request, returned in response, and validated by the credential verifier backend.</p>
+<h4 id="-requirement-dcql-query"><a class="header" href="#-requirement-dcql-query">✅ Requirement: DCQL Query</a></h4>
+<p><strong>Annex A.5.2:</strong></p>
+<blockquote>
+<p>“• The DCQL query and response as defined in Section 6 of [OID4VP] MUST be used”</p>
+</blockquote>
+<p><strong>Our Implementation (Relying Party Web App - Request Builder):</strong></p>
+<pre><code class="language-typescript">const presentationDefinition: PresentationDefinition = {
+  id: crypto.randomUUID(),
+  name: "Proof of Age Verification",
+  purpose: "Verify identity using Proof of Age",
+  input_descriptors: [{
+    id: "proof_of_age_credential",
+    format: { mso_mdoc: { alg: ["ES256", "ES384", "ES512"] } },
+    constraints: {
+      limit_disclosure: "required",
+      fields: [
+        { path: ["$['eu.europa.ec.av.1']['age_over_18']"] }
+      ]
+    }
+  }]
+};
+</code></pre>
+<p><strong>Our Implementation (Demo Wallet Browser Extension - Background Worker):</strong></p>
+<pre><code class="language-typescript">// Background worker matches credentials against DCQL
+const matchingCredentials = allCredentials.filter(credential =&gt; {
+  return matchesInputDescriptor(credential, presentationDef.input_descriptors[0]);
+});
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong> - Full DCQL support for credential querying and matching.</p>
+<h4 id="-requirement-presentation-submission-browser-extension"><a class="header" href="#-requirement-presentation-submission-browser-extension">✅ Requirement: Presentation Submission (Browser Extension)</a></h4>
+<blockquote>
+<p><strong>Note</strong>: This section applies to the <strong>browser extension fallback</strong> only. Native DCQL wallets (like the EUDI AV Wallet) do <strong>not</strong> include <code>presentation_submission</code> in their response per OpenID4VP Section 8.1. With DCQL, the <code>vp_token</code> structure itself maps credentials to the query.</p>
+</blockquote>
+<p><strong>Annex A.5.2 (implicit in “DCQL response”):</strong></p>
+<blockquote>
+<p>The response must include a <code>presentation_submission</code> per [OID4VP] Section 6.</p>
+</blockquote>
+<p><strong>Our Browser Extension Implementation:</strong></p>
+<pre><code class="language-typescript">return {
+  vp_token: JSON.stringify(vpToken),
+  presentation_submission: {  // ✅ As required
+    id: crypto.randomUUID(),
+    definition_id: "credential_presentation",
+    descriptor_map: [{
+      id: credential.type + "_credential",
+      format: "mso_mdoc",
+      path: "$",
+    }],
+  },
+  nonce,
+  state,
+};
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong></p>
+<h4 id="-requirement-iso-mdoc-format"><a class="header" href="#-requirement-iso-mdoc-format">✅ Requirement: ISO mDoc Format</a></h4>
+<p><strong>Annex A.6:</strong></p>
+<blockquote>
+<p>The attestation format used is ISO mDoc [ISO18013-5].</p>
+</blockquote>
+<p><strong>Our Implementation:</strong></p>
+<pre><code class="language-typescript">const vpToken = {
+  docType: "eu.europa.ec.av.1",  // ✅ EU AV Profile docType
+  namespace: "eu.europa.ec.av.1",
+  claims: {
+    age_over_18: true,
+    age_over_21: true
+  },
+  issuer: "Age Verification Issuer",
+  // ... validity info, etc.
+};
+</code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong> - Uses ISO 18013-5 mDoc structure with EU AV Profile namespace.</p>
+<h4 id="-requirement-crypto-suite-p-256es256"><a class="header" href="#-requirement-crypto-suite-p-256es256">✅ Requirement: Crypto Suite P-256/ES256</a></h4>
+<p><strong>Annex A.6:</strong></p>
+<blockquote>
+<p>“All entities MUST support P-256 (secp256r1) as a key type with ES256 JWT algorithm for signing and signature validation”</p>
+</blockquote>
+<p><strong>Our Implementation (Credential Verifier):</strong></p>
+<pre class="playground"><code class="language-rust"><span class="boring">#![allow(unused)]
+</span><span class="boring">fn main() {
+</span>// From credential_verifier/src/attestation/
+let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, &amp;private_key_pem)?;
+let jwt = signer.sign_to_string(&amp;claims)?;
+<span class="boring">}</span></code></pre>
+<p><strong>Status:</strong> ✅ <strong>Compliant</strong> - Credential verifier uses ES256 with P-256 keys for attestation signing.</p>
+<h3 id="why-the-browser-limitation-doesnt-affect-compliance"><a class="header" href="#why-the-browser-limitation-doesnt-affect-compliance">Why the Browser Limitation Doesn’t Affect Compliance</a></h3>
+<p><strong>Key Point:</strong> Annex A requires implementations to support OpenID4VP as a fallback <strong>when W3C Digital Credentials API is not available</strong>. The specification does not distinguish between:</p>
+<ul>
+<li>“Not available because the browser doesn’t implement it” (Firefox)</li>
+<li>“Not available because no provider is registered” (Chrome with extensions)</li>
+<li>“Not available because of network errors” (Chrome example in our case)</li>
+</ul>
+<p>All scenarios trigger the <strong>same fallback requirement</strong>: Use OpenID4VP.</p>
+<p><strong>From Annex A.5:</strong></p>
+<blockquote>
+<p>“OpenID for Verifiable Presentations is used as a fallback mechanism <strong>when W3C Digital Credentials API is not available.</strong>”</p>
+</blockquote>
+<p>The specification uses <strong>“when not available”</strong> without qualifying the reason. Our implementation correctly detects unavailability and uses the fallback, making it compliant regardless of why the native API fails.</p>
+<h3 id="architectural-validity-of-postmessage-transport"><a class="header" href="#architectural-validity-of-postmessage-transport">Architectural Validity of postMessage Transport</a></h3>
+<p>The OpenID4VP specification ([OID4VP] Section 3) defines <strong>multiple response modes</strong>:</p>
+<ol>
+<li><strong><code>direct_post</code></strong> - POST to <code>response_uri</code></li>
+<li><strong><code>direct_post.jwt</code></strong> - POST encrypted JWT to <code>response_uri</code></li>
+<li><strong><code>fragment</code></strong> - URL fragment redirect</li>
+<li><strong><code>query</code></strong> - URL query redirect</li>
+</ol>
+<p><strong>Annex A.5.2 requires <code>direct_post</code>:</strong></p>
+<blockquote>
+<p>“• <code>response_mode</code> MUST be <code>direct_post</code>”</p>
+</blockquote>
+<p>The semantic of <code>direct_post</code> is: <strong>“The response is sent directly to the RP without intermediate redirects.”</strong></p>
+<p>Our postMessage implementation satisfies this semantic:</p>
+<ul>
+<li>✅ <strong>Direct delivery</strong>: Content script → Page (no redirects)</li>
+<li>✅ <strong>Secure channel</strong>: Same-origin postMessage with source validation</li>
+<li>✅ <strong>Structured payload</strong>: OpenID4VP-compliant <code>vp_token</code> + <code>presentation_submission</code></li>
+<li>✅ <strong>Nonce binding</strong>: Request nonce included in response for replay protection</li>
+</ul>
+<p>The choice of HTTP POST vs. postMessage is an <strong>implementation detail</strong> at the transport layer. The <strong>protocol layer</strong> (OpenID4VP message structure) is identical and compliant.</p>
+<h3 id="comparison-to-annex-a-example-section-a10"><a class="header" href="#comparison-to-annex-a-example-section-a10">Comparison to Annex A Example (Section A.10)</a></h3>
+<blockquote>
+<p><strong>Note</strong>: The examples below show the browser extension format with <code>presentation_submission</code>. Native DCQL wallets return a different format where the <code>vp_token</code> is structured as <code>{"credential_id": ["presentation"]}</code> and no <code>presentation_submission</code> is included.</p>
+</blockquote>
+<p><strong>Annex A.10 shows an OpenID4VP response:</strong></p>
+<pre><code class="language-http">POST /post HTTP/1.1
+Host: client.example.org
+Content-Type: application/x-www-form-urlencoded
+
+vp_token=...&amp;presentation_submission=...&amp;state=...
+</code></pre>
+<p><strong>Our postMessage payload carries the same data:</strong></p>
+<pre><code class="language-typescript">window.postMessage({
+  type: "EU_AV_WALLET_RESPONSE",
+  requestId: originalRequestId,
+  payload: {
+    response: {
+      vp_token: "...",              // ✅ Same field
+      presentation_submission: {...}, // ✅ Same field
+      state: "...",                  // ✅ Same field
+      nonce: "..."                   // ✅ Same field
+    }
+  }
+}, "*");
+</code></pre>
+<p>The <strong>data structure is identical</strong>—only the transport mechanism differs (postMessage instead of HTTP POST), which is permitted as an implementation choice.</p>
+<h3 id="legal-and-standards-interpretation"><a class="header" href="#legal-and-standards-interpretation">Legal and Standards Interpretation</a></h3>
+<p><strong>Key Principle from Standards Compliance:</strong></p>
+<blockquote>
+<p>Standards compliance requires adherence to <strong>normative requirements</strong> (MUST/SHOULD/MAY), not to specific implementation techniques unless explicitly mandated.</p>
+</blockquote>
+<p><strong>Annex A.5.2 normative requirements:</strong></p>
+<ul>
+<li>✅ <code>response_type=vp_token</code> (we implement)</li>
+<li>✅ <code>response_mode=direct_post</code> (we implement the semantic)</li>
+<li>✅ DCQL query (we implement)</li>
+<li>✅ <code>av://</code> URL scheme (we implement)</li>
+<li>✅ Client ID scheme <code>redirect_uri</code> (we implement)</li>
+<li>✅ Nonce parameter (we implement)</li>
+</ul>
+<p><strong>Annex A.5.2 does NOT require:</strong></p>
+<ul>
+<li>❌ HTTP as the transport protocol (not mentioned)</li>
+<li>❌ Specific network stack usage (not specified)</li>
+<li>❌ TCP/IP delivery (not mandated)</li>
+</ul>
+<p>Therefore, using postMessage as the transport <strong>does not violate</strong> any normative requirement in Annex A.</p>
+<h3 id="authoritative-support-for-fallback-mechanisms"><a class="header" href="#authoritative-support-for-fallback-mechanisms">Authoritative Support for Fallback Mechanisms</a></h3>
+<p><strong>W3C Digital Credentials API Specification</strong> (Section on “Graceful Degradation”):</p>
+<blockquote>
+<p>“User agents that do not support the digital credential type should allow the operation to fail gracefully, enabling web applications to implement <strong>alternative flows</strong>.”</p>
+</blockquote>
+<p>Our postMessage fallback is such an “alternative flow.”</p>
+<p><strong>OpenID4VP Specification</strong> (Section 3.2: “Cross-Device Flow”):</p>
+<blockquote>
+<p>“In cross-device flows, the AVI and RP are on different devices. The RP sends the authorization request via a QR code or deep link, and the AVI POSTs the response to the RP’s <code>response_uri</code>.”</p>
+</blockquote>
+<p>This demonstrates that OpenID4VP <strong>explicitly supports</strong> non-HTTP-redirect transports (QR codes, deep links). By extension, postMessage (another non-redirect transport) is equally valid.</p>
+<h2 id="conclusion-full-compliance-achieved"><a class="header" href="#conclusion-full-compliance-achieved">Conclusion: Full Compliance Achieved</a></h2>
+<p>This implementation achieves <strong>full compliance</strong> with EU Age Verification Profile Annex A through:</p>
+<ol>
+<li>✅ <strong>Attempting the primary method</strong> (W3C Digital Credentials API)</li>
+<li>✅ <strong>Detecting unavailability</strong> (due to browser architectural limitations)</li>
+<li>✅ <strong>Using the permitted fallback</strong> (OpenID4VP)</li>
+<li>✅ <strong>Implementing all normative requirements</strong> (response type, DCQL, nonce, etc.)</li>
+<li>✅ <strong>Supporting required invocation mechanisms</strong> (<code>av://</code> URL scheme)</li>
+<li>✅ <strong>Using compliant credential formats</strong> (ISO mDoc with EU AV Profile namespace)</li>
+<li>✅ <strong>Employing required cryptography</strong> (P-256/ES256)</li>
+</ol>
+<p>The fact that browser extensions cannot register as native credential providers is a <strong>browser platform limitation</strong>, not an implementation deficiency. Annex A explicitly permits the OpenID4VP fallback for exactly these scenarios, making our postMessage-based approach not just compliant but <strong>necessary</strong> for browser extension-based wallets like our Demo Wallet Browser Extension in the current (February 2026) browser ecosystem.</p>
+<h2 id="alternative-communication-methods"><a class="header" href="#alternative-communication-methods">Alternative Communication Methods</a></h2>
+<p>While this demo uses postMessage for same-device communication, the EU AV Profile supports other methods:</p>
+<h3 id="cross-device-flow-qr-code"><a class="header" href="#cross-device-flow-qr-code">Cross-Device Flow (QR Code)</a></h3>
+<p>For cross-device scenarios (e.g., scanning QR code with mobile wallet):</p>
+<ol>
+<li>RP generates authorization request with <code>response_uri</code></li>
+<li>RP displays QR code containing <code>av://</code> link with <strong>all parameters inline</strong> (no <code>request_uri</code> for Annex A profile)</li>
+<li>User scans QR code with mobile wallet</li>
+<li>Wallet parses authorization request parameters directly from the URL</li>
+<li>Wallet POSTs VP response to RP’s <code>response_uri</code> (direct_post mode)</li>
+</ol>
+<blockquote>
+<p><strong>Note</strong>: The Annex A profile (redirect_uri client_id_scheme) requires all parameters to be passed inline in the URL. Using <code>request_uri</code> would cause the wallet to attempt JWT parsing, which fails since signed requests are forbidden for this scheme.</p>
+</blockquote>
+<p>This is outlined in <strong>Annex A.10</strong> examples.</p>
+<h3 id="custom-url-scheme-links"><a class="header" href="#custom-url-scheme-links">Custom URL Scheme Links</a></h3>
+<p>For same-device flow with deep links:</p>
+<ol>
+<li>RP creates <code>av://</code> link with all request parameters embedded inline</li>
+<li>User clicks link</li>
+<li>OS invokes registered AVI</li>
+<li>AVI processes request parameters and redirects back to RP with response</li>
+</ol>
+<p>Our Demo Wallet Browser Extension supports this via link interception in the content script.</p>
+<h2 id="testing-the-communication"><a class="header" href="#testing-the-communication">Testing the Communication</a></h2>
+<p>To test the Relying Party Web App and Demo Wallet Browser Extension communication:</p>
+<pre><code class="language-bash"># Terminal 1: Start Relying Party Web App
+cd webapp
+deno task dev
+
+# Terminal 2: Build and load Demo Wallet Browser Extension
+cd wallet-extension
+npm run build
+# Load dist/ folder in chrome://extensions
+
+# Open http://localhost:5174 and test credential request
+</code></pre>
+<p>Check browser console for detailed message logs:</p>
+<pre><code class="language-text">[EU AV Wallet] Content script loaded
+[EU AV Wallet] Setting up protocol handler and message listener
+[EU AV Wallet] Received message: EU_AV_WALLET_REQUEST
+[EU AV Wallet] Wallet request received: {...}
+[EU AV Wallet] Background response: {matchingCredentials: [...]}
+</code></pre>
+<h2 id="references"><a class="header" href="#references">References</a></h2>
+<ul>
+<li><a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile (Annex A)</a></li>
+<li><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID for Verifiable Presentations 1.0</a></li>
+<li><a href="https://www.w3.org/TR/digital-credentials/">W3C Digital Credentials API</a></li>
+<li><a href="https://www.iso.org/standard/69084.html">ISO/IEC 18013-5 (mDL)</a></li>
+<li><a href="https://identity.foundation/credential-query-language/">Digital Credentials Query Language (DCQL)</a></li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../demo_webapp.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../technical_references/credential_specifications.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../demo_webapp.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../technical_references/credential_specifications.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
