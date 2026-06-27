@@ -105,7 +105,7 @@ pub fn convert_portrait_to_jpeg(
             Ok(jpeg_bytes) => {
                 let jpeg_b64 = base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(&jpeg_bytes);
                 claims.insert("portrait".to_string(), serde_json::Value::String(jpeg_b64));
-                tracing::info!(
+                tracing::debug!(
                     original_len = portrait_bytes.len(),
                     jpeg_len = jpeg_bytes.len(),
                     "converted JPEG2000 portrait to JPEG"

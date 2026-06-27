@@ -68,6 +68,16 @@ export const PROTOCOL_PROFILES: Record<ProfileId, ProtocolProfile> = {
     urlSchemes: ["av://"],
     requiresJarSigning: false,
   },
+  "haip-x509-san-dns": {
+    id: "haip-x509-san-dns",
+    name: "HAIP (x509_san_dns)",
+    description: "HAIP with x509_san_dns client_id scheme",
+    clientIdScheme: "x509_san_dns",
+    requestFormat: "jar",
+    responseMode: "direct_post.jwt",
+    urlSchemes: ["eudi-openid4vp://", "openid4vp://"],
+    requiresJarSigning: true,
+  },
 };
 
 // =============================================================================

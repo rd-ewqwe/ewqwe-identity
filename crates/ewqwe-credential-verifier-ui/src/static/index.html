@@ -917,7 +917,7 @@
 
                     <!-- Filters -->
                     <div class="glass p-4 flex flex-wrap gap-3 items-end">
-                        <div class="flex-1 min-w-[160px]">
+                        <div class="flex-1 min-w-[140px]">
                             <label
                                 class="block text-xs text-white/60 mb-1"
                                 data-i18n="verifier"
@@ -933,7 +933,7 @@
                                 </option>
                             </select>
                         </div>
-                        <div class="flex-1 min-w-[140px]">
+                        <div class="flex-1 min-w-[100px] sm:min-w-[130px]">
                             <label
                                 class="block text-xs text-white/60 mb-1"
                                 data-i18n="from"
@@ -942,11 +942,11 @@
                             <input
                                 id="journal-filter-from"
                                 type="date"
-                                class="form-input text-sm"
+                                class="form-input text-sm w-full"
                                 onchange="loadJournal(0)"
                             />
                         </div>
-                        <div class="flex-1 min-w-[140px]">
+                        <div class="flex-1 min-w-[100px] sm:min-w-[130px]">
                             <label
                                 class="block text-xs text-white/60 mb-1"
                                 data-i18n="to"
@@ -955,21 +955,21 @@
                             <input
                                 id="journal-filter-to"
                                 type="date"
-                                class="form-input text-sm"
+                                class="form-input text-sm w-full"
                                 onchange="loadJournal(0)"
                             />
                         </div>
-                        <div class="flex gap-2">
+                        <div class="flex gap-2 min-w-[140px]">
                             <button
                                 onclick="loadJournal(0)"
-                                class="btn-primary text-sm"
+                                class="btn-primary text-sm flex-1"
                                 data-i18n="filter"
                             >
                                 Filter
                             </button>
                             <button
                                 onclick="clearJournalFilters()"
-                                class="btn-ghost text-sm"
+                                class="btn-ghost text-sm flex-1"
                                 data-i18n="clear"
                             >
                                 Clear
@@ -983,7 +983,7 @@
                                 <tr>
                                     <th data-i18n="time">Time</th>
                                     <th data-i18n="verifier">Verifier</th>
-                                    <th data-i18n="doc_type">Doc Type</th>
+                                    <th data-i18n="doc_type">Document Type</th>
                                     <th data-i18n="claims">Claims</th>
                                     <th data-i18n="status">Status</th>
                                 </tr>

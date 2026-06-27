@@ -32,12 +32,13 @@ export async function loadI18n(lang: string): Promise<void> {
     const data = await apiFetch<Record<string, string>>(
       `/i18n?lang=${encodeURIComponent(lang)}`,
     );
+    console.log("i18n loaded:", lang, Object.keys(data ?? {}).length, "keys");
     if (data) {
       setI18n(data);
       setCurrentLang(lang);
     }
-  } catch {
-    // keep previous translations on failure
+  } catch (e) {
+    console.warn("i18n: failed to load", lang, e);
   }
   applyI18n();
 }

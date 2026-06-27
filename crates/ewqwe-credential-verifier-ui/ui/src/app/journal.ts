@@ -95,7 +95,7 @@ function renderClaims(claims: Record<string, unknown>): string {
 
   return entries
     .map(([k, v]) => {
-      // Image claims: render as a thumbnail
+      // Image claims: render as a clickable thumbnail
       if (IMAGE_CLAIMS.has(k) && typeof v === "string" && v.length > 0) {
         const standardBase64 = v.replace(/-/g, "+").replace(/_/g, "/");
         const mimeType = detectImageMimeType(standardBase64);
@@ -104,7 +104,7 @@ function renderClaims(claims: Record<string, unknown>): string {
           return `<span class="text-white/40 text-xs">${escapeHtml(k)}</span>`;
         }
         const src = `data:${mimeType};base64,${standardBase64}`;
-        return `<span class="inline-flex"><img src="${src}" alt="" class="claim-thumbnail cursor-pointer" /></span>`;
+        return `<span class="inline-flex"><img src="${src}" alt="" class="claim-thumbnail cursor-pointer" onclick="event.stopPropagation();showFullImage(this)" /></span>`;
       }
 
       if (typeof v === "boolean") {
@@ -114,7 +114,42 @@ function renderClaims(claims: Record<string, unknown>): string {
       }
       return `<span class="text-white/60 text-xs">${escapeHtml(k)}: ${escapeHtml(String(v)).slice(0, 30)}</span>`;
     })
-    .join('<span class="text-white/25 mx-1">\u00b7</span>');
+    .join(
+      '<span class="text-white/25 mx-1 hidden sm:inline">\u00b7</span><br class="block sm:hidden" />',
+    );
+}
+
+// ── Full-size image viewer ────────────────────────────────────────────
+
+/** Show a full-size image overlay. Click anywhere outside the image to close. */
+function showFullImage(img: HTMLImageElement): void {
+  const existing = document.getElementById("full-image-overlay");
+  if (existing) existing.remove();
+
+  const overlay = document.createElement("div");
+  overlay.id = "full-image-overlay";
+  overlay.style.cssText =
+    "position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);display:flex;align-items:center;justify-content:center;cursor:pointer;animation:fadeIn 0.2s ease-out";
+
+  const fullImg = document.createElement("img");
+  fullImg.src = img.src;
+  fullImg.style.cssText =
+    "max-width:90vw;max-height:90vh;object-fit:contain;border-radius:12px;box-shadow:0 8px 40px rgba(0,0,0,0.5);cursor:default";
+  fullImg.onclick = (e) => e.stopPropagation();
+
+  overlay.appendChild(fullImg);
+  overlay.onclick = () => overlay.remove();
+  document.body.appendChild(overlay);
+}
+
+/** Map credential doc_type to a human-readable label. */
+function formatDocType(docType: string | undefined): string {
+  const map: Record<string, string> = {
+    "eu.europa.ec.eudi.pid.1": "National ID (EU PID)",
+    "org.iso.18013.5.1.mDL": "Mobile Driver's License (mDL)",
+    "eu.europa.ec.av.1": "Proof of Age (EU AV)",
+  };
+  return map[docType ?? ""] ?? docType ?? "\u2014";
 }
 
 function detectImageMimeType(base64Std: string): string {
@@ -158,7 +193,7 @@ function renderJournal(entries: JournalEntry[]): void {
   };
 
   if (!entries || entries.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="4" class="text-center text-white/40 py-6">${t("no_journal")}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center text-white/40 py-6">${t("no_journal")}</td></tr>`;
     setDisabled(prevBtn, journalOffset === 0);
     setDisabled(nextBtn, true);
     updateJournalPageInfo();
@@ -170,12 +205,14 @@ function renderJournal(entries: JournalEntry[]): void {
       const time = new Date(e.created_at).toLocaleString();
       const verifier = escapeHtml(e.qrcode_app_user_email ?? "—");
       const claimsHtml = renderClaims(e.claims ?? {});
+      const docTypeHtml = `<span class="text-xs text-white/60">${escapeHtml(formatDocType(e.doc_type))}</span>`;
       const statusBadge = e.success
-        ? `<span class="text-green-400 font-semibold">✓</span>`
-        : `<span class="text-red-400 font-semibold">✗</span>`;
+        ? `<span class="text-green-400 font-semibold">\u2713</span>`
+        : `<span class="text-red-400 font-semibold">\u2717</span>`;
       return `<tr>
         <td class="whitespace-nowrap">${time}</td>
-        <td class="max-w-[220px] truncate" title="${escapeHtml(e.qrcode_app_user_email)}">${verifier}</td>
+        <td class="max-w-[180px] truncate" title="${escapeHtml(e.qrcode_app_user_email)}">${verifier}</td>
+        <td class="max-w-[180px]">${docTypeHtml}</td>
         <td class="max-w-[260px]">${claimsHtml}</td>
         <td class="text-center">${statusBadge}</td>
       </tr>`;

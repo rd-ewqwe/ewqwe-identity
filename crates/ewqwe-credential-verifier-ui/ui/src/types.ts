@@ -40,6 +40,7 @@ export interface JournalEntry {
   qrcode_app_user_email?: string;
   success: boolean;
   claims: Record<string, unknown>;
+  doc_type?: string;
 }
 
 // Extend Window to allow global function registration used by inline HTML handlers
