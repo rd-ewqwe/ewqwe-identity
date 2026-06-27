@@ -1,7 +1,7 @@
 //! Domain models and request/response DTOs for the Verifier App.
 
 use chrono::{DateTime, Utc};
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::str::FromStr;
 
 // ============================================================================
@@ -181,6 +181,15 @@ pub struct UpdateUserRequest {
     pub allowed_credential_types: Option<Vec<String>>,
 }
 
+/// Deserialize a `Vec<String>`, treating `null` as an empty vec (default).
+fn null_to_default<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<Vec<String>>::deserialize(deserializer)?;
+    Ok(opt.unwrap_or_default())
+}
+
 /// Body for `POST /verifier_ui/api/qr/generate`.
 #[derive(Debug, Deserialize, Default)]
 pub struct GenerateQrRequest {
@@ -191,8 +200,8 @@ pub struct GenerateQrRequest {
 
     /// Specific claim names to request (e.g. `["age_over_18", "portrait"]`).
     ///
-    /// When empty or absent, the default claims for the credential type are used.
-    #[serde(default)]
+    /// When empty, absent, or null, the default claims for the credential type are used.
+    #[serde(default, deserialize_with = "null_to_default")]
     pub claims: Vec<String>,
 }
 

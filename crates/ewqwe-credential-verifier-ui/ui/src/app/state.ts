@@ -20,6 +20,21 @@ export let editingUserId: string | null = null;
 export let serverAllowedTypes: string[] = [];
 export let qrTypeSelectorWasVisible = false;
 
+// ── Credential claim defaults (single source of truth) ────────────────────
+
+/** Map of localStorage key → default claims for each credential type family. */
+export const CLAIM_DEFAULTS: Record<string, string[]> = {
+  verifier_ui_pid_claims: ["age_over_18", "portrait"],
+  verifier_ui_mdl_claims: ["age_over_18", "portrait"],
+  verifier_ui_france_claims: ["age_over_18", "portrait"],
+};
+
+/** Map of credential type string → localStorage key. */
+export const CRED_STORAGE_KEYS: Record<string, string> = {
+  mdl: "verifier_ui_mdl_claims",
+  "france-identite-numerique": "verifier_ui_france_claims",
+};
+
 export function setCurrentUser(u: User | null): void {
   currentUser = u;
 }
@@ -32,7 +47,9 @@ export function setCurrentLang(lang: string): void {
 export function setCurrentPage(page: string): void {
   currentPage = page;
 }
-export function setPollTimer(timer: ReturnType<typeof setInterval> | null): void {
+export function setPollTimer(
+  timer: ReturnType<typeof setInterval> | null,
+): void {
   pollTimer = timer;
 }
 export function setCurrentTransactionId(id: string | null): void {
@@ -54,7 +71,17 @@ export function setQrTypeSelectorWasVisible(v: boolean): void {
   qrTypeSelectorWasVisible = v;
 }
 
-export const SUPPORTED_LANGS = ["en", "fr", "de", "it", "es", "sv", "pl", "cs", "hr"];
+export const SUPPORTED_LANGS = [
+  "en",
+  "fr",
+  "de",
+  "it",
+  "es",
+  "sv",
+  "pl",
+  "cs",
+  "hr",
+];
 
 // ── DOM helpers ───────────────────────────────────────────────────────────
 

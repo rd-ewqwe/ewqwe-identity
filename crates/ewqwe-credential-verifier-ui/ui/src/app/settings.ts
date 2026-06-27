@@ -8,7 +8,14 @@
 
 import { apiFetch } from "../api.ts";
 import type { AppSettings } from "../types.ts";
-import { $, toast, i18n, currentUser, applyBranding } from "./state.ts";
+import {
+  $,
+  toast,
+  i18n,
+  currentUser,
+  applyBranding,
+  CLAIM_DEFAULTS,
+} from "./state.ts";
 import {
   loadI18n,
   getSavedLang,
@@ -42,46 +49,23 @@ export async function loadSettings(): Promise<void> {
 }
 
 function loadClaimsSettings(): void {
-  try {
-    const pidClaims: string[] = JSON.parse(
-      localStorage.getItem("verifier_ui_pid_claims") ??
-        JSON.stringify(["age_over_18", "portrait"]),
-    );
-    document
-      .querySelectorAll<HTMLInputElement>(".pid-claim-cb")
-      .forEach((cb) => {
-        cb.checked = pidClaims.includes(cb.value);
-      });
-  } catch {
-    // ignore
-  }
+  const claimGroups = [
+    { key: "verifier_ui_pid_claims", selector: ".pid-claim-cb" },
+    { key: "verifier_ui_mdl_claims", selector: ".mdl-claim-cb" },
+    { key: "verifier_ui_france_claims", selector: ".france-claim-cb" },
+  ];
 
-  try {
-    const mdlClaims: string[] = JSON.parse(
-      localStorage.getItem("verifier_ui_mdl_claims") ??
-        JSON.stringify(["age_over_18", "portrait"]),
-    );
-    document
-      .querySelectorAll<HTMLInputElement>(".mdl-claim-cb")
-      .forEach((cb) => {
-        cb.checked = mdlClaims.includes(cb.value);
+  for (const { key, selector } of claimGroups) {
+    try {
+      const saved: string[] = JSON.parse(
+        localStorage.getItem(key) ?? JSON.stringify(CLAIM_DEFAULTS[key]),
+      );
+      document.querySelectorAll<HTMLInputElement>(selector).forEach((cb) => {
+        cb.checked = saved.includes(cb.value);
       });
-  } catch {
-    // ignore
-  }
-
-  try {
-    const franceClaims: string[] = JSON.parse(
-      localStorage.getItem("verifier_ui_france_claims") ??
-        JSON.stringify(["age_over_18", "portrait"]),
-    );
-    document
-      .querySelectorAll<HTMLInputElement>(".france-claim-cb")
-      .forEach((cb) => {
-        cb.checked = franceClaims.includes(cb.value);
-      });
-  } catch {
-    // ignore
+    } catch {
+      // ignore
+    }
   }
 }
 

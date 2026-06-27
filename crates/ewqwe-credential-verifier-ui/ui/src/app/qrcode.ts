@@ -19,6 +19,8 @@ import {
   setQrTypeSelectorWasVisible,
   setCurrentTransactionId,
   setPollTimer,
+  CLAIM_DEFAULTS,
+  CRED_STORAGE_KEYS,
 } from "./state.ts";
 import { t } from "./i18n.ts";
 
@@ -80,20 +82,15 @@ export function setupQRPage(): void {
  * Falls back to ["age_over_18"] when nothing has been saved yet.
  */
 function getClaimsForCredentialType(credType: string): string[] {
-  let storageKey: string;
-  if (credType === "mdl") {
-    storageKey = "verifier_ui_mdl_claims";
-  } else if (credType === "france-identite-numerique") {
-    storageKey = "verifier_ui_france_claims";
-  } else {
-    // "proof-of-age" and "national-id" both use pid claims
-    storageKey = "verifier_ui_pid_claims";
-  }
+  const storageKey = CRED_STORAGE_KEYS[credType] ?? "verifier_ui_pid_claims";
+  const defaultClaims = CLAIM_DEFAULTS[storageKey] ?? ["age_over_18"];
 
   try {
-    return JSON.parse(localStorage.getItem(storageKey) ?? "null") as string[];
+    const parsed = JSON.parse(localStorage.getItem(storageKey) ?? "null");
+    if (Array.isArray(parsed)) return parsed as string[];
+    return defaultClaims;
   } catch {
-    return ["age_over_18"];
+    return defaultClaims;
   }
 }
 
