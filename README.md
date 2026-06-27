@@ -1,11 +1,11 @@
-# ewQwe [you-kwee] Identity — Open Core
+# ewQwe *[you-kwee]* Identity — Open Core
 
 
 [![License](https://img.shields.io/badge/AGPL--3.0-blue)](LICENSE)
 &
 [![License](https://img.shields.io/badge/MIT-blue)](typescript/LICENSE)
 
-**Open-source** credential verifier compatible with the **EUDI/EIDAS wallet ecosystem**.
+**Open-source** credential verifier developped in the EU andcompatible with the **EUDI/EIDAS wallet ecosystem**.
 
 This project provides a complete solution, with a user interface, for verifying digital credentials, including the "age over 18" verification for the widely deployed France Identité Numérique wallet.
 
