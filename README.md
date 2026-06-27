@@ -23,17 +23,17 @@ This repository contains:
 
 | Component | Description | License |
 |---|---|---|
-| **Credential Verifier** (`ewqwe-credential-verifier-server`) | Core server: receives VP Tokens, validates proofs (SD-JWT, mDoc), issues signed JWT attestations. Handles the full OpenID4VP transaction lifecycle. | BSL-1.1 |
-| **Admin UI** (`ewqwe-credential-verifier-ui`) | Embedded SPA served by the verifier. Age Verification dashboard with QR-code-driven flow, user management, audit journal, and i18n. Works out of the box. | BSL-1.1 |
+| **Credential Verifier** (`ewqwe-credential-verifier-server`) | Core server: receives VP Tokens, validates proofs (SD-JWT, mDoc), issues signed JWT attestations. Handles the full OpenID4VP transaction lifecycle. | AG |
+| **Admin UI** (`ewqwe-credential-verifier-ui`) | Embedded SPA served by the verifier. Age Verification dashboard with QR-code-driven flow, user management, audit journal, and i18n. Works out of the box. | AG |
 | **Demo Webapp** (`typescript/demo-webapp`) | Relying Party (RP) demo — vanilla TypeScript SPA that requests credentials via OpenID4VP and displays verification results. MIT-licensed so you can freely adapt and embed it. | MIT |
-| **OpenID4VP Library** (`ewqwe-openid4vp`) | Reusable Rust crate: DCQL query building, JAR signing, JWE decryption, transaction stores. | BSL-1.1 |
-| **Digital Credential Library** (`ewqwe-digital-credential`) | Rust crate: SD-JWT VC and mDoc (ISO 18013-5) credential building, signing, and verification with ephemeral PKI. | BSL-1.1 |
+| **OpenID4VP Library** (`ewqwe-openid4vp`) | Reusable Rust crate: DCQL query building, JAR signing, JWE decryption, transaction stores. | AG |
+| **Digital Credential Library** (`ewqwe-digital-credential`) | Rust crate: SD-JWT VC and mDoc (ISO 18013-5) credential building, signing, and verification with ephemeral PKI. | AG |
 | **Shared JS Library** (`@ewqwe/digital-identity`) | TypeScript library: DCQL query builders, protocol profiles, EwqweApiClient, attestation parsing. Published to npm. | MIT |
-| **RP Client Library** (`ewqwe-credential-verifier-client`) | Rust client library for the credential verification API. | BSL-1.1 |
+| **RP Client Library** (`ewqwe-credential-verifier-client`) | Rust client library for the credential verification API. | AG |
 
 ```mermaid
 graph TD
-    RP["Relying Party<br/>(typescript/demo-webapp/ — MIT)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>(ewqwe-credential-verifier-server — BSL-1.1)"]
+    RP["Relying Party<br/>(typescript/demo-webapp/ — MIT)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>(ewqwe-credential-verifier-server — AG)"]
     VERIFIER -->|validates VP Token| CRYPTO["ewqwe-digital-credential"]
     VERIFIER -->|transaction lifecycle| OPENID4VP["ewqwe-openid4vp"]
     VERIFIER -->|serves UI| UI["Admin UI<br/>(ewqwe-credential-verifier-ui)"]
@@ -190,7 +190,7 @@ pnpm test
 
 ## License
 
-The open-core crates are licensed under the **Business Source License 1.1** (BSL-1.1) — see [LICENSE](LICENSE). The TypeScript packages `@ewqwe/digital-identity` and `demo-webapp` are licensed under **MIT**.
+The open-core crates are licensed under the **AGPL-3.0** — see [LICENSE](LICENSE). The TypeScript packages `@ewqwe/digital-identity` and `demo-webapp` are licensed under **MIT**.
 
 ## Enterprise Version
 
