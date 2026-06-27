@@ -2,33 +2,9 @@
 
 The Credential Verifier UI is a Vite+TypeScript+Tailwind SPA served directly by the credential verifier. It provides a self-contained UI for credential verification operators — no separate deployment is required.
 
-The SPA is built from `crates/ewqwe-verifier-app/ui/` and served from the root URL (`/`). All API endpoints are under `/api/v1/`.
+The SPA is built from `crates/ewqwe-credential-verifier-ui/ui/` and served from the root URL (`/`). All API endpoints are under `/api/v1/`.
 
-## Overview
-
-```mermaid
-graph TD
-    subgraph CREDENTIAL_VERIFIER["Credential Verifier (:9443)"]
-        SPA["GET / → SPA index.html (dist/)"]
-        ASSETS["GET /assets/* → bundled JS/CSS"]
-        LOGO["GET /logo.png → logo image"]
-        I18N["GET /api/v1/i18n?lang=&lt;code&gt; → locale strings"]
-        SETUP_BOOT["POST /api/v1/setup/bootstrap → one-time admin creation"]
-        SETUP_STAT["GET /api/v1/setup/status → bootstrap status (public)"]
-        LOGIN["POST /api/v1/auth/login"]
-        LOGOUT["POST /api/v1/auth/logout"]
-        ME["GET /api/v1/auth/me"]
-        QR_GEN["POST /api/v1/qr/generate → OpenID4VP QR transaction"]
-        QR_STAT["GET /api/v1/qr/{id}/status"]
-        SETTINGS["GET /api/v1/settings → public app settings"]
-        ADM_SETTINGS["PUT /api/v1/admin/settings → (admin)"]
-        ADM_USERS_L["GET /api/v1/admin/users → (admin)"]
-        ADM_USERS_C["POST /api/v1/admin/users → (admin)"]
-        ADM_USERS_U["PUT /api/v1/admin/users/{id} → (admin)"]
-        ADM_USERS_D["DELETE /api/v1/admin/users/{id} → (admin)"]
-        ADM_JOURNAL["GET /api/v1/admin/journal → (admin)"]
-    end
-```
+![UI Overview](assets/cv_ui_qr_code.png)
 
 ---
 
@@ -37,7 +13,7 @@ graph TD
 The SPA must be built before the credential verifier can serve it.
 
 ```bash
-cd crates/ewqwe-verifier-app/ui
+cd crates/ewqwe-credential-verifier-ui/ui
 pnpm install
 pnpm build          # outputs to dist/
 ```
@@ -46,7 +22,7 @@ The `credential-server.toml` `[verifier_ui]` section tells the server where to f
 
 ```toml
 [verifier_ui]
-ui_dist_path = "./crates/ewqwe-verifier-app/ui/dist"
+ui_dist_path = "../ewqwe-credential-verifier-ui/ui/dist"
 ```
 
 Paths are resolved relative to the directory containing the config file. The server logs a warning and skips serving the SPA if the directory is not found at startup.
@@ -59,8 +35,8 @@ Run the Vite dev server alongside the credential verifier for hot-module reload 
 # Terminal 1 — credential verifier (API + OpenID4VP)
 cd credential_verifier && cargo run -- --config credential-server.toml
 
-# Terminal 2 — Vite dev server (proxies /api/v1 to https://localhost:9443)
-cd crates/ewqwe-verifier-app/ui && npm run dev
+# Terminal 2 — Vite dev server (proxies API to the verifier)
+cd crates/ewqwe-credential-verifier-ui/ui && pnpm dev
 ```
 
 Open <http://localhost:5175> in your browser. The Vite proxy forwards `/api/v1/*`, `/ewqwe_api/*`, `/.well-known/*`, and `/version` to the credential verifier over HTTPS (`secure: false` trusts the self-signed dev certificate).
@@ -77,22 +53,22 @@ enabled = true
 app_name = "ACME.eu"                          # optional (default: "Credential Verifier UI")
 # logo_url = "https://example.com/logo.png"   # optional logo
 # session_secret = "<128 hex chars>"           # recommended for production
-ui_dist_path = "./crates/ewqwe-verifier-app/ui/dist"
+ui_dist_path = "../ewqwe-credential-verifier-ui/ui/dist"
 ```
 
-When `enabled = false` (the default if the section is absent), all `/api/v1/*` Credential Verifier UI routes return 404 and the SPA is not served.
+When `enabled = false` (the default if the section is absent), all `/api/v1/*` routes return 404 and the SPA is not served.
 
-### Session Secret Key
+### Session Secret
 
-Session cookies are signed and encrypted with a key derived from `session_secret_key`. When the key is not set, the server generates a random key at startup — all active sessions are invalidated on restart.
+Session cookies are signed and encrypted with a key derived from `session_secret`. When the key is not set, the server generates a random key at startup — all active sessions are invalidated on restart.
 
-For production, generate a stable key once:
+For production, generate a stable key:
 
 ```bash
 openssl rand -hex 64
 ```
 
-Paste the output as the value of `session_secret_key`.
+Paste the output as the value of `session_secret`.
 
 ### Public URL
 
@@ -369,59 +345,3 @@ All API endpoints are under `/api/v1/` and require `Content-Type: application/js
 | Method | Path | Query | Description |
 |--------|------|-------|-------------|
 | `GET` | `/api/v1/i18n` | `lang` | Get locale strings JSON |
-
----
-
-## Source Layout
-
-```mermaid
-graph TD
-    subgraph SRC["src/"]
-        LIB["lib.rs — module root + route registration"]
-        CONFIG["config.rs — VerifierAppConfig"]
-        AUTH["auth.rs — argon2id password hashing"]
-        DB["db.rs — VerifierAppStore trait"]
-        ERR["error.rs — VerifierAppError"]
-        MODELS["models.rs — DTOs"]
-        QR["qr_user_map.rs — transaction→user map"]
-        ROUTES["routes.rs — HTTP handlers"]
-        subgraph STORES["stores/"]
-            SQLITE["sqlite.rs — SQLite"]
-            PG["postgres.rs — PostgreSQL"]
-            MYSQL["mysql.rs — MySQL"]
-        end
-        subgraph STATIC["static/"]
-            LOGO_PNG["logo.png — ewQwe logo"]
-            subgraph I18N["i18n/"]
-                EN["en.json — English"]
-                DE["de.json — German"]
-                FR["fr.json — French"]
-                IT["it.json — Italian"]
-                ES["es.json — Spanish"]
-                SV["sv.json — Swedish"]
-                PL["pl.json — Polish"]
-                CS["cs.json — Czech"]
-                HR["hr.json — Croatian"]
-            end
-        end
-    end
-    subgraph UI["ui/ — Vite+TypeScript+Tailwind SPA"]
-        PKG["package.json"]
-        VITE_CFG["vite.config.ts"]
-        TW["tailwind.config.js"]
-        TS_CFG["tsconfig.json"]
-        INDEX["index.html — entry point"]
-        PUBLIC["public/logo.png"]
-        subgraph UI_SRC["src/"]
-            MAIN["main.ts — entry"]
-            APP["app.ts — app logic"]
-            API["api.ts — apiFetch()"]
-            TYPES["types.ts — interfaces"]
-            CSS["styles.css — Tailwind + custom"]
-        end
-        DIST["dist/ — build output"]
-    end
-
-    ROOT["crates/ewqwe-verifier-app/"] --> SRC
-    ROOT --> UI
-```

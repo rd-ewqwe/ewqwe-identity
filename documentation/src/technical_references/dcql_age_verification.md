@@ -4,8 +4,8 @@ This document defines the Digital Credentials Query Language (DCQL) queries used
 
 **Related Documentation**:
 
-- For complete credential attribute specifications and authoritative references, see [Credential Type Specifications](./credential_type_specifications.md)
-- For how these queries are used in the demo webapp and wallet communication, see [Webapp -> Wallet Communication Protocol](./webapp_wallet_communication.md)
+- For complete credential attribute specifications and authoritative references, see [Credential Specifications](./credential_specifications.md)
+- For acronyms and terminology, see the [Glossary](./glossary.md)
 
 ## Overview
 
@@ -22,7 +22,7 @@ DCQL queries reference credential attributes using namespace paths. The primary 
 | `eu.europa.ec.av.1` | EU Age Verification namespace (Proof of Age) | [EU Age Verification Profile](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile) |
 | `org.iso.18013.5.1` | ISO mDL namespace (Mobile Driver License)    | [ISO/IEC 18013-5:2021](https://www.iso.org/standard/69084.html) |
 
-For complete attribute listings and encoding formats, see [Credential Type Specifications](./credential_type_specifications.md).
+For complete attribute listings and encoding formats, see [Credential Specifications](./credential_specifications.md).
 
 ## Age Verification DCQL Query
 
@@ -288,3 +288,4 @@ function buildAuthorizationRequest(
 - [EU Age Verification Profile - Annex A](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile)
 - [OpenID4VP 1.0 - DCQL](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6)
 - [ISO/IEC 18013-5 - mDL](https://www.iso.org/standard/69084.html)
+- [Full reference list](./references.md)

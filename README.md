@@ -19,6 +19,8 @@ The EU Digital Identity (EUDI) Wallet ecosystem enables citizens to present elec
 
 The credential verifier server ships with an **embedded multi-lingual admin UI** (build the SPA, enable it in the config, and it's served at the server root URL — no separate frontend deployment required). A **MIT-licensed demo webapp** is also provided so you can see how to embed digital credential verification into an existing web application.
 
+![Adin UI](documentation/src/assets/cv_ui_qr_code.png)
+
 ## Components
 
 This repository contains:

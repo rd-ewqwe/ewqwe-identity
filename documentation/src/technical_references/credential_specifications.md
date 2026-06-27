@@ -52,7 +52,6 @@ The authoritative specifications are defined in:
 **Related Documentation**:
 
 - For DCQL queries to request these credentials, see [DCQL Age Verification](./dcql_age_verification.md)
-- For sample credential data, see [Digital Credential Browser Storage](./digital_credentials_browser_storage.md)
 - For acronyms and terminology, see the [Glossary](./glossary.md)
 
 ---
@@ -448,7 +447,7 @@ See [OpenID4VP §5.3](https://openid.net/specs/openid-4-verifiable-presentations
 
 ### Webapp UI Credential Selection
 
-The [Relying Party Demo Webapp](./demo_webapp.md) offers four credential types for selection:
+The [Relying Party Demo Webapp](../demo_webapp.md) offers four credential types for selection:
 
 | Credential | Format | Profile |
 | :--------- | :----- | :------ |
@@ -1087,3 +1086,5 @@ eu.europa.ec.eudi.por.1
 
 12. **OpenID Connect for Identity Assurance** — Extended claims
     - <https://openid.net/specs/openid-connect-4-identity-assurance-1_0.html>
+
+See the [centralized reference list](./references.md) for all authoritative sources used throughout this documentation.

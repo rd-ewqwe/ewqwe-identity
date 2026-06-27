@@ -297,3 +297,4 @@ A wallet implementation typically:
 - HPKE (RFC 9180): <https://www.rfc-editor.org/rfc/rfc9180>
 - CBOR (RFC 8949): <https://www.rfc-editor.org/rfc/rfc8949>
 - COSE (RFC 9052): <https://www.rfc-editor.org/rfc/rfc9052>
+- [Full reference list](./references.md)

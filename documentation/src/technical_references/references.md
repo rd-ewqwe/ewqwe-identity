@@ -46,6 +46,7 @@ This chapter centralizes external references used throughout this documentation.
 - OpenID for Verifiable Presentations 1.0 (OpenID4VP): <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html>
 - OpenID Connect Core 1.0 (standard claims): <https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims>
 - OpenID Connect for Identity Assurance 1.0: <https://openid.net/specs/openid-connect-4-identity-assurance-1_0.html>
+- High Assurance Interoperability Profile (HAIP): <https://openid.net/specs/openid-connect-4-verifiable-presentations.html>
 
 ## ISO Standards
 
@@ -62,9 +63,17 @@ These ISO documents are typically paywalled; the links below are the official IS
 
 - OAuth 2.0 (RFC 6749): <https://www.rfc-editor.org/rfc/rfc6749.html>
 - JSON Web Token (RFC 7519): <https://www.rfc-editor.org/rfc/rfc7519.html>
+- JSON Web Signature — JWS (RFC 7515): <https://www.rfc-editor.org/rfc/rfc7515.html>
+- JSON Web Encryption — JWE (RFC 7516): <https://www.rfc-editor.org/rfc/rfc7516.html>
+- JSON Web Key — JWK (RFC 7517): <https://www.rfc-editor.org/rfc/rfc7517.html>
+- JWK Thumbprint (RFC 7638): <https://www.rfc-editor.org/rfc/rfc7638.html>
+- JWT Secured Authorization Request — JAR (RFC 9101): <https://datatracker.ietf.org/doc/html/rfc9101>
 - HPKE (RFC 9180): <https://www.rfc-editor.org/rfc/rfc9180>
 - CBOR (RFC 8949): <https://www.rfc-editor.org/rfc/rfc8949>
+- CBOR Tags for Date (RFC 8943): <https://www.rfc-editor.org/rfc/rfc8943>
+- CDDL (RFC 8610): <https://www.rfc-editor.org/rfc/rfc8610>
 - COSE (RFC 9052): <https://www.rfc-editor.org/rfc/rfc9052>
+- Proof-of-Possession Key Semantics for JSON Web Tokens (RFC 7800): <https://www.rfc-editor.org/rfc/rfc7800>
 
 ## DCQL (Additional Reading)
 
@@ -72,13 +81,10 @@ Note: In this project, DCQL is used as defined by OpenID4VP (Section 6). The lin
 
 - Digital Credentials Query Language (DIF page): <https://identity.foundation/credential-query-language/>
 
-## Browser / Platform References (Implementation Reality)
-
-These links are useful when validating feasibility and browser support status for the Digital Credentials API and the “wallet as an extension” demo.
+## Browser / Platform References
 
 - Chrome Platform Status (Digital Credentials): <https://chromestatus.com/feature/5139144021733376>
 - Chromium Issue Tracker (search): <https://bugs.chromium.org/p/chromium/issues/list?q=digital%20credentials>
-- Chrome Extensions API reference: <https://developer.chrome.com/docs/extensions/reference/>
 - Firefox Platform Status: <https://platform-status.mozilla.org/>
 - Firefox Web API Standards Positions: <https://mozilla.github.io/standards-positions/>
 - MDN Web Docs (Credential Management API): <https://developer.mozilla.org/en-US/docs/Web/API/Credential_Management_API>
@@ -96,8 +102,3 @@ These links are useful when validating feasibility and browser support status fo
 - France Identité Stelau (proof-of-age API): <https://api.playground.france-identite.gouv.fr/france-titres/stelau-playground/vp/proof-of-age>
 - EUDIW Unfold: <https://playground.france-identite.gouv.fr>
 - Germany EUDI Wallet: <https://eudi-wallet.gov.de/en/ecosystem-knowledge-center>
-- Moldova: <https://egov-moldova.github.io/egov4dev/guides/evo-wallet/>
-
-## Tooling (Deno)
-
-- Deno installation guide: <https://deno.land/manual/getting_started/installation>

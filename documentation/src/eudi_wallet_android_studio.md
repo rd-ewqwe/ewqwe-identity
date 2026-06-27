@@ -39,7 +39,7 @@ The [EUDI Android Wallet source code](https://github.com/eu-digital-identity-wal
 
 This section describes how to run the **ewQwe fork** of the EUDI Wallet together with the ewQwe Relying Party Demo Webapp for end-to-end HAIP testing on a local Android emulator.
 
-**Repository**: <https://github.com/rd-ewqwe/android-eudi-haip-wallet/>
+**Repository**: <https://github.com/rd-ewqwe/eudi-app-android-wallet-ui/>
 
 ### ewQwe Demo Prerequisites
 

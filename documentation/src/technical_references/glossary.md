@@ -299,3 +299,7 @@ An unprotected COSE header containing a DER-encoded X.509 certificate chain. Use
 
 **x5c** (JOSE header)
 The JSON/JWT equivalent of `x5chain`. An array of base64-encoded DER X.509 certificates. Used in JAR (JWT Authorization Request) to carry the RP's certificate for `x509_hash` / `x509_san_dns` verification.
+
+---
+
+See the [centralized reference list](./references.md) for all authoritative sources (RFCs, ISO standards, specifications).

@@ -65,7 +65,7 @@ Request** (with `dcql_query`, `nonce`, `client_metadata`), and the wallet return
 | **Request payload** | Standard OpenID4VP Authorization Request parameters as JSON in the `data` field: `response_type`, `response_mode`, `nonce`, `dcql_query`, `client_metadata`, optionally `client_id` and `request` for signed requests |
 | **Response payload** | OpenID4VP Authorization Response containing the `vp_token`, optionally JWE-encrypted (`response_mode: "dc_api.jwt"`): the encrypted JWT is returned as a JSON string in the `data` field |
 | **Response modes** | `dc_api` (unencrypted JSON, not recommended) or `dc_api.jwt` (JWE-encrypted Authorization Response — the wallet encrypts the `vp_token` using the verifier's public key from `client_metadata.jwks`, per [OpenID4VP §8.3](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.3)) |
-| **Wallet support** | **Theoretical — not yet confirmed in production.** The EUDI Wallet Core library includes DC API handling code, but production wallets (France Identité, EUDI Wallet DE, IT Wallet, Spanish EUDIW) do not yet recognize the `openid4vp` protocol identifier inside the DC API handler. See [demo_webapp.md](./demo_webapp.md#why-w3c-digital-credentials-is-disabled-on-mobile) for details. |
+| **Wallet support** | **Theoretical — not yet confirmed in production.** The EUDI Wallet Core library includes DC API handling code, but production wallets (France Identité, EUDI Wallet DE, IT Wallet, Spanish EUDIW) do not yet recognize the `openid4vp` protocol identifier inside the DC API handler. See [the demo webapp page](./demo_webapp.md) for details. |
 
 #### Summary comparison
 
@@ -76,7 +76,7 @@ Request** (with `dcql_query`, `nonce`, `client_metadata`), and the wallet return
 | **Request structure** | `encryptionInfo` + `deviceRequest` CBOR blobs | `dcql_query`, `nonce`, `client_metadata` |
 | **Response structure** | CBOR-encoded HPKE ciphertext | JWE-encrypted VP Token |
 | **Wallet implementation** | Separate code path (CBOR + COSE + HPKE) | Reuses OpenID4VP logic from Annex B |
-| **Adoption** | Low | **Not yet demonstrated in production** — documented as broken on Android 15+ in practice (see [demo_webapp.md](./demo_webapp.md#why-w3c-digital-credentials-is-disabled-on-mobile)) |
+| **Adoption** | Low | **Not yet demonstrated in production** — documented as broken on Android 15+ in practice (see [the demo webapp page](./demo_webapp.md)) |
 
 **In short**: "Wraps OpenID4VP as `dc_api.jwt`" means the wallet receives a standard OpenID4VP
 Authorization Request through the DC API, processes it with its existing OpenID4VP handler,
@@ -111,7 +111,7 @@ returning it through the DC API.
 | **Response encryption** | JWE (`direct_post.jwt`) — mandatory |
 | **Client ID schemes** | `x509_san_dns`, `x509_hash`, `x509_san_uri` |
 | **Credential formats** | `mso_mdoc` (mDL, PID) and `dc+sd-jwt` (PID) |
-| **Query language** | DCQL (mandated by EUDIW) |
+| **Query language** | DCQL (mandated by EUDIW per [ARF](https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework)) |
 | **Wallet support** | All major EUDI wallets (France Identité, EUDI Wallet DE, IT Wallet, Spanish EUDIW) |
 
 ---
@@ -159,7 +159,7 @@ returning it through the DC API.
 
 ## EUDI Wallet Implementation Matrix
 
-Wallet support for ISO/IEC 18013-7 annexes across major European member states (as of May 2026):
+Wallet support for ISO/IEC 18013-7 annexes across major European member states, based on observed behaviour in testing and public documentation (as of May 2026):
 
 | Scheme | Transport | Payload | Trust | France | Germany | Italy | Spain |
 |--------|-----------|---------|-------|--------|---------|-------|-------|
@@ -172,9 +172,11 @@ Wallet support for ISO/IEC 18013-7 annexes across major European member states (
 ❌ Sub-protocol A: not implemented | ⚠️ Sub-protocol B: in development (same limitation)
 ❌ Sub-protocol A: not implemented |
 
-> **Note on Annex C**: While the EUDI Wallet Core library includes DC API plumbing, production wallets reject the `openid4vp` protocol identifier with "Unsupported protocol" errors. The W3C DC API Annex C flow is therefore **not functional** with any current EUDI wallet. All wallets use Annex B (deep-link OpenID4VP) for production flows. See the [webapp documentation](./demo_webapp.md#why-w3c-digital-credentials-is-disabled-on-mobile) for the full technical analysis.
+> **Note on Annex C**: While the EUDI Wallet Core library includes DC API plumbing, production wallets reject the `openid4vp` protocol identifier with "Unsupported protocol" errors. The W3C DC API Annex C flow is therefore **not functional** with any current EUDI wallet. All wallets use Annex B (deep-link OpenID4VP) for production flows. See [the demo webapp page](./demo_webapp.md) for the full technical analysis.
 | **OpenID4VP HAIP** | OpenID4VP, `direct_post.jwt` | DCQL | Strict JAR + EU Trust List | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR |
 | **EUDIW EU-AV Blueprint** | Priority: Annex C → Annex B | DCQL (minimal disclosure) | No JAR | ✅ Drops JAR for privacy | ✅ Drops JAR for privacy | ✅ Drops JAR for privacy | ✅ Core focus, drops JAR |
+
+> **Note:** This matrix reflects observed wallet behaviour from testing and public documentation, not formal compliance certifications. Wallet capabilities evolve rapidly — consult each member state's latest wallet release notes for current status.
 
 
 ---
@@ -182,7 +184,7 @@ Wallet support for ISO/IEC 18013-7 annexes across major European member states (
 ## References
 
 - [ISO/IEC 18013-5](https://www.iso.org/standard/69084.html) — mDL data model and mDoc format
-- [ISO/IEC 18013-7](https://www.iso.org/standard/69086.html) — mDoc online presentation
+- [ISO/IEC 18013-7](https://www.iso.org/standard/91154.html) — mDoc online presentation
 - [OpenID4VP 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) — OpenID for Verifiable Presentations
 - [RFC 9101 — JAR](https://datatracker.ietf.org/doc/html/rfc9101) — JWT Secured Authorization Request
 - [RFC 9180 — HPKE](https://www.rfc-editor.org/rfc/rfc9180) — Hybrid Public Key Encryption
@@ -190,4 +192,6 @@ Wallet support for ISO/IEC 18013-7 annexes across major European member states (
 - [W3C Digital Credentials API](https://www.w3.org/TR/digital-credentials/) — browser API for credential presentation
 - [EU Age Verification Profile](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile/) — EU AV specification
 - [High Assurance Interoperability Profile (HAIP)](https://openid.net/specs/openid-connect-4-verifiable-presentations.html) — high-security credential exchange
-- [ISO 18013-7 Implementation Notes](./notes/iso-18013-7.md) — detailed technical report
+- [EUDI Wallet ARF](https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework) — Architecture and Reference Framework
+- [ISO 18013-7](./technical_references/iso_18013_7.md) — detailed reference
+- [Full reference list](./technical_references/references.md) — all authoritative sources
