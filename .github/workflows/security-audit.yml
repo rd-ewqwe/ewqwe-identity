@@ -18,9 +18,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: rustsec/audit-check@v2
+
+      # Cache the cargo-audit binary and advisory database.
+      # The binary is tiny (~5 MB); the DB is ~30 MB and is
+      # incrementally updated by `cargo audit` on each run.
+      - uses: actions/cache@v4
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+          path: |
+            ~/.cargo/bin/cargo-audit
+            ~/.cargo/advisory-db
+          key: cargo-audit-${{ runner.os }}-v1
+
+      - name: Install cargo-audit (cached)
+        run: |
+          if ! command -v cargo-audit &>/dev/null; then
+            curl -sSfL https://github.com/rustsec/rustsec/releases/download/cargo-audit%2Fv0.22.2/cargo-audit-x86_64-unknown-linux-musl-v0.22.2.tgz | tar xz -C ~/.cargo/bin
+          fi
+
+      - name: Run audit
+        run: cargo audit
 
   pnpm-audit:
     name: pnpm audit
