@@ -617,7 +617,7 @@
                     class="hidden flex-col items-center gap-6 pt-4"
                 >
                     <!-- QR + status -->
-                    <div class="glass p-6 w-full max-w-sm text-center">
+                    <div class="glass p-8 w-full max-w-md text-center">
                         <h2
                             id="qr-title"
                             class="text-lg font-bold mb-4"
@@ -635,7 +635,7 @@
                             >
                             <select
                                 id="qr-credential-type"
-                                class="form-input text-sm"
+                                class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none cursor-pointer"
                             >
                                 <option
                                     value="proof-of-age"
@@ -675,7 +675,7 @@
                             <button
                                 onclick="generateQR()"
                                 id="qr-generate-btn"
-                                class="btn-primary"
+                                class="btn-primary w-full"
                                 data-i18n="generate_qr"
                             >
                                 Generate QR Code
@@ -713,10 +713,10 @@
                             >
                                 Scan with your digital identity wallet
                             </p>
-                            <div class="flex gap-2">
+                            <div class="flex gap-3 w-full">
                                 <button
                                     onclick="generateQR()"
-                                    class="btn-ghost text-sm"
+                                    class="btn-ghost text-sm flex-1"
                                     data-i18n="new_qr"
                                 >
                                     New QR Code
@@ -724,7 +724,7 @@
                                 <button
                                     id="qr-cancel-btn"
                                     onclick="cancelQR()"
-                                    class="btn-ghost text-sm hidden"
+                                    class="btn-ghost text-sm flex-1 hidden"
                                     data-i18n="cancel"
                                 >
                                     Cancel
@@ -750,7 +750,7 @@
                                 />
                             </svg>
                             <p
-                                class="text-green-300 font-bold text-xl"
+                                class="text-green-400 font-bold text-xl"
                                 data-i18n="verified"
                             >
                                 Verified ✓
@@ -771,7 +771,7 @@
                                 </p>
                                 <div
                                     id="qr-claims-list"
-                                    class="bg-brand-bg/60 rounded-lg p-3 text-xs text-white/80 font-mono max-h-40 overflow-y-auto break-all"
+                                    class="bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-white/80 max-h-40 overflow-y-auto break-all space-y-0.5"
                                 ></div>
                             </div>
                             <p
@@ -782,7 +782,7 @@
                             </p>
                             <button
                                 onclick="generateQR()"
-                                class="btn-primary mt-2"
+                                class="btn-primary w-full mt-2"
                                 data-i18n="new_verification"
                             >
                                 New Verification
@@ -821,7 +821,7 @@
                             </p>
                             <button
                                 onclick="generateQR()"
-                                class="btn-primary mt-2"
+                                class="btn-primary w-full mt-2"
                                 data-i18n="try_again"
                             >
                                 Try Again

@@ -1,9 +1,8 @@
-<section
-    id="page-home"
-    class="hidden flex-col items-center gap-6 pt-4"
->
+<section id="page-home" class="hidden flex-col items-center gap-6 pt-4">
     <!-- QR + status -->
-    <div class="glass p-6 w-full max-w-sm text-center">
+    <div
+        class="glass p-8 w-full max-w-md text-center transition-all duration-300"
+    >
         <h2
             id="qr-title"
             class="text-lg font-bold mb-4"
@@ -20,7 +19,7 @@
             >
             <select
                 id="qr-credential-type"
-                class="form-input text-sm"
+                class="w-full bg-white/10 border border-white/20 rounded-lg px-4 py-3 text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent appearance-none cursor-pointer"
             >
                 <option
                     value="france-identite-numerique"
@@ -28,22 +27,13 @@
                 >
                     France Identité Numérique
                 </option>
-                <option
-                    value="national-id"
-                    data-i18n="national_id"
-                >
+                <option value="national-id" data-i18n="national_id">
                     National ID (EU PID)
                 </option>
-                <option
-                    value="mdl"
-                    data-i18n="mobile_drivers_license"
-                >
+                <option value="mdl" data-i18n="mobile_drivers_license">
                     Mobile Driver's License (mDL)
                 </option>
-                <option
-                    value="proof-of-age"
-                    data-i18n="proof_of_age"
-                >
+                <option value="proof-of-age" data-i18n="proof_of_age">
                     Proof of Age (EU AV)
                 </option>
             </select>
@@ -53,13 +43,12 @@
                 class="text-white/55 text-sm mb-4"
                 data-i18n="generate_qr_prompt"
             >
-                Generate a QR code for the user to scan with
-                their wallet.
+                Generate a QR code for the user to scan with their wallet.
             </p>
             <button
                 onclick="generateQR()"
                 id="qr-generate-btn"
-                class="btn-primary"
+                class="btn-primary w-full"
                 data-i18n="generate_qr"
             >
                 Generate QR Code
@@ -77,10 +66,7 @@
                 Creating verification request…
             </p>
         </div>
-        <div
-            id="qr-area-code"
-            class="hidden flex-col items-center gap-4"
-        >
+        <div id="qr-area-code" class="hidden flex-col items-center gap-4">
             <img id="qr-img" src="" alt="QR Code" />
             <div
                 id="qr-status-badge"
@@ -89,16 +75,13 @@
             >
                 Waiting for scan…
             </div>
-            <p
-                class="text-white/45 text-xs"
-                data-i18n="scan_with_wallet_short"
-            >
+            <p class="text-white/45 text-xs" data-i18n="scan_with_wallet_short">
                 Scan with your digital identity wallet
             </p>
-            <div class="flex gap-2">
+            <div class="flex gap-3 w-full">
                 <button
                     onclick="generateQR()"
-                    class="btn-ghost text-sm"
+                    class="btn-ghost text-sm flex-1"
                     data-i18n="new_qr"
                 >
                     New QR Code
@@ -106,7 +89,7 @@
                 <button
                     id="qr-cancel-btn"
                     onclick="cancelQR()"
-                    class="btn-ghost text-sm hidden"
+                    class="btn-ghost text-sm flex-1 hidden"
                     data-i18n="cancel"
                 >
                     Cancel
@@ -130,20 +113,14 @@
                     d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
                 />
             </svg>
-            <p
-                class="text-green-300 font-bold text-xl"
-                data-i18n="verified"
-            >
+            <p class="text-green-400 font-bold text-xl" data-i18n="verified">
                 Verified ✓
             </p>
             <p
                 id="qr-age-result"
                 class="hidden text-base font-semibold px-4 py-1 rounded-full"
             ></p>
-            <div
-                id="qr-verified-claims"
-                class="hidden w-full max-w-md mt-1"
-            >
+            <div id="qr-verified-claims" class="hidden w-full max-w-md mt-1">
                 <p
                     class="text-white/50 text-xs uppercase tracking-wider mb-1"
                     data-i18n="verified_claims"
@@ -152,7 +129,7 @@
                 </p>
                 <div
                     id="qr-claims-list"
-                    class="bg-brand-bg/60 rounded-lg p-3 text-xs text-white/80 font-mono max-h-40 overflow-y-auto break-all"
+                    class="bg-white/5 border border-white/10 rounded-lg p-3 text-xs text-white/80 max-h-40 overflow-y-auto break-all space-y-0.5"
                 ></div>
             </div>
             <p
@@ -163,7 +140,7 @@
             </p>
             <button
                 onclick="generateQR()"
-                class="btn-primary mt-2"
+                class="btn-primary w-full mt-2"
                 data-i18n="new_verification"
             >
                 New Verification
@@ -201,7 +178,7 @@
             </p>
             <button
                 onclick="generateQR()"
-                class="btn-primary mt-2"
+                class="btn-primary w-full mt-2"
                 data-i18n="try_again"
             >
                 Try Again
