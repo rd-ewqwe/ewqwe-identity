@@ -33,8 +33,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: pnpm
-          cache-dependency-path: typescript/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
         working-directory: typescript
       - run: pnpm audit
