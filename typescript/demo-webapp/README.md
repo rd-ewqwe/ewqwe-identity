@@ -88,3 +88,7 @@ protocol (`workspace:*` in `package.json`). pnpm symlinks it directly into
 | Variable | Default | Description |
 |---|---|---|
 | `CREDENTIAL_VERIFIER_URL` | `https://127.0.0.1:9443` | URL of the Rust credential verifier |
+
+## License
+
+MIT — see [LICENSE](LICENSE).

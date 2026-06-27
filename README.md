@@ -1,9 +1,9 @@
 # ewQwe Identity — Open Core
 
-Rust: 
+
 [![License](https://img.shields.io/badge/AGPL--3.0-blue)](LICENSE)
-Typescript: 
-[![License](https://img.shields.io/badge/MIT-blue)](LICENSE)
+&
+[![License](https://img.shields.io/badge/MIT-blue)](typescript/LICENSE)
 
 **Open-source** credential verifier compatible with the **EUDI/EIDAS wallet ecosystem**.
 
@@ -23,13 +23,13 @@ This repository contains:
 
 | Component | Description | License |
 |---|---|---|
-| **Credential Verifier** (`ewqwe-credential-verifier-server`) | Core server: receives VP Tokens, validates proofs (SD-JWT, mDoc), issues signed JWT attestations. Handles the full OpenID4VP transaction lifecycle. | AG |
-| **Admin UI** (`ewqwe-credential-verifier-ui`) | Embedded SPA served by the verifier. Age Verification dashboard with QR-code-driven flow, user management, audit journal, and i18n. Works out of the box. | AG |
+| **Credential Verifier** (`ewqwe-credential-verifier-server`) | Core server: receives VP Tokens, validates proofs (SD-JWT, mDoc), issues signed JWT attestations. Handles the full OpenID4VP transaction lifecycle. | AGPL-3.0 |
+| **Admin UI** (`ewqwe-credential-verifier-ui`) | Embedded SPA served by the verifier. Age Verification dashboard with QR-code-driven flow, user management, audit journal, and i18n. Works out of the box. | AGPL-3.0 |
 | **Demo Webapp** (`typescript/demo-webapp`) | Relying Party (RP) demo — vanilla TypeScript SPA that requests credentials via OpenID4VP and displays verification results. MIT-licensed so you can freely adapt and embed it. | MIT |
-| **OpenID4VP Library** (`ewqwe-openid4vp`) | Reusable Rust crate: DCQL query building, JAR signing, JWE decryption, transaction stores. | AG |
-| **Digital Credential Library** (`ewqwe-digital-credential`) | Rust crate: SD-JWT VC and mDoc (ISO 18013-5) credential building, signing, and verification with ephemeral PKI. | AG |
-| **Shared JS Library** (`@ewqwe/digital-identity`) | TypeScript library: DCQL query builders, protocol profiles, EwqweApiClient, attestation parsing. Published to npm. | MIT |
-| **RP Client Library** (`ewqwe-credential-verifier-client`) | Rust client library for the credential verification API. | AG |
+| **Shared JS Library** (`typescript/@ewqwe/digital-identity`) | TypeScript library: DCQL query builders, protocol profiles, EwqweApiClient, attestation parsing. Published to npm. | MIT |
+| **OpenID4VP Library** (`ewqwe-openid4vp`) | Reusable Rust crate: DCQL query building, JAR signing, JWE decryption, transaction stores. | AGPL-3.0 |
+| **Digital Credential Library** (`ewqwe-digital-credential`) | Rust crate: SD-JWT VC and mDoc (ISO 18013-5) credential building, signing, and verification with ephemeral PKI. | AGPL-3.0 |
+| **RP Client Library** (`ewqwe-credential-verifier-client`) | Rust client library for the credential verification API. | AGPL-3.0 |
 
 ```mermaid
 graph TD

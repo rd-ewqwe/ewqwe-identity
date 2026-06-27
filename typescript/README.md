@@ -114,4 +114,8 @@ graph TD
     ROOT --> NPMRC[".npmrc — pnpm config"]
     ROOT --> IDENTITY["ewqwe-digital-identity/<br/>@ewqwe/digital-identity"]
     ROOT --> WEBAPP["demo-webapp/<br/>@ewqwe/demo-webapp"]
+
+## License
+
+All packages in this workspace are licensed under **MIT**. See individual package LICENSE files for details.
 ```

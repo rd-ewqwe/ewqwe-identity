@@ -44,3 +44,7 @@ Then serve the documentation locally from the `documentation` folder with:
 ```shell
 mdbook serve --open
 ```
+
+## License
+
+AGPL-3.0 — see [LICENSE](LICENSE) at the repository root.

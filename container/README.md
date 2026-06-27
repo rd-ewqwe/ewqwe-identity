@@ -451,3 +451,7 @@ None currently. The build auto-generates development signer certificates.
 
 The `.dockerignore` at the repository root excludes `target/`, `node_modules/`,
 and other build artifacts from the Docker context, keeping the build lean.
+
+## License
+
+AGPL-3.0 — see [LICENSE](LICENSE) at the repository root.

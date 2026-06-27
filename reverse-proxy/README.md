@@ -131,3 +131,9 @@ curl https://verifier.your-domain.com
 ```
 
 Or open `https://verifier.your-domain.com` in a browser.
+
+---
+
+## License
+
+AGPL-3.0 — see [LICENSE](LICENSE) at the repository root.

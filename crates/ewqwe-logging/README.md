@@ -339,4 +339,4 @@ The library is organized into modules:
 
 ## License
 
-See the workspace license file for details.
+AGPL-3.0 — see [LICENSE](LICENSE).

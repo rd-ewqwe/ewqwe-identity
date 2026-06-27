@@ -133,3 +133,7 @@ cargo test -p ewqwe_credential_verifier_ui
 ### SPA Tests
 
 The frontend uses vanilla TypeScript with no test framework currently configured. Tests can be added via Vitest in `ui/vitest.config.ts`.
+
+## License
+
+AGPL-3.0 — see [LICENSE](LICENSE).
