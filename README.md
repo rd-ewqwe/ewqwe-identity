@@ -1,18 +1,23 @@
 # ewQwe Identity — Open Core
 
-[![License](https://img.shields.io/badge/License-BSL--1.1-blue)](LICENSE)
+Rust: 
+[![License](https://img.shields.io/badge/AGPL--3.0-blue)](LICENSE)
+Typescript: 
+[![License](https://img.shields.io/badge/MIT-blue)](LICENSE)
 
-**EU Age Verification** using W3C Digital Credentials — a credential verifier compatible with the EUDI/EIDAS wallet ecosystem.
+**Open-source** credential verifier compatible with the **EUDI/EIDAS wallet ecosystem**.
+
+This project provides a complete solution, with a user interface, for verifying digital credentials, including the "age over 18" verification for the widely deployed France Identité Numérique wallet.
 
 ---
 
-## Why
+## Why an open-source credential verifier
 
 The EU Digital Identity (EUDI) Wallet ecosystem enables citizens to present electronically signed credentials — such as Proof of Age — to relying parties. This project provides the **verifier side** of that ecosystem: a server that accepts Verifiable Presentations from EUDI Wallets (via OpenID4VP), validates their cryptographic integrity, and returns signed attestations.
 
-The credential verifier server ships with an **embedded admin UI** focused on Age Verification (build the SPA, enable it in the config, and it's served at the server root URL — no separate frontend deployment required). A **MIT-licensed demo webapp** is also provided so you can see how to embed digital credential verification into an existing web application.
+The credential verifier server ships with an **embedded admin UI** (build the SPA, enable it in the config, and it's served at the server root URL — no separate frontend deployment required). A **MIT-licensed demo webapp** is also provided so you can see how to embed digital credential verification into an existing web application.
 
-## What
+## Components
 
 This repository contains:
 
@@ -41,7 +46,7 @@ graph TD
     end
 ```
 
-## How
+## How it works
 
 The **Relying Party** (your application, or the demo-webapp) initiates an OpenID4VP transaction with the **Credential Verifier**. The user's EUDI Wallet scans a QR code (or receives a deep link) and presents the requested credential. The verifier:
 
@@ -105,7 +110,7 @@ See the [TypeScript workspace README](typescript/README.md) for details.
 
 ```toml
 [dependencies]
-ewqwe_credential_verifier_client = { git = "https://github.com/ewqwe-identity/ewqwe-identity" }
+ewqwe_credential_verifier_client = { git = "https://github.com/rd-ewqwe/ewqwe-identity" }
 ```
 
 ## Building

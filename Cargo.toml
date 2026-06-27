@@ -4,8 +4,8 @@ edition = "2024"
 rust-version = "1.92.0"
 authors = ["ewQwe R&D <rd@ewqwe.eu>"]
 license = "AGPL-3.0-only"
-homepage = "https://github.com/ewqwe-identity/ewqwe-identity"
-repository = "https://github.com/ewqwe-identity/ewqwe-identity"
+homepage = "https://github.com/rd-ewqwe/ewqwe-identity"
+repository = "https://github.com/rd-ewqwe/ewqwe-identity"
 description = "ewQwe Identity"
 
 [workspace]

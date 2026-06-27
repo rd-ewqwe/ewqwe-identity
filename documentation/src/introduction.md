@@ -44,7 +44,7 @@ The verifier supports a wide range of credential types across both formats:
 | **Loyalty Card** | `mso_mdoc` | `eu.europa.ec.eudi.loyalty.1` | loyalty_id, program_name, points_balance |
 | **Reservation** | `mso_mdoc` | `eu.europa.ec.eudi.reservation.1` | reservation_id, venue, date |
 
-For the complete credential type configuration including all claim paths and namespace mappings, see [`@ewqwe/digital-identity` config source](https://github.com/ewqwe-identity/ewqwe-identity/tree/main/js-lib/ewqwe-digital-identity/src/config.ts).
+For the complete credential type configuration including all claim paths and namespace mappings, see [`@ewqwe/digital-identity` config source](https://github.com/rd-ewqwe/ewqwe-identity/tree/main/js-lib/ewqwe-digital-identity/src/config.ts).
 
 ## What This Documentation Provides
 
