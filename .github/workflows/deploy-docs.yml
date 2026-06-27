@@ -1,0 +1,36 @@
+name: Deploy Documentation
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo Binaries
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-mdbook-${{ hashFiles('**/book.toml') }}
+
+      - name: Install mdBook and Mermaid Preprocessor
+        run: |
+          cargo install --skip-type-check mdbook || true
+          cargo install --skip-type-check mdbook-mermaid || true
+
+      - name: Build Documentation Site
+        run: mdbook build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./book
