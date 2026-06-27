@@ -147,14 +147,14 @@ pub async fn login(
         Ok(Some(u)) => u,
         Ok(None) => {
             // Constant-time-ish: still hash a dummy value to avoid timing oracle.
-            let _ = web::block(|| auth::hash_password("dummy_constant_time")).await;
+            let _ = web::block(|| auth::hash_password(&Uuid::new_v4().to_string())).await;
             return unauthorized();
         }
         Err(e) => return store_error_response(e),
     };
 
     if !user.is_active {
-        let _ = web::block(|| auth::hash_password("dummy_constant_time")).await;
+        let _ = web::block(|| auth::hash_password(&Uuid::new_v4().to_string())).await;
         return unauthorized();
     }
 

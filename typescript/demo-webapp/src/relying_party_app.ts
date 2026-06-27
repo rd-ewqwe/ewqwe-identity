@@ -417,7 +417,7 @@ export class RelyingPartyApp {
       "openid4vp-cross-device": "OpenID4VP Cross-Device",
       "openid4vp-same-device": "OpenID4VP Same-Device",
     };
-    return labels[protocol] || protocol;
+    return labels[protocol] || "Unknown Protocol";
   }
 
   /**

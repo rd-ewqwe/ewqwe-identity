@@ -4,6 +4,7 @@
 //! using both JWT and COSE formats.
 
 use base64::Engine;
+use uuid::Uuid;
 
 use super::{
     Attestation, AttestationSigner, CoseSigner, CoseSigningAlgorithm, JwtSigner, SigningAlgorithm,
@@ -37,11 +38,12 @@ fn test_signer_trait_implementations() {
 /// Test attestation claims with all optional fields.
 #[test]
 fn test_full_claims() {
+    let nonce = Uuid::new_v4().to_string();
     let mut cred_claims = serde_json::Map::new();
     cred_claims.insert("age_over_21".to_owned(), serde_json::Value::Bool(true));
     let claims = Attestation::new("verifier.ewqwe.com", "rp.example.com", "txn-abc123")
         .with_doc_type("org.iso.18013.5.1.mDL")
-        .with_nonce("unique-nonce-from-request")
+        .with_nonce(&nonce)
         .with_credential_claims(cred_claims);
 
     let signer = JwtSigner::from_pem(SigningAlgorithm::ES256, EC_PRIVATE_KEY)
@@ -64,7 +66,10 @@ fn test_full_claims() {
     assert_eq!(decoded["verified"], true);
     assert_eq!(decoded["age_over_21"], true);
     assert_eq!(decoded["doc_type"], "org.iso.18013.5.1.mDL");
-    assert_eq!(decoded["nonce"], "unique-nonce-from-request");
+    assert_eq!(
+        decoded["nonce"].as_str().expect("there should be a nonce"),
+        &nonce
+    );
 }
 
 /// Test that different sessions produce different JTIs.
