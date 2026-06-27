@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3b89128e.js";
+            window.path_to_searchindex_js = "searchindex-df26ae72.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e68e16c9.js"></script>
+        <script src="toc-2cdafee5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,174 +174,87 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <p><strong>ewQwe</strong> (pronounced <em>/juːˈkwiː/</em>  <em>you-kwee</em>) <strong>Digital Identity</strong> is a comprehensive software suite for implementing Digital Identity solutions, with specific focus on <a href="https://digital-strategy.ec.europa.eu/en/policies/eudi-regulation">European Digital Identity (EUDI)</a> standards and protocols.</p>
-<h2 id="primary-use-case-pid-mdl-and-age-verification"><a class="header" href="#primary-use-case-pid-mdl-and-age-verification">Primary Use Case: PID, mDL and Age Verification</a></h2>
-<p>The <strong>ewQwe Credential Verifier Server</strong> is a production-ready backend service designed for websites and applications (Relying Parties) that need to verify digital credentials from users’ wallets. The primary use cases are:</p>
-<ul>
-<li><strong>Person Identification Data (PID)</strong> — the core identity credential inside the EUDI Wallet, issued by EU member states. Used for online identification, age verification, and proof of identity.</li>
-<li><strong>Mobile Driving Licence (mDL)</strong> — the ISO/IEC 18013-5 mobile driving licence, used for driving privilege verification, age checks (e.g. alcohol sales, car rental), and identity verification.</li>
-<li><strong>EU Age Verification</strong> — following the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile (Annex A)</a> and the <a href="https://digital-strategy.ec.europa.eu/en/policies/digital-services-act-package">Digital Services Act (DSA)</a>, enabling privacy-preserving age checks (e.g. “Over 18”) without revealing the user’s identity.</li>
-</ul>
-<p>The verifier supports both the <strong>High Assurance Interoperability Profile (HAIP)</strong> — used by the EUDI Wallet for PID and mDL presentation with strict JAR signing and JWE encryption — and the <strong>EU Age Verification (EU-AV) Blueprint</strong> — optimised for privacy-preserving, anonymous age checks.</p>
-<p><strong>Why Use ewQwe Credential Verifier?</strong></p>
-<ul>
-<li>✅ <strong>Standards Compliant</strong> — Implements W3C Digital Credentials API, OpenID4VP 1.0, ISO/IEC 18013-5/7 (mDoc/mDL), SD-JWT VC, HAIP, and the EU Age Verification Profile</li>
-<li>✅ <strong>Production Ready</strong> — Built with Rust for security, performance, and reliability</li>
-<li>✅ <strong>Privacy Preserving</strong> — Supports selective disclosure, minimal data exposure, and zero-knowledge age proofs</li>
-<li>✅ <strong>Easy Integration</strong> — Simple REST API for credential verification</li>
-<li>✅ <strong>Secure by Design</strong> — TLS/mTLS authentication, signed attestations, comprehensive audit logging with hash-chained journal</li>
-<li>✅ <strong>Flexible Deployment</strong> — Standalone server or integrated into existing infrastructure</li>
-<li>✅ <strong>Two Credential Formats</strong> — Supports both <code>mso_mdoc</code> (CBOR-based, ISO/IEC 18013-5) and <code>dc+sd-jwt</code> (Selective Disclosure JWT) formats</li>
-</ul>
-<h3 id="supported-credential-types"><a class="header" href="#supported-credential-types">Supported Credential Types</a></h3>
-<p>The verifier supports a wide range of credential types across both formats:</p>
+                        <h1 id="ewqwe-identity--introduction"><a class="header" href="#ewqwe-identity--introduction">ewQwe Identity — Introduction</a></h1>
+<p><strong>ewQwe</strong> (pronounced */juːˈkwiː/ — <em>you-kwee</em>) <strong>Identity</strong> is an <strong>open-source credential verifier</strong> developed in the EU, compatible with the <strong>EUDI/eIDAS wallet ecosystem</strong>.</p>
+<p>The project provides a complete solution — including a multi-lingual admin UI — for verifying digital credentials such as <strong>Proof of Age</strong>, <strong>Person Identification Data (PID)</strong>, and <strong>Mobile Driving Licences (mDL)</strong>.</p>
+<p>Out of the box: <strong>age over 18</strong> verification using the widely deployed <strong>France Identité Numérique</strong> wallet.</p>
+<p><img src="./assets/cv_ui_qr_code.png" alt="France Identité Wallet"></p>
+<h2 id="what-it-does"><a class="header" href="#what-it-does">What it does</a></h2>
+<p>The Credential Verifier is a Rust server that accepts <strong>Verifiable Presentations</strong> from EUDI Wallets via <strong>OpenID4VP</strong>, validates their cryptographic integrity, and returns signed JWT attestations to Relying Parties.</p>
+<p>It ships with an <strong>embedded multi-lingual admin UI</strong> — build the SPA, enable it in config, and it’s served at the server root URL with no separate frontend deployment.</p>
+<p>A <strong>MIT-licensed demo webapp</strong> is also provided, showing how to embed credential verification into an existing web application.</p>
+<h2 id="supported-standards"><a class="header" href="#supported-standards">Supported Standards</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Credential Type</th><th>Format(s)</th><th>DocType / vct</th><th>Typical Claims</th></tr>
+<tr><th>Standard</th><th>Purpose</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>mDL (Mobile Driving Licence)</strong></td><td><code>mso_mdoc</code></td><td><code>org.iso.18013.5.1.mDL</code></td><td>given_name, family_name, birth_date, age_over_18/21, portrait, driving_privileges, issue/expiry_date</td></tr>
-<tr><td><strong>PID (Person Identification Data)</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.pid.1</code></td><td>given_name, family_name, birth_date, age_over_18, nationality, resident_address</td></tr>
-<tr><td><strong>EU Age Verification</strong></td><td><code>mso_mdoc</code></td><td><code>eu.europa.ec.av.1</code></td><td>age_over_18 (boolean ZKP)</td></tr>
-<tr><td><strong>National ID</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.pid.1</code></td><td>given_name, family_name, birth_date, portrait, document_number</td></tr>
-<tr><td><strong>eHealth Insurance Card (EHIC)</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.ehic.1</code></td><td>given_name, family_name, birth_date, institution_id, expiry_date</td></tr>
-<tr><td><strong>Health ID</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.health.1</code></td><td>given_name, family_name, birth_date, health_id, blood_type</td></tr>
-<tr><td><strong>Tax ID</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.tax.1</code></td><td>tax_id, country_code</td></tr>
-<tr><td><strong>PDA1 (Social Security)</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.pda1.1</code></td><td>given_name, family_name, birth_date, member_state, employer</td></tr>
-<tr><td><strong>Certificate of Residence (CoR)</strong></td><td><code>mso_mdoc</code></td><td><code>eu.europa.ec.eudi.cor.1</code></td><td>given_name, family_name, address, issuing_country</td></tr>
-<tr><td><strong>Proof of Registration (PoR)</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.por.1</code></td><td>given_name, family_name, registration_number, issuing_authority</td></tr>
-<tr><td><strong>Photo ID</strong></td><td><code>mso_mdoc</code></td><td><code>eu.europa.ec.eudi.photo-id.1</code></td><td>given_name, family_name, portrait, document_number</td></tr>
-<tr><td><strong>IBAN (Bank Account)</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.iban.1</code></td><td>iban, bank_name, account_holder</td></tr>
-<tr><td><strong>MSISDN (Mobile Number)</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.msisdn.1</code></td><td>msisdn, country_code</td></tr>
-<tr><td><strong>Pseudonymised Age</strong></td><td><code>mso_mdoc</code>, <code>dc+sd-jwt</code></td><td><code>eu.europa.ec.eudi.pseudonym-age.1</code></td><td>age_over_18, pseudonym</td></tr>
-<tr><td><strong>Loyalty Card</strong></td><td><code>mso_mdoc</code></td><td><code>eu.europa.ec.eudi.loyalty.1</code></td><td>loyalty_id, program_name, points_balance</td></tr>
-<tr><td><strong>Reservation</strong></td><td><code>mso_mdoc</code></td><td><code>eu.europa.ec.eudi.reservation.1</code></td><td>reservation_id, venue, date</td></tr>
+<tr><td><strong>OpenID4VP 1.0</strong></td><td>Credential presentation protocol</td></tr>
+<tr><td><strong>ISO/IEC 18013-5</strong></td><td>mDoc / mDL credential format</td></tr>
+<tr><td><strong>ISO/IEC 18013-7 Annex B</strong></td><td>Online mDoc presentation via OpenID4VP</td></tr>
+<tr><td><strong>SD-JWT VC</strong></td><td>Selective Disclosure JWT credentials</td></tr>
+<tr><td><strong>HAIP</strong></td><td>High Assurance Interoperability Profile (JAR, JWE, X.509)</td></tr>
+<tr><td><strong>EU Age Verification Profile</strong></td><td>Privacy-preserving age checks (DSA-compliant)</td></tr>
 </tbody>
 </table>
 </div>
-<p>For the complete credential type configuration including all claim paths and namespace mappings, see <a href="https://github.com/rd-ewqwe/ewqwe-identity/tree/main/js-lib/ewqwe-digital-identity/src/config.ts"><code>@ewqwe/digital-identity</code> config source</a>.</p>
-<h2 id="what-this-documentation-provides"><a class="header" href="#what-this-documentation-provides">What This Documentation Provides</a></h2>
-<p>This documentation serves three main purposes:</p>
-<h3 id="1-ewqwe-credential-verifier-installation-and-configuration"><a class="header" href="#1-ewqwe-credential-verifier-installation-and-configuration">1. ewQwe Credential Verifier Installation and Configuration</a></h3>
-<p>Comprehensive guides for deploying the credential verifier server in development and production environments:</p>
-<ul>
-<li>Installation prerequisites and dependencies</li>
-<li>TLS/mTLS configuration for secure communications</li>
-<li>Redis session storage setup</li>
-<li>Logging and telemetry integration with OpenTelemetry</li>
-<li>API reference and verification workflow</li>
-<li>Security considerations and production deployment checklist</li>
-</ul>
-<p>See the <a href="./credential_verifier_server.html">ewQwe Credential Verification Server</a> chapter for complete details.</p>
-<h3 id="2-demo-wallet-and-demo-web-app-for-integration-testing"><a class="header" href="#2-demo-wallet-and-demo-web-app-for-integration-testing">2. Demo Wallet and Demo Web App for Integration Testing</a></h3>
-<p>Complete working demonstration system to help Relying Parties implement credential verification in their own web applications:</p>
-<ul>
-<li><strong>Demo Wallet Browser Extension</strong> — Reference implementation of an Age Verification App Instance (AVI) that stores and presents credentials</li>
-<li><strong>Sample Demo Web App</strong> — Starter code showing how to request credentials, interact with wallets, and verify attestations</li>
-<li><strong>Step-by-step integration guide</strong> — From wallet installation to complete verification flow</li>
-<li><strong>Source code on GitHub</strong> — Production-ready TypeScript code you can fork and customise</li>
-</ul>
-<p>The demo webapp serves as both a functional test environment and a <strong>starting point for your own Relying Party implementation</strong>. See the <a href="./demo_architecture.html">Demo Architecture</a> chapter to get started.</p>
-<h3 id="3-technical-references-and-protocol-documentation"><a class="header" href="#3-technical-references-and-protocol-documentation">3. Technical References and Protocol Documentation</a></h3>
-<p>Authoritative references and detailed specifications for the standards and protocols used:</p>
-<ul>
-<li><a href="https://wicg.github.io/digital-credentials/">W3C Digital Credentials API</a> implementation</li>
-<li><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID for Verifiable Presentations (OpenID4VP)</a> protocol</li>
-<li><a href="https://www.iso.org/standard/69084.html">ISO/IEC 18013-5</a> mobile driver’s license (mDL) format</li>
-<li><a href="https://www.iso.org/standard/69086.html">ISO/IEC 18013-7</a> — online mDoc presentation (Annex B: OpenID4VP, Annex C: DC API)</li>
-<li><a href="./dcql_age_verification.html">Digital Credentials Query Language (DCQL)</a> for credential requests</li>
-<li><a href="https://openid.net/specs/openid-connect-4-verifiable-presentations.html">High Assurance Interoperability Profile (HAIP)</a> for high-security credential exchange</li>
-<li>EU Age Verification Profile specifications and requirements</li>
-<li>Credential format structures and namespace mappings</li>
-<li>Browser storage mechanisms and security considerations</li>
-</ul>
-<h2 id="quick-start"><a class="header" href="#quick-start">Quick Start</a></h2>
-<p>Ready to get started? Follow these paths based on your role:</p>
-<p><strong>For Developers Building Relying Party Applications:</strong></p>
-<ol>
-<li>Review the <a href="./user-journey.html">User Journey</a> to understand the complete flow</li>
-<li>Follow the <a href="./demo_architecture.html">Demo Architecture</a> setup guide to run the demo system</li>
-<li>Explore the demo webapp source code as a template for your implementation</li>
-<li>Deploy the <a href="./credential_verifier_server.html">Credential Verifier Server</a> for your production use</li>
-</ol>
-<p><strong>For System Administrators Deploying the Verifier:</strong></p>
-<ol>
-<li>Start with the <a href="./credential_verifier_server.html">Credential Verifier Server</a> installation guide</li>
-<li>Configure TLS certificates and Redis storage</li>
-<li>Set up monitoring and logging with OpenTelemetry</li>
-<li>Review security considerations and production checklist</li>
-</ol>
-<p><strong>For Technical Architects and Standards Compliance:</strong></p>
-<ol>
-<li>Study the <a href="./architecture.html">Components Architecture</a> overview</li>
-<li>Review protocol specifications in <a href="./w3c_credential_request.html">W3C Credential Request</a></li>
-<li>Understand <a href="./dcql_age_verification.html">DCQL Age Verification</a> query language</li>
-<li>Examine <a href="./credential_type_specifications.html">Credential Type Specifications</a></li>
-</ol>
-<h2 id="acronyms-and-abbreviations"><a class="header" href="#acronyms-and-abbreviations">Acronyms and Abbreviations</a></h2>
-<p>This documentation uses terminology from European Digital Identity, ISO/IEC 18013-7, and credential verification standards:</p>
+<h2 id="components"><a class="header" href="#components">Components</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th style="text-align: left">Term</th><th style="text-align: left">Definition</th></tr>
+<tr><th>Component</th><th>Description</th><th>License</th></tr>
 </thead>
 <tbody>
-<tr><td style="text-align: left"><strong>AP</strong></td><td style="text-align: left">Attestation Provider</td></tr>
-<tr><td style="text-align: left"><strong>ARF</strong></td><td style="text-align: left">Architecture and Reference Framework</td></tr>
-<tr><td style="text-align: left"><strong>AV app</strong></td><td style="text-align: left">Age Verification App</td></tr>
-<tr><td style="text-align: left"><strong>AVI</strong></td><td style="text-align: left">Age Verification App Instance (the user’s digital wallet)</td></tr>
-<tr><td style="text-align: left"><strong>AVAP</strong></td><td style="text-align: left">Age Verification App Provider</td></tr>
-<tr><td style="text-align: left"><strong>BLE</strong></td><td style="text-align: left">Bluetooth Low Energy — used by operating systems to prove physical proximity in cross-device flows</td></tr>
-<tr><td style="text-align: left"><strong>CA</strong></td><td style="text-align: left">Certificate Authority</td></tr>
-<tr><td style="text-align: left"><strong>CBOR</strong></td><td style="text-align: left">Concise Binary Object Representation — a binary data serialisation format used in ISO mDocs</td></tr>
-<tr><td style="text-align: left"><strong>DC API</strong></td><td style="text-align: left">Digital Credentials API — a W3C browser standard for requesting credentials directly through the web browser</td></tr>
-<tr><td style="text-align: left"><strong>DCQL</strong></td><td style="text-align: left">Digital Credential Query Language — the modern JSON-based query language for requesting specific data from wallets, replacing PEX</td></tr>
-<tr><td style="text-align: left"><strong>DG CNECT</strong></td><td style="text-align: left">Directorate General Network, Content and Technology</td></tr>
-<tr><td style="text-align: left"><strong>DSA</strong></td><td style="text-align: left">Digital Services Act — EU regulation driving mandatory, anonymous age verification</td></tr>
-<tr><td style="text-align: left"><strong>eIDAS</strong></td><td style="text-align: left">Electronic Identification, Authentication and Trust Services</td></tr>
-<tr><td style="text-align: left"><strong>EU</strong></td><td style="text-align: left">European Union</td></tr>
-<tr><td style="text-align: left"><strong>EUDI</strong></td><td style="text-align: left">European Digital Identity</td></tr>
-<tr><td style="text-align: left"><strong>EUDIW</strong></td><td style="text-align: left">European Digital Identity Wallet (also EUDI Wallet)</td></tr>
-<tr><td style="text-align: left"><strong>EU-AV</strong></td><td style="text-align: left">European Union Age Verification — the EUDIW blueprint for privacy-preserving age checks</td></tr>
-<tr><td style="text-align: left"><strong>HAIP</strong></td><td style="text-align: left">High Assurance Interoperability Profile — an OpenID profile for high-security credential exchange with strict JAR requirements</td></tr>
-<tr><td style="text-align: left"><strong>HPKE</strong></td><td style="text-align: left">Hybrid Public Key Encryption — a modern cryptographic standard for encrypting payloads to a public key (used in Annex C)</td></tr>
-<tr><td style="text-align: left"><strong>JAR</strong></td><td style="text-align: left">JWT Secured Authorization Request (RFC 9101) — cryptographically signed verifier request, required by HAIP</td></tr>
-<tr><td style="text-align: left"><strong>JWE</strong></td><td style="text-align: left">JSON Web Encryption — used to encrypt the wallet’s response (required by HAIP)</td></tr>
-<tr><td style="text-align: left"><strong>JWT</strong></td><td style="text-align: left">JSON Web Token</td></tr>
-<tr><td style="text-align: left"><strong>LoA</strong></td><td style="text-align: left">Level of Assurance</td></tr>
-<tr><td style="text-align: left"><strong>mDL</strong></td><td style="text-align: left">Mobile Driver’s License (ISO/IEC 18013-5 format)</td></tr>
-<tr><td style="text-align: left"><strong>mDoc</strong></td><td style="text-align: left">Mobile Document — CBOR-encoded credential format (ISO/IEC 18013-5)</td></tr>
-<tr><td style="text-align: left"><strong>OIDC</strong></td><td style="text-align: left">OpenID Connect — an identity layer on top of OAuth 2.0</td></tr>
-<tr><td style="text-align: left"><strong>OID4VP</strong></td><td style="text-align: left">OpenID for Verifiable Presentations — standard for presenting credentials over OIDC</td></tr>
-<tr><td style="text-align: left"><strong>PEX</strong></td><td style="text-align: left">Presentation Exchange — legacy JSON query language, largely replaced by DCQL</td></tr>
-<tr><td style="text-align: left"><strong>PID</strong></td><td style="text-align: left">Person Identification Data — the core identity credential inside the EUDI Wallet</td></tr>
-<tr><td style="text-align: left"><strong>RP</strong></td><td style="text-align: left">Relying Party — web application requesting credential verification</td></tr>
-<tr><td style="text-align: left"><strong>SD-JWT</strong></td><td style="text-align: left">Selective Disclosure JSON Web Token — a credential format supporting selective claim disclosure</td></tr>
-<tr><td style="text-align: left"><strong>TLS</strong></td><td style="text-align: left">Transport Layer Security</td></tr>
-<tr><td style="text-align: left"><strong>U</strong></td><td style="text-align: left">User</td></tr>
-<tr><td style="text-align: left"><strong>VP</strong></td><td style="text-align: left">Verifiable Presentation — credential data presented by the wallet</td></tr>
-<tr><td style="text-align: left"><strong>WB</strong></td><td style="text-align: left">Web Browser (or web app)</td></tr>
-<tr><td style="text-align: left"><strong>ZKP</strong></td><td style="text-align: left">Zero Knowledge Proof — cryptographic method allowing one party to prove a statement without revealing underlying data</td></tr>
+<tr><td><strong>Credential Verifier</strong></td><td>Core server: VP Token validation, signed JWT attestations, OpenID4VP transaction lifecycle</td><td>AGPL-3.0</td></tr>
+<tr><td><strong>Admin UI</strong></td><td>Embedded SPA: QR-code-driven verification dashboard, user management, audit journal, i18n</td><td>AGPL-3.0</td></tr>
+<tr><td><strong>Demo Webapp</strong></td><td>Relying Party demo — vanilla TypeScript SPA that requests credentials via OpenID4VP</td><td>MIT</td></tr>
+<tr><td><strong>Shared JS Library</strong></td><td>TypeScript library: DCQL query builders, protocol profiles, API client</td><td>MIT</td></tr>
+<tr><td><strong>OpenID4VP Library</strong></td><td>Reusable Rust crate: DCQL, JAR signing, JWE decryption, transaction stores</td><td>AGPL-3.0</td></tr>
+<tr><td><strong>Digital Credential Library</strong></td><td>Rust crate: SD-JWT VC and mDoc credential building, signing, verification</td><td>AGPL-3.0</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="getting-help-and-contributing"><a class="header" href="#getting-help-and-contributing">Getting Help and Contributing</a></h2>
-<ul>
-<li><strong>Issues</strong>: Report bugs or request features on <a href="https://github.com/your-org/ewqwe-identity/issues">GitHub Issues</a></li>
-<li><strong>Discussions</strong>: Join the community for questions and best practices</li>
-<li><strong>Source Code</strong>: Available on GitHub (links provided in each component chapter)</li>
-<li><strong>Specifications</strong>: Links to authoritative standards throughout the documentation</li>
-</ul>
-<h2 id="license-and-usage"><a class="header" href="#license-and-usage">License and Usage</a></h2>
-<p>The ewQwe Credential Verifier is provided under a Business Source License (BSL 1.1) with free testing and experimentation. The other components (Demo Wallet and Demo Webapp) are open source software under an MIT license. See individual component repositories for specific license details and usage terms.</p>
+<h2 id="roadmap"><a class="header" href="#roadmap">Roadmap</a></h2>
+<p>Based on your role:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Role</th><th>Start here</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>Deploying the verifier</strong></td><td><a href="./credential_verifier_server.html">Credential Verifier Server</a></td></tr>
+<tr><td><strong>Using the admin dashboard</strong></td><td><a href="./credential_verifier_ui.html">Credential Verifier UI</a></td></tr>
+<tr><td><strong>Building a Relying Party</strong></td><td><a href="./demo_webapp.html">Demo Webapp</a> then <a href="./demo_architecture.html">Demo Architecture</a></td></tr>
+<tr><td><strong>Understanding the standards</strong></td><td><a href="./summary_protocols_formats.html">Protocols &amp; Formats Summary</a></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="license"><a class="header" href="#license">License</a></h2>
+<p>The open-core crates are licensed under <strong>AGPL-3.0</strong>. The TypeScript packages (<code>@ewqwe/digital-identity</code> and <code>demo-webapp</code>) are licensed under <strong>MIT</strong>.</p>
+<h2 id="enterprise-version"><a class="header" href="#enterprise-version">Enterprise Version</a></h2>
+<p>The <strong>enterprise</strong> version adds production-grade infrastructure:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Enterprise Crate</th></tr>
+</thead>
+<tbody>
+<tr><td>OpenTelemetry (OTLP) tracing &amp; metrics</td><td><code>ewqwe-enterprise-logging</code></td></tr>
+<tr><td>PostgreSQL &amp; Redis stores</td><td><code>ewqwe-enterprise-stores</code></td></tr>
+<tr><td>APISIX/eIDAS authentication</td><td><code>ewqwe-enterprise-auth</code></td></tr>
+<tr><td>mTLS, multi-tenancy, K8s Helm charts</td><td><code>ewqwe-enterprise-server</code></td></tr>
+</tbody>
+</table>
+</div>
+<p><strong>Credential Verification as a Service</strong> is coming soon — check <a href="https://ewqwe.eu">ewqwe.eu</a> for updates.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
 
-                            <a rel="next prefetch" href="summary_protocols_formats.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="credential_verifier_server.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -352,7 +265,7 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
 
-                    <a rel="next prefetch" href="summary_protocols_formats.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="credential_verifier_server.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

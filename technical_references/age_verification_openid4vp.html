@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3b89128e.js";
+            window.path_to_searchindex_js = "../searchindex-df26ae72.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e68e16c9.js"></script>
+        <script src="../toc-2cdafee5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,696 +175,112 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="age-verification-openid4vp-fallback"><a class="header" href="#age-verification-openid4vp-fallback">Age Verification: OpenID4VP Fallback</a></h1>
-<p>This chapter explains the <strong>OpenID for Verifiable Presentations (OpenID4VP)</strong> fallback mechanism used for age verification when the <strong>W3C Digital Credentials API</strong> is not available.</p>
-<p>It focuses on the requirements from <strong>EU Age Verification Profile Annex A, Section A.5 (OpenID for Verifiable Presentations profile Requirements)</strong>.</p>
-<h2 id="why-a-fallback-mechanism"><a class="header" href="#why-a-fallback-mechanism">Why a fallback mechanism?</a></h2>
-<p>The W3C Digital Credentials API is the primary method specified in Annex A.5. However:</p>
+<p>This page describes the <strong>OpenID4VP</strong> fallback used for age verification when the W3C Digital Credentials API is unavailable, per the <strong>EU Age Verification Profile Annex A, Section A.5</strong>.</p>
+<h2 id="when-to-use-the-fallback"><a class="header" href="#when-to-use-the-fallback">When to use the fallback</a></h2>
+<p>The W3C DC API is the primary method, but:</p>
 <ul>
-<li>Not all browsers support it yet (see browser compatibility notes in the References chapter).</li>
-<li>The API may be disabled by user preference or enterprise policy.</li>
+<li>Browser support is still limited</li>
+<li>It may be disabled by user preference or enterprise policy</li>
+<li>On mobile, production wallets (as of mid-2026) reject the <code>openid4vp</code> protocol identifier inside the DC API handler</li>
 </ul>
-<p>When the native API is unavailable, the Relying Party <strong>MUST</strong> fall back to OpenID4VP with specific constraints defined by the Age Verification Profile.</p>
-<h2 id="end-to-end-flow"><a class="header" href="#end-to-end-flow">End-to-end flow</a></h2>
-<pre class="mermaid">flowchart TD
-  A[RP detects W3C Digital Credentials API unavailable] --&gt; B[RP generates fresh random nonce and chooses optional client-managed state]
-  B --&gt; C[RP builds av:// URL with required parameters and DCQL query]
-  C --&gt; D{Invocation method?}
-  D --&gt;|Same device| E[RP navigates to av:// URL or opens link]
-  D --&gt;|Cross device| F[RP displays QR code]
-  E --&gt; G[Wallet parses the request]
-  F --&gt; G
-  G --&gt; H[Wallet prompts user to select/consent to credential presentation]
-  H --&gt; I{User consent?}
-  I --&gt;|Denied| J[Wallet returns error to RP]
-  I --&gt;|Approved| K[Wallet builds VP token with requested claims and nonce]
-  K --&gt; L[Wallet POSTs response to response_uri with vp_token and state]
-  L --&gt; M[RP receives POST request]
-  M --&gt; N[RP validates VP token: signature, holder binding, nonce, validity]
-  N --&gt; O{Validation successful?}
-  O --&gt;|No| P[RP returns error response]
-  O --&gt;|Yes| Q[RP extracts age verification claim]
-  Q --&gt; R{Age requirement met?}
-  R --&gt;|No| S[RP returns age requirement not met error]
-  R --&gt;|Yes| T[RP completes age verification and updates session]
-  T --&gt; U[RP returns success response with redirect_uri to wallet]
-  
-  style A fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style B fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style C fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style D fill:#BA55D3,stroke:#8A2BE2,color:#fff
-  style E fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style F fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style G fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style H fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style I fill:#BA55D3,stroke:#8A2BE2,color:#fff
-  style J fill:#8B4789,stroke:#8A2BE2,color:#fff
-  style K fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style L fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style M fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style N fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style O fill:#BA55D3,stroke:#8A2BE2,color:#fff
-  style P fill:#8B4789,stroke:#8A2BE2,color:#fff
-  style Q fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style R fill:#BA55D3,stroke:#8A2BE2,color:#fff
-  style S fill:#8B4789,stroke:#8A2BE2,color:#fff
-  style T fill:#9370DB,stroke:#8A2BE2,color:#fff
-  style U fill:#7B68EE,stroke:#8A2BE2,color:#fff
+<p>When the DC API is unavailable, the Relying Party falls back to OpenID4VP via <code>av://</code> deep links or QR codes.</p>
+<h2 id="flow"><a class="header" href="#flow">Flow</a></h2>
+<pre class="mermaid">sequenceDiagram
+    participant RP as Relying Party
+    participant Wallet as Age Verification App
+
+    RP-&gt;&gt;RP: Generate nonce, build av:// URL with DCQL query
+    RP-&gt;&gt;Wallet: av://authorize?... (deep link or QR code)
+    Wallet-&gt;&gt;Wallet: Parse request, prompt user consent
+    Wallet-&gt;&gt;RP: POST direct_post (VP Token + state)
+    RP-&gt;&gt;RP: Validate nonce, signature, expiry
+    RP--&gt;&gt;Wallet: redirect_uri
 </pre>
 
-<h2 id="openid4vp-request-parameters-for-the-authorize-endpoint"><a class="header" href="#openid4vp-request-parameters-for-the-authorize-endpoint">OpenID4VP request parameters for the authorize endpoint</a></h2>
-<p>According to <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5">OpenID for Verifiable Presentations 1.0, Section 5</a>, the Authorization Request to the <code>authorize</code> endpoint contains the following parameters:</p>
+<h2 id="key-requirements-per-annex-a5"><a class="header" href="#key-requirements-per-annex-a5">Key Requirements (per <a href="https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/">Annex A.5</a>)</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Parameter</th><th>Required</th><th>Description</th><th>Age Verification Profile Notes</th></tr>
+<tr><th>Parameter</th><th>Value</th><th>Source</th></tr>
 </thead>
 <tbody>
-<tr><td><code>response_type</code></td><td>✓</td><td>MUST be <code>vp_token</code> for Verifiable Presentation requests</td><td>Fixed value: <code>vp_token</code></td></tr>
-<tr><td><code>client_id</code></td><td>✓</td><td>Identifier of the Relying Party</td><td>MUST use format: <code>redirect_uri:&lt;response_uri&gt;</code></td></tr>
-<tr><td><code>nonce</code></td><td>✓</td><td>Random value to bind the presentation to the session</td><td>MUST be cryptographically random and fresh per request</td></tr>
-<tr><td><code>response_mode</code></td><td>✓</td><td>How the Authorization Response is returned</td><td>MUST be <code>direct_post</code> for cross-device flows</td></tr>
-<tr><td><code>response_uri</code></td><td>conditional</td><td>Endpoint where the wallet POSTs the response</td><td>REQUIRED when <code>response_mode=direct_post</code></td></tr>
-<tr><td><code>presentation_definition</code></td><td>conditional*</td><td><a href="https://identity.foundation/presentation-exchange/">DIF Presentation Exchange</a> query</td><td>Age Verification Profile uses <code>dcql_query</code> instead (see below)</td></tr>
-<tr><td><code>dcql_query</code></td><td>conditional*</td><td><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6">Digital Credentials Query Language</a> query</td><td>REQUIRED for Age Verification Profile (DCQL supersedes Presentation Exchange)</td></tr>
-<tr><td><code>state</code></td><td>optional</td><td>Opaque value to maintain state between request and callback</td><td>If used, it is chosen by the client that owns the request/response correlation state</td></tr>
-<tr><td><code>scope</code></td><td>optional</td><td>OpenID Connect scopes</td><td>Not used in Age Verification Profile</td></tr>
-<tr><td><code>redirect_uri</code></td><td>optional</td><td>Fallback redirect after response delivery</td><td>Not used with <code>direct_post</code></td></tr>
+<tr><td>URL scheme</td><td><code>av://</code></td><td>A.5 §Custom URL Scheme</td></tr>
+<tr><td><code>response_type</code></td><td><code>vp_token</code></td><td>A.5 §Response Type</td></tr>
+<tr><td><code>response_mode</code></td><td><code>direct_post</code></td><td>A.5 §Response Mode</td></tr>
+<tr><td><code>client_id_scheme</code></td><td><code>redirect_uri</code></td><td>A.5 §Client Identifier Scheme</td></tr>
+<tr><td>Request format</td><td>Plain query params (no JAR)</td><td>A.5 §Request Signing (explicitly excluded)</td></tr>
+<tr><td>Query format</td><td>DCQL</td><td>A.5 §DCQL Query</td></tr>
+<tr><td><code>nonce</code></td><td>Required</td><td>A.5 §Nonce Parameter</td></tr>
 </tbody>
 </table>
 </div>
-<p>* <strong>Either</strong> <code>presentation_definition</code> <strong>OR</strong> <code>dcql_query</code> MUST be present (<a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5.1">OpenID4VP Section 5.1</a>). The Age Verification Profile mandates DCQL.</p>
-<h3 id="client-id-schemes-openid4vp-section-53"><a class="header" href="#client-id-schemes-openid4vp-section-53">Client ID schemes (OpenID4VP Section 5.3)</a></h3>
-<p>The <code>client_id</code> parameter uses a <strong>scheme prefix</strong> to indicate how the RP is identified. Different profiles mandate different schemes:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Scheme</th><th>Format</th><th>JAR Required</th><th>Trust Mechanism</th><th>Profile</th></tr>
-</thead>
-<tbody>
-<tr><td><code>redirect_uri:</code></td><td><code>redirect_uri:&lt;response_uri&gt;</code></td><td><strong>No</strong> (unsigned request)</td><td>TLS + Web PKI</td><td><strong>Annex A (Age Verification)</strong></td></tr>
-<tr><td><code>x509_san_dns:</code></td><td><code>x509_san_dns:&lt;DNS&gt;</code></td><td>Yes (signed JAR with <code>x5c</code>)</td><td>X.509 certificate SAN DNS</td><td>HAIP (EUDI Wallet)</td></tr>
-<tr><td><code>x509_hash:</code></td><td><code>x509_hash:&lt;hash&gt;</code></td><td>Yes (signed JAR with <code>x5c</code>)</td><td>X.509 certificate hash</td><td>HAIP (EUDI Wallet)</td></tr>
-<tr><td><code>verifier_attestation:</code></td><td><code>verifier_attestation:&lt;client_id&gt;</code></td><td>Yes (signed JAR with <code>jwt</code> header)</td><td>JWT from Trusted Attestation Issuer</td><td>HAIP (optional)</td></tr>
-<tr><td><code>pre-registered</code></td><td><code>&lt;client_id&gt;</code> (no prefix)</td><td>Optional</td><td>Pre-configured in wallet</td><td>Custom deployments</td></tr>
-</tbody>
-</table>
-</div>
-<h4 id="redirect_uri-scheme-annex-a---age-verification"><a class="header" href="#redirect_uri-scheme-annex-a---age-verification"><code>redirect_uri</code> scheme (Annex A - Age Verification)</a></h4>
+<h3 id="explicitly-out-of-scope"><a class="header" href="#explicitly-out-of-scope">Explicitly out of scope</a></h3>
 <ul>
-<li>The client_id equals the response_uri: <code>client_id=redirect_uri:https://rp.example.com/callback</code></li>
-<li>Request is sent <strong>unsigned</strong> (no JAR, no <code>x5c</code>, no cryptographic verification)</li>
-<li>Trust is based on TLS and the Web PKI</li>
-<li>Simplest implementation, suitable for LoA Substantial</li>
+<li><strong>JAR</strong> (signed Authorization Requests) — not required</li>
+<li><strong>JWE</strong> encrypted responses (<code>direct_post.jwt</code>) — TLS is sufficient</li>
+<li><strong>Trust lists of RPs</strong> — no pre-registration</li>
+<li><strong><code>x509_san_dns</code> / <code>verifier_attestation</code></strong> — these depend on trust lists</li>
 </ul>
-<h4 id="x509_san_dns-scheme-haip---eudi-wallet"><a class="header" href="#x509_san_dns-scheme-haip---eudi-wallet"><code>x509_san_dns</code> scheme (HAIP - EUDI Wallet)</a></h4>
-<ul>
-<li>The client_id is a DNS name matching a SAN in the X.509 certificate: <code>client_id=x509_san_dns:rp.example.com</code></li>
-<li>Request <strong>MUST be signed</strong> as a JWT-secured Authorization Request (JAR, RFC 9101)</li>
-<li>The <code>x5c</code> JOSE header contains the certificate chain</li>
-<li>The wallet validates the certificate against its <strong>Reader Trust Store</strong></li>
-<li>Requires the RP’s root CA to be trusted by the wallet</li>
-</ul>
-<h4 id="x509_hash-scheme-haip---eudi-wallet-recommended"><a class="header" href="#x509_hash-scheme-haip---eudi-wallet-recommended"><code>x509_hash</code> scheme (HAIP - EUDI Wallet, <strong>recommended</strong>)</a></h4>
-<ul>
-<li>The client_id is the SHA-256 hash of the verifier’s X.509 leaf certificate: <code>client_id=x509_hash:&lt;base64url_sha256&gt;</code></li>
-<li>Request <strong>MUST be signed</strong> as a JWT-secured Authorization Request (JAR, RFC 9101)</li>
-<li>The <code>x5c</code> JOSE header contains the certificate chain</li>
-<li>The wallet validates the client_id by computing the SHA-256 hash of the leaf certificate from the <code>x5c</code> header and comparing it to the hash in <code>client_id</code></li>
-<li>Provides a direct cryptographic binding to the verifier’s certificate, independent of DNS resolution</li>
-<li><strong>Preferred over <code>x509_san_dns</code></strong> because:
-<ul>
-<li>No DNS dependency — the wallet does not need to resolve a hostname</li>
-<li>Resistant to DNS spoofing or misconfiguration</li>
-<li>Direct certificate → identity binding</li>
-</ul>
-</li>
-</ul>
-<h4 id="verifier_attestation-scheme-haip---optional"><a class="header" href="#verifier_attestation-scheme-haip---optional"><code>verifier_attestation</code> scheme (HAIP - optional)</a></h4>
-<ul>
-<li>The client_id is an identifier attested by a trusted issuer: <code>client_id=verifier_attestation:my-verifier</code></li>
-<li>Request <strong>MUST be signed</strong> as JAR with a <code>jwt</code> JOSE header containing the attestation</li>
-<li>The attestation JWT is signed by a <strong>Trusted Attestation Issuer</strong></li>
-<li>The wallet validates the attestation JWT against trusted issuer public keys</li>
-<li><strong>Trusted Issuers</strong>: These are entities pre-configured in the wallet that are authorized to issue verifier attestations. In the EU context, this would typically be:
-<ul>
-<li>National trust list operators</li>
-<li>EU-level trust services</li>
-<li>Designated attestation providers listed in official registries</li>
-<li><strong>Currently, no public list of trusted attestation issuers exists for general use</strong></li>
-</ul>
-</li>
-</ul>
-<blockquote>
-<p><strong>Important</strong>: The <code>verifier_attestation</code> scheme requires an established trust framework with designated attestation issuers. Since no such framework currently exists for general Age Verification, Annex A mandates the simpler <code>redirect_uri</code> scheme instead.</p>
-</blockquote>
-<h3 id="response-modes-openid4vp-section-52"><a class="header" href="#response-modes-openid4vp-section-52">Response modes (OpenID4VP Section 5.2)</a></h3>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Mode</th><th>Description</th><th>Use Case</th></tr>
-</thead>
-<tbody>
-<tr><td><code>fragment</code></td><td>VP token returned in URL fragment</td><td>Same-device flows (NOT used in Age Verification Profile)</td></tr>
-<tr><td><code>direct_post</code></td><td>VP token POSTed to <code>response_uri</code></td><td>Cross-device flows (REQUIRED for Age Verification Profile)</td></tr>
-<tr><td><code>direct_post.jwt</code></td><td>Encrypted JWT POSTed to <code>response_uri</code></td><td>Enhanced privacy (optional extension)</td></tr>
-</tbody>
-</table>
-</div>
-<h3 id="example-authorization-request-age-verification-profile-compliant"><a class="header" href="#example-authorization-request-age-verification-profile-compliant">Example Authorization Request (Age Verification Profile compliant)</a></h3>
-<pre><code>av://?response_type=vp_token
+<h2 id="example-authorization-request"><a class="header" href="#example-authorization-request">Example Authorization Request</a></h2>
+<pre><code>av://authorize?
+  response_type=vp_token
   &amp;response_mode=direct_post
-  &amp;client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fewqwe_api%2Fopenid4vp%2Fdirect_post
-  &amp;response_uri=https%3A%2F%2Frp.example.com%2Fewqwe_api%2Fopenid4vp%2Fdirect_post
-  &amp;nonce=tMQ3X8j5LwnKpZiHvRqCaA
-  &amp;state=A7kB2mN9xYzL4pWqRsGtUj
-  &amp;dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22eu_av_proof%22%2C%22format%22%3A%22mso_mdoc%22%2C%22meta%22%3A%7B%22doctype_value%22%3A%22eu.europa.ec.av.1%22%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22eu.europa.ec.av.1%22%2C%22age_over_18%22%5D%7D%5D%7D%5D%7D
+  &amp;client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fcallback
+  &amp;response_uri=https%3A%2F%2Frp.example.com%2Fcallback
+  &amp;nonce=n-0S6_WzA2Mj
+  &amp;dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22proof_of_age%22%2C%22format%22%3A%22mso_mdoc%22%2C%22meta%22%3A%7B%22doctype_value%22%3A%22eu.europa.ec.av.1%22%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22eu.europa.ec.av.1%22%2C%22age_over_18%22%5D%7D%5D%7D%5D%7D
 </code></pre>
-<blockquote>
-<p><strong>Note:</strong> <code>client_metadata</code> is intentionally omitted — it is not required by Annex A §A.5 and including it would unnecessarily increase QR code complexity.
-The <code>nonce</code> and <code>state</code> values are 22-character base64url strings (128 bits of entropy), shorter than UUID v4 while providing equivalent security.</p>
-</blockquote>
-<p><strong>References:</strong></p>
-<ul>
-<li><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-5">OpenID4VP 1.0, Section 5: Authorization Request</a></li>
-<li><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6">OpenID4VP 1.0, Section 6: DCQL</a></li>
-<li><a href="https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#openid-for-verifiable-presentations-profile-requirements">EU Age Verification Profile, Annex A.5</a></li>
-</ul>
-<h2 id="normative-requirements"><a class="header" href="#normative-requirements">Normative requirements</a></h2>
-<p>The following requirements are <strong>mandatory</strong> when using OpenID4VP for age verification:</p>
-<h3 id="1-support-the-av-custom-url-scheme"><a class="header" href="#1-support-the-av-custom-url-scheme">1) Support the <code>av://</code> custom URL scheme</a></h3>
-<ul>
-<li>The Relying Party MUST construct a request URL using the <code>av://</code> scheme.</li>
-<li>This triggers the Age Verification App (wallet) if installed on the device.</li>
-<li>Example: <code>av://authorize?response_type=vp_token&amp;...</code></li>
-</ul>
-<h3 id="2-use-response_typevp_token"><a class="header" href="#2-use-response_typevp_token">2) Use <code>response_type=vp_token</code></a></h3>
-<ul>
-<li>The response MUST be a Verifiable Presentation token.</li>
-<li>This is the standard OpenID4VP response type for presentation exchanges.</li>
-</ul>
-<h3 id="3-use-response_modedirect_post"><a class="header" href="#3-use-response_modedirect_post">3) Use <code>response_mode=direct_post</code></a></h3>
-<ul>
-<li>The wallet MUST POST the response directly to the RP’s <code>response_uri</code>.</li>
-<li>This enables cross-device flows (e.g., QR code scanning).</li>
-<li>No fragment-based or query-based response is permitted.</li>
-</ul>
-<h3 id="4-send-the-request-by-value-no-jar"><a class="header" href="#4-send-the-request-by-value-no-jar">4) Send the request by value (no JAR)</a></h3>
-<ul>
-<li>The RP MUST include all request parameters directly in the <code>av://</code> URL.</li>
-<li>Request objects by reference (JAR - JWT-secured Authorization Request) are NOT required.</li>
-<li>This simplifies wallet implementation and reduces round-trips.</li>
-</ul>
-<h3 id="5-client-identifier-scheme-redirect_uri--response_uri"><a class="header" href="#5-client-identifier-scheme-redirect_uri--response_uri">5) Client identifier scheme: <code>redirect_uri</code> + <code>response_uri</code></a></h3>
-<ul>
-<li>The <code>client_id</code> MUST use the format: <code>redirect_uri:&lt;response_uri&gt;</code></li>
-<li>Example: <code>client_id=redirect_uri:https://rp.example.com/callback</code></li>
-<li>This binds the client identity to the response endpoint.</li>
-</ul>
-<h3 id="6-include-a-nonce-parameter"><a class="header" href="#6-include-a-nonce-parameter">6) Include a <code>nonce</code> parameter</a></h3>
-<ul>
-<li>The <code>nonce</code> parameter MUST be present.</li>
-<li>It binds the presentation to the specific transaction and prevents replay attacks.</li>
-<li>The wallet MUST include the <code>nonce</code> in the VP token.</li>
-</ul>
-<h3 id="7-use-dcql-for-the-query"><a class="header" href="#7-use-dcql-for-the-query">7) Use DCQL for the query</a></h3>
-<ul>
-<li>The request MUST use the Digital Credentials Query Language (DCQL) as defined in OpenID4VP Section 6.</li>
-<li>See the <a href="./dcql_age_verification.html">DCQL Age Verification</a> chapter for concrete query examples.</li>
-</ul>
-<h3 id="8-state-parameter-is-optional-but-client-maintained"><a class="header" href="#8-state-parameter-is-optional-but-client-maintained">8) <code>state</code> parameter is optional but client-maintained</a></h3>
-<ul>
-<li>The RP MAY include a <code>state</code> parameter per RFC 6749 / OpenID4VP.</li>
-<li>If present, it is an opaque client-maintained correlation value, not a wallet-generated field.</li>
-<li>In a delegated architecture, the component that owns the wallet-facing <code>response_uri</code> may generate and store this value on behalf of the RP.</li>
-<li>The verifier in this repository accepts caller-supplied <code>state</code> on <code>/ewqwe_api/openid4vp/init</code> and otherwise generates a fresh request-id for the delegated flow.</li>
-<li>The <code>state</code> value is a 22-character base64url token (128 bits of entropy). UUID v4 format is not required by the spec.</li>
-</ul>
-<h3 id="9-client-authentication-is-not-required"><a class="header" href="#9-client-authentication-is-not-required">9) Client authentication is not required</a></h3>
-<ul>
-<li>The wallet does not need to authenticate the RP cryptographically.</li>
-<li>Origin validation and nonce binding provide sufficient security for age verification.</li>
-<li>This is explicitly out of scope for this profile.</li>
-</ul>
-<h2 id="implementation-building-the-request"><a class="header" href="#implementation-building-the-request">Implementation: building the request</a></h2>
-<h2 id="qr-code-complexity"><a class="header" href="#qr-code-complexity">QR code complexity</a></h2>
-<p>For cross-device flows the entire <code>av://</code> URL is encoded as a QR code. Complex QR codes (many modules) are harder to decode on low-end mobile cameras. This implementation applies every spec-compliant reduction:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Technique</th><th>Detail</th><th>Bytes saved</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Error correction level L</strong></td><td>7 % ECC instead of default M (15 %). Same payload, ~15 % fewer QR modules.</td><td>0 bytes (same URL; fewer modules in the symbol)</td></tr>
-<tr><td><strong>No <code>client_metadata</code></strong></td><td>Optional OpenID4VP field; not required by Annex A §A.5.</td><td>~200 chars</td></tr>
-<tr><td><strong>base64url nonce/state</strong></td><td>22-char base64url vs. 36-char UUID v4. Same 128 bits of entropy.</td><td>~28 chars</td></tr>
-<tr><td><strong>No <code>id</code> in claims queries</strong></td><td>DCQL <code>DCQLClaimsQuery.id</code> is only needed when referenced by <code>claim_sets</code>; our queries do not use <code>claim_sets</code>.</td><td>~20 chars per claim</td></tr>
-<tr><td><strong>No <code>intent_to_retain</code></strong></td><td>Omitting the field is equivalent to <code>false</code> (the safe default).</td><td>~26 chars per claim</td></tr>
-</tbody>
-</table>
-</div>
-<h3 id="what-cannot-be-reduced-further"><a class="header" href="#what-cannot-be-reduced-further">What cannot be reduced further</a></h3>
-<ul>
-<li><strong><code>request_uri</code> by reference (JAR)</strong>: Would reduce the QR code to two parameters, but Annex A §A.5 <strong>explicitly prohibits</strong> this (<code>"RP MUST send the request by value"</code>). The rationale is that JAR only provides security when a RP trust list exists — which does not exist for Age Verification.</li>
-<li><strong><code>client_id</code>/<code>response_uri</code> duplication</strong>: Both are mandatory. <code>client_id = redirect_uri:&lt;response_uri&gt;</code> means they repeat the same URL, but both MUST be present per spec.</li>
-<li><strong><code>response_type=vp_token</code></strong>: Fixed mandatory value; cannot be omitted.</li>
-<li><strong><code>response_mode=direct_post</code></strong>: Fixed mandatory value; cannot be omitted.</li>
-<li><strong>DCQL field names</strong>: <code>credentials</code>, <code>format</code>, <code>meta</code>, <code>doctype_value</code>, <code>claims</code>, <code>path</code> are all normative DCQL field names and cannot be shortened.</li>
-<li><strong>Namespace strings</strong>: <code>eu.europa.ec.av.1</code> appears twice in every DCQL claim path; this is the normative doc-type and namespace value.</li>
-</ul>
-<h3 id="implementation-building-the-request-1"><a class="header" href="#implementation-building-the-request-1">Implementation: building the request</a></h3>
-<h3 id="typescriptjavascript-example-rp-side"><a class="header" href="#typescriptjavascript-example-rp-side">TypeScript/JavaScript example (RP side)</a></h3>
-<pre><code class="language-typescript">// 1) Generate nonce and, if your RP owns request correlation, state
-// Use 16 random bytes encoded as base64url (22 chars, 128 bits) — shorter than UUID,
-// same entropy, no format requirement in the spec.
-const randomToken = () =&gt; {
-  const bytes = crypto.getRandomValues(new Uint8Array(16));
-  return btoa(String.fromCharCode(...bytes))
-    .replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-};
-const nonce = randomToken();
-const state = randomToken(); // optional but recommended for correlation
-
-// 2) Define the response_uri where the wallet will POST back
-const responseUri = "https://rp.example.com/ewqwe_api/openid4vp/direct_post";
-
-// 3) Build the client_id using the redirect_uri scheme
-const clientId = `redirect_uri:${responseUri}`;
-
-// 4) Construct the DCQL query for age verification
-// Omit claims query `id` (only needed with claim_sets — which we don't use).
-// Omit `intent_to_retain` (omitting means "false", the safe default).
-const dcqlQuery = {
-  credentials: [
-    {
-      id: "eu_av_proof",
-      format: "mso_mdoc",
-      meta: {
-        doctype_value: "eu.europa.ec.av.1",
-      },
-      claims: [
-        {
-          path: ["eu.europa.ec.av.1", "age_over_18"],
-        },
-      ],
-    },
-  ],
-};
-
-// 5) Encode the DCQL query as a URL parameter (compact JSON — no whitespace)
-const dcqlQueryParam = encodeURIComponent(JSON.stringify(dcqlQuery));
-
-// 6) Build the av:// URL. No client_metadata — not required by Annex A §A.5.
-const avUrl = new URL("av://");
-avUrl.searchParams.set("response_type", "vp_token");
-avUrl.searchParams.set("response_mode", "direct_post");
-avUrl.searchParams.set("client_id", clientId);
-avUrl.searchParams.set("response_uri", responseUri);
-avUrl.searchParams.set("nonce", nonce);
-avUrl.searchParams.set("state", state); // optional
-avUrl.searchParams.set("dcql_query", dcqlQueryParam);
-
-console.log("Age Verification Request URL:", avUrl.toString());
-
-// 7) Invoke the wallet
-// Option A: Direct navigation (same device)
-// window.location.href = avUrl.toString();
-
-// Option B: QR code (cross-device)
-// generateQRCode(avUrl.toString());
-
-// Option C: Deep link (mobile)
-// &lt;a href="${avUrl}"&gt;Verify your age&lt;/a&gt;
-</code></pre>
-<h3 id="example-av-url-formatted-for-readability"><a class="header" href="#example-av-url-formatted-for-readability">Example <code>av://</code> URL (formatted for readability)</a></h3>
-<pre><code>av://?response_type=vp_token
-  &amp;response_mode=direct_post
-  &amp;client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fewqwe_api%2Fopenid4vp%2Fdirect_post
-  &amp;response_uri=https%3A%2F%2Frp.example.com%2Fewqwe_api%2Fopenid4vp%2Fdirect_post
-  &amp;nonce=tMQ3X8j5LwnKpZiHvRqCaA
-  &amp;state=A7kB2mN9xYzL4pWqRsGtUj
-  &amp;dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22eu_av_proof%22%2C...
-</code></pre>
-<blockquote>
-<p><code>nonce</code> and <code>state</code> are 22-character base64url strings (128 bits, no UUID format requirement).
-<code>client_metadata</code> is omitted — see <a href="#qr-code-complexity">QR code complexity</a> for rationale.</p>
-</blockquote>
-<h2 id="implementation-handling-the-response"><a class="header" href="#implementation-handling-the-response">Implementation: handling the response</a></h2>
-<p>The wallet POSTs a <code>application/x-www-form-urlencoded</code> body to the <code>response_uri</code> with the following parameters:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Parameter</th><th>Required</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td><code>vp_token</code></td><td>✓</td><td>The Verifiable Presentation containing the requested claims. With DCQL queries, this is a JSON object where keys are credential IDs from the query and values are arrays of presentations.</td></tr>
-<tr><td><code>presentation_submission</code></td><td>No (DCQL)</td><td><strong>Not included when using <code>dcql_query</code></strong>. With DCQL, the <code>vp_token</code> structure itself maps credentials to the query. Only required with <code>presentation_definition</code>.</td></tr>
-<tr><td><code>state</code></td><td>optional</td><td>Echoed from the request if provided</td></tr>
-</tbody>
-</table>
-</div>
-<blockquote>
-<p><strong>Note</strong>: Per OpenID4VP Section 8.1, when using DCQL queries, the response does NOT include <code>presentation_submission</code>. The <code>vp_token</code> is a JSON object like <code>{"credential_id": ["base64url_presentation"]}</code> where the keys correspond to the <code>id</code> values in the DCQL query.</p>
-</blockquote>
-<h3 id="typescriptjavascript-example-rp-endpoint"><a class="header" href="#typescriptjavascript-example-rp-endpoint">TypeScript/JavaScript example (RP endpoint)</a></h3>
-<pre><code class="language-typescript">// Express.js / Node.js example
-app.post("/ewqwe_api/openid4vp/callback", async (req, res) =&gt; {
-  const { vp_token, state } = req.body;
-  // Note: presentation_submission is NOT included with DCQL queries
-
-  // 1) Validate state (if used)
-  if (state &amp;&amp; !validateState(state)) {
-    return res.status(400).json({ error: "invalid_state" });
-  }
-
-  // 2) Parse the VP token
-  // With DCQL, vp_token is a JSON object: {"credential_id": ["base64url_presentation"]}
-  let vpPayload;
-  try {
-    const vpTokenObj = JSON.parse(vp_token);
-    // Get the first credential from the DCQL response
-    const [credentialId, presentations] = Object.entries(vpTokenObj)[0];
-    vpPayload = parseAndVerifyPresentation(presentations[0]); // verify signature, issuer trust, etc.
-  } catch (error) {
-    return res.status(400).json({ error: "invalid_vp_token" });
-  }
-
-  // 3) Load the original transaction by state and validate holder binding
-  const tx = loadTransactionByState(state);
-  if (!tx) {
-    return res.status(400).json({ error: "invalid_state" });
-  }
-
-  // For SD-JWT VC, compare the transaction nonce with the KB-JWT nonce.
-  // For mso_mdoc, reconstruct the SessionTranscript / OpenID4VPHandover and
-  // verify deviceAuth.deviceSignature against tx.client_id, tx.nonce, and tx.response_uri.
-
-  // 4) Consume the transaction after successful verification
-  consumeTransaction(state);
-
-  // 4) Extract the age verification claim
-  const ageOver18 = extractClaim(vpPayload, "eu.europa.ec.av.1", "age_over_18");
-  
-  if (ageOver18 !== true) {
-    return res.status(403).json({ error: "age_requirement_not_met" });
-  }
-
-  // 5) Success - complete the age verification flow
-  markSessionAsAgeVerified(state);
-  
-  // Return success response to wallet
-  res.status(200).json({ 
-    redirect_uri: "https://rp.example.com/success"
-  });
-});
-</code></pre>
-<h3 id="example-vp-token-jwt-format-simplified"><a class="header" href="#example-vp-token-jwt-format-simplified">Example VP token (JWT format, simplified)</a></h3>
+<p>Decoded <code>dcql_query</code>:</p>
 <pre><code class="language-json">{
-  "iss": "https://wallet.example.com",
-  "aud": "redirect_uri:https://rp.example.com/ewqwe_api/openid4vp/callback",
-  "nonce": "550e8400-e29b-41d4-a716-446655440000",
-  "vp": {
-    "@context": ["https://www.w3.org/2018/credentials/v1"],
-    "type": ["VerifiablePresentation"],
-    "verifiableCredential": [
-      {
-        "type": ["VerifiableCredential", "ProofOfAge"],
-        "credentialSubject": {
-          "eu.europa.ec.av.1": {
-            "age_over_18": true
-          }
-        },
-        "issuer": "https://issuer.example.com",
-        "issuanceDate": "2025-01-15T00:00:00Z",
-        "proof": {
-          "type": "JsonWebSignature2020",
-          "created": "2025-01-15T00:00:00Z",
-          "jws": "eyJhbGciOiJFUzI1NiIsImI2NCI6ZmFsc2UsImNyaXQiOlsiYjY0Il19...."
-        }
-      }
-    ]
-  }
+  "credentials": [{
+    "id": "proof_of_age",
+    "format": "mso_mdoc",
+    "meta": { "doctype_value": "eu.europa.ec.av.1" },
+    "claims": [{ "path": ["eu.europa.ec.av.1", "age_over_18"] }]
+  }]
 }
 </code></pre>
-<h3 id="example-presentation_submission"><a class="header" href="#example-presentation_submission">Example presentation_submission</a></h3>
-<blockquote>
-<p><strong>Note</strong>: This structure is only used with <code>presentation_definition</code>. When using <code>dcql_query</code> (as required by Annex A), the wallet does NOT send <code>presentation_submission</code>. Instead, the <code>vp_token</code> itself is structured with credential IDs as keys.</p>
-</blockquote>
-<pre><code class="language-json">{
-  "id": "submission_1",
-  "definition_id": "age_verification",
-  "descriptor_map": [
-    {
-      "id": "age_attestation",
-      "format": "jwt_vp",
-      "path": "$",
-      "path_nested": {
-        "format": "jwt_vc",
-        "path": "$.vp.verifiableCredential[0]"
-      }
-    }
-  ]
-}
-</code></pre>
-<h2 id="same-device-vs-cross-device-flows"><a class="header" href="#same-device-vs-cross-device-flows">Same-device vs. Cross-device flows</a></h2>
-<h3 id="same-device-flow"><a class="header" href="#same-device-flow">Same-device flow</a></h3>
-<ol>
-<li>User clicks “Verify Age” button in the RP web app.</li>
-<li>RP navigates to <code>av://authorize?...</code> (or opens in a new window).</li>
-<li>OS launches the Age Verification App.</li>
-<li>User approves the presentation.</li>
-<li>Wallet POSTs to <code>response_uri</code>.</li>
-<li>RP endpoint processes the response and updates the session.</li>
-<li>User is redirected back to the RP web app (via <code>redirect_uri</code> in the response).</li>
-</ol>
-<h3 id="cross-device-flow-qr-code"><a class="header" href="#cross-device-flow-qr-code">Cross-device flow (QR code)</a></h3>
-<ol>
-<li>RP displays a QR code encoding the <code>av://</code> URL.</li>
-<li>User scans the QR code with their mobile device.</li>
-<li>Mobile wallet parses the request and prompts for consent.</li>
-<li>Wallet POSTs to <code>response_uri</code> (cross-device).</li>
-<li>RP endpoint updates the session.</li>
-<li>Desktop browser polls the RP session endpoint or uses WebSocket to detect completion.</li>
-<li>RP redirects the desktop browser to the success page.</li>
-</ol>
-<h2 id="security-considerations-age-verification"><a class="header" href="#security-considerations-age-verification">Security considerations (Age Verification)</a></h2>
-<h3 id="nonce-binding"><a class="header" href="#nonce-binding">Nonce binding</a></h3>
-<ul>
-<li><strong>CRITICAL</strong>: The RP MUST generate a fresh, cryptographically random <code>nonce</code> for each request.</li>
-<li>The RP MUST store the <code>nonce</code> server-side (keyed by <code>state</code> or session ID).</li>
-<li>The RP MUST reject VP tokens with missing or incorrect <code>nonce</code> values.</li>
-<li>This prevents replay attacks and session fixation.</li>
-</ul>
-<h3 id="origin-validation"><a class="header" href="#origin-validation">Origin validation</a></h3>
-<ul>
-<li>The <code>response_uri</code> MUST be on the same origin as the RP.</li>
-<li>The RP MUST validate that the <code>audience</code> (<code>aud</code>) claim in the VP token matches the expected <code>client_id</code>.</li>
-</ul>
-<h3 id="https-requirement"><a class="header" href="#https-requirement">HTTPS requirement</a></h3>
-<ul>
-<li>The <code>response_uri</code> MUST use HTTPS in production.</li>
-<li>This protects the VP token in transit.</li>
-</ul>
-<h3 id="data-minimization"><a class="header" href="#data-minimization">Data minimization</a></h3>
-<ul>
-<li>Request only the claims needed for age verification (e.g., <code>age_over_18</code>).</li>
-<li>Avoid requesting full name, address, portrait, or other identifying attributes unless your privacy policy requires them.</li>
-</ul>
-<h3 id="no-client-authentication"><a class="header" href="#no-client-authentication">No client authentication</a></h3>
-<ul>
-<li>While client authentication is out of scope for this profile, RPs SHOULD still validate:
-<ul>
-<li>VP token signature (issuer trust).</li>
-<li>VP token validity period.</li>
-<li>Credential status (revocation, expiration).</li>
-</ul>
-</li>
-</ul>
-<h2 id="interop-checklist"><a class="header" href="#interop-checklist">Interop checklist</a></h2>
-<ul>
-<li><input disabled="" type="checkbox"> <code>av://</code> URL scheme is registered and can launch the wallet.</li>
-<li><input disabled="" type="checkbox"> <code>response_type=vp_token</code> is set.</li>
-<li><input disabled="" type="checkbox"> <code>response_mode=direct_post</code> is set.</li>
-<li><input disabled="" type="checkbox"> <code>client_id</code> uses the <code>redirect_uri:</code> prefix.</li>
-<li><input disabled="" type="checkbox"> <code>nonce</code> is fresh, random, and stored server-side.</li>
-<li><input disabled="" type="checkbox"> <code>state</code>, when used, is owned by the client or delegated response handler that correlates the callback.</li>
-<li><input disabled="" type="checkbox"> <code>dcql_query</code> is valid JSON and follows the DCQL schema.</li>
-<li><input disabled="" type="checkbox"> <code>response_uri</code> is HTTPS and handles POST requests.</li>
-<li><input disabled="" type="checkbox"> Wallet POSTs <code>vp_token</code> + optional <code>state</code> (no <code>presentation_submission</code> with DCQL).</li>
-<li><input disabled="" type="checkbox"> RP parses DCQL <code>vp_token</code> format: <code>{"credential_id": ["presentation"]}</code>.</li>
-<li><input disabled="" type="checkbox"> RP validates <code>nonce</code>, audience / handover binding, signature, and claim values.</li>
-<li><input disabled="" type="checkbox"> RP returns a redirect URI or success indicator to the wallet.</li>
-</ul>
-<h2 id="comparison-with-w3c-digital-credentials-api"><a class="header" href="#comparison-with-w3c-digital-credentials-api">Comparison with W3C Digital Credentials API</a></h2>
+<h2 id="handling-the-response"><a class="header" href="#handling-the-response">Handling the Response</a></h2>
+<p>The wallet POSTs to <code>response_uri</code> with <code>application/x-www-form-urlencoded</code>:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Aspect</th><th>W3C Digital Credentials API</th><th>OpenID4VP Fallback</th></tr>
+<tr><th>Field</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Invocation</strong></td><td><code>navigator.credentials.get()</code></td><td><code>av://</code> custom URL scheme</td></tr>
-<tr><td><strong>Response delivery</strong></td><td>JavaScript Promise (in-page)</td><td>HTTP POST to <code>response_uri</code></td></tr>
-<tr><td><strong>Cross-device support</strong></td><td>Limited (browser and wallet must be on the same device)</td><td>Native (via QR code)</td></tr>
-<tr><td><strong>Browser support</strong></td><td>Chrome (flag), limited</td><td>Universal (OS handles URL scheme)</td></tr>
-<tr><td><strong>Request format</strong></td><td>Base64url CBOR (ISO 18013-7)</td><td>Query parameters + DCQL JSON</td></tr>
-<tr><td><strong>Response format</strong></td><td>Base64url CBOR (HPKE encrypted)</td><td>JWT or CBOR (no encryption required)</td></tr>
-<tr><td><strong>Primary use case</strong></td><td>Same-device, browser-native</td><td>Cross-device, mobile wallets</td></tr>
+<tr><td><code>vp_token</code></td><td>Base64url-encoded DeviceResponse (mDoc CBOR)</td></tr>
+<tr><td><code>state</code></td><td>Client-managed state (if provided)</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="eu-age-verification-profile-annex-a-requirements-summary"><a class="header" href="#eu-age-verification-profile-annex-a-requirements-summary">EU Age Verification Profile (Annex A) Requirements Summary</a></h2>
-<p>The <a href="https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/">EU Age Verification Profile Annex A, Section A.5</a> defines the <strong>normative requirements</strong> for OpenID4VP when used as a fallback mechanism for age verification.</p>
-<h3 id="mandatory-requirements"><a class="header" href="#mandatory-requirements">Mandatory Requirements</a></h3>
+<p>The RP extracts claims from the <code>vp_token</code>, validates the nonce binding, and verifies the issuer signature against the trusted CA directory.</p>
+<h2 id="security"><a class="header" href="#security">Security</a></h2>
+<ul>
+<li><strong>Nonce</strong>: Generate a fresh, cryptographically random nonce per request. Store it server-side. Reject presentations with a missing or incorrect nonce.</li>
+<li><strong>HTTPS</strong>: <code>response_uri</code> must use HTTPS in production.</li>
+<li><strong>Data minimization</strong>: Request only <code>age_over_18</code> — avoid name, address, portrait, or other identifying attributes.</li>
+</ul>
+<h2 id="comparison-with-haip"><a class="header" href="#comparison-with-haip">Comparison with HAIP</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Requirement</th><th>Value</th><th>Rationale</th></tr>
+<tr><th>Feature</th><th>Age Verification (Annex A)</th><th>HAIP (EUDI Wallet)</th></tr>
 </thead>
 <tbody>
-<tr><td>URL scheme</td><td><code>av://</code></td><td>Custom scheme to invoke the Age Verification App</td></tr>
-<tr><td>Response type</td><td><code>vp_token</code></td><td>Standard OpenID4VP response for presentations</td></tr>
-<tr><td>Response mode</td><td><code>direct_post</code></td><td>Enables cross-device flows; wallet POSTs directly to RP</td></tr>
-<tr><td>Client ID scheme</td><td><strong><code>redirect_uri</code></strong></td><td>Simplest scheme; no JAR, no trust lists required</td></tr>
-<tr><td>Request format</td><td>By value (no JAR)</td><td>No signed request objects required</td></tr>
-<tr><td>Query format</td><td>DCQL</td><td>Digital Credentials Query Language (OpenID4VP Section 6)</td></tr>
-<tr><td>Nonce</td><td>Required</td><td>Binds presentation to transaction, prevents replay</td></tr>
-<tr><td>Client authentication</td><td><strong>Not required</strong></td><td>Out of scope for Age Verification Profile</td></tr>
+<tr><td>Client ID scheme</td><td><code>redirect_uri</code></td><td><code>x509_san_dns</code>, <code>x509_hash</code></td></tr>
+<tr><td>Signed request (JAR)</td><td>Not required</td><td>Required</td></tr>
+<tr><td>Response mode</td><td><code>direct_post</code></td><td><code>direct_post.jwt</code> (JWE)</td></tr>
+<tr><td>Trust model</td><td>TLS + Web PKI</td><td>Reader Trust Store + cert validation</td></tr>
+<tr><td>Target wallet</td><td>Age Verification App</td><td>EUDI Wallet</td></tr>
 </tbody>
 </table>
 </div>
-<h3 id="explicitly-out-of-scope"><a class="header" href="#explicitly-out-of-scope">Explicitly Out of Scope</a></h3>
-<p>The following are <strong>explicitly excluded</strong> from the Age Verification Profile:</p>
-<ul>
-<li><strong>JAR (JWT-secured Authorization Request)</strong> - Signed requests are not required</li>
-<li><strong>Encrypted responses</strong> (<code>direct_post.jwt</code>) - TLS is sufficient</li>
-<li><strong>Trust lists of RPs</strong> - No pre-registration or attestation required</li>
-<li><strong>x509_san_dns / verifier_attestation schemes</strong> - These depend on trust lists</li>
-</ul>
-<h3 id="design-rationale-from-annex-a9"><a class="header" href="#design-rationale-from-annex-a9">Design Rationale (from Annex A.9)</a></h3>
-<blockquote>
-<p><em>“The effectiveness of <code>x509_san_dns</code> and <code>verifier_attestation</code> schemes depends on the existence of a trust list of RPs. For this reason, the Age Verification solution uses the simpler <code>redirect_uri</code> scheme. An alternative could be the use of <code>x509_san_dns</code> together with the Web PKI, however, any malicious entity can obtain a valid Web PKI certificate.”</em></p>
-</blockquote>
-<p>This means the Age Verification Profile relies on <strong>TLS and the Web PKI</strong> for transport security, without additional cryptographic verification of the verifier’s identity.</p>
-<h2 id="comparison-with-haip-high-assurance-interoperability-profile"><a class="header" href="#comparison-with-haip-high-assurance-interoperability-profile">Comparison with HAIP (High Assurance Interoperability Profile)</a></h2>
-<p>The EUDI Wallet implements <strong>HAIP</strong> (High Assurance Interoperability Profile), which has stricter requirements than the Age Verification Profile. Understanding these differences is critical when choosing which wallet to target.</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Feature</th><th>Age Verification Profile (Annex A)</th><th>HAIP (EUDI Wallet)</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Target LoA</strong></td><td>Substantial</td><td>High</td></tr>
-<tr><td><strong>Client ID scheme</strong></td><td><code>redirect_uri</code></td><td><code>x509_san_dns</code>, <code>x509_hash</code>, <code>verifier_attestation</code></td></tr>
-<tr><td><strong>Signed request (JAR)</strong></td><td>Not required</td><td><strong>Required</strong> (RFC 9101)</td></tr>
-<tr><td><strong>Response mode</strong></td><td><code>direct_post</code></td><td><code>direct_post.jwt</code> (encrypted)</td></tr>
-<tr><td><strong>Trust mechanism</strong></td><td>TLS + Web PKI</td><td>Reader Trust Store + certificate validation</td></tr>
-<tr><td><strong>Reader authentication</strong></td><td>Not required</td><td>Certificate chain validation</td></tr>
-<tr><td><strong>Trust list of RPs</strong></td><td>Not used</td><td>Required for verifier_attestation</td></tr>
-<tr><td><strong>Threat model</strong></td><td>Does not include malicious CAs</td><td>Assumes potential CA compromise</td></tr>
-</tbody>
-</table>
-</div>
-<h3 id="key-implications-for-relying-parties"><a class="header" href="#key-implications-for-relying-parties">Key Implications for Relying Parties</a></h3>
-<ol>
-<li>
-<p><strong>Age Verification App (Annex A compliant)</strong></p>
-<ul>
-<li>Use <code>client_id=redirect_uri:https://your-rp.com/callback</code></li>
-<li>Send unsigned requests directly in the <code>av://</code> URL</li>
-<li>No certificate or JAR required</li>
-</ul>
-</li>
-<li>
-<p><strong>EUDI Wallet (HAIP compliant)</strong></p>
-<ul>
-<li>Use <code>client_id=x509_hash:&lt;base64url_sha256_of_leaf_cert&gt;</code></li>
-<li>Sign the request as a JAR with <code>x5c</code> header containing your certificate chain</li>
-<li>The wallet validates the client_id by computing the SHA-256 hash of the leaf certificate
-from the <code>x5c</code> header and comparing it to the hash in <code>client_id</code></li>
-<li>Your root CA must be in the wallet’s Reader Trust Store</li>
-<li><strong>Note</strong>: <code>x509_hash</code> is preferred over <code>x509_san_dns</code> because it provides a direct
-cryptographic binding to the verifier’s certificate, independent of DNS resolution.
-The wallet does not need to perform DNS resolution to validate the verifier identity.</li>
-</ul>
-</li>
-</ol>
-<h3 id="wallet-compatibility-matrix"><a class="header" href="#wallet-compatibility-matrix">Wallet Compatibility Matrix</a></h3>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Wallet</th><th><code>redirect_uri</code></th><th><code>x509_san_dns</code></th><th><code>x509_hash</code></th><th><code>verifier_attestation</code></th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Age Verification App</strong> (ageverification.dev)</td><td>✅ Expected</td><td>?</td><td>?</td><td>?</td></tr>
-<tr><td><strong>EUDI Wallet</strong> (eu-digital-identity-wallet)</td><td>❌ Not supported</td><td>✅</td><td>✅</td><td>❌ Not configured</td></tr>
-<tr><td><strong>Demo webapp (this project)</strong></td><td>✅ Planned</td><td>✅ (legacy)</td><td>✅ <strong>Default</strong></td><td>❌</td></tr>
-</tbody>
-</table>
-</div>
-<blockquote>
-<p><strong>Note</strong>: The EUDI Wallet pre-built APKs from GitHub only support <code>x509_san_dns</code> and <code>x509_hash</code>. The <code>redirect_uri</code> scheme is <strong>not supported</strong> without modifying the wallet source code.</p>
-</blockquote>
-<h3 id="two-wallets-two-profiles"><a class="header" href="#two-wallets-two-profiles">Two Wallets, Two Profiles</a></h3>
-<p>There are <strong>two separate wallet projects</strong> for different use cases:</p>
-<ol>
-<li>
-<p><strong>EUDI Wallet</strong> (<a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui">eu-digital-identity-wallet/eudi-app-android-wallet-ui</a>)</p>
-<ul>
-<li>Implements HAIP for EU Digital Identity</li>
-<li>Supports PID, mDL, and other credentials</li>
-<li>Uses <code>x509_san_dns</code> / <code>x509_hash</code> schemes</li>
-<li>Pre-built APKs available on GitHub Releases</li>
-</ul>
-</li>
-<li>
-<p><strong>Age Verification App</strong> (<a href="https://ageverification.dev/av-app-android-wallet-ui/">ageverification.dev</a>)</p>
-<ul>
-<li>Forked from EUDI Wallet, customized for Age Verification</li>
-<li>Only stores Proof of Age attestations</li>
-<li>Expected to support <code>redirect_uri</code> scheme per Annex A</li>
-<li>Uses <code>av://</code> URL scheme for invocation</li>
-<li>Separate issuer/verifier infrastructure at ageverification.dev</li>
-</ul>
-</li>
-</ol>
-<blockquote>
-<p><strong>Important</strong>: The APK at <code>https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/releases</code> is the <strong>EUDI Wallet</strong>, not the Age Verification App. It does <strong>not</strong> implement Annex A’s <code>redirect_uri</code> scheme and will reject such requests.</p>
-</blockquote>
-<h2 id="implementation-strategy-for-the-demo-webapp"><a class="header" href="#implementation-strategy-for-the-demo-webapp">Implementation Strategy for the Demo Webapp</a></h2>
-<p>Based on the above analysis, the demo webapp should implement <strong>both profiles</strong> to support different wallets:</p>
-<h3 id="for-proof-of-age-annex-a-profile"><a class="header" href="#for-proof-of-age-annex-a-profile">For Proof of Age (Annex A Profile)</a></h3>
-<pre><code class="language-typescript">// Use redirect_uri scheme - no JAR, no certificate
-const clientId = `redirect_uri:${responseUri}`;
-const avUrl = `av://authorize?response_type=vp_token&amp;response_mode=direct_post&amp;client_id=${encodeURIComponent(clientId)}&amp;response_uri=${encodeURIComponent(responseUri)}&amp;nonce=${nonce}&amp;dcql_query=${dcqlQuery}`;
-</code></pre>
-<h3 id="for-mdl--national-id-haip-profile"><a class="header" href="#for-mdl--national-id-haip-profile">For mDL / National ID (HAIP Profile)</a></h3>
-<pre><code class="language-typescript">// Use x509_hash scheme - signed JAR with x5c header
-// The certHash is the base64url-encoded SHA-256 digest of the DER-encoded leaf certificate.
-const clientId = `x509_hash:${certHash}`;
-// Build and sign JAR JWT with x5c header containing certificate chain
-const jar = await signJAR(claims, privateKey, certificateChain);
-const requestUri = await storeJAR(jar); // or embed by value
-</code></pre>
-<h3 id="dual-mode-support"><a class="header" href="#dual-mode-support">Dual-Mode Support</a></h3>
-<p>The webapp should detect which credential type is being requested and use the appropriate scheme:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Credential Type</th><th>DocType</th><th>Client ID Scheme</th><th>Target Wallet</th></tr>
-</thead>
-<tbody>
-<tr><td>Proof of Age</td><td><code>eu.europa.ec.av.1</code></td><td><code>redirect_uri</code></td><td>Age Verification App</td></tr>
-<tr><td>Mobile Driving Licence</td><td><code>org.iso.18013.5.1.mDL</code></td><td><code>x509_hash</code></td><td>EUDI Wallet</td></tr>
-<tr><td>National ID (PID)</td><td><code>eu.europa.ec.eudi.pid.1</code></td><td><code>x509_hash</code></td><td>EUDI Wallet</td></tr>
-</tbody>
-</table>
-</div>
+<p>For full details on HAIP, see the <a href="../summary_protocols_formats.html">Protocols &amp; Formats Summary</a> and the <a href="../eudi_wallet/relying_party_requirements.html">Relying Party Requirements</a>.</p>
 <h2 id="references"><a class="header" href="#references">References</a></h2>
 <ul>
-<li>EU Age Verification Profile – Annex A, A.5 (OpenID4VP Requirements): <a href="https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#openid-for-verifiable-presentations-profile-requirements">https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/#openid-for-verifiable-presentations-profile-requirements</a></li>
-<li>OpenID for Verifiable Presentations 1.0: <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">https://openid.net/specs/openid-4-verifiable-presentations-1_0.html</a></li>
-<li>OpenID4VP Section 6 (DCQL): <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6">https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6</a></li>
-<li>DCQL Age Verification chapter (this book): <a href="./dcql_age_verification.html">DCQL Age Verification</a></li>
-<li>ISO mDoc + DCAPI chapter (this book): <a href="./iso_18013_dcapi_age_verification.html">Age Verification: ISO mDoc + DCAPI</a></li>
+<li><a href="https://ageverification.dev/av-doc-technical-specification/docs/annexes/annex-A/annex-A-av-profile/">EU Age Verification Profile — Annex A.5</a></li>
+<li><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID4VP 1.0</a></li>
+<li><a href="./dcql_age_verification.html">DCQL Queries</a></li>
 </ul>
 
                     </main>
@@ -875,7 +291,7 @@ const requestUri = await storeJAR(jar); // or embed by value
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../technical_references/iso_18013_7.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../technical_references/glossary.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -889,7 +305,7 @@ const requestUri = await storeJAR(jar); // or embed by value
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../technical_references/iso_18013_7.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../technical_references/glossary.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

@@ -1,0 +1,739 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Local Network Setup - ewQwe Digital Identity</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="shortcut icon" href="../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../custom-theme-b78cf314.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-df26ae72.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-2cdafee5.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">ewQwe Digital Identity</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="running-the-credential-verifier-and-the-eudi-wallet-on-a-local-network"><a class="header" href="#running-the-credential-verifier-and-the-eudi-wallet-on-a-local-network">Running the Credential Verifier and the EUDI Wallet on a Local Network</a></h1>
+<p>This guide explains how to run a credential verifier server and the EUDI Android Wallet side-by-side
+on a local network using your own certificates, without any dependency on the European Commission’s
+hosted infrastructure.</p>
+<hr>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ol>
+<li><a href="#architecture-overview">Architecture Overview</a></li>
+<li><a href="#would-x509_san_hash-help">Would <code>x509_san_hash</code> Help?</a></li>
+<li><a href="#prerequisites">Prerequisites</a></li>
+<li><a href="#step-1--generate-certificates-for-x509_san_hash">Step 1 – Generate Certificates for <code>x509_san_hash</code></a></li>
+<li><a href="#step-2--configure-the-credential-verifier">Step 2 – Configure the Credential Verifier</a></li>
+<li><a href="#step-3--make-the-verifier-reachable-from-the-android-device">Step 3 – Make the Verifier Reachable from the Android Device</a></li>
+<li><a href="#step-4--configure-the-wallet">Step 4 – Configure the Wallet</a></li>
+<li><a href="#step-5--build-and-run-the-wallet">Step 5 – Build and Run the Wallet</a></li>
+<li><a href="#step-6--end-to-end-test">Step 6 – End-to-End Test</a></li>
+<li><a href="#choosing-between-x509_san_dns-and-x509_san_hash">Choosing Between <code>x509_san_dns</code> and <code>x509_san_hash</code></a></li>
+<li><a href="#troubleshooting">Troubleshooting</a></li>
+<li><a href="#security-notes">Security Notes</a></li>
+</ol>
+<hr>
+<h2 id="architecture-overview"><a class="header" href="#architecture-overview">Architecture Overview</a></h2>
+<pre class="mermaid">graph TD
+    subgraph Mac["Developer machine (macOS)"]
+        Verifier["credential_verifier\n(HTTPS :9443)\nserves QR code + OpenID4VP endpoint"]
+    end
+
+    subgraph Network["Local Wi-Fi network"]
+        direction LR
+        Verifier &lt;--&gt;|"HTTPS (JAR + vp_token POST)"| Wallet
+    end
+
+    subgraph Phone["Android device / emulator"]
+        Wallet["EUDI Wallet\n(debug build)"]
+    end
+</pre>
+
+<p><strong>Flow summary:</strong></p>
+<pre class="mermaid">sequenceDiagram
+    participant Browser as Browser on Mac
+    participant Verifier as Credential Verifier (Mac :9443)
+    participant Wallet as EUDI Wallet (Android)
+
+    Browser-&gt;&gt;Verifier: Open UI – select credential type
+    Verifier--&gt;&gt;Browser: Render QR code (haip-vp:// URI)
+
+    Note over Wallet: User scans QR with wallet camera
+
+    Wallet-&gt;&gt;Verifier: GET request_uri (fetch signed JAR)
+    Verifier--&gt;&gt;Wallet: Signed Request Object JWT&lt;br/&gt;(x5c contains local cert chain)
+
+    Wallet-&gt;&gt;Wallet: Validate JAR&lt;br/&gt;x509_san_hash: hash(x5c[0]) == client_id ✓&lt;br/&gt;ProfileValidation: mdlReaderAuth OID ✓
+
+    Wallet-&gt;&gt;Wallet: Show consent screen
+    Wallet-&gt;&gt;Wallet: User approves
+
+    Wallet-&gt;&gt;Verifier: POST response_uri&lt;br/&gt;{ vp_token, presentation_submission }
+    Verifier--&gt;&gt;Wallet: 200 OK
+
+    Verifier--&gt;&gt;Browser: WebSocket: presentation verified ✓
+</pre>
+
+<hr>
+<h2 id="would-x509_san_hash-help"><a class="header" href="#would-x509_san_hash-help">Would <code>x509_san_hash</code> Help?</a></h2>
+<p><strong>Yes – <code>x509_san_hash</code> is the recommended approach for local-network development.</strong></p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Concern</th><th><code>x509_san_dns</code></th><th><code>x509_san_hash</code></th></tr>
+</thead>
+<tbody>
+<tr><td>CA certificate must be bundled in the wallet APK</td><td><strong>Yes</strong> (rebuild required)</td><td><strong>No</strong></td></tr>
+<tr><td>Hostname must be resolvable from the device</td><td><strong>Yes</strong> (DNS or <code>hosts</code> trick)</td><td>No hostname check</td></tr>
+<tr><td>Self-signed cert accepted</td><td>Only if CA is in <code>ReaderTrustStore</code></td><td><strong>Yes</strong></td></tr>
+<tr><td>Certificate rotation breaks <code>client_id</code></td><td>No</td><td><strong>Yes</strong> (hash changes)</td></tr>
+<tr><td>Works behind NAT / private IP</td><td>Extra DNS mapping needed</td><td><strong>Yes</strong></td></tr>
+</tbody>
+</table>
+</div>
+<p>With <code>x509_san_hash</code>:</p>
+<ol>
+<li>Generate a self-signed or private-CA cert for the verifier (see Step 1).</li>
+<li>Compute its SHA-256 fingerprint → that becomes <code>client_id</code>.</li>
+<li><code>ClientIdScheme.X509Hash</code> is already enabled in the default <code>WalletCoreConfigImpl</code> — no code change needed.</li>
+<li><strong>No CA needs to be added to <code>ReaderTrustStore</code></strong> and <strong>no hostname matching is required</strong>.</li>
+</ol>
+<blockquote>
+<p><strong>Important caveat (wallet-core ≤ 0.25):</strong> Even with <code>x509_san_hash</code>, the leaf certificate still
+passes through <code>ProfileValidation</code> (ISO 18013-5) because the wallet shares one <code>ReaderTrustStore</code>
+between the BLE proximity path and the remote OpenID4VP path.  The leaf certificate <strong>must still</strong>:</p>
+<ul>
+<li>Include Extended Key Usage <code>mdlReaderAuth</code> OID <code>1.0.18013.5.1.6</code></li>
+<li>Have valid SKI and AKI (AKI must reference the issuer’s SKI)</li>
+<li>Use ECDSA (P-256 / P-384 / P-521), not RSA</li>
+<li>Have a validity period ≤ 1 187 days</li>
+<li>Include <code>CN</code> in the Subject</li>
+</ul>
+<p>See <a href="https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core/issues/247">eudi-lib-android-wallet-core#247</a>.</p>
+</blockquote>
+<hr>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Tool</th><th>Notes</th></tr>
+</thead>
+<tbody>
+<tr><td><code>openssl</code> ≥ 3.x</td><td><code>brew install openssl@3</code></td></tr>
+<tr><td>Android Studio Meerkat+</td><td>For building the wallet</td></tr>
+<tr><td>Android device or emulator (API 29+)</td><td>Physical device recommended for QR scanning</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="step-1--generate-certificates-for-x509_san_hash"><a class="header" href="#step-1--generate-certificates-for-x509_san_hash">Step 1 – Generate Certificates for <code>x509_san_hash</code></a></h2>
+<p>Save the following script as <code>generate_local_certs.sh</code> and run it from your verifier project
+directory.  It generates:</p>
+<ul>
+<li>A <strong>root CA</strong> (needed in <code>ReaderTrustStore</code> because of the shared trust-store limitation above).</li>
+<li>A <strong>leaf certificate</strong> that satisfies all ISO 18013-5 <code>ProfileValidation</code> rules <strong>and</strong> includes TLS SANs.</li>
+<li>Prints the <strong><code>x509_san_hash</code> <code>client_id</code></strong> value you need to configure in the verifier.</li>
+</ul>
+<pre><code class="language-bash">#!/usr/bin/env bash
+# generate_local_certs.sh
+#
+# Generates a Root CA + leaf certificate suitable for:
+#   - x509_san_hash client_id scheme (EUDI wallet)
+#   - HTTPS TLS (serverAuth EKU)
+#   - ISO 18013-5 ProfileValidation (mdlReaderAuth OID, AKI/SKI, ECDSA, ≤1187 days)
+#
+# Usage:
+#   chmod +x generate_local_certs.sh
+#   ./generate_local_certs.sh [output_dir]
+#
+# Output:
+#   &lt;output_dir&gt;/root.ca.pem          ← Add to wallet ReaderTrustStore
+#   &lt;output_dir&gt;/server.key.pem       ← Private key for verifier
+#   &lt;output_dir&gt;/server.cert.pem      ← Leaf certificate
+#   &lt;output_dir&gt;/server.fullchain.pem ← leaf + root (use as x509_cert_path in verifier)
+#
+# The script prints the x509_san_hash client_id value at the end.
+
+set -euo pipefail
+
+OUT_DIR="${1:-local_certs}"
+mkdir -p "$OUT_DIR"
+
+# Detect local Wi-Fi IP (macOS: en0; Linux: first non-lo interface)
+if [[ "$(uname)" == "Darwin" ]]; then
+    LOCAL_IP="$(ipconfig getifaddr en0 2&gt;/dev/null || echo "127.0.0.1")"
+else
+    LOCAL_IP="$(hostname -I | awk '{print $1}')"
+fi
+
+echo "=== Local IP: $LOCAL_IP ==="
+echo "=== Output dir: $OUT_DIR ==="
+echo ""
+
+# ── 1. Root CA ─────────────────────────────────────────────────────────────────
+echo "[1/4] Generating Root CA key and certificate..."
+
+openssl genpkey \
+    -algorithm EC \
+    -pkeyopt ec_paramgen_curve:prime256v1 \
+    -out "$OUT_DIR/root.key.pem"
+
+openssl req -new -x509 \
+    -days 1187 \
+    -key "$OUT_DIR/root.key.pem" \
+    -out "$OUT_DIR/root.ca.pem" \
+    -subj "/CN=Local EUDI Verifier Root CA" \
+    -addext "basicConstraints = critical, CA:TRUE, pathlen:0" \
+    -addext "keyUsage = critical, keyCertSign, cRLSign" \
+    -addext "subjectKeyIdentifier = hash"
+
+echo "    ✓ root.ca.pem"
+
+# ── 2. Leaf key ────────────────────────────────────────────────────────────────
+echo "[2/4] Generating leaf key..."
+
+openssl genpkey \
+    -algorithm EC \
+    -pkeyopt ec_paramgen_curve:prime256v1 \
+    -out "$OUT_DIR/server.key.pem"
+
+echo "    ✓ server.key.pem"
+
+# ── 3. CSR ────────────────────────────────────────────────────────────────────
+echo "[3/4] Generating CSR..."
+
+openssl req -new \
+    -key "$OUT_DIR/server.key.pem" \
+    -out "$OUT_DIR/server.csr" \
+    -subj "/CN=Local EUDI Verifier"
+
+# Extensions file
+# OID 1.0.18013.5.1.6 = mdlReaderAuth (REQUIRED by wallet ProfileValidation)
+# OID 1.3.6.1.5.5.7.3.1 = serverAuth  (for HTTPS TLS)
+# OID 1.3.6.1.5.5.7.3.2 = clientAuth  (optional but harmless)
+cat &gt; "$OUT_DIR/leaf_ext.cnf" &lt;&lt;EOF
+[v3_leaf]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+keyUsage               = critical, digitalSignature
+extendedKeyUsage       = 1.3.6.1.5.5.7.3.1, 1.3.6.1.5.5.7.3.2, 1.0.18013.5.1.6
+basicConstraints       = CA:FALSE
+subjectAltName         = DNS:localhost, IP:127.0.0.1, IP:${LOCAL_IP}
+EOF
+
+echo "    ✓ server.csr"
+
+# ── 4. Sign leaf with root CA ─────────────────────────────────────────────────
+echo "[4/4] Signing leaf certificate with Root CA..."
+
+openssl x509 -req \
+    -sha256 \
+    -days 1187 \
+    -in "$OUT_DIR/server.csr" \
+    -CA "$OUT_DIR/root.ca.pem" \
+    -CAkey "$OUT_DIR/root.key.pem" \
+    -CAcreateserial \
+    -out "$OUT_DIR/server.cert.pem" \
+    -extfile "$OUT_DIR/leaf_ext.cnf" \
+    -extensions v3_leaf
+
+echo "    ✓ server.cert.pem"
+
+# Full chain: leaf first, then root (required by wallet x5c)
+cat "$OUT_DIR/server.cert.pem" "$OUT_DIR/root.ca.pem" &gt; "$OUT_DIR/server.fullchain.pem"
+echo "    ✓ server.fullchain.pem"
+
+# ── Print verification ─────────────────────────────────────────────────────────
+echo ""
+echo "=== Certificate details ==="
+openssl x509 -in "$OUT_DIR/server.cert.pem" -noout -subject -dates
+echo ""
+echo "=== Extended Key Usage (must include 1.0.18013.5.1.6 = mdlReaderAuth) ==="
+openssl x509 -in "$OUT_DIR/server.cert.pem" -noout -text | grep -A4 "Extended Key"
+
+# ── Compute x509_san_hash client_id ──────────────────────────────────────────
+HASH=$(openssl x509 -in "$OUT_DIR/server.cert.pem" -outform DER \
+    | openssl dgst -sha256 -binary \
+    | openssl base64 -A \
+    | tr '+/' '-_' \
+    | tr -d '=')
+
+echo ""
+echo "╔══════════════════════════════════════════════════════════════════════╗"
+echo "║  x509_san_hash client_id (paste into verifier config)               ║"
+echo "╠══════════════════════════════════════════════════════════════════════╣"
+echo "║  x509_san_hash:${HASH}"
+echo "╚══════════════════════════════════════════════════════════════════════╝"
+echo ""
+echo "Next steps:"
+echo "  1. Copy ${OUT_DIR}/root.ca.pem to"
+echo "     eudi-app-android-wallet-ui/resources-logic/src/main/res/raw/local_verifier_root_ca.pem"
+echo "  2. Configure verifier: x509_cert_path = \"${OUT_DIR}/server.fullchain.pem\""
+echo "  3. Configure verifier: client_id = \"x509_san_hash:${HASH}\""
+echo "  4. Rebuild the wallet (see Step 4 of local_network.md)"
+</code></pre>
+<p>Run it:</p>
+<pre><code class="language-bash">chmod +x generate_local_certs.sh
+./generate_local_certs.sh
+</code></pre>
+<hr>
+<h2 id="step-2--configure-the-credential-verifier"><a class="header" href="#step-2--configure-the-credential-verifier">Step 2 – Configure the Credential Verifier</a></h2>
+<p>Edit <code>credential-server.toml</code> (or your verifier’s equivalent config file):</p>
+<pre><code class="language-toml"># credential-server.toml  –  local development override
+
+host_name = "0.0.0.0"
+host_port = 9443
+
+# Public URL reachable from the Android device (use your Mac's Wi-Fi IP)
+public_root_url = "https://192.168.1.42:9443"
+
+disable_authentication = true
+
+[tls_params]
+server_private_key  = "local_certs/server.key.pem"
+server_certificate  = "local_certs/server.cert.pem"
+server_ca_chain     = "local_certs/root.ca.pem"
+
+[openid4vp_config.haip_config]
+# Full chain used to sign the JAR (Authorization Request Object) – leaf first
+x509_cert_path = "local_certs/server.fullchain.pem"
+x509_key_path  = "local_certs/server.key.pem"
+
+# Paste the value printed by generate_local_certs.sh
+client_id = "x509_san_hash:&lt;hash printed by the script&gt;"
+</code></pre>
+<p>Start the verifier:</p>
+<pre><code class="language-bash">cargo run --bin credential-verifier -- --config credential-server.toml
+</code></pre>
+<hr>
+<h2 id="step-3--make-the-verifier-reachable-from-the-android-device"><a class="header" href="#step-3--make-the-verifier-reachable-from-the-android-device">Step 3 – Make the Verifier Reachable from the Android Device</a></h2>
+<pre class="mermaid">graph LR
+    subgraph Mac["Mac (Wi-Fi IP: 192.168.1.42)"]
+        V["Verifier :9443"]
+    end
+    subgraph Router["Local Wi-Fi router"]
+    end
+    subgraph Device["Android device"]
+        W["EUDI Wallet"]
+    end
+
+    V &lt;--&gt;|"Wi-Fi"| Router
+    Router &lt;--&gt;|"Wi-Fi"| W
+</pre>
+
+<ol>
+<li>
+<p>Find your Mac’s Wi-Fi IP:</p>
+<pre><code class="language-bash">ipconfig getifaddr en0
+# e.g. 192.168.1.42
+</code></pre>
+</li>
+<li>
+<p>Make sure the Android device is on the <strong>same Wi-Fi network</strong> as the Mac.</p>
+</li>
+<li>
+<p>Open the verifier’s firewall port (macOS):</p>
+<pre><code class="language-bash"># Allow incoming connections on port 9443
+# System Settings → Network → Firewall → Options → Add credential-verifier
+</code></pre>
+</li>
+<li>
+<p>Verify connectivity from the device:
+Open <code>https://192.168.1.42:9443</code> in the Android browser.  You’ll see a certificate warning
+(expected — the device doesn’t trust the local CA yet), but the connection should reach the
+verifier.</p>
+</li>
+</ol>
+<blockquote>
+<p><strong>With <code>x509_san_hash</code>, no DNS configuration is needed on the Android device.</strong>  The IP address
+in <code>public_root_url</code> is sufficient for the wallet to reach the verifier, and the wallet validates
+the certificate by its hash rather than its hostname.</p>
+</blockquote>
+<h3 id="android-emulator-note"><a class="header" href="#android-emulator-note">Android Emulator Note</a></h3>
+<p>If using an emulator, the Mac’s IP is reachable via the special address <code>10.0.2.2</code>:</p>
+<pre><code class="language-toml">public_root_url = "https://10.0.2.2:9443"
+</code></pre>
+<p>The <code>leaf_ext.cnf</code> in Step 1 already includes <code>IP:127.0.0.1</code> and <code>IP:&lt;LOCAL_IP&gt;</code> in the SAN.
+Add <code>IP:10.0.2.2</code> if you need to support both physical device and emulator simultaneously.</p>
+<hr>
+<h2 id="step-4--configure-the-wallet"><a class="header" href="#step-4--configure-the-wallet">Step 4 – Configure the Wallet</a></h2>
+<h3 id="4a--add-the-root-ca-to-readertruststore"><a class="header" href="#4a--add-the-root-ca-to-readertruststore">4a – Add the Root CA to <code>ReaderTrustStore</code></a></h3>
+<p>Even with <code>x509_san_hash</code>, the wallet still runs <code>ProfileValidation</code> on the leaf certificate
+(shared trust store limitation — see <a href="#would-x509_san_hash-help">the caveat above</a>).  The root CA
+must therefore be known to the wallet.</p>
+<p>Copy the generated root CA into the wallet’s raw resources:</p>
+<pre><code class="language-bash">cp local_certs/root.ca.pem \
+   eudi-app-android-wallet-ui/resources-logic/src/main/res/raw/local_verifier_root_ca.pem
+</code></pre>
+<p>Add it to <code>WalletCoreConfigImpl</code> in the flavour you are testing (<code>demo</code> or <code>dev</code>):</p>
+<pre><code class="language-kotlin">// core-logic/src/demo/java/eu/europa/ec/corelogic/config/WalletCoreConfigImpl.kt
+
+configureReaderTrustStore(
+    context,
+    R.raw.pidissuerca02_eu,   // existing entries …
+    // …
+    R.raw.local_verifier_root_ca   // ← add this
+)
+</code></pre>
+<h3 id="4b--allow-self-signed-tls-certificates-https-transport"><a class="header" href="#4b--allow-self-signed-tls-certificates-https-transport">4b – Allow Self-Signed TLS Certificates (HTTPS Transport)</a></h3>
+<p>The wallet’s Ktor <code>HttpClient</code> (in <code>NetworkModule.kt</code>) uses the Android system CA store for TLS.
+To allow connections to your local verifier’s self-signed TLS certificate, replace
+<code>provideHttpClient</code> with a dev-only trust-all variant:</p>
+<pre><code class="language-kotlin">// network-logic/src/main/java/…/NetworkModule.kt
+// WARNING: only use this in debug/dev builds – never in production
+
+@SuppressLint("TrustAllX509TrustManager", "CustomX509TrustManager")
+@Single
+fun provideHttpClient(json: Json): HttpClient {
+    val trustAllCerts = arrayOf&lt;TrustManager&gt;(object : X509TrustManager {
+        override fun checkClientTrusted(chain: Array&lt;X509Certificate&gt;, authType: String) {}
+        override fun checkServerTrusted(chain: Array&lt;X509Certificate&gt;, authType: String) {}
+        override fun getAcceptedIssuers(): Array&lt;X509Certificate&gt; = arrayOf()
+    })
+    return HttpClient(Android) {
+        install(Logging) { level = LogLevel.ALL }
+        install(ContentNegotiation) { json(json = json) }
+        engine {
+            sslManager = { conn -&gt;
+                conn.sslSocketFactory = SSLContext.getInstance("TLS").apply {
+                    init(null, trustAllCerts, SecureRandom())
+                }.socketFactory
+                conn.hostnameVerifier = HostnameVerifier { _, _ -&gt; true }
+            }
+        }
+    }
+}
+</code></pre>
+<p>A safer alternative: install only your local CA as a custom <code>TrustManager</code> instead of trusting all
+certificates.</p>
+<h3 id="4c--client_id_scheme-configuration"><a class="header" href="#4c--client_id_scheme-configuration">4c – <code>client_id_scheme</code> Configuration</a></h3>
+<p>Both <code>X509SanDns</code> and <code>X509Hash</code> are already enabled in the default <code>WalletCoreConfigImpl</code>.
+No change is required for <code>x509_san_hash</code> support.</p>
+<hr>
+<h2 id="step-5--build-and-run-the-wallet"><a class="header" href="#step-5--build-and-run-the-wallet">Step 5 – Build and Run the Wallet</a></h2>
+<pre><code class="language-bash">cd eudi-app-android-wallet-ui
+./gradlew installDemoDebug
+</code></pre>
+<p>Or use Android Studio → Run.</p>
+<hr>
+<h2 id="step-6--end-to-end-test"><a class="header" href="#step-6--end-to-end-test">Step 6 – End-to-End Test</a></h2>
+<pre class="mermaid">sequenceDiagram
+    participant Browser as Browser (Mac)
+    participant Verifier as Credential Verifier
+    participant Wallet as EUDI Wallet (Android)
+
+    Browser-&gt;&gt;Verifier: Open https://192.168.1.42:9443
+    Verifier--&gt;&gt;Browser: UI with credential type selection
+    Browser-&gt;&gt;Verifier: Select credential + Generate QR
+    Verifier--&gt;&gt;Browser: QR code displayed
+
+    Note over Wallet: User taps "Scan QR" in wallet
+
+    Wallet-&gt;&gt;Verifier: GET request_uri → Signed JAR
+    Verifier--&gt;&gt;Wallet: JAR with x5c (local cert chain)
+
+    Wallet-&gt;&gt;Wallet: x509_san_hash: verify hash(x5c[0]) == client_id
+    Wallet-&gt;&gt;Wallet: ProfileValidation passes (mdlReaderAuth OID ✓)
+    Wallet-&gt;&gt;Wallet: Consent screen shown (verifier name from CN)
+    Wallet-&gt;&gt;Wallet: User approves
+
+    Wallet-&gt;&gt;Verifier: POST /response { vp_token, presentation_submission }
+    Verifier--&gt;&gt;Wallet: 200 OK
+
+    Verifier--&gt;&gt;Browser: Presentation verified ✓
+</pre>
+
+<hr>
+<h2 id="choosing-between-x509_san_dns-and-x509_san_hash"><a class="header" href="#choosing-between-x509_san_dns-and-x509_san_hash">Choosing Between <code>x509_san_dns</code> and <code>x509_san_hash</code></a></h2>
+<pre><code>Use x509_san_hash when:
+  ✔ You have a self-signed or private-CA certificate
+  ✔ You don't want to configure DNS on the Android device
+  ✔ You are doing quick local development or integration testing
+  ✔ The verifier's IP may change (the cert hash doesn't change with IP)
+
+Use x509_san_dns when:
+  ✔ You have a proper CA (internal or public) issuing verifier certificates
+  ✔ You want certificate rotation to be transparent (CA trust persists)
+  ✔ You are running a shared dev environment (multiple wallet builds connect)
+  ✔ You are testing in a staging environment with a real domain
+</code></pre>
+<hr>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<h3 id="invalidjarjwtcauseuntrusted-x5c"><a class="header" href="#invalidjarjwtcauseuntrusted-x5c"><code>InvalidJarJwt(cause=Untrusted x5c)</code></a></h3>
+<ol>
+<li>
+<p>Check the Extended Key Usage — must include <code>1.0.18013.5.1.6</code>:</p>
+<pre><code class="language-bash">openssl x509 -in local_certs/server.cert.pem -text -noout | grep -A5 "Extended Key"
+</code></pre>
+<p>If <code>1.0.18013.5.1.6</code> is missing, regenerate with the script in Step 1.</p>
+</li>
+<li>
+<p>Check AKI/SKI are present:</p>
+<pre><code class="language-bash">openssl x509 -in local_certs/server.cert.pem -text -noout | grep -A3 "Subject Key\|Authority Key"
+</code></pre>
+</li>
+<li>
+<p>Confirm the root CA is in <code>ReaderTrustStore</code> and the wallet was rebuilt.</p>
+</li>
+<li>
+<p>Confirm validity ≤ 1 187 days:</p>
+<pre><code class="language-bash">openssl x509 -in local_certs/server.cert.pem -noout -dates
+</code></pre>
+</li>
+</ol>
+<h3 id="certpathvalidatorexception-trust-anchor-not-found"><a class="header" href="#certpathvalidatorexception-trust-anchor-not-found"><code>CertPathValidatorException: Trust anchor not found</code></a></h3>
+<ul>
+<li>Root CA is not in <code>ReaderTrustStore</code> and not in <code>x5c</code>.</li>
+<li>Include root in <code>x5c</code> (use <code>server.fullchain.pem</code> for <code>x509_cert_path</code>).</li>
+</ul>
+<h3 id="err_cert_authority_invalid-in-browser"><a class="header" href="#err_cert_authority_invalid-in-browser"><code>ERR_CERT_AUTHORITY_INVALID</code> in Browser</a></h3>
+<p>Expected — the browser doesn’t trust your local CA.  The wallet handles TLS separately via the
+custom <code>TrustManager</code> (Step 4b).  To silence the browser warning, install <code>root.ca.pem</code> in macOS
+Keychain.</p>
+<h3 id="wallet-cannot-reach-the-verifier"><a class="header" href="#wallet-cannot-reach-the-verifier">Wallet Cannot Reach the Verifier</a></h3>
+<ul>
+<li>Check Mac firewall: <strong>System Settings → Network → Firewall</strong> — port 9443 must be open.</li>
+<li>Both devices must be on the same Wi-Fi network (check for AP client isolation).</li>
+<li>Test: <code>curl -k https://192.168.1.42:9443/</code> from the Mac.</li>
+</ul>
+<h3 id="x509_san_hash-client_id-mismatch"><a class="header" href="#x509_san_hash-client_id-mismatch"><code>x509_san_hash</code> <code>client_id</code> Mismatch</a></h3>
+<p>Recompute the hash and compare:</p>
+<pre><code class="language-bash">openssl x509 -in local_certs/server.cert.pem -outform DER \
+    | openssl dgst -sha256 -binary \
+    | openssl base64 -A \
+    | tr '+/' '-_' \
+    | tr -d '='
+</code></pre>
+<hr>
+<h2 id="security-notes"><a class="header" href="#security-notes">Security Notes</a></h2>
+<ul>
+<li><strong>Never ship the trust-all <code>TrustManager</code> in a production build.</strong>  Guard it with
+<code>if (BuildConfig.DEBUG)</code> or a debug-only source set.</li>
+<li>The local CA and private keys generated by the script are for development only.</li>
+<li><code>disable_authentication = true</code> in <code>credential-server.toml</code> disables mutual TLS.  Do not use this
+in production.</li>
+</ul>
+<hr>
+<p><em>Last updated: April 2026</em></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../av_wallet_android_studio.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../eudi_wallet/relying_party_requirements.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../av_wallet_android_studio.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../eudi_wallet/relying_party_requirements.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

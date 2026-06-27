@@ -1,0 +1,1053 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Relying Party Requirements - ewQwe Digital Identity</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="shortcut icon" href="../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../css/general-0392ca55.css">
+        <link rel="stylesheet" href="../css/chrome-fc474251.css">
+        <link rel="stylesheet" href="../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../custom-theme-b78cf314.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../searchindex-df26ae72.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../toc-2cdafee5.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">ewQwe Digital Identity</h1>
+
+                    <div class="right-buttons">
+                        <a href="../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="relying-party-requirements-for-the-eudi-android-wallet"><a class="header" href="#relying-party-requirements-for-the-eudi-android-wallet">Relying Party Requirements for the EUDI Android Wallet</a></h1>
+<p>This document describes <strong>all</strong> the technical requirements a Relying Party (RP) / Verifier must fulfil
+for its OpenID4VP Authorization Requests to be accepted by the EUDI Android Wallet.</p>
+<hr>
+<h2 id="table-of-contents"><a class="header" href="#table-of-contents">Table of Contents</a></h2>
+<ol>
+<li><a href="#1-jose-and-x5c--technical-background">JOSE and X5C – Technical Background</a></li>
+<li><a href="#2-supported-client-identifier-schemes">Supported Client Identifier Schemes</a></li>
+<li><a href="#3-x509_san_dns-vs-x509_san_hash">x509_san_dns vs x509_san_hash</a></li>
+<li><a href="#4-x509-certificate-profile">X.509 Certificate Profile</a></li>
+<li><a href="#5-trust-anchor-configuration-in-the-wallet">Trust Anchor Configuration in the Wallet</a></li>
+<li><a href="#6-same-device-flow">Same-Device Flow</a></li>
+<li><a href="#7-cross-device-openid4vp-flow">Cross-Device OpenID4VP Flow</a></li>
+<li><a href="#8-cross-device-proximity-flow-iso-18013-5-blenfc">Cross-Device Proximity Flow (ISO 18013-5 BLE/NFC)</a></li>
+<li><a href="#9-credential-format-requirements">Credential Format Requirements</a></li>
+<li><a href="#10-credential-revocation-behaviour">Credential Revocation Behaviour</a></li>
+<li><a href="#11-summary-of-hard-requirements">Summary of Hard Requirements</a></li>
+<li><a href="#12-common-error-messages-and-their-causes">Common Error Messages and Their Causes</a></li>
+<li><a href="#13-known-limitations-and-github-issues">Known Limitations and GitHub Issues</a></li>
+<li><a href="#14-glossary">Glossary</a></li>
+<li><a href="#15-reference-specifications">Reference Specifications</a></li>
+</ol>
+<hr>
+<h2 id="1-jose-and-x5c--technical-background"><a class="header" href="#1-jose-and-x5c--technical-background">1. JOSE and X5C – Technical Background</a></h2>
+<h3 id="11-json-object-signing-and-encryption-jose"><a class="header" href="#11-json-object-signing-and-encryption-jose">1.1 JSON Object Signing and Encryption (JOSE)</a></h3>
+<p><a href="https://datatracker.ietf.org/doc/html/rfc7165">JOSE</a> is the umbrella term for a family of IETF
+standards that define how to represent content protected by integrity, encryption, and key operations
+using JSON-based data structures.  The four core RFCs are:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Standard</th><th>RFC</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>JWS</strong> – JSON Web Signature</td><td><a href="https://www.rfc-editor.org/rfc/rfc7515">RFC 7515</a></td><td>Represent signed content. Defines Compact, JSON Flattened, and JSON General serialisations.</td></tr>
+<tr><td><strong>JWE</strong> – JSON Web Encryption</td><td><a href="https://www.rfc-editor.org/rfc/rfc7516">RFC 7516</a></td><td>Represent encrypted content.</td></tr>
+<tr><td><strong>JWK</strong> – JSON Web Key</td><td><a href="https://www.rfc-editor.org/rfc/rfc7517">RFC 7517</a></td><td>Represent cryptographic keys as JSON.</td></tr>
+<tr><td><strong>JWT</strong> – JSON Web Token</td><td><a href="https://www.rfc-editor.org/rfc/rfc7519">RFC 7519</a></td><td>Claims-based tokens as a JWS (or JWE) payload.</td></tr>
+<tr><td><strong>JWA</strong> – JSON Web Algorithms</td><td><a href="https://www.rfc-editor.org/rfc/rfc7518">RFC 7518</a></td><td>Registry of algorithms usable with JOSE (e.g. <code>ES256</code>).</td></tr>
+</tbody>
+</table>
+</div>
+<p>An OpenID4VP <strong>Request Object</strong> is a JWT, i.e. a signed token whose header specifies the algorithm
+and key material (<code>x5c</code>), and whose payload carries the OpenID4VP claims (<code>client_id</code>,
+<code>presentation_definition</code>, <code>nonce</code>, etc.).</p>
+<h3 id="12-the-x5c-jose-header-parameter"><a class="header" href="#12-the-x5c-jose-header-parameter">1.2 The <code>x5c</code> JOSE Header Parameter</a></h3>
+<p>Defined in <a href="https://www.rfc-editor.org/rfc/rfc7515#section-4.1.6">RFC 7515 §4.1.6</a>, the <code>x5c</code>
+parameter contains the X.509 certificate chain whose <em>leaf</em> certificate holds the public key used to
+verify the JWT’s signature.</p>
+<pre><code class="language-text">JOSE Header
+{
+  "alg": "ES256",                      ← signing algorithm
+  "typ": "oauth-authz-req+jwt",        ← media type
+  "x5c": [
+    "&lt;base64(DER(leaf certificate))&gt;", ← [0] leaf – public key for sig verification
+    "&lt;base64(DER(intermediate CA))&gt;",  ← [1] optional intermediate(s)
+    "&lt;base64(DER(root CA))&gt;"           ← [2] root (recommended, not strictly required by RFC)
+  ]
+}
+</code></pre>
+<p><strong>Why does the wallet require <code>x5c</code>?</strong></p>
+<p>The HAIP profile mandates that the RP authenticates itself through an X.509 certificate chain
+embedded in <code>x5c</code>, rather than a pre-registered key.  The wallet uses the <code>x5c</code> chain to:</p>
+<ol>
+<li><strong>Verify the JWT signature</strong> using the public key in <code>x5c[0]</code> (the leaf certificate).</li>
+<li><strong>Establish RP identity</strong> – either by matching the leaf’s DNS Subject Alternative Name against
+<code>client_id</code> (<code>x509_san_dns</code>) or by matching a SHA-256 hash of the leaf against <code>client_id</code>
+(<code>x509_san_hash</code>).</li>
+<li><strong>Validate certificate chain trust</strong> using the wallet’s configured trust store
+(<code>configureReaderTrustStore</code>).</li>
+<li><strong>Enforce ISO 18013-5 certificate profile rules</strong> via <code>ProfileValidation</code> (see <a href="#4-x509-certificate-profile">Section 4</a>).</li>
+</ol>
+<h3 id="13-jar--jwt-secured-authorization-request"><a class="header" href="#13-jar--jwt-secured-authorization-request">1.3 JAR – JWT-Secured Authorization Request</a></h3>
+<p>The Request Object is specifically a <strong>JAR</strong> (<a href="https://www.rfc-editor.org/rfc/rfc9101">RFC 9101</a>),
+i.e. a JWT that contains all the parameters of an OAuth 2.0 / OpenID Authorization Request.  The
+wallet fetches the JAR from <code>request_uri</code> (a URL reference pattern) or receives it inline in the
+<code>request</code> parameter.  Unsigned (plain JSON) requests are <strong>rejected</strong>.</p>
+<hr>
+<h2 id="2-supported-client-identifier-schemes"><a class="header" href="#2-supported-client-identifier-schemes">2. Supported Client Identifier Schemes</a></h2>
+<p>The wallet is configured in <code>WalletCoreConfigImpl</code> as follows (both <code>demo</code> and <code>dev</code> flavours):</p>
+<pre><code class="language-kotlin">configureOpenId4Vp {
+    withClientIdSchemes(
+        listOf(
+            ClientIdScheme.X509SanDns,  // "x509_san_dns"
+            ClientIdScheme.X509Hash     // "x509_san_hash"
+        )
+    )
+    withSchemes(listOf(
+        BuildConfig.OPENID4VP_SCHEME,       // "openid4vp"
+        BuildConfig.EUDI_OPENID4VP_SCHEME,  // "eudi-openid4vp"
+        BuildConfig.MDOC_OPENID4VP_SCHEME,  // "mdoc-openid4vp"
+        BuildConfig.HAIP_OPENID4VP_SCHEME   // "haip-vp"
+    ))
+    withFormats(Format.MsoMdoc.ES256, Format.SdJwtVc.ES256)
+}
+</code></pre>
+<p>The <code>Preregistered</code> scheme is supported at the library level but requires a static verifier entry in
+the wallet build — it is <strong>not enabled in production</strong>.</p>
+<hr>
+<h2 id="3-x509_san_dns-vs-x509_san_hash"><a class="header" href="#3-x509_san_dns-vs-x509_san_hash">3. x509_san_dns vs x509_san_hash</a></h2>
+<p>Both schemes embed the signing certificate chain in <code>x5c</code> and require the same X.509 profile.
+The difference is <strong>how the wallet resolves and trusts the RP’s identity</strong>.</p>
+<h3 id="31-x509_san_dns"><a class="header" href="#31-x509_san_dns">3.1 <code>x509_san_dns</code></a></h3>
+<pre><code>client_id = "x509_san_dns:&lt;hostname&gt;"
+</code></pre>
+<ul>
+<li><strong>Trust mechanism — CA-based.</strong>  The wallet validates the <code>x5c</code> chain against the trust anchors
+in <code>ReaderTrustStore</code> (<code>configureReaderTrustStore</code>).</li>
+<li><strong>Identity binding.</strong>  The wallet verifies that the hostname embedded in <code>client_id</code> appears as a
+<strong>DNS Subject Alternative Name (SAN)</strong> in the leaf certificate (<code>x5c[0]</code>).</li>
+<li><strong>Implications:</strong>
+<ul>
+<li>The CA root certificate must be bundled in the wallet APK at build time.</li>
+<li>The RP hostname must be resolvable from the Android device.</li>
+<li>Certificate rotation is transparent — the CA trust persists as long as the same CA signs the new certificate.</li>
+<li>Ideal for <strong>production deployments</strong> with a well-known CA.</li>
+</ul>
+</li>
+</ul>
+<h3 id="32-x509_san_hash"><a class="header" href="#32-x509_san_hash">3.2 <code>x509_san_hash</code></a></h3>
+<pre><code>client_id = "x509_san_hash:&lt;base64url(SHA-256(DER-encoded leaf certificate))&gt;"
+</code></pre>
+<ul>
+<li><strong>Trust mechanism — certificate pinning.</strong>  The wallet computes SHA-256 of the DER-encoded leaf
+certificate in <code>x5c[0]</code> and checks it matches the hash in <code>client_id</code>.  No CA lookup is performed
+for identity binding.</li>
+<li><strong>Identity binding.</strong>  The <code>client_id</code> <em>is</em> the fingerprint.  Possession of the matching private
+key proves identity.</li>
+<li><strong>Implications:</strong>
+<ul>
+<li>No CA certificate needs to be in <code>ReaderTrustStore</code> for the hash check itself (the chain must
+still be validated per <a href="#5-trust-anchor-configuration-in-the-wallet">Section 5</a>).</li>
+<li>No hostname matching is required.</li>
+<li>The <code>client_id</code> must be recomputed on every certificate rotation.</li>
+<li>Ideal for <strong>local/dev environments</strong> with self-signed certificates.</li>
+</ul>
+</li>
+</ul>
+<h3 id="33-side-by-side-comparison"><a class="header" href="#33-side-by-side-comparison">3.3 Side-by-side comparison</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Property</th><th><code>x509_san_dns</code></th><th><code>x509_san_hash</code></th></tr>
+</thead>
+<tbody>
+<tr><td>Trust root</td><td>CA in <code>ReaderTrustStore</code></td><td>SHA-256 fingerprint of leaf cert</td></tr>
+<tr><td><code>client_id</code> content</td><td>hostname (matches DNS SAN)</td><td><code>base64url(SHA-256(DER leaf))</code></td></tr>
+<tr><td>Certificate rotation</td><td>Transparent</td><td>Requires new <code>client_id</code></td></tr>
+<tr><td>Pre-bundled CA required</td><td><strong>Yes</strong></td><td>No (still needed for chain validation — see §5)</td></tr>
+<tr><td>Hostname verification</td><td><strong>Yes</strong> (DNS SAN must match)</td><td>No</td></tr>
+<tr><td>Works with self-signed / private-CA certs</td><td>Limited</td><td><strong>Yes</strong></td></tr>
+<tr><td>Good for production</td><td><strong>Yes</strong></td><td>Less convenient</td></tr>
+<tr><td>Good for local dev / local network</td><td>Limited</td><td><strong>Yes</strong></td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p><strong>Practical rule:</strong> use <code>x509_san_dns</code> in production with a well-known CA, and <code>x509_san_hash</code> in
+development / local-network environments.</p>
+</blockquote>
+<hr>
+<h2 id="4-x509-certificate-profile"><a class="header" href="#4-x509-certificate-profile">4. X.509 Certificate Profile</a></h2>
+<p>The leaf certificate (<code>x5c[0]</code>) is validated by two independent layers:</p>
+<ol>
+<li><strong>JAR/JWS layer</strong> — signature verification using the public key in the leaf cert.</li>
+<li><strong>ISO 18013-5 <code>ProfileValidation</code> layer</strong> — invoked through <code>ReaderTrustStore</code>.  This is the
+source of most <code>Untrusted x5c</code> errors.</li>
+</ol>
+<h3 id="41-mandatory-extensions"><a class="header" href="#41-mandatory-extensions">4.1 Mandatory Extensions</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Extension</th><th>Requirement</th></tr>
+</thead>
+<tbody>
+<tr><td>Subject Key Identifier (SKI)</td><td><strong>Must be present</strong></td></tr>
+<tr><td>Authority Key Identifier (AKI)</td><td><strong>Must be present</strong> and must reference the issuer’s SKI</td></tr>
+<tr><td>Common Name (<code>CN</code>)</td><td><strong>Must be present</strong> in the Subject (used as the displayed verifier name in the UI)</td></tr>
+<tr><td>Key Usage</td><td><strong>Must include <code>digitalSignature</code></strong></td></tr>
+<tr><td>Extended Key Usage</td><td><strong>Must include OID <code>1.0.18013.5.1.6</code></strong> (<code>mdlReaderAuth</code>)</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="42-prohibited-critical-extensions"><a class="header" href="#42-prohibited-critical-extensions">4.2 Prohibited Critical Extensions</a></h3>
+<p>The following extensions <strong>must not be marked critical</strong>:</p>
+<ul>
+<li><code>policyMappings</code></li>
+<li><code>nameConstraints</code></li>
+<li><code>policyConstraints</code></li>
+<li><code>inhibitAnyPolicy</code></li>
+<li><code>freshestCRL</code></li>
+</ul>
+<h3 id="43-signature-algorithm"><a class="header" href="#43-signature-algorithm">4.3 Signature Algorithm</a></h3>
+<p>The certificate <strong>must be signed</strong> with one of:</p>
+<ul>
+<li><code>ecdsa-with-SHA256</code></li>
+<li><code>ecdsa-with-SHA384</code></li>
+<li><code>ecdsa-with-SHA512</code></li>
+</ul>
+<p>RSA signature algorithms are <strong>not supported</strong>.</p>
+<h3 id="44-validity-period"><a class="header" href="#44-validity-period">4.4 Validity Period</a></h3>
+<p>The validity period of the leaf certificate <strong>must not exceed 1 187 days</strong> (~3.25 years).</p>
+<h3 id="45-chain-requirements"><a class="header" href="#45-chain-requirements">4.5 Chain Requirements</a></h3>
+<ul>
+<li>The <code>x5c</code> array must contain the chain <strong>leaf first</strong>.</li>
+<li>Including intermediate certificates is strongly recommended.</li>
+<li>The root CA must be resolvable either from <code>x5c</code> itself or from <code>ReaderTrustStore</code>.  In practice,
+include the root in <code>x5c</code>.</li>
+</ul>
+<h3 id="46-summary-openssl-extensions-block"><a class="header" href="#46-summary-openssl-extensions-block">4.6 Summary OpenSSL Extensions Block</a></h3>
+<pre><code class="language-ini">[ reader_leaf ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+keyUsage               = critical, digitalSignature
+extendedKeyUsage       = 1.0.18013.5.1.6   # mdlReaderAuth — MANDATORY
+basicConstraints       = CA:FALSE
+# validity ≤ 1187 days; signature algorithm must be ECDSA
+</code></pre>
+<blockquote>
+<p>⚠️ <strong>The <code>mdlReaderAuth</code> OID (<code>1.0.18013.5.1.6</code>) is the most common omission</strong> causing
+<code>InvalidJarJwt(cause=Untrusted x5c)</code>.  See
+<a href="https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core/issues/247">eudi-lib-android-wallet-core#247</a>.</p>
+</blockquote>
+<hr>
+<h2 id="5-trust-anchor-configuration-in-the-wallet"><a class="header" href="#5-trust-anchor-configuration-in-the-wallet">5. Trust Anchor Configuration in the Wallet</a></h2>
+<p><code>ReaderTrustStore</code> is configured in <code>WalletCoreConfigImpl</code>:</p>
+<pre><code class="language-kotlin">configureReaderTrustStore(
+    context,
+    R.raw.pidissuerca02_cz,
+    R.raw.pidissuerca02_ee,
+    R.raw.pidissuerca02_eu,
+    R.raw.pidissuerca02_lu,
+    R.raw.pidissuerca02_nl,
+    R.raw.pidissuerca02_pt,
+    R.raw.pidissuerca02_ut,
+    R.raw.dc4eu,
+    R.raw.r45_staging
+)
+</code></pre>
+<p><strong>Key facts:</strong></p>
+<ul>
+<li>Only the <strong>root CA</strong> certificate needs to be in <code>ReaderTrustStore</code>; intermediates may be in <code>x5c</code>.</li>
+<li><code>ReaderTrustStore</code> is <strong>shared</strong> between the proximity BLE path and the OpenID4VP remote path.
+Because the proximity path enforces the ISO 18013-5 profile (including <code>mdlReaderAuth</code> OID), this
+OID is <strong>also enforced for remote OpenID4VP</strong> in current releases.</li>
+<li><code>ReaderTrustStore</code> is initialised once at startup.  A rebuild is required to add a new PEM file.</li>
+<li>The wallet’s Ktor <code>HttpClient</code> uses the <strong>Android system CA trust store</strong> for TLS — this is a
+separate mechanism from <code>ReaderTrustStore</code>.  A certificate valid for <code>ReaderTrustStore</code> does NOT
+automatically work for TLS (and vice versa).</li>
+</ul>
+<hr>
+<h2 id="6-same-device-flow"><a class="header" href="#6-same-device-flow">6. Same-Device Flow</a></h2>
+<h3 id="61-overview"><a class="header" href="#61-overview">6.1 Overview</a></h3>
+<p>In the same-device flow the RP website and the wallet run on the <strong>same Android device</strong>.  The RP
+triggers the wallet via a deep link (Android Intent URI) using one of the registered URI schemes.
+The wallet processes the request, collects user consent, and POSTs the VP Token directly to the RP’s
+<code>response_uri</code>.  If the RP returns a <code>redirect_uri</code> in its response body, the wallet navigates to it
+after the presentation, returning control to the RP’s app or browser tab.</p>
+<h3 id="62-sequence-diagram"><a class="header" href="#62-sequence-diagram">6.2 Sequence Diagram</a></h3>
+<pre class="mermaid">sequenceDiagram
+    participant Browser as RP Web Page (Same Device)
+    participant OS as Android OS / Intent System
+    participant Wallet as EUDI Wallet App
+    participant RPServer as RP Backend Server
+
+    Browser-&gt;&gt;RPServer: POST /authorize (initiate presentation)
+    RPServer--&gt;&gt;Browser: { request_uri, deep_link_uri }
+
+    Browser-&gt;&gt;OS: Trigger deep link&lt;br/&gt;haip-vp://?client_id=rp.example.com&lt;br/&gt;&amp;client_id_scheme=x509_san_dns&lt;br/&gt;&amp;request_uri=https://rp.example.com/req/abc
+
+    OS-&gt;&gt;Wallet: Launch wallet with deep link URI
+
+    Wallet-&gt;&gt;RPServer: GET https://rp.example.com/req/abc
+    RPServer--&gt;&gt;Wallet: Signed Request Object JWT (JAR)
+
+    Wallet-&gt;&gt;Wallet: Validate JWT signature (ES256)&lt;br/&gt;Verify x5c chain vs ReaderTrustStore&lt;br/&gt;Check client_id == cert DNS SAN&lt;br/&gt;Enforce ProfileValidation (mdlReaderAuth OID)
+
+    Wallet-&gt;&gt;Wallet: Show consent screen&lt;br/&gt;(verifier name from CN, trusted badge if isVerified)
+    Wallet-&gt;&gt;Wallet: User approves + biometric confirmation
+
+    Wallet-&gt;&gt;RPServer: POST https://rp.example.com/response&lt;br/&gt;{ vp_token, presentation_submission, state }
+    RPServer--&gt;&gt;Wallet: 200 OK { "redirect_uri": "haip-vp://callback?response_code=xyz" }
+
+    Wallet-&gt;&gt;OS: Open redirect_uri (Intent)
+    OS-&gt;&gt;Browser: Return to RP web page / app
+</pre>
+
+<h3 id="63-uri-scheme-requirements"><a class="header" href="#63-uri-scheme-requirements">6.3 URI Scheme Requirements</a></h3>
+<p>The wallet registers Android intent filters for the following URI schemes.  The RP <strong>MUST</strong> use one
+of them to trigger the wallet:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>URI Scheme</th><th>Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td><code>haip-vp://</code></td><td>HAIP-specific OpenID4VP (recommended for HAIP-compliant RPs)</td></tr>
+<tr><td><code>openid4vp://</code></td><td>Standard OpenID4VP scheme</td></tr>
+<tr><td><code>eudi-openid4vp://</code></td><td>EUDI-specific OpenID4VP scheme</td></tr>
+<tr><td><code>mdoc-openid4vp://</code></td><td>mDoc-specific OpenID4VP scheme</td></tr>
+</tbody>
+</table>
+</div>
+<p>The host component is treated as a wildcard (<code>*</code>) — the wallet accepts any host for these schemes.</p>
+<p><strong>Example deep-link URI:</strong></p>
+<pre><code>haip-vp://?client_id=rp.example.com
+          &amp;client_id_scheme=x509_san_dns
+          &amp;request_uri=https%3A%2F%2Frp.example.com%2Frequest%2Fabc123
+</code></pre>
+<p>For scalability, use <code>request_uri</code> by reference — embedding the full Request Object JWT in the URI
+bloats it.</p>
+<h3 id="64-authorization-request-parameters"><a class="header" href="#64-authorization-request-parameters">6.4 Authorization Request Parameters</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Parameter</th><th>Requirement</th></tr>
+</thead>
+<tbody>
+<tr><td><code>client_id</code></td><td><strong>REQUIRED.</strong> For <code>x509_san_dns</code>: exact DNS hostname matching the SAN of the leaf cert in <code>x5c</code>. For <code>x509_san_hash</code>: <code>base64url(SHA-256(DER(leaf_cert)))</code>.</td></tr>
+<tr><td><code>client_id_scheme</code></td><td><strong>REQUIRED.</strong> MUST be <code>x509_san_dns</code> or <code>x509_san_hash</code>.</td></tr>
+<tr><td><code>request_uri</code></td><td><strong>STRONGLY RECOMMENDED.</strong> URL from which the wallet fetches the signed Request Object. MUST use <code>https://</code>.</td></tr>
+<tr><td><code>request</code></td><td>Alternative to <code>request_uri</code>. JWT by value. Same signing requirements.</td></tr>
+<tr><td><code>response_type</code></td><td><strong>REQUIRED.</strong> MUST be <code>vp_token</code>.</td></tr>
+<tr><td><code>response_mode</code></td><td><strong>REQUIRED.</strong> MUST be <code>direct_post</code> or <code>direct_post.jwt</code>.</td></tr>
+<tr><td><code>response_uri</code></td><td><strong>REQUIRED</strong> when <code>response_mode</code> is <code>direct_post</code>. HTTPS endpoint for the VP Token POST.</td></tr>
+<tr><td><code>nonce</code></td><td><strong>REQUIRED.</strong> Cryptographically random, single-use.</td></tr>
+<tr><td><code>state</code></td><td>RECOMMENDED. Opaque value for session correlation.</td></tr>
+<tr><td><code>presentation_definition</code></td><td>REQUIRED (unless using <code>dcql_query</code>).</td></tr>
+<tr><td><code>dcql_query</code></td><td>REQUIRED (alternative to <code>presentation_definition</code>).</td></tr>
+</tbody>
+</table>
+</div>
+<blockquote>
+<p>⚠️ <strong>HAIP requirement:</strong> The <code>request_uri</code> endpoint MUST return a signed JAR.  Unsigned JSON is rejected.</p>
+</blockquote>
+<h3 id="65-request-object-signing-requirements"><a class="header" href="#65-request-object-signing-requirements">6.5 Request Object Signing Requirements</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Property</th><th>Requirement</th></tr>
+</thead>
+<tbody>
+<tr><td><code>alg</code> (JOSE header)</td><td><strong>MUST be <code>ES256</code></strong> (ECDSA P-256). All other algorithms are rejected.</td></tr>
+<tr><td><code>x5c</code> (JOSE header)</td><td><strong>REQUIRED.</strong> Array: <code>[leaf_DER_base64, intermediate_DER_base64?, root_DER_base64?]</code></td></tr>
+<tr><td><code>kid</code> (JOSE header)</td><td>OPTIONAL. If present, must identify the leaf certificate.</td></tr>
+<tr><td><code>iss</code> (JWT claim)</td><td>MUST equal <code>client_id</code>.</td></tr>
+<tr><td><code>aud</code> (JWT claim)</td><td>SHOULD be the wallet identifier or omitted.</td></tr>
+<tr><td><code>exp</code> (JWT claim)</td><td><strong>REQUIRED.</strong> Request Object must have an expiry time.</td></tr>
+<tr><td><code>iat</code> (JWT claim)</td><td><strong>REQUIRED.</strong> Issuance time.</td></tr>
+<tr><td><code>nonce</code> (JWT claim)</td><td><strong>REQUIRED.</strong> Same value as the <code>nonce</code> query parameter.</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="66-tls--transport-security-requirements"><a class="header" href="#66-tls--transport-security-requirements">6.6 TLS / Transport Security Requirements</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Endpoint</th><th>TLS Requirement</th></tr>
+</thead>
+<tbody>
+<tr><td><code>request_uri</code> endpoint</td><td>Valid TLS certificate from a <strong>publicly-trusted CA</strong> (Android system store). TLS 1.2 min; TLS 1.3 recommended.</td></tr>
+<tr><td><code>response_uri</code> endpoint</td><td>Valid TLS certificate from a <strong>publicly-trusted CA</strong>.</td></tr>
+<tr><td>Any server the wallet connects to</td><td>No self-signed certificates; no private/internal CAs (unless wallet is reconfigured).</td></tr>
+</tbody>
+</table>
+</div>
+<p>The wallet’s Ktor <code>HttpClient</code> uses the unmodified Android TLS stack (<code>NetworkModule.kt</code>).
+Connections to servers with self-signed or privately-rooted TLS certificates fail at the TLS layer.
+The wiki (<code>how_to_build.md</code>) documents a trust-all workaround for development using
+<code>ClientIdScheme.Preregistered</code>.</p>
+<h3 id="67-credential--presentation-definition-requirements"><a class="header" href="#67-credential--presentation-definition-requirements">6.7 Credential / Presentation Definition Requirements</a></h3>
+<h4 id="mso-mdoc-iso-18013-5"><a class="header" href="#mso-mdoc-iso-18013-5">MSO mDOC (ISO 18013-5)</a></h4>
+<p>Use <code>presentation_definition</code> with <code>format.mso_mdoc</code> or a DCQL query.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>DocType</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>eu.europa.ec.eudi.pid.1</code></td><td>EUDI Person Identification Data (PID)</td></tr>
+<tr><td><code>org.iso.18013.5.1.mDL</code></td><td>Mobile Driving Licence</td></tr>
+<tr><td><code>org.iso.23220.2.photoid.1</code></td><td>Photo ID</td></tr>
+<tr><td><code>org.iso.23220.photoID.1</code></td><td>Photo ID (alternative)</td></tr>
+<tr><td><code>eu.europa.ec.eudi.tax.1</code></td><td>Tax document</td></tr>
+<tr><td><code>eu.europa.ec.eudi.iban.1</code></td><td>IBAN</td></tr>
+<tr><td><code>eu.europa.ec.eudi.hiid.1</code></td><td>Health Insurance ID</td></tr>
+<tr><td><code>eu.europa.ec.eudi.ehic.1</code></td><td>European Health Insurance Card</td></tr>
+<tr><td><code>eu.europa.ec.eudi.pda1.1</code></td><td>Portable Document A1</td></tr>
+<tr><td><code>eu.europa.ec.eudi.por.1</code></td><td>Power of Representation</td></tr>
+<tr><td><code>eu.europa.ec.eudi.msisdn.1</code></td><td>MSISDN</td></tr>
+</tbody>
+</table>
+</div>
+<h4 id="sd-jwt-vc"><a class="header" href="#sd-jwt-vc">SD-JWT VC</a></h4>
+<p>Use <code>presentation_definition</code> with <code>format.vc+sd-jwt</code> or a DCQL query.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>VCT</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>urn:eudi:pid:1</code></td><td>EUDI PID – SD-JWT VC format</td></tr>
+<tr><td><code>urn:eu.europa.ec.eudi:tax:1</code></td><td>Tax document</td></tr>
+<tr><td><code>urn:eu.europa.ec.eudi:iban:1</code></td><td>IBAN</td></tr>
+<tr><td><code>urn:eu.europa.ec.eudi:hiid:1</code></td><td>Health Insurance ID</td></tr>
+<tr><td><code>urn:eu.europa.ec.eudi:ehic:1</code></td><td>European Health Insurance Card</td></tr>
+<tr><td><code>urn:eu.europa.ec.eudi:pda1:1</code></td><td>Portable Document A1</td></tr>
+<tr><td><code>urn:eu.europa.ec.eudi:por:1</code></td><td>Power of Representation</td></tr>
+<tr><td><code>urn:eu.europa.ec.eudi:msisdn:1</code></td><td>MSISDN</td></tr>
+<tr><td><code>urn:eu.europa.ec.eudi:pseudonym_age_over_18:1</code></td><td>Age-over-18 pseudonym</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="68-response-endpoint-requirements"><a class="header" href="#68-response-endpoint-requirements">6.8 Response Endpoint Requirements</a></h3>
+<p>The wallet POSTs the VP Token as <code>application/x-www-form-urlencoded</code> to <code>response_uri</code>.</p>
+<ul>
+<li>MUST be an <code>https://</code> URL.</li>
+<li>MUST accept POST bodies containing:
+<ul>
+<li><code>vp_token</code> — VP Token (mDoc DeviceResponse as base64url CBOR, or SD-JWT VC string).</li>
+<li><code>presentation_submission</code> — PresentationSubmission JSON object.</li>
+<li><code>state</code> — if provided in the original request, echoed back.</li>
+</ul>
+</li>
+<li>MUST respond with HTTP 200 OK.</li>
+<li>MAY include a JSON body with <code>redirect_uri</code> for same-device return:
+<pre><code class="language-json">{ "redirect_uri": "haip-vp://callback?response_code=abc" }
+</code></pre>
+</li>
+<li>MUST NOT use 301/302 redirects.</li>
+</ul>
+<h3 id="69-redirect-uri-requirements"><a class="header" href="#69-redirect-uri-requirements">6.9 Redirect URI Requirements</a></h3>
+<p>After posting the VP Token, the wallet follows the <code>redirect_uri</code> returned by the RP:</p>
+<ul>
+<li>MUST be a URI the Android OS can route (typically <code>https://</code> App Link or custom URI scheme).</li>
+<li>MUST NOT be a <code>javascript:</code> URI.</li>
+<li>The wallet opens the URI via Android Intent; unresolvable URIs are silently absorbed.</li>
+<li>The <code>redirect_uri</code> and verifier name (from leaf cert <code>CN</code>) are shown on the success screen.</li>
+</ul>
+<h3 id="610-verifier-trust-indication"><a class="header" href="#610-verifier-trust-indication">6.10 Verifier Trust Indication</a></h3>
+<p>The wallet displays a <strong>verified badge</strong> when the RP’s certificate chain validates:</p>
+<pre><code class="language-kotlin">val isTrusted = requestedDocuments.requestedDocuments
+    .firstOrNull()?.readerAuth?.isVerified == true
+verifierIsTrusted = isTrusted
+</code></pre>
+<p>The verifier name comes from <code>readerAuth.readerCommonName</code> (the <code>CN</code> of the leaf certificate).
+An unverifiable RP shows an <em>unverified</em> warning; the user can still consent.</p>
+<hr>
+<h2 id="7-cross-device-openid4vp-flow"><a class="header" href="#7-cross-device-openid4vp-flow">7. Cross-Device OpenID4VP Flow</a></h2>
+<h3 id="71-overview"><a class="header" href="#71-overview">7.1 Overview</a></h3>
+<p>The RP is on a <strong>different device</strong> (desktop browser, web kiosk) while the wallet is on the user’s
+phone.  The RP renders a QR code.  The user scans it with the wallet.  The wallet fetches the
+Request Object over HTTPS, collects consent, and POSTs the VP Token to <code>response_uri</code>.
+There is <strong>no redirect_uri</strong> in the cross-device variant.</p>
+<h3 id="72-sequence-diagram"><a class="header" href="#72-sequence-diagram">7.2 Sequence Diagram</a></h3>
+<pre class="mermaid">sequenceDiagram
+    participant Desktop as RP Desktop Browser
+    participant RPServer as RP Backend Server
+    participant Wallet as EUDI Wallet (Android)
+
+    Desktop-&gt;&gt;RPServer: POST /authorize (initiate presentation)
+    RPServer--&gt;&gt;Desktop: { request_uri, qr_content }
+    Desktop-&gt;&gt;Desktop: Render QR Code encoding Authorization Request URI
+
+    Note over Wallet: User scans QR code with wallet
+
+    Wallet-&gt;&gt;Wallet: Parse scanned URI&lt;br/&gt;e.g. haip-vp://?client_id=rp.example.com&lt;br/&gt;&amp;client_id_scheme=x509_san_dns&lt;br/&gt;&amp;request_uri=https://rp.example.com/req/xyz
+
+    Wallet-&gt;&gt;RPServer: GET https://rp.example.com/req/xyz
+    RPServer--&gt;&gt;Wallet: Signed Request Object JWT (JAR)
+
+    Wallet-&gt;&gt;Wallet: Validate JWT (ES256)&lt;br/&gt;Verify x5c chain vs ReaderTrustStore&lt;br/&gt;Check client_id == cert DNS SAN&lt;br/&gt;Enforce mdlReaderAuth OID
+    Wallet-&gt;&gt;Wallet: Show consent screen
+    Wallet-&gt;&gt;Wallet: User approves + biometric confirmation
+
+    Wallet-&gt;&gt;RPServer: POST https://rp.example.com/response&lt;br/&gt;{ vp_token, presentation_submission, state }
+    RPServer--&gt;&gt;Wallet: 200 OK (no redirect_uri in cross-device)
+
+    RPServer-&gt;&gt;Desktop: WebSocket / SSE / polling: presentation verified
+    Desktop-&gt;&gt;Desktop: Show success / grant access
+</pre>
+
+<h3 id="73-qr-code-requirements"><a class="header" href="#73-qr-code-requirements">7.3 QR Code Requirements</a></h3>
+<ul>
+<li>The QR code MUST encode a URI using a wallet-registered scheme:
+<code>haip-vp</code>, <code>openid4vp</code>, <code>eudi-openid4vp</code>, or <code>mdoc-openid4vp</code>.</li>
+<li>Use <code>request_uri</code> by reference (not inline JWT — too large for reliable QR scanning).</li>
+<li>Minimum QR code size: 200 × 200 px; higher recommended.</li>
+<li>Regenerate QR code per session (new <code>nonce</code> and <code>request_uri</code>) to prevent replay.</li>
+</ul>
+<p><strong>Example QR content:</strong></p>
+<pre><code>haip-vp://?client_id=rp.example.com
+          &amp;client_id_scheme=x509_san_dns
+          &amp;request_uri=https%3A%2F%2Frp.example.com%2Frequest%2Fxyz789
+          &amp;response_type=vp_token
+          &amp;response_mode=direct_post
+</code></pre>
+<h3 id="74-request_uri-endpoint-requirements"><a class="header" href="#74-request_uri-endpoint-requirements">7.4 <code>request_uri</code> Endpoint Requirements</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Requirement</th><th>Detail</th></tr>
+</thead>
+<tbody>
+<tr><td>Protocol</td><td>MUST be <code>https://</code> with a publicly-trusted TLS certificate</td></tr>
+<tr><td>Content-Type</td><td>MUST be <code>application/oauth-authz-req+jwt</code> or <code>application/jwt</code></td></tr>
+<tr><td>Body</td><td>MUST be a signed Request Object JWT. Plain JSON objects are rejected.</td></tr>
+<tr><td>Authentication</td><td>MUST NOT require authentication from the wallet (unauthenticated GET)</td></tr>
+<tr><td>Single-use</td><td>SHOULD invalidate the URI after first fetch</td></tr>
+<tr><td>TTL</td><td>SHOULD be ≤ 5 minutes on the JWT <code>exp</code> claim</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="75-response-endpoint"><a class="header" href="#75-response-endpoint">7.5 Response Endpoint</a></h3>
+<p>Identical to the same-device response endpoint (<a href="#68-response-endpoint-requirements">§6.8</a>) with one
+difference: <strong>do not return a <code>redirect_uri</code></strong> in the cross-device flow.  Notify the desktop browser
+via WebSocket, Server-Sent Events (SSE), or polling.</p>
+<hr>
+<h2 id="8-cross-device-proximity-flow-iso-18013-5-blenfc"><a class="header" href="#8-cross-device-proximity-flow-iso-18013-5-blenfc">8. Cross-Device Proximity Flow (ISO 18013-5 BLE/NFC)</a></h2>
+<h3 id="81-overview"><a class="header" href="#81-overview">8.1 Overview</a></h3>
+<p>The proximity flow implements <strong>ISO/IEC 18013-5 mDOC presentation</strong> over BLE or NFC.  Key
+difference from the OpenID4VP flows: <strong>the wallet generates the QR code</strong> — not the RP.  The RP
+reader scans the wallet’s QR, connects over BLE, and exchanges data locally.</p>
+<ul>
+<li>Wallet = <strong>mDOC holder device</strong> (BLE peripheral / NFC card emulator).</li>
+<li>RP reader = <strong>mDOC reader device</strong> (BLE central / NFC reader).</li>
+</ul>
+<h3 id="82-sequence-diagram"><a class="header" href="#82-sequence-diagram">8.2 Sequence Diagram</a></h3>
+<pre class="mermaid">sequenceDiagram
+    participant Wallet as EUDI Wallet (Holder Device)
+    participant Reader as RP Reader (Verifier Device)
+
+    Wallet-&gt;&gt;Wallet: User opens Proximity screen
+    Wallet-&gt;&gt;Wallet: EudiWallet.startProximityPresentation()
+    Wallet-&gt;&gt;Wallet: Generate DeviceEngagement CBOR (ISO 18013-5 §8)
+    Wallet-&gt;&gt;Wallet: Render QR Code (DeviceEngagement CBOR)
+
+    Reader-&gt;&gt;Wallet: Scan Wallet QR code (or NFC tap)
+    Reader-&gt;&gt;Reader: Parse DeviceEngagement structure
+    Reader-&gt;&gt;Wallet: BLE connection (mDOC Session Establishment)
+    Wallet-&gt;&gt;Wallet: TransferEvent.Connected
+
+    Reader-&gt;&gt;Wallet: Send mdoc Request&lt;br/&gt;(ReaderAuthentication + requested namespaces)
+    Wallet-&gt;&gt;Wallet: TransferEvent.RequestReceived&lt;br/&gt;Verify ReaderAuth cert chain vs IACA trust store&lt;br/&gt;Extract readerCommonName → verifierIsTrusted
+
+    Wallet-&gt;&gt;Wallet: Show consent screen
+    Wallet-&gt;&gt;Wallet: User approves + biometric confirmation
+
+    Wallet-&gt;&gt;Wallet: Generate DeviceResponse CBOR&lt;br/&gt;(DeviceAuthentication signed with device key)
+    Wallet-&gt;&gt;Reader: Send mdoc Response over BLE
+
+    Reader-&gt;&gt;Reader: Verify DeviceResponse (IssuerSigned + DeviceSigned)
+    Reader-&gt;&gt;Reader: Extract attributes, finalise verification
+
+    Wallet-&gt;&gt;Wallet: TransferEvent.ResponseSent → Success screen
+</pre>
+
+<h3 id="83-device-engagement-qr-code-generated-by-the-wallet"><a class="header" href="#83-device-engagement-qr-code-generated-by-the-wallet">8.3 Device Engagement QR Code (Generated by the Wallet)</a></h3>
+<p>The wallet generates the QR code encoding the <code>DeviceEngagement</code> CBOR per ISO 18013-5 §8.3.1.</p>
+<p>The RP reader MUST:</p>
+<ul>
+<li>Implement ISO 18013-5 QR-code engagement parsing.</li>
+<li>Parse CBOR <code>DeviceEngagement</code> to extract BLE connection parameters.</li>
+<li>Initiate BLE central role and connect to the wallet.</li>
+</ul>
+<p>The wallet also supports <strong>NFC engagement</strong> via <code>NfcEngagementService</code> (HCE).</p>
+<h3 id="84-reader-authentication-requirements"><a class="header" href="#84-reader-authentication-requirements">8.4 Reader Authentication Requirements</a></h3>
+<p>The RP reader MUST include a <code>ReaderAuthentication</code> structure in the mdoc request
+(ISO 18013-5 §9.1.4):</p>
+<pre><code>ReaderAuthentication = [
+  "ReaderAuthentication",
+  SessionTranscript,
+  ItemsRequestBytes
+]
+</code></pre>
+<p>The wallet evaluates <code>readerAuth.isVerified</code>:</p>
+<ul>
+<li>The reader certificate (<code>x5chain</code>) MUST chain to an IACA root in <code>ReaderTrustStore</code>.</li>
+<li>The <code>ReaderAuthentication</code> MUST be signed with <strong>ES256</strong> (ECDSA P-256 + SHA-256).</li>
+<li>The displayed verifier name comes from the <code>CN</code> of the reader certificate’s Subject.</li>
+</ul>
+<h3 id="85-iaca-trust-store-proximity--bundled-pem-files"><a class="header" href="#85-iaca-trust-store-proximity--bundled-pem-files">8.5 IACA Trust Store (Proximity — Bundled PEM Files)</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>File</th><th>Description</th></tr>
+</thead>
+<tbody>
+<tr><td><code>pidissuerca02_cz.pem</code></td><td>PID Issuer CA – Czech Republic</td></tr>
+<tr><td><code>pidissuerca02_ee.pem</code></td><td>PID Issuer CA – Estonia</td></tr>
+<tr><td><code>pidissuerca02_eu.pem</code></td><td>PID Issuer CA – EU (EUDIW)</td></tr>
+<tr><td><code>pidissuerca02_lu.pem</code></td><td>PID Issuer CA – Luxembourg</td></tr>
+<tr><td><code>pidissuerca02_nl.pem</code></td><td>PID Issuer CA – Netherlands</td></tr>
+<tr><td><code>pidissuerca02_pt.pem</code></td><td>PID Issuer CA – Portugal</td></tr>
+<tr><td><code>pidissuerca02_ut.pem</code></td><td>PID Issuer CA – UT (test)</td></tr>
+<tr><td><code>dc4eu.pem</code></td><td>DC4EU root CA</td></tr>
+<tr><td><code>r45_staging.pem</code></td><td>R45 staging root CA</td></tr>
+</tbody>
+</table>
+</div>
+<p>If the reader certificate does <strong>not</strong> chain to one of these roots, <code>verifierIsTrusted = false</code>.
+The wallet still presents the request but the UI shows an <em>unverified</em> warning.</p>
+<h3 id="86-ble-and-nfc-transport-requirements"><a class="header" href="#86-ble-and-nfc-transport-requirements">8.6 BLE and NFC Transport Requirements</a></h3>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Feature</th><th>Requirement</th></tr>
+</thead>
+<tbody>
+<tr><td>BLE</td><td><strong>REQUIRED.</strong> Reader MUST support BLE central role.</td></tr>
+<tr><td>BLE version</td><td>BLE 4.2+; BLE 5.0 recommended.</td></tr>
+<tr><td>NFC</td><td>OPTIONAL. ISO 14443 Type 4 compliant.</td></tr>
+<tr><td>BLE MTU</td><td>SHOULD negotiate ≥ 512 bytes.</td></tr>
+<tr><td>BLE GATT</td><td>MUST implement ISO 18013-5 GATT service and characteristic UUIDs.</td></tr>
+</tbody>
+</table>
+</div>
+<h3 id="87-mdoc-request-structure"><a class="header" href="#87-mdoc-request-structure">8.7 mdoc Request Structure</a></h3>
+<pre><code>SessionData {
+  DeviceRequest {
+    version: "1.0",
+    docRequests: [{
+      itemsRequest: {
+        docType: "eu.europa.ec.eudi.pid.1",
+        nameSpaces: {
+          "eu.europa.ec.eudi.pid.1": {
+            "family_name": false,
+            "given_name":  false,
+            "birth_date":  false
+          }
+        }
+      },
+      readerAuth: {
+        x5chain: [ &lt;DER-encoded reader cert&gt; ],
+        signature: &lt;ES256 over ReaderAuthentication CBOR&gt;
+      }
+    }]
+  }
+}
+</code></pre>
+<hr>
+<h2 id="9-credential-format-requirements"><a class="header" href="#9-credential-format-requirements">9. Credential Format Requirements</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Format</th><th>Encoding</th><th>Signing Algorithm</th><th>Wallet Support</th></tr>
+</thead>
+<tbody>
+<tr><td>MSO mDOC (ISO 18013-5)</td><td>CBOR</td><td>ECDSA P-256 (ES256)</td><td>✅ Full</td></tr>
+<tr><td>SD-JWT VC</td><td>JSON + JWS</td><td>ECDSA P-256 (ES256)</td><td>✅ Full</td></tr>
+</tbody>
+</table>
+</div>
+<p>Only <code>ES256</code> is supported.  Requests specifying <code>RS256</code>, <code>PS256</code>, or <code>EdDSA</code> in <code>vp_formats</code> will
+not match any credential.</p>
+<p><strong>Credential policy:</strong> PID documents are <code>OneTimeUse</code> with 10–60 credentials batched per flavour.
+Each presentation consumes one credential.  The RP MUST NOT expect the same key/certificate in
+multiple presentations.</p>
+<hr>
+<h2 id="10-credential-revocation-behaviour"><a class="header" href="#10-credential-revocation-behaviour">10. Credential Revocation Behaviour</a></h2>
+<p>The wallet checks document status every 15 minutes (configurable via <code>WalletCoreConfig.revocationInterval</code>).</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Status</th><th>Behaviour</th></tr>
+</thead>
+<tbody>
+<tr><td>Valid</td><td>Document available for presentation.</td></tr>
+<tr><td>Invalid (revoked)</td><td>Excluded from consent screen; cannot be presented.</td></tr>
+<tr><td>Suspended</td><td>Excluded from consent screen.</td></tr>
+</tbody>
+</table>
+</div>
+<p>If all matching documents for the requested credential type are revoked, the wallet presents the user
+with a <code>NoData</code> state.  The RP MUST handle VP Token responses where the requested credential is absent.</p>
+<hr>
+<h2 id="11-summary-of-hard-requirements"><a class="header" href="#11-summary-of-hard-requirements">11. Summary of Hard Requirements</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>#</th><th>Requirement</th><th>Flow</th></tr>
+</thead>
+<tbody>
+<tr><td>R1</td><td>RP MUST use URI scheme <code>haip-vp</code>, <code>openid4vp</code>, <code>eudi-openid4vp</code>, or <code>mdoc-openid4vp</code></td><td>Same-device, Cross-device OID4VP</td></tr>
+<tr><td>R2</td><td><code>client_id_scheme</code> MUST be <code>x509_san_dns</code> or <code>x509_san_hash</code></td><td>Same-device, Cross-device OID4VP</td></tr>
+<tr><td>R3</td><td>Request Object MUST be a signed JWT with <code>alg: ES256</code></td><td>Same-device, Cross-device OID4VP</td></tr>
+<tr><td>R4</td><td><code>x5c</code> JOSE header MUST contain the full certificate chain (leaf first)</td><td>Same-device, Cross-device OID4VP</td></tr>
+<tr><td>R5</td><td>For <code>x509_san_dns</code>: <code>client_id</code> MUST exactly match the DNS SAN of the leaf certificate</td><td>Same-device, Cross-device OID4VP</td></tr>
+<tr><td>R6</td><td>Leaf certificate MUST contain Extended Key Usage <code>mdlReaderAuth</code> OID <code>1.0.18013.5.1.6</code></td><td>All OID4VP flows</td></tr>
+<tr><td>R7</td><td>Leaf certificate MUST have valid SKI and AKI (AKI must point to issuer’s SKI)</td><td>All OID4VP flows</td></tr>
+<tr><td>R8</td><td>Leaf certificate MUST include Key Usage <code>digitalSignature</code></td><td>All OID4VP flows</td></tr>
+<tr><td>R9</td><td>Leaf certificate validity period MUST NOT exceed 1 187 days</td><td>All OID4VP flows</td></tr>
+<tr><td>R10</td><td>All RP HTTPS endpoints MUST have publicly-trusted TLS certificates</td><td>All OID4VP flows</td></tr>
+<tr><td>R11</td><td><code>response_mode</code> MUST be <code>direct_post</code> or <code>direct_post.jwt</code></td><td>Same-device, Cross-device OID4VP</td></tr>
+<tr><td>R12</td><td><code>response_uri</code> MUST be an HTTPS endpoint accepting <code>application/x-www-form-urlencoded</code> POST</td><td>Same-device, Cross-device OID4VP</td></tr>
+<tr><td>R13</td><td>Cross-device QR code MUST encode an OpenID4VP URI using a wallet-registered scheme</td><td>Cross-device OID4VP</td></tr>
+<tr><td>R14</td><td>Reader certificate MUST chain to an IACA root in the wallet’s trust store for trusted status</td><td>Proximity BLE</td></tr>
+<tr><td>R15</td><td>Reader MUST sign <code>ReaderAuthentication</code> with ES256</td><td>Proximity BLE</td></tr>
+<tr><td>R16</td><td>Reader MUST implement ISO 18013-5 BLE GATT profile</td><td>Proximity BLE</td></tr>
+<tr><td>R17</td><td>Credential format MUST be MSO mDOC (ES256) or SD-JWT VC (ES256)</td><td>All flows</td></tr>
+<tr><td>R18</td><td><code>nonce</code> MUST be present and single-use</td><td>All OID4VP flows</td></tr>
+<tr><td>R19</td><td>Self-signed TLS or request-signing certificates are NOT accepted in production</td><td>All flows</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="12-common-error-messages-and-their-causes"><a class="header" href="#12-common-error-messages-and-their-causes">12. Common Error Messages and Their Causes</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Error</th><th>Likely Cause</th><th>Fix</th></tr>
+</thead>
+<tbody>
+<tr><td><code>InvalidJarJwt(cause=Untrusted x5c)</code></td><td>Missing <code>mdlReaderAuth</code> OID, missing root CA in <code>ReaderTrustStore</code>, or missing SKI/AKI</td><td>Add OID <code>1.0.18013.5.1.6</code> to leaf cert; add CA to trust store</td></tr>
+<tr><td><code>CertPathValidatorException: Trust anchor not found</code></td><td>Root CA not in <code>ReaderTrustStore</code> and not in <code>x5c</code></td><td>Include root in <code>x5c</code> and/or <code>ReaderTrustStore</code></td></tr>
+<tr><td><code>Field 'vp_formats' is required … but it was missing</code></td><td>OpenID4VP 1.0 <code>client_metadata</code> incomplete</td><td>Add <code>vp_formats</code> to <code>client_metadata</code></td></tr>
+<tr><td><code>InvalidJarJwt(cause=…)</code> with <code>x509_san_dns</code></td><td>DNS SAN in leaf cert does not match <code>client_id</code> hostname</td><td>Ensure leaf cert’s DNS SAN equals <code>client_id</code></td></tr>
+<tr><td>Validity period check failure</td><td>Leaf cert validity &gt; 1 187 days</td><td>Re-issue with <code>-days 1187</code> or shorter</td></tr>
+<tr><td>Signature algorithm mismatch</td><td>Cert signed with RSA</td><td>Use ECDSA P-256/P-384/P-521</td></tr>
+<tr><td>TLS handshake failure</td><td>Private/self-signed TLS cert on RP server</td><td>Use publicly-trusted TLS cert; or trust-all <code>HttpClient</code> for dev</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="13-known-limitations-and-github-issues"><a class="header" href="#13-known-limitations-and-github-issues">13. Known Limitations and GitHub Issues</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Issue</th><th>Description</th><th>Status</th></tr>
+</thead>
+<tbody>
+<tr><td><a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/issues/500">eudi-app-android-wallet-ui#500</a></td><td>TrustStore update with new PEM does not make verifier request trusted</td><td>Closed – resolved by correct cert profile</td></tr>
+<tr><td><a href="https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core/issues/230">eudi-lib-android-wallet-core#230</a></td><td><code>configureReaderTrustStore</code> has no effect / <code>Untrusted x5c</code></td><td>Closed – <code>mdlReaderAuth</code> OID + valid AKI/SKI required</td></tr>
+<tr><td><a href="https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core/issues/247">eudi-lib-android-wallet-core#247</a></td><td><code>ReaderTrustStore</code> shared between proximity and remote VP – <code>mdlReaderAuth</code> OID enforced for all flows</td><td>Open – separate trust stores on the roadmap</td></tr>
+<tr><td><a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/issues/439">eudi-app-android-wallet-ui#439</a></td><td>Wallet incompatible with verifier 0.6.0 (OpenID4VP draft vs 1.0)</td><td>Closed – wallet updated to OpenID4VP 1.0</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="14-glossary"><a class="header" href="#14-glossary">14. Glossary</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Term</th><th>Definition</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>HAIP</strong></td><td>High Assurance Interoperability Profile. A profile of OpenID4VP mandating X.509 certificate-based RP authentication, <code>direct_post</code> response mode, and ES256 signing. Defined by the OpenID Foundation and referenced by the EUDI ARF.</td></tr>
+<tr><td><strong>OpenID4VP</strong></td><td>OpenID for Verifiable Presentations. A protocol built on OAuth 2.0 allowing a Verifier (RP) to request credential presentation from a Wallet.</td></tr>
+<tr><td><strong>JOSE</strong></td><td>JSON Object Signing and Encryption. Umbrella term for RFC 7515 (JWS), RFC 7516 (JWE), RFC 7517 (JWK), RFC 7518 (JWA), RFC 7519 (JWT).</td></tr>
+<tr><td><strong>JWS</strong></td><td>JSON Web Signature (RFC 7515). Defines how to represent signed content, including Compact Serialization (<code>header.payload.signature</code>).</td></tr>
+<tr><td><strong>JWT</strong></td><td>JSON Web Token (RFC 7519). A signed (JWS) or encrypted (JWE) token carrying JSON claims.</td></tr>
+<tr><td><strong>JAR</strong></td><td>JWT-Secured Authorization Request (RFC 9101). An Authorization Request whose parameters are embedded in a signed JWT.</td></tr>
+<tr><td><strong>x5c</strong></td><td>JOSE header parameter (RFC 7515 §4.1.6) containing an X.509 certificate chain (base64-DER, leaf first) used to verify the JWT’s signature.</td></tr>
+<tr><td><strong>client_id</strong></td><td>The identifier of the RP in an OpenID4VP Authorization Request. In HAIP its value is constrained by <code>client_id_scheme</code>.</td></tr>
+<tr><td><strong>client_id_scheme</strong></td><td>Defines how <code>client_id</code> is interpreted. This wallet supports <code>x509_san_dns</code> and <code>x509_san_hash</code>.</td></tr>
+<tr><td><strong>x509_san_dns</strong></td><td>Client ID scheme where the RP’s identity is a DNS name matching the Subject Alternative Name of the leaf cert in <code>x5c</code>.</td></tr>
+<tr><td><strong>x509_san_hash</strong></td><td>Client ID scheme where <code>client_id</code> is <code>base64url(SHA-256(DER(leaf_cert)))</code>. Certificate pinning without CA lookup.</td></tr>
+<tr><td><strong>Request Object</strong></td><td>A signed JWT (JAR) containing all OpenID4VP Authorization Request parameters. Served from <code>request_uri</code>.</td></tr>
+<tr><td><strong>request_uri</strong></td><td>URL from which the wallet fetches the signed Request Object. Keeps the Authorization Request URI (and QR code) compact.</td></tr>
+<tr><td><strong>response_uri</strong></td><td>HTTPS endpoint where the wallet POSTs the VP Token. Used with <code>response_mode: direct_post</code>.</td></tr>
+<tr><td><strong>response_mode</strong></td><td>How the wallet returns the VP Token. <code>direct_post</code> = wallet POSTs to <code>response_uri</code>. <code>direct_post.jwt</code> = encrypted POST.</td></tr>
+<tr><td><strong>VP Token</strong></td><td>Verifiable Presentation Token. The wallet’s response containing disclosed credential attributes signed by the holder’s device key.</td></tr>
+<tr><td><strong>Presentation Definition</strong></td><td>JSON structure (DIF Presentation Exchange) specifying which credential types and attributes the RP requests.</td></tr>
+<tr><td><strong>DCQL</strong></td><td>Digital Credential Query Language. Alternative to Presentation Definition for specifying requested credentials. Part of OpenID4VP.</td></tr>
+<tr><td><strong>MSO mDOC</strong></td><td>Mobile Security Object Mobile Document. Credential format defined by ISO 18013-5. CBOR-encoded.</td></tr>
+<tr><td><strong>SD-JWT VC</strong></td><td>Selective Disclosure JSON Web Token Verifiable Credential. JWT-based credential with selective disclosure.</td></tr>
+<tr><td><strong>ES256</strong></td><td>ECDSA with P-256 and SHA-256. The only signing algorithm supported by this wallet for credential formats and request signing.</td></tr>
+<tr><td><strong>IACA</strong></td><td>Issuer Authority Certificate Authority. Root CA for the mDOC ecosystem. Proximity reader certs must chain to a trusted IACA.</td></tr>
+<tr><td><strong>ReaderAuthentication</strong></td><td>ISO 18013-5 structure signed by the RP reader to prove its identity. Contains session transcript and request bytes.</td></tr>
+<tr><td><strong>DeviceEngagement</strong></td><td>ISO 18013-5 CBOR structure generated by the <strong>wallet</strong> encoding BLE/NFC connection parameters. Displayed as a QR code for the RP to scan in the proximity flow.</td></tr>
+<tr><td><strong>Device Engagement QR</strong></td><td>QR code generated by the wallet (not the RP) in the proximity flow. The RP reader scans it to initiate BLE.</td></tr>
+<tr><td><strong>ReaderTrustStore</strong></td><td>Wallet-side store of trusted CA certificates. Configured via <code>configureReaderTrustStore(…)</code>. Shared between proximity and remote OpenID4VP paths.</td></tr>
+<tr><td><strong>ProfileValidation</strong></td><td>ISO 18013-5 certificate validation logic enforced by <code>ReaderTrustStore</code>. Requires <code>mdlReaderAuth</code> OID, valid SKI/AKI, etc.</td></tr>
+<tr><td><strong>mdlReaderAuth OID</strong></td><td>OID <code>1.0.18013.5.1.6</code>. Extended Key Usage value required by ISO 18013-5 for reader certificates. Also enforced for remote OpenID4VP (see §4).</td></tr>
+<tr><td><strong>SAN</strong></td><td>Subject Alternative Name. X.509v3 extension containing additional identities (DNS, IP, email) for the certificate subject.</td></tr>
+<tr><td><strong>DPoP</strong></td><td>Demonstration of Proof of Possession. Mechanism binding access tokens to a client key pair. Used in OpenID4VCI issuance (<code>DPopConfig.Default</code>).</td></tr>
+<tr><td><strong>PAR</strong></td><td>Pushed Authorization Request (RFC 9126). Client pushes Authorization Request to the server before redirecting the user. Supported in issuance (<code>ParUsage.IF_SUPPORTED</code>).</td></tr>
+<tr><td><strong>Wallet Attestation</strong></td><td>Signed JWT from the Wallet Provider attesting to the wallet instance’s authenticity. Required for OpenID4VCI issuance.</td></tr>
+<tr><td><strong>Nonce</strong></td><td>Cryptographically random, single-use value in an Authorization Request. The wallet binds the VP Token to the nonce, preventing replay.</td></tr>
+<tr><td><strong>verifierIsTrusted</strong></td><td>Boolean set by the wallet when the RP’s cert chain validates against <code>ReaderTrustStore</code>. Shown as a verified badge in the UI.</td></tr>
+<tr><td><strong>same-device flow</strong></td><td>OpenID4VP flow where the RP web page and wallet run on the same mobile device. RP triggers the wallet via deep link / Android Intent.</td></tr>
+<tr><td><strong>cross-device flow</strong></td><td>Flow where the RP (website or reader) is on a different device from the wallet. For OpenID4VP: RP shows a QR; wallet scans it. For proximity: wallet shows a QR; RP reader scans it.</td></tr>
+<tr><td><strong>deep link</strong></td><td>Android Intent URI that launches a specific app screen. The wallet registers <code>haip-vp://</code>, <code>openid4vp://</code>, <code>eudi-openid4vp://</code>, <code>mdoc-openid4vp://</code>.</td></tr>
+<tr><td><strong>BLE</strong></td><td>Bluetooth Low Energy. Wireless transport for ISO 18013-5 proximity presentation (wallet = peripheral, RP reader = central).</td></tr>
+<tr><td><strong>HCE</strong></td><td>Host Card Emulation. Android feature letting the device emulate an NFC card. Used by <code>NfcEngagementService</code> for proximity NFC engagement.</td></tr>
+<tr><td><strong>redirect_uri</strong></td><td>URI returned by the RP server (in the VP Token POST response body) to which the wallet navigates after a successful same-device presentation.</td></tr>
+<tr><td><strong>PID</strong></td><td>Person Identification Data. Primary eID credential in the EUDI ecosystem. DocType <code>eu.europa.ec.eudi.pid.1</code> (mDOC); VCT <code>urn:eudi:pid:1</code> (SD-JWT VC).</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<h2 id="15-reference-specifications"><a class="header" href="#15-reference-specifications">15. Reference Specifications</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Specification</th><th>URL</th></tr>
+</thead>
+<tbody>
+<tr><td>OpenID4VP 1.0</td><td>https://openid.net/specs/openid-4-verifiable-presentations-1_0.html</td></tr>
+<tr><td>HAIP profile</td><td>https://openid.net/specs/openid4vc-high-assurance-interoperability-profile-1_0.html</td></tr>
+<tr><td>ISO/IEC 18013-5:2021 (mDL/mDOC)</td><td>https://www.iso.org/standard/69084.html</td></tr>
+<tr><td>ISO/IEC 18013-7 (Online mDOC)</td><td>https://www.iso.org/standard/82772.html</td></tr>
+<tr><td>RFC 7515 – JWS</td><td>https://www.rfc-editor.org/rfc/rfc7515</td></tr>
+<tr><td>RFC 7517 – JWK</td><td>https://www.rfc-editor.org/rfc/rfc7517</td></tr>
+<tr><td>RFC 7518 – JWA</td><td>https://www.rfc-editor.org/rfc/rfc7518</td></tr>
+<tr><td>RFC 7519 – JWT</td><td>https://www.rfc-editor.org/rfc/rfc7519</td></tr>
+<tr><td>RFC 9101 – JAR</td><td>https://www.rfc-editor.org/rfc/rfc9101</td></tr>
+<tr><td>RFC 9126 – PAR</td><td>https://www.rfc-editor.org/rfc/rfc9126</td></tr>
+<tr><td>DIF Presentation Exchange 2.0</td><td>https://identity.foundation/presentation-exchange/spec/v2.0.0/</td></tr>
+<tr><td>SD-JWT VC</td><td>https://www.ietf.org/archive/id/draft-ietf-oauth-sd-jwt-vc-08.txt</td></tr>
+<tr><td>EUDI ARF</td><td>https://eu-digital-identity-wallet.github.io/eudi-doc-architecture-and-reference-framework/</td></tr>
+<tr><td>eudi-lib-android-wallet-core</td><td>https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core</td></tr>
+</tbody>
+</table>
+</div>
+<hr>
+<p><em>Last updated: April 2026</em></p>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../eudi_wallet/local_network.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../summary_protocols_formats.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../eudi_wallet/local_network.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../summary_protocols_formats.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../mark-09e88c2c.min.js"></script>
+        <script src="../searcher-09f2665d.js"></script>
+
+        <script src="../clipboard-1626706a.min.js"></script>
+        <script src="../highlight-abc7f01d.js"></script>
+        <script src="../book-c22b7243.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../mermaid-eefea253.min.js"></script>
+        <script src="../mermaid-init-ccf746f1.js"></script>
+
+
+
+    </div>
+    </body>
+</html>

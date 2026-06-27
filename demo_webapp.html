@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The Relying Party Demo Web Application - ewQwe Digital Identity</title>
+        <title>Demo Webapp - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3b89128e.js";
+            window.path_to_searchindex_js = "searchindex-df26ae72.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e68e16c9.js"></script>
+        <script src="toc-2cdafee5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,456 +174,75 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-relying-party-demo-web-application"><a class="header" href="#the-relying-party-demo-web-application">The Relying Party Demo Web Application</a></h1>
-<p>The <strong>Relying Party Demo Web Application</strong> is a sample web application that demonstrates how to request and verify credentials from:</p>
+                        <h1 id="demo-webapp-relying-party"><a class="header" href="#demo-webapp-relying-party">Demo Webapp (Relying Party)</a></h1>
+<p>The <strong>Demo Webapp</strong> is a vanilla TypeScript SPA that demonstrates how to integrate credential verification into your own web application. It’s MIT-licensed so you can freely adapt and embed it.</p>
+<p>It implements the full OpenID4VP cross-device flow:</p>
 <ol>
-<li><strong>EUDI Wallet (Android/iOS)</strong> - Using the OpenID4VP cross-device flow with QR codes (HAIP profile)</li>
-<li><strong>Age Verification Apps</strong> - Using the OpenID4VP Annex A profile for Proof of Age</li>
+<li>Select a credential type (Proof of Age, mDL, or National ID)</li>
+<li>The webapp initiates a transaction with the Credential Verifier</li>
+<li>A QR code is displayed for the user to scan with their EUDI Wallet</li>
+<li>The wallet presents the credential to the verifier</li>
+<li>The webapp polls for the result and displays the verification outcome</li>
 </ol>
-<p>This implementation is compatible with:</p>
-<ul>
-<li><a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui">EUDI Wallet Reference Implementation</a> (HAIP profile)</li>
-<li>Age Verification Apps implementing the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile Annex A</a></li>
-</ul>
-<p><strong>Use as a Starting Point</strong>:</p>
-<ul>
-<li>Clean, well-documented TypeScript code</li>
-<li>Modular architecture for easy customization</li>
-<li>Configuration-driven credential requests</li>
-<li>Reference implementation of OpenID4VP 1.0 protocol</li>
-<li>Cross-device flow with QR code generation</li>
-<li>Example integration with credential verifier</li>
-</ul>
-<h2 id="flow-overview"><a class="header" href="#flow-overview">Flow Overview</a></h2>
-<pre class="mermaid">flowchart TB
-    subgraph Webapp["Demo Webapp (TypeScript/Vite + Deno)"]
-        UI[User Interface]
-        CredConfig[Credential Configuration&lt;br/&gt;- Select credential types&lt;br/&gt;- Choose required claims&lt;br/&gt;- Set verification policies]
-        Protocol[Protocol Handler&lt;br/&gt;- W3C DC API + fallback&lt;br/&gt;- W3C DC only&lt;br/&gt;- OpenID4VP QR code&lt;br/&gt;- Simulated mode]
-        QRModal[QR Code Modal&lt;br/&gt;for cross-device flow]
-        APIServer[API Server&lt;br/&gt;server.ts&lt;br/&gt;OpenID4VP sessions]
-    end
-
-    subgraph MobileWallet["Mobile Wallet (EUDI/Other)"]
-        WalletApp[Wallet App&lt;br/&gt;Android/iOS]
-    end
-
-    UI --&gt; CredConfig
-    CredConfig --&gt; Protocol
-    Protocol --&gt;|W3C DC| WalletApp
-    Protocol --&gt;|OpenID4VP| QRModal
-    QRModal -.-&gt;|Scan QR| WalletApp
-    WalletApp --&gt;|POST direct_post| APIServer
-    Protocol --&gt;|Poll status| APIServer
-    Protocol --&gt;|POST /ewqwe_api/verify| APIServer
-    APIServer --&gt;|HTTPS| CredVerifier[ewQwe Credential Verifier]
-
-    style Webapp fill:#7c3aed
-    style MobileWallet fill:#059669
-</pre>
-
-<h2 id="protocol-options"><a class="header" href="#protocol-options">Protocol Options</a></h2>
-<p>The webapp supports five protocol modes:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Protocol</th><th>Description</th><th>Use Case</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Annex C Sub-protocol B</strong> (<code>w3c-dc-openid4vp</code>)</td><td>OpenID4VP over W3C Digital Credentials API — sends a standard OpenID4VP Authorization Request through <code>navigator.credentials.get()</code> using <code>protocol: "openid4vp-v1-unsigned"</code></td><td>Default on <strong>desktop</strong> — experimental; works only with wallets whose DC API handler recognises the <code>openid4vp</code> protocol identifier. Production wallets (as of mid-2026) return “Unsupported protocol” errors — see note below.</td></tr>
-<tr><td><strong>Annex C Sub-protocol A</strong> (<code>w3c-dc-iso-mdoc</code>)</td><td>Raw ISO mDoc over DC API — HPKE + CBOR <code>encryptionInfo</code>/<code>deviceRequest</code> blobs with <code>protocol: "org-iso-mdoc"</code></td><td>Wallets that implement the raw CBOR/HPKE Annex C path (rare)</td></tr>
-<tr><td><strong>Annex C with fallback</strong> (<code>w3c-dc-fallback</code>)</td><td>Tries Sub-protocol B first, then Sub-protocol A, then OpenID4VP cross-device</td><td>Desktop when unsure which sub-protocol the wallet supports</td></tr>
-<tr><td><strong>OpenID4VP (Cross-Device)</strong></td><td>Cross-device flow with QR code scanning</td><td>Mobile wallets via QR code (EUDI Wallet, AV Apps)</td></tr>
-<tr><td><strong>OpenID4VP (Same-Device)</strong></td><td>Same-device flow with deep link</td><td>Default on <strong>mobile</strong> — reliable across all Android/iOS versions</td></tr>
-<tr><td><strong>Simulated</strong></td><td>Mock response for testing without a wallet</td><td>Development/testing</td></tr>
-</tbody>
-</table>
-</div>
-<h3 id="why-w3c-digital-credentials-is-disabled-on-mobile"><a class="header" href="#why-w3c-digital-credentials-is-disabled-on-mobile">Why W3C Digital Credentials is Disabled on Mobile</a></h3>
-<p>On Android 15+, Chrome supports the <a href="https://www.w3.org/TR/digital-credentials/">W3C Digital Credentials API</a>.
-However, invoking <code>navigator.credentials.get({ digital: ... })</code> on Android routes the request through
-<a href="https://developer.android.com/identity/sign-in/credential-manager">Android CredentialManager</a>,
-which presents a <strong>system-level picker UI before</strong> the web page receives any response.</p>
-<p>The wallet’s DCAPI handler (via <a href="https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core"><code>eudi-lib-android-wallet-core</code></a>)
-receives the request with <code>protocol: "openid4vp"</code> — a protocol identifier that version 0.24.0 of the
-library does not yet recognize in its DCAPI handler, causing an “Unsupported protocol: openid4vp” error
-<strong>inside the wallet</strong> before the webapp’s <code>try/catch</code> fallback can execute.</p>
-<p>This creates a broken user experience:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Android Version</th><th>DC API Available</th><th>Result</th></tr>
-</thead>
-<tbody>
-<tr><td>Android 14 (emulator)</td><td>No</td><td>Silent throw → silent fallback to deep link ✓</td></tr>
-<tr><td>Android 15 (real device)</td><td>Yes</td><td>CredentialManager shows system UI → wallet fails visibly ✗</td></tr>
-</tbody>
-</table>
-</div>
-<p><strong>Solution</strong>: On mobile devices, this webapp skips the W3C DC API entirely and goes directly to
-the OpenID4VP same-device deep-link flow, which is reliable across all Android versions.</p>
-<blockquote>
-<p><strong>Note on sub-protocols</strong>: ISO 18013-7 Annex C defines two sub-protocols that run over the
-W3C Digital Credentials API:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Sub-protocol</th><th>Protocol identifier</th><th>Request format</th><th>Response format</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>A — Raw ISO mDoc</strong></td><td><code>org-iso-mdoc</code></td><td>CBOR <code>["dcapi", ...]</code> + CBOR <code>DeviceRequest</code></td><td>HPKE-encrypted mDoc in CBOR <code>["dcapi", ...]</code></td></tr>
-<tr><td><strong>B — OpenID4VP over DC API</strong></td><td><code>openid4vp-v1-unsigned</code></td><td>Standard OpenID4VP Authorization Request (JSON)</td><td>Standard VP Token, optionally JWE-encrypted</td></tr>
-</tbody>
-</table>
-</div>
-<p><strong>Current status (mid-2026)</strong>: The EUDI Wallet Core library has DC API plumbing, but production
-wallets reject the <code>openid4vp</code> protocol identifier with “Unsupported protocol” errors.
-Sub-protocol B is therefore <strong>not functional</strong> with any current production wallet. All wallets
-use Annex B (deep-link OpenID4VP) for all production flows. See <a href="#why-w3c-digital-credentials-is-disabled-on-mobile">Why W3C Digital
-Credentials is Disabled on Mobile</a> above
-for the full technical analysis.</p>
-</blockquote>
-<blockquote>
-<p><strong>References</strong>: <a href="https://www.w3.org/TR/digital-credentials/">W3C Digital Credentials API</a> ·
-<a href="https://developer.android.com/identity/sign-in/credential-manager">Android CredentialManager</a> ·
-<a href="https://github.com/eu-digital-identity-wallet/eudi-lib-android-wallet-core">EUDI Wallet Core library</a> ·
-<a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-A">OpenID4VP §A — DC API integration</a></p>
-</blockquote>
-<h2 id="protocol-profiles"><a class="header" href="#protocol-profiles">Protocol Profiles</a></h2>
-<p>The webapp automatically selects the appropriate OpenID4VP profile based on the credential type being requested:</p>
-<h3 id="haip-profile-high-assurance-interoperability-profile"><a class="header" href="#haip-profile-high-assurance-interoperability-profile">HAIP Profile (High Assurance Interoperability Profile)</a></h3>
-<p>Used for <strong>Mobile Driver’s License (mDL)</strong> and <strong>National ID (PID)</strong>.</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Parameter</th><th>Value</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td>Client ID Scheme</td><td><code>x509_san_dns</code></td><td>X.509 certificate with SAN DNS entry</td></tr>
-<tr><td>Request Format</td><td>Signed JAR</td><td>JWT Authorization Request with <code>x5c</code> header</td></tr>
-<tr><td>Response Mode</td><td><code>direct_post.jwt</code></td><td>Encrypted/signed response</td></tr>
-<tr><td>URL Scheme</td><td><code>eudi-openid4vp://</code></td><td>EUDI Wallet deep link scheme</td></tr>
-<tr><td>Content-Type</td><td><code>application/oauth-authz-req+jwt</code></td><td>RFC 9101 JAR format</td></tr>
-</tbody>
-</table>
-</div>
-<p><strong>Certificate Requirements</strong>: The server must have a valid X.509 certificate chain. The leaf certificate’s SAN DNS entry is used as the client identifier. The EUDI Wallet verifies the JAR signature against the certificate.</p>
-<h3 id="annex-a-profile-eu-age-verification-profile"><a class="header" href="#annex-a-profile-eu-age-verification-profile">Annex A Profile (EU Age Verification Profile)</a></h3>
-<p>Used for <strong>Proof of Age</strong> attestations.</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Parameter</th><th>Value</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td>Client ID Scheme</td><td><code>redirect_uri</code></td><td>Redirect URI as client identifier</td></tr>
-<tr><td>Request Format</td><td>Plain JSON</td><td>No JAR signing (redirect_uri cannot use signed requests)</td></tr>
-<tr><td>Response Mode</td><td><code>direct_post</code></td><td>Plain VP token response</td></tr>
-<tr><td>URL Scheme</td><td><code>av://</code></td><td>Age Verification App deep link scheme</td></tr>
-<tr><td>Content-Type</td><td><code>application/json</code></td><td>Standard JSON format</td></tr>
-</tbody>
-</table>
-</div>
-<p><strong>Note</strong>: The <code>redirect_uri</code> client_id_scheme requires plain JSON authorization requests. Signed JARs are not permitted with this scheme.</p>
-<p><strong>Reference</strong>: <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile Annex A</a></p>
-<h3 id="profile-selection"><a class="header" href="#profile-selection">Profile Selection</a></h3>
-<p>The profile is determined automatically based on the credential type:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Credential Type</th><th>Profile</th><th>Format</th><th>Target Wallet</th></tr>
-</thead>
-<tbody>
-<tr><td>Mobile Driver’s License (mDL)</td><td>HAIP</td><td>MSO MDOC</td><td>EUDI Wallet</td></tr>
-<tr><td>National ID (PID)</td><td>HAIP</td><td>MSO MDOC</td><td>EUDI Wallet</td></tr>
-<tr><td>Health ID (SD-JWT VC)</td><td>HAIP</td><td>SD-JWT VC</td><td>EUDI Wallet</td></tr>
-<tr><td>Proof of Age</td><td>Annex A</td><td>MSO MDOC</td><td>Age Verification App</td></tr>
-</tbody>
-</table>
-</div>
-<p>The UI displays badges indicating which profile and credential format are active, along with key technical details about the protocol configuration.</p>
-<h3 id="openid4vp-cross-device-flow"><a class="header" href="#openid4vp-cross-device-flow">OpenID4VP Cross-Device Flow</a></h3>
-<p>When using OpenID4VP cross-device mode, the webapp implements the cross-device flow as specified in <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID4VP 1.0</a>:</p>
-<ol>
-<li><strong>Initialize Transaction</strong>: Frontend requests a new transaction from the backend</li>
-<li><strong>Display QR Code</strong>: A modal shows a QR code containing the authorization request URI</li>
-<li><strong>Wallet Scans QR</strong>: User scans the QR code with their mobile wallet</li>
-<li><strong>Wallet Parses Request</strong>: Wallet parses the authorization request (see profile differences below)</li>
-<li><strong>User Approves</strong>: User reviews and approves the credential sharing request</li>
-<li><strong>Wallet POSTs Response</strong>: Wallet sends the VP token to <code>response_uri</code> (direct_post)</li>
-<li><strong>Frontend Receives Result</strong>: Frontend polls for status and receives the VP token</li>
-</ol>
-<h4 id="technical-details"><a class="header" href="#technical-details">Technical Details</a></h4>
-<p>The implementation follows the EUDI Wallet specifications for HAIP, and the EU Age Verification Profile for Annex A:</p>
-<ul>
-<li><strong>Profile-Aware Requests</strong>: The <code>/ewqwe_api/openid4vp/init</code> endpoint accepts a <code>credential_type</code> parameter to determine the profile</li>
-<li><strong>Request Delivery</strong>:
-<ul>
-<li><strong>HAIP</strong>: QR code contains <code>request_uri</code>; wallet fetches signed JAR from that URI</li>
-<li><strong>Annex A</strong>: QR code contains ALL parameters inline (no <code>request_uri</code>); wallet parses parameters directly from the URL</li>
-</ul>
-</li>
-<li><strong>Request Format</strong>: HAIP uses signed JAR per <a href="https://www.rfc-editor.org/rfc/rfc9101.html">RFC 9101</a>; Annex A uses plain parameters (redirect_uri scheme forbids signed requests)</li>
-<li><strong>DCQL Query</strong>: Uses <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#dcql">DCQL (Digital Credentials Query Language)</a> instead of presentation_definition</li>
-<li><strong>ES256 Signing</strong>: JAR is signed with an EC P-256 key using ES256 algorithm (HAIP only)</li>
-<li><strong>Client ID Scheme</strong>: Uses <code>x509_san_dns</code> for HAIP, <code>redirect_uri</code> for Annex A</li>
-<li><strong>Client Metadata</strong>: When provided, MUST include <code>vp_formats_supported</code> (required field)</li>
-</ul>
-<p><strong>HAIP Flow (mDL, PID)</strong> - Wallet fetches request from <code>request_uri</code>:</p>
-<pre class="mermaid">sequenceDiagram
-    participant U as User
-    participant W as Webapp
-    participant V as ewQwe Credential Verifier
-    participant M as EUDI Wallet
-
-    U-&gt;&gt;W: Click "Request Credentials"
-    W-&gt;&gt;W: Initialize transaction
-    W-&gt;&gt;U: Display QR Code (contains request_uri)
-
-    U-&gt;&gt;M: Scan QR Code
-    M-&gt;&gt;W: GET /ewqwe_api/openid4vp/request/{id}
-    W--&gt;&gt;M: Signed JWT (JAR) with DCQL query
-    M-&gt;&gt;U: Show credential sharing prompt
-    U-&gt;&gt;M: Approve sharing
-    M-&gt;&gt;W: POST /ewqwe_api/openid4vp/direct_post (vp_token)
-    W--&gt;&gt;M: 200 OK
-
-    loop Poll for response
-        W-&gt;&gt;W: GET /ewqwe_api/openid4vp/status/{id}
-    end
-
-    W-&gt;&gt;V: POST /ewqwe_api/verify (vp_token)
-    V--&gt;&gt;W: Signed attestation
-    W-&gt;&gt;U: Display verified claims
-</pre>
-
-<p><strong>Annex A Flow (Proof of Age)</strong> - All parameters inline in URL (no request_uri fetch):</p>
-<pre class="mermaid">sequenceDiagram
-    participant U as User
-    participant W as Webapp
-    participant V as ewQwe Credential Verifier
-    participant M as AV Wallet
-
-    U-&gt;&gt;W: Click "Request Credentials"
-    W-&gt;&gt;W: Initialize transaction
-    W-&gt;&gt;U: Display QR Code (contains ALL params inline)
-
-    U-&gt;&gt;M: Scan QR Code
-    Note over M: Parse params from URL directly&lt;br/&gt;(no HTTP fetch needed)
-    M-&gt;&gt;U: Show credential sharing prompt
-    U-&gt;&gt;M: Approve sharing
-    M-&gt;&gt;W: POST /ewqwe_api/openid4vp/direct_post (vp_token)
-    W--&gt;&gt;M: 200 OK
-
-    loop Poll for response
-        W-&gt;&gt;W: GET /ewqwe_api/openid4vp/status/{id}
-    end
-
-    W-&gt;&gt;V: POST /ewqwe_api/verify (vp_token)
-    V--&gt;&gt;W: Signed attestation
-    W-&gt;&gt;U: Display verified claims
-</pre>
-
-<h3 id="openid4vp-same-device-flow"><a class="header" href="#openid4vp-same-device-flow">OpenID4VP Same-Device Flow</a></h3>
-<p>When using OpenID4VP same-device mode, the webapp uses a deep link to trigger the wallet app on the same device. This is ideal for mobile browsers where the wallet app is installed:</p>
-<ol>
-<li><strong>Initialize Transaction</strong>: Frontend requests a new transaction from the backend</li>
-<li><strong>Display Deep Link Button</strong>: A modal shows a button to open the wallet app</li>
-<li><strong>User Opens Wallet</strong>: User clicks the button, which opens the wallet via deep link</li>
-<li><strong>Wallet Parses Request</strong>: Wallet parses the authorization request (HAIP: fetches from <code>request_uri</code>; Annex A: reads inline parameters)</li>
-<li><strong>User Approves</strong>: User reviews and approves the credential sharing request</li>
-<li><strong>Wallet POSTs Response</strong>: Wallet sends the VP token to <code>response_uri</code> (direct_post)</li>
-<li><strong>Frontend Receives Result</strong>: Frontend polls for status and receives the VP token</li>
-</ol>
-<pre class="mermaid">sequenceDiagram
-    participant U as User
-    participant W as Webapp (Mobile Browser)
-    participant V as ewQwe Credential Verifier
-    participant M as Wallet App
-
-    U-&gt;&gt;W: Click "Request Credentials"
-    W-&gt;&gt;W: Initialize transaction
-    W-&gt;&gt;U: Display "Open Wallet" button
-
-    U-&gt;&gt;W: Click "Open EUDI Wallet"
-    W-&gt;&gt;M: Deep link (openid4vp://...)
-    M-&gt;&gt;W: GET /ewqwe_api/openid4vp/request/{id}
-    W--&gt;&gt;M: Authorization Request (JSON)
-    M-&gt;&gt;U: Show credential sharing prompt
-    U-&gt;&gt;M: Approve sharing
-    M-&gt;&gt;W: POST /ewqwe_api/openid4vp/direct_post (vp_token)
-    W--&gt;&gt;M: 200 OK
-
-    Note over W: (User switches back to browser)
-    loop Poll for response
-        W-&gt;&gt;W: GET /ewqwe_api/openid4vp/status/{id}
-    end
-
-    W-&gt;&gt;V: POST /ewqwe_api/verify (vp_token)
-    V--&gt;&gt;W: Signed attestation
-    W-&gt;&gt;U: Display verified claims
-</pre>
-
-<h2 id="installation-and-setup"><a class="header" href="#installation-and-setup">Installation and Setup</a></h2>
-<h3 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h3>
-<p>Before setting up the demo system, ensure you have the following installed:</p>
-<ul>
-<li><strong>Deno</strong> 1.40 or later - <a href="https://deno.land/manual/getting_started/installation">Install Deno</a></li>
-</ul>
-<h3 id="start-the-demo-webapp"><a class="header" href="#start-the-demo-webapp">Start the Demo Webapp</a></h3>
-<p>The demo webapp uses Deno for both frontend and backend development.</p>
-<h4 id="install-and-configure"><a class="header" href="#install-and-configure">Install and Configure</a></h4>
-<pre><code class="language-bash"># Navigate to the webapp directory
-cd webapp
-
-# No installation needed - Deno handles dependencies automatically
+<h2 id="running"><a class="header" href="#running">Running</a></h2>
+<pre><code class="language-bash">cd typescript
+pnpm install
+pnpm --filter @ewqwe/digital-identity build
+pnpm --filter @ewqwe/demo-webapp dev    # https://localhost:5174
 </code></pre>
-<h4 id="start-the-development-server"><a class="header" href="#start-the-development-server">Start the Development Server</a></h4>
-<p>The webapp requires three processes running concurrently:</p>
-<pre><code class="language-bash"># Terminal 1 — ewQwe Credential Verifier (port 9443, HTTPS)
-cd credential_verifier
-cat &gt; credential-server.toml &lt;&lt;'EOF'
-host_name = "0.0.0.0"
-host_port = 9443
-
-[tls_params]
-server_private_key = "src/tests/certificates/ec/ewqwe.server.key.pem"
-server_certificate = "src/tests/certificates/ec/ewqwe.server.cert.pem"
-server_ca_chain = "src/tests/certificates/ec/ewqwe.chain.pem"
-
-[openid4vp_config]
-transaction_ttl_secs = 300
-
-[openid4vp_config.haip_config]
-x509_cert_path = "src/tests/certificates/ec/ewqwe.server.fullchain.pem"
-x509_key_path = "src/tests/certificates/ec/ewqwe.server.key.pem"
-EOF
-
-RUST_LOG=info \
-cargo run --features openssl
-
-# Terminal 2 — Webapp API server (port 5175)
-cd webapp
-deno task api
-
-# Terminal 3 — Webapp Vite dev server (port 5174, HTTPS)
-cd webapp
-deno task vite
-</code></pre>
-<h4 id="verify-webapp-is-running"><a class="header" href="#verify-webapp-is-running">Verify Webapp is Running</a></h4>
-<ol>
-<li>Open your browser to <a href="https://localhost:5174">https://localhost:5174</a></li>
-<li>You should see the Relying Party demo interface</li>
-<li>The page will allow you to:
-<ul>
-<li>Select credential types (mDL, Proof of Age, National ID)</li>
-<li>Choose required claims (age_over_18, birth_date, etc.)</li>
-<li>Select verification protocol</li>
-<li>Request credentials from the wallet</li>
-</ul>
-</li>
-</ol>
-<h3 id="debugging-chrome-on-android-studio-emulator"><a class="header" href="#debugging-chrome-on-android-studio-emulator">Debugging Chrome on Android Studio Emulator</a></h3>
-<p>When testing the webapp with mobile wallets on the Android Studio Emulator, you can view Chrome’s console logs using Chrome DevTools Remote Debugging:</p>
-<ol>
-<li><strong>Enable USB Debugging on Emulator</strong>: The Android Studio Emulator has USB debugging enabled by default</li>
-<li><strong>Open Chrome on the Emulator</strong>: Launch Chrome and navigate to <code>https://demo.ewqwe.local:5174</code></li>
-<li><strong>Access Remote Debugging</strong>:
-<ul>
-<li>On your development machine, open Chrome</li>
-<li>Navigate to <code>chrome://inspect/#devices</code></li>
-<li>Wait for the emulator device to appear (may take a few seconds)</li>
-</ul>
-</li>
-<li><strong>Inspect the Page</strong>:
-<ul>
-<li>Under your emulator device, you’ll see a list of open Chrome tabs</li>
-<li>Click <strong>“inspect”</strong> next to the webapp tab</li>
-<li>A DevTools window opens showing the console, network traffic, and DOM inspector</li>
-</ul>
-</li>
-</ol>
-<p>This is particularly useful for:</p>
-<ul>
-<li>Debugging OpenID4VP protocol flows</li>
-<li>Viewing network requests to your backend API</li>
-<li>Inspecting QR code scanning and deep link behavior</li>
-<li>Troubleshooting JavaScript errors in the mobile browser</li>
-</ul>
-<blockquote>
-<p><strong>Tip</strong>: Console logs, network requests, and JavaScript errors from the emulator’s Chrome will appear in real-time in the DevTools window on your development machine, just like debugging a local webpage.</p>
-</blockquote>
-<h2 id="api-endpoints"><a class="header" href="#api-endpoints">API Endpoints</a></h2>
-<h3 id="openid4vp-endpoints-cross-device-flow"><a class="header" href="#openid4vp-endpoints-cross-device-flow">OpenID4VP Endpoints (Cross-Device Flow)</a></h3>
+<p>The demo webapp connects to the Credential Verifier at the URL configured in its environment. See the <a href="https://github.com/rd-ewqwe/ewqwe-identity/blob/main/typescript/README.md">TypeScript workspace README</a> for details.</p>
+<h2 id="protocol-support"><a class="header" href="#protocol-support">Protocol Support</a></h2>
+<p>The webapp supports two OpenID4VP profiles, selected automatically based on credential type:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
+<tr><th>Credential Type</th><th>Profile</th><th>Client ID Scheme</th><th>Response Mode</th></tr>
 </thead>
 <tbody>
-<tr><td><code>/ewqwe_api/openid4vp/init</code></td><td>POST</td><td>Initialize a new transaction, returns QR code data and profile info</td></tr>
-<tr><td><code>/ewqwe_api/openid4vp/request/{id}</code></td><td>GET</td><td>Wallet fetches authorization request (signed JAR for HAIP, plain JSON for Annex A)</td></tr>
-<tr><td><code>/ewqwe_api/openid4vp/direct_post</code></td><td>POST</td><td>Wallet posts VP token (response_uri)</td></tr>
-<tr><td><code>/ewqwe_api/openid4vp/status/{id}</code></td><td>GET</td><td>Frontend polls for transaction status</td></tr>
+<tr><td>Proof of Age</td><td>EU Age Verification (Annex A)</td><td><code>redirect_uri</code></td><td><code>direct_post</code></td></tr>
+<tr><td>mDL / National ID</td><td>HAIP</td><td><code>x509_san_dns</code></td><td><code>direct_post.jwt</code></td></tr>
 </tbody>
 </table>
 </div>
-<h4 id="init-transaction-request"><a class="header" href="#init-transaction-request">Init Transaction Request</a></h4>
-<pre><code class="language-typescript">interface InitTransactionRequest {
-  presentation_definition?: object;  // Credential request (converted to DCQL)
-  dcql_query?: object;               // DCQL query (preferred)
-  nonce?: string;                    // Optional, generated if not provided
-    state?: string;                    // Optional client-managed correlation value
-  credential_type?: string;          // "mdl" | "national-id" | "proof-of-age"
-  profile?: "haip" | "annex-a";      // Explicit profile override
+<p>For details on these profiles, see the <a href="./summary_protocols_formats.html">Protocols &amp; Formats Summary</a>.</p>
+<h2 id="integration-pattern"><a class="header" href="#integration-pattern">Integration Pattern</a></h2>
+<p>The demo webapp demonstrates the standard integration pattern for a Relying Party:</p>
+<pre><code class="language-typescript">// 1. Initiate a transaction
+const init = await fetch("/api/openid4vp/init", {
+  method: "POST",
+  body: JSON.stringify({ credential_type: "proof-of-age" })
+});
+const { transaction_id, qr_code_data_url } = await init.json();
+
+// 2. Display QR code for wallet scanning
+displayQRCode(qr_code_data_url);
+
+// 3. Poll for verification result
+const status = await pollStatus(transaction_id);
+
+// 4. Receive signed attestation
+if (status.result === "verified") {
+  const attestation = status.attestation; // Signed JWT
 }
 </code></pre>
-<h4 id="init-transaction-response"><a class="header" href="#init-transaction-response">Init Transaction Response</a></h4>
-<pre><code class="language-typescript">interface InitTransactionResponse {
-  transaction_id: string;
-  client_id: string;                 // Format depends on profile
-  client_id_scheme: "x509_san_dns" | "redirect_uri";
-  request_uri: string;
-  authorization_request_uri: string; // QR code content
-  deep_link_uri: string;             // Same-device deep link
-  expires_in: number;
-  profile: "haip" | "annex-a";       // Selected profile
-}
-</code></pre>
-<h3 id="verification-endpoints"><a class="header" href="#verification-endpoints">Verification Endpoints</a></h3>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Endpoint</th><th>Method</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td><code>/ewqwe_api/verify</code></td><td>POST</td><td>Verify a VP token (proxies to Credential Verifier)</td></tr>
-<tr><td><code>/ewqwe_api/health</code></td><td>GET</td><td>Health check</td></tr>
-</tbody>
-</table>
-</div>
-<h2 id="environment-variables"><a class="header" href="#environment-variables">Environment Variables</a></h2>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Variable</th><th>Default</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr><td><code>CREDENTIAL_VERIFIER_URL</code></td><td><code>https://127.0.0.1:9443</code></td><td>URL of the Credential Verifier server</td></tr>
-<tr><td><code>CA_CERT_PATH</code></td><td><code>../credential_verifier/src/tests/certificates/ec/ewqwe.chain.pem</code></td><td>CA certificate for TLS to Credential Verifier</td></tr>
-</tbody>
-</table>
-</div>
+<p>See the <a href="./demo_architecture.html">Demo Architecture</a> page for the full system setup and testing flow.</p>
+<h2 id="source-code"><a class="header" href="#source-code">Source Code</a></h2>
+<p>The demo webapp is in <code>typescript/demo-webapp/</code>. It uses:</p>
+<ul>
+<li><strong><code>@ewqwe/digital-identity</code></strong> — shared library for DCQL query building, protocol profiles, and the verifier API client</li>
+<li><strong>Vite</strong> — dev server and build tool</li>
+<li><strong>Vanilla TypeScript</strong> — no framework</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="eudi_wallet_android_studio.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="credential_verifier_ui.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="technical_references/webapp_wallet_communication.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="demo_architecture.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -633,11 +252,11 @@ deno task vite
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="eudi_wallet_android_studio.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="credential_verifier_ui.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="technical_references/webapp_wallet_communication.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="demo_architecture.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

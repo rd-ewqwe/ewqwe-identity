@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>DCQL Queries - ewQwe Digital Identity</title>
+        <title>ADB Troubleshooting - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -174,269 +174,245 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="dcql-age-verification-queries"><a class="header" href="#dcql-age-verification-queries">DCQL Age Verification Queries</a></h1>
-<p>This document defines the Digital Credentials Query Language (DCQL) queries used in the EU Age Verification system, implementing the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile</a>.</p>
-<p><strong>Related Documentation</strong>:</p>
+                        <h1 id="adb-troubleshooting-reference-for-wallet-testing"><a class="header" href="#adb-troubleshooting-reference-for-wallet-testing">ADB Troubleshooting Reference for Wallet Testing</a></h1>
+<p>A comprehensive reference of <code>adb</code> commands used when testing digital wallets (EUDI Wallet, France Identité, etc.) with the ewQwe Credential Verifier.</p>
+<blockquote>
+<p><strong>Prerequisite</strong>: <code>adb</code> is typically located at <code>~/Library/Android/sdk/platform-tools/adb</code> on macOS (when installed via Android Studio). Add it to your <code>PATH</code> for convenience.</p>
+</blockquote>
+<hr>
+<h2 id="device--connection-management"><a class="header" href="#device--connection-management">Device &amp; Connection Management</a></h2>
+<h3 id="list-connected-devices"><a class="header" href="#list-connected-devices">List Connected Devices</a></h3>
+<pre><code class="language-bash"># List all connected devices/emulators
+adb devices
+
+# List only emulator devices
+adb devices -e
+
+# List only physical (USB) devices
+adb devices -d
+</code></pre>
+<h3 id="restart-adb-server"><a class="header" href="#restart-adb-server">Restart ADB Server</a></h3>
+<pre><code class="language-bash">adb kill-server
+adb start-server
+</code></pre>
+<p>Use when <code>adb devices</code> shows no devices even though an emulator is running or a device is connected via USB.</p>
+<h3 id="connect-to-a-specific-device"><a class="header" href="#connect-to-a-specific-device">Connect to a Specific Device</a></h3>
+<pre><code class="language-bash"># Use -s with device serial for single-target commands
+adb -s &lt;device_serial&gt; install app.apk
+
+# Use -e for emulator
+adb -e install app.apk
+
+# Use -d for physical device (USB)
+adb -d install app.apk
+</code></pre>
+<hr>
+<h2 id="installing--managing-apks"><a class="header" href="#installing--managing-apks">Installing &amp; Managing APKs</a></h2>
+<h3 id="install-an-apk"><a class="header" href="#install-an-apk">Install an APK</a></h3>
+<pre><code class="language-bash"># Basic install
+adb install /path/to/your-app.apk
+
+# Reinstall (overwrite existing app, keeps data)
+adb install -r /path/to/your-app.apk
+
+# Install to emulator
+adb -e install /path/to/your-app.apk
+
+# Install to specific device
+adb -s &lt;device_serial&gt; install /path/to/your-app.apk
+</code></pre>
+<h3 id="uninstall-an-app"><a class="header" href="#uninstall-an-app">Uninstall an App</a></h3>
+<pre><code class="language-bash">adb uninstall &lt;package_name&gt;
+
+# Example: EUDI Wallet
+adb uninstall eu.europa.ec.euidiw
+
+# Example: France Identité
+adb uninstall fr.gouv.interieur.franceidentite
+</code></pre>
+<h3 id="list-installed-packages"><a class="header" href="#list-installed-packages">List Installed Packages</a></h3>
+<pre><code class="language-bash"># List all packages
+adb shell pm list packages
+
+# Filter by keyword
+adb shell pm list packages | grep -i eudi
+adb shell pm list packages | grep -i france
+adb shell pm list packages | grep -i identite
+</code></pre>
+<hr>
+<h2 id="w3c-digital-credentials-api--provider-registration"><a class="header" href="#w3c-digital-credentials-api--provider-registration">W3C Digital Credentials API — Provider Registration</a></h2>
+<h3 id="check-registered-credential-providers"><a class="header" href="#check-registered-credential-providers">Check Registered Credential Providers</a></h3>
+<pre><code class="language-bash"># List all credential providers registered with Android CredentialManager
+adb shell dumpsys credential
+</code></pre>
+<p><strong>Interpretation</strong>:</p>
 <ul>
-<li>For complete credential attribute specifications and authoritative references, see <a href="./credential_specifications.html">Credential Specifications</a></li>
-<li>For acronyms and terminology, see the <a href="./glossary.html">Glossary</a></li>
+<li><strong>Empty/missing output</strong> → No wallet has registered as a <code>CredentialProviderService</code> with Android’s CredentialManager on this device.</li>
+<li><strong>Populated output</strong> → Wallets that implement a <code>CredentialProviderService</code> will appear here. Look for entries under <code>credential-services</code>.</li>
 </ul>
-<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
-<p>DCQL (Digital Credentials Query Language) is defined in <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6">OpenID4VP Section 6</a>. It allows Relying Parties to specify which credentials and claims they require from the Wallet.</p>
-<p>For age verification, we primarily request the <code>age_over_18</code> claim from the EU Age Verification namespace.</p>
-<h2 id="credential-namespaces"><a class="header" href="#credential-namespaces">Credential Namespaces</a></h2>
-<p>DCQL queries reference credential attributes using namespace paths. The primary namespaces for age verification are:</p>
+<blockquote>
+<p><strong>Important caveat</strong>: Some wallets (including the EUDI Wallet) implement Annex C Sub-protocol B using an <strong>Activity intent filter</strong> on their MainActivity (for actions <code>androidx.credentials.registry.provider.action.GET_CREDENTIAL</code> / <code>androidx.identitycredentials.action.GET_CREDENTIALS</code>) <strong>instead</strong> of a <code>CredentialProviderService</code>. This approach does NOT appear in <code>dumpsys credential</code>.</p>
+<p>Unfortunately, this Activity-based approach <strong>does not work</strong> with Chrome on Android 14+. Chrome delegates to Android’s CredentialManager, which only dispatches to <code>CredentialProviderService</code> implementations — not to Activities with intent filters. The DC API request is never received by the wallet.</p>
+<p>See <a href="../technical_references/eudi_wallet_dc_api_analysis.html"><code>eudi_wallet_dc_api_analysis.md</code></a> for the full analysis.</p>
+</blockquote>
+<hr>
+<h2 id="dns--network-configuration"><a class="header" href="#dns--network-configuration">DNS &amp; Network Configuration</a></h2>
+<h3 id="map-demoewqwelocal-to-host-machine-emulator"><a class="header" href="#map-demoewqwelocal-to-host-machine-emulator">Map <code>demo.ewqwe.local</code> to Host Machine (Emulator)</a></h3>
+<p>For the Android emulator, the host machine is reachable at <code>10.0.2.2</code>. Map the demo domain inside the emulator:</p>
+<pre><code class="language-bash">adb root &amp;&amp; adb shell "echo '10.0.2.2  demo.ewqwe.local' &gt;&gt; /etc/hosts"
+</code></pre>
+<blockquote>
+<p>⚠️ Requires <code>adb root</code> (only works on emulator or rooted devices). The emulator must be started with <code>-writable-system</code>.</p>
+</blockquote>
+<h3 id="verify-the-hosts-file"><a class="header" href="#verify-the-hosts-file">Verify the Hosts File</a></h3>
+<pre><code class="language-bash">adb shell cat /etc/hosts
+</code></pre>
+<h3 id="verify-network-connectivity-from-emulator"><a class="header" href="#verify-network-connectivity-from-emulator">Verify Network Connectivity from Emulator</a></h3>
+<pre><code class="language-bash"># Ping your host machine from the emulator
+adb shell ping 10.0.2.2
+
+# Test DNS resolution inside the emulator
+adb shell ping demo.ewqwe.local
+</code></pre>
+<hr>
+<h2 id="transferring-files-ca-certificates-apks-etc"><a class="header" href="#transferring-files-ca-certificates-apks-etc">Transferring Files (CA Certificates, APKs, etc.)</a></h2>
+<h3 id="push-files-to-device"><a class="header" href="#push-files-to-device">Push Files to Device</a></h3>
+<pre><code class="language-bash"># Push a CA certificate to Downloads
+adb push /path/to/ewqwe-ca.crt /sdcard/Downloads/ewqwe-ca.crt
+</code></pre>
+<h3 id="push-ca-certificate-to-system-trust-store-rooted-emulator"><a class="header" href="#push-ca-certificate-to-system-trust-store-rooted-emulator">Push CA Certificate to System Trust Store (Rooted Emulator)</a></h3>
+<pre><code class="language-bash">adb root
+adb remount
+adb push /path/to/ewqwe-ca.crt /system/etc/security/cacerts/ewqwe-ca.crt
+adb reboot
+</code></pre>
+<h3 id="pull-files-from-device"><a class="header" href="#pull-files-from-device">Pull Files from Device</a></h3>
+<pre><code class="language-bash">adb pull /sdcard/Download/some-file.txt /local/path/
+</code></pre>
+<hr>
+<h2 id="viewing-wallet-logs-logcat"><a class="header" href="#viewing-wallet-logs-logcat">Viewing Wallet Logs (Logcat)</a></h2>
+<h3 id="filter-by-process-id-eudi-wallet"><a class="header" href="#filter-by-process-id-eudi-wallet">Filter by Process ID (EUDI Wallet)</a></h3>
+<pre><code class="language-bash"># Stream logs for the EUDI Wallet process only
+adb logcat --pid=$(adb shell pidof eu.europa.ec.euidiw)
+</code></pre>
+<h3 id="filter-by-log-tags"><a class="header" href="#filter-by-log-tags">Filter by Log Tags</a></h3>
+<pre><code class="language-bash"># Show only specific wallet log tags
+adb logcat -s "OpenId4VpManager" "PresentationManager" "WalletCore"
+</code></pre>
+<blockquote>
+<p><strong>France Identité</strong>: Substitute the package name or tags used by France Identité.</p>
+</blockquote>
+<h3 id="grep-for-wallet-keywords"><a class="header" href="#grep-for-wallet-keywords">Grep for Wallet Keywords</a></h3>
+<pre><code class="language-bash">adb logcat | grep -iE "eudi|openid4vp|presentation|mdoc|wallet"
+</code></pre>
+<pre><code class="language-bash">adb logcat | grep -iE "france|identite|annex_b|dcapi"
+</code></pre>
+<h3 id="clear-logcat"><a class="header" href="#clear-logcat">Clear Logcat</a></h3>
+<pre><code class="language-bash">adb logcat -c
+</code></pre>
+<hr>
+<h2 id="system-information--debugging"><a class="header" href="#system-information--debugging">System Information &amp; Debugging</a></h2>
+<h3 id="check-android-version"><a class="header" href="#check-android-version">Check Android Version</a></h3>
+<pre><code class="language-bash">adb shell getprop ro.build.version.release
+</code></pre>
+<h3 id="check-if-webview-supports-w3c-digital-credentials"><a class="header" href="#check-if-webview-supports-w3c-digital-credentials">Check if WebView Supports W3C Digital Credentials</a></h3>
+<pre><code class="language-bash"># Check Chrome version on device
+adb shell dumpsys package com.android.chrome | grep versionName
+</code></pre>
+<h3 id="grant-permissions-to-a-wallet-app"><a class="header" href="#grant-permissions-to-a-wallet-app">Grant Permissions to a Wallet App</a></h3>
+<pre><code class="language-bash">adb shell pm grant &lt;package_name&gt; android.permission.BLUETOOTH
+adb shell pm grant &lt;package_name&gt; android.permission.BLUETOOTH_ADMIN
+</code></pre>
+<h3 id="open-deep-link--url-scheme"><a class="header" href="#open-deep-link--url-scheme">Open Deep Link / URL Scheme</a></h3>
+<pre><code class="language-bash"># Open an openid4vp deep link on the device
+adb shell am start -d "openid4vp://?client_id=..." -a android.intent.action.VIEW
+
+# Open a generic URL
+adb shell am start -d "https://example.com" -a android.intent.action.VIEW
+</code></pre>
+<h3 id="force-stop-and-clear-app-data"><a class="header" href="#force-stop-and-clear-app-data">Force-Stop and Clear App Data</a></h3>
+<pre><code class="language-bash">adb shell am force-stop &lt;package_name&gt;
+adb shell pm clear &lt;package_name&gt;
+</code></pre>
+<h3 id="reboot-the-emulatordevice"><a class="header" href="#reboot-the-emulatordevice">Reboot the Emulator/Device</a></h3>
+<pre><code class="language-bash">adb reboot
+</code></pre>
+<hr>
+<h2 id="testing-certificates"><a class="header" href="#testing-certificates">Testing Certificates</a></h2>
+<h3 id="inspect-certificate-chain"><a class="header" href="#inspect-certificate-chain">Inspect Certificate Chain</a></h3>
+<pre><code class="language-bash">openssl x509 -in your_fullchain.pem -noout -issuer
+openssl x509 -in your_cert.pem -noout -subject -issuer
+</code></pre>
+<h3 id="download-root-ca-certificates-eg-lets-encrypt"><a class="header" href="#download-root-ca-certificates-eg-lets-encrypt">Download Root CA Certificates (e.g., Let’s Encrypt)</a></h3>
+<pre><code class="language-bash">curl -s https://letsencrypt.org/certs/isrgrootx1.pem -o isrg_root_x1.pem
+curl -s https://letsencrypt.org/certs/isrg-root-x2.pem -o isrg_root_x2.pem
+</code></pre>
+<hr>
+<h2 id="android-emulator-specific-commands"><a class="header" href="#android-emulator-specific-commands">Android Emulator-Specific Commands</a></h2>
+<h3 id="cold-boot"><a class="header" href="#cold-boot">Cold Boot</a></h3>
+<p>Use when the emulator is unresponsive or has stale state. In Android Studio:
+<strong>Device Manager → Right-click device → Cold Boot Now</strong></p>
+<h3 id="enable-hardware-keyboard"><a class="header" href="#enable-hardware-keyboard">Enable Hardware Keyboard</a></h3>
+<p>In Android Studio emulator settings, enable <strong>“Hardware keyboard present”</strong> to use your computer’s keyboard.</p>
+<h3 id="grant-superuser-root"><a class="header" href="#grant-superuser-root">Grant Superuser (root)</a></h3>
+<pre><code class="language-bash">adb root
+</code></pre>
+<blockquote>
+<p>Only works on emulator images or rooted devices. Required for modifying <code>/etc/hosts</code> or system-level CA certificates.</p>
+</blockquote>
+<h3 id="remount-system-partition-as-writable"><a class="header" href="#remount-system-partition-as-writable">Remount System Partition as Writable</a></h3>
+<pre><code class="language-bash">adb remount
+</code></pre>
+<blockquote>
+<p>Required after <code>adb root</code> to push files to system partitions like <code>/system/etc/security/cacerts/</code>.</p>
+</blockquote>
+<hr>
+<h2 id="quick-reference-by-use-case"><a class="header" href="#quick-reference-by-use-case">Quick Reference by Use Case</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Namespace</th><th>Description</th><th>Specification</th></tr>
+<tr><th>What You Need</th><th>Command</th></tr>
 </thead>
 <tbody>
-<tr><td><code>eu.europa.ec.av.1</code></td><td>EU Age Verification namespace (Proof of Age)</td><td><a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile</a></td></tr>
-<tr><td><code>org.iso.18013.5.1</code></td><td>ISO mDL namespace (Mobile Driver License)</td><td><a href="https://www.iso.org/standard/69084.html">ISO/IEC 18013-5:2021</a></td></tr>
+<tr><td>See connected devices</td><td><code>adb devices</code></td></tr>
+<tr><td>Install an APK</td><td><code>adb install /path/to/app.apk</code></td></tr>
+<tr><td>Force reinstall</td><td><code>adb install -r /path/to/app.apk</code></td></tr>
+<tr><td>Check W3C credential providers</td><td><code>adb shell dumpsys credential</code></td></tr>
+<tr><td>Map demo domain in emulator</td><td><code>adb root &amp;&amp; adb shell "echo '10.0.2.2 demo.ewqwe.local' &gt;&gt; /etc/hosts"</code></td></tr>
+<tr><td>Push CA cert to Downloads</td><td><code>adb push cert.crt /sdcard/Downloads/</code></td></tr>
+<tr><td>Push CA cert to system store</td><td><code>adb root &amp;&amp; adb remount &amp;&amp; adb push cert.crt /system/etc/security/cacerts/</code></td></tr>
+<tr><td>Stream wallet logs</td><td><code>adb logcat --pid=$(adb shell pidof &lt;package&gt;)</code></td></tr>
+<tr><td>Filter logcat by tags</td><td><code>adb logcat -s "Tag1" "Tag2"</code></td></tr>
+<tr><td>Search logs for keywords</td><td><code>adb logcat | grep -iE "eudi|openid4vp"</code></td></tr>
+<tr><td>Restart ADB server</td><td><code>adb kill-server &amp;&amp; adb start-server</code></td></tr>
+<tr><td>Check Android version</td><td><code>adb shell getprop ro.build.version.release</code></td></tr>
+<tr><td>List installed packages</td><td><code>adb shell pm list packages | grep -i &lt;keyword&gt;</code></td></tr>
+<tr><td>Open a deep link</td><td><code>adb shell am start -d "&lt;url&gt;" -a android.intent.action.VIEW</code></td></tr>
+<tr><td>Force-stop an app</td><td><code>adb shell am force-stop &lt;package&gt;</code></td></tr>
+<tr><td>Clear app data</td><td><code>adb shell pm clear &lt;package&gt;</code></td></tr>
+<tr><td>Reboot device</td><td><code>adb reboot</code></td></tr>
+<tr><td>Root the emulator</td><td><code>adb root</code></td></tr>
+<tr><td>Remount system as writable</td><td><code>adb remount</code></td></tr>
 </tbody>
 </table>
 </div>
-<p>For complete attribute listings and encoding formats, see <a href="./credential_specifications.html">Credential Specifications</a>.</p>
-<h2 id="age-verification-dcql-query"><a class="header" href="#age-verification-dcql-query">Age Verification DCQL Query</a></h2>
-<h3 id="minimal-age-verification-request"><a class="header" href="#minimal-age-verification-request">Minimal Age Verification Request</a></h3>
-<p>The simplest age verification request asks only for <code>age_over_18</code>:</p>
-<pre><code class="language-json">{
-  "credentials": [
-    {
-      "id": "proof_of_age",
-      "format": "mso_mdoc",
-      "meta": {
-        "doctype_value": "eu.europa.ec.av.1"
-      },
-      "claims": [
-        {
-          "path": ["eu.europa.ec.av.1", "age_over_18"]
-        }
-      ]
-    }
-  ]
-}
-</code></pre>
-<h3 id="age-verification-with-age-over-21"><a class="header" href="#age-verification-with-age-over-21">Age Verification with Age Over 21</a></h3>
-<p>For jurisdictions requiring age 21+:</p>
-<pre><code class="language-json">{
-  "credentials": [
-    {
-      "id": "proof_of_age",
-      "format": "mso_mdoc",
-      "meta": {
-        "doctype_value": "eu.europa.ec.av.1"
-      },
-      "claims": [
-        {
-          "path": ["eu.europa.ec.av.1", "age_over_21"]
-        }
-      ]
-    }
-  ]
-}
-</code></pre>
-<h3 id="age-verification-with-value-matching"><a class="header" href="#age-verification-with-value-matching">Age Verification with Value Matching</a></h3>
-<p>Request age verification only if the claim value is <code>true</code>:</p>
-<pre><code class="language-json">{
-  "credentials": [
-    {
-      "id": "proof_of_age",
-      "format": "mso_mdoc",
-      "meta": {
-        "doctype_value": "eu.europa.ec.av.1"
-      },
-      "claims": [
-        {
-          "path": ["eu.europa.ec.av.1", "age_over_18"],
-          "values": [true]
-        }
-      ]
-    }
-  ]
-}
-</code></pre>
-<h3 id="fallback-mdl-age-verification"><a class="header" href="#fallback-mdl-age-verification">Fallback: mDL Age Verification</a></h3>
-<p>If the user doesn’t have an EU Proof of Age but has an mDL:</p>
-<pre><code class="language-json">{
-  "credentials": [
-    {
-      "id": "age_from_mdl",
-      "format": "mso_mdoc",
-      "meta": {
-        "doctype_value": "org.iso.18013.5.1.mDL"
-      },
-      "claims": [
-        {
-          "path": ["org.iso.18013.5.1", "age_over_18"]
-        }
-      ]
-    }
-  ]
-}
-</code></pre>
-<h3 id="multiple-credential-options"><a class="header" href="#multiple-credential-options">Multiple Credential Options</a></h3>
-<p>Request age proof from either EU AV or mDL (Wallet chooses one):</p>
-<pre><code class="language-json">{
-  "credentials": [
-    {
-      "id": "eu_age_proof",
-      "format": "mso_mdoc",
-      "meta": {
-        "doctype_value": "eu.europa.ec.av.1"
-      },
-      "claims": [
-        {
-          "path": ["eu.europa.ec.av.1", "age_over_18"]
-        }
-      ]
-    },
-    {
-      "id": "mdl_age_proof",
-      "format": "mso_mdoc",
-      "meta": {
-        "doctype_value": "org.iso.18013.5.1.mDL"
-      },
-      "claims": [
-        {
-          "path": ["org.iso.18013.5.1", "age_over_18"]
-        }
-      ]
-    }
-  ],
-  "credential_sets": [
-    {
-      "options": [
-        ["eu_age_proof"],
-        ["mdl_age_proof"]
-      ]
-    }
-  ]
-}
-</code></pre>
-<h2 id="complete-openid4vp-authorization-request"><a class="header" href="#complete-openid4vp-authorization-request">Complete OpenID4VP Authorization Request</a></h2>
-<h3 id="same-device-flow"><a class="header" href="#same-device-flow">Same-Device Flow</a></h3>
-<pre><code>GET /authorize?
-  response_type=vp_token
-  &amp;response_mode=fragment
-  &amp;client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fcallback
-  &amp;redirect_uri=https%3A%2F%2Frp.example.com%2Fcallback
-  &amp;nonce=n-0S6_WzA2Mj
-  &amp;dcql_query=%7B%22credentials%22%3A%5B%7B%22id%22%3A%22proof_of_age%22%2C%22format%22%3A%22mso_mdoc%22%2C%22meta%22%3A%7B%22doctype_value%22%3A%22eu.europa.ec.av.1%22%7D%2C%22claims%22%3A%5B%7B%22path%22%3A%5B%22eu.europa.ec.av.1%22%2C%22age_over_18%22%5D%7D%5D%7D%5D%7D
-</code></pre>
-<p>Decoded <code>dcql_query</code>:</p>
-<pre><code class="language-json">{
-  "credentials": [
-    {
-      "id": "proof_of_age",
-      "format": "mso_mdoc",
-      "meta": {
-        "doctype_value": "eu.europa.ec.av.1"
-      },
-      "claims": [
-        {
-          "path": ["eu.europa.ec.av.1", "age_over_18"]
-        }
-      ]
-    }
-  ]
-}
-</code></pre>
-<h3 id="cross-device-flow"><a class="header" href="#cross-device-flow">Cross-Device Flow</a></h3>
-<pre><code>GET /authorize?
-  response_type=vp_token
-  &amp;response_mode=direct_post
-  &amp;client_id=redirect_uri%3Ahttps%3A%2F%2Frp.example.com%2Fpost
-  &amp;response_uri=https%3A%2F%2Frp.example.com%2Fpost
-  &amp;nonce=n-0S6_WzA2Mj
-  &amp;state=eyJhb...6-sVA
-  &amp;dcql_query=...
-</code></pre>
-<p>Key differences from same-device:</p>
-<ul>
-<li><code>response_mode=direct_post</code> instead of <code>fragment</code></li>
-<li><code>response_uri</code> instead of <code>redirect_uri</code></li>
-<li><code>state</code> parameter for session correlation</li>
-</ul>
-<h2 id="vp-token-response"><a class="header" href="#vp-token-response">VP Token Response</a></h2>
-<p>The Wallet returns a VP Token containing the presentation:</p>
-<pre><code class="language-json">{
-  "proof_of_age": ["&lt;base64url-encoded DeviceResponse&gt;"]
-}
-</code></pre>
-<p>The DeviceResponse is a CBOR-encoded structure as defined in ISO/IEC 18013-5.</p>
-<h2 id="typescript-implementation-example"><a class="header" href="#typescript-implementation-example">TypeScript Implementation Example</a></h2>
-<pre><code class="language-typescript">// Build DCQL query for age verification
-function buildAgeVerificationQuery(minAge: 18 | 21 = 18): DCQLQuery {
-  return {
-    credentials: [
-      {
-        id: "proof_of_age",
-        format: "mso_mdoc",
-        meta: {
-          doctype_value: "eu.europa.ec.av.1"
-        },
-        claims: [
-          {
-            path: ["eu.europa.ec.av.1", `age_over_${minAge}`]
-          }
-        ]
-      }
-    ]
-  };
-}
-
-// Build complete authorization request
-function buildAuthorizationRequest(
-  flow: "same-device" | "cross-device",
-  callbackUrl: string,
-  minAge: 18 | 21 = 18
-): OpenID4VPRequest {
-  const nonce = crypto.randomUUID();
-  const dcqlQuery = buildAgeVerificationQuery(minAge);
-  
-  if (flow === "same-device") {
-    return {
-      response_type: "vp_token",
-      response_mode: "fragment",
-      client_id: `redirect_uri:${callbackUrl}`,
-      redirect_uri: callbackUrl,
-      nonce,
-      dcql_query: dcqlQuery
-    };
-  } else {
-    return {
-      response_type: "vp_token",
-      response_mode: "direct_post",
-      client_id: `redirect_uri:${callbackUrl}`,
-      response_uri: callbackUrl,
-      nonce,
-      state: crypto.randomUUID(),
-      dcql_query: dcqlQuery
-    };
-  }
-}
-</code></pre>
+<hr>
 <h2 id="references"><a class="header" href="#references">References</a></h2>
 <ul>
-<li><a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile - Annex A</a></li>
-<li><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6">OpenID4VP 1.0 - DCQL</a></li>
-<li><a href="https://www.iso.org/standard/69084.html">ISO/IEC 18013-5 - mDL</a></li>
-<li><a href="./references.html">Full reference list</a></li>
+<li><a href="https://developer.android.com/tools/adb">Android Developers - ADB Command Reference</a></li>
+<li><a href="https://developer.android.com/studio/debug/dev-options">Android Developers - Configure On-Device Developer Options</a></li>
+<li><a href="https://developer.android.com/studio/run/device">Android Developers - Run Apps on a Hardware Device</a></li>
+<li><a href="https://developer.chrome.com/docs/devtools/remote-debugging/">Chrome Remote Debugging</a></li>
 </ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../technical_references/iso_18013_7.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../technical_references/references.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="../technical_references/credential_specifications.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -444,13 +420,10 @@ function buildAuthorizationRequest(
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../technical_references/iso_18013_7.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../technical_references/references.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="../technical_references/credential_specifications.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
-                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
-                    </a>
             </nav>
 
         </div>

@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Age Verification App on Android - ewQwe Digital Identity</title>
+        <title>Age Verification App on Android Studio - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3b89128e.js";
+            window.path_to_searchindex_js = "searchindex-df26ae72.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e68e16c9.js"></script>
+        <script src="toc-2cdafee5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -208,11 +208,8 @@
 <p>If your Relying Party targets the <strong>EUDI Wallet</strong> using <code>x509_hash</code> (or legacy <code>x509_san_dns</code>) with signed JARs, see the <a href="./eudi_wallet_android_studio.html">EUDI Wallet guide</a> instead.</p>
 </blockquote>
 <h2 id="ewqwe-demo-setup"><a class="header" href="#ewqwe-demo-setup">ewQwe Demo Setup</a></h2>
-<blockquote>
-<p><strong>⚠️ FOR TESTING ONLY</strong> — The ewQwe fork contains a TLS bypass (trust-all certificates) strictly for local development. This <strong>must not</strong> be used in production.</p>
-</blockquote>
-<p>This section describes how to run the <strong>ewQwe fork</strong> of the AV App together with the ewQwe Relying Party Demo Webapp for end-to-end Annex A testing on a local Android emulator.</p>
-<p><strong>Repository</strong>: <a href="https://github.com/rd-ewqwe/av-app-android-wallet-ui">https://github.com/rd-ewqwe/av-app-android-wallet-ui</a></p>
+<p>This section describes how to run the AV App together with the ewQwe Relying Party Demo Webapp for end-to-end Annex A testing on a local Android emulator.</p>
+<p><strong>Repository</strong>: <a href="https://github.com/eu-digital-identity-wallet/av-app-android-wallet-ui">https://github.com/eu-digital-identity-wallet/av-app-android-wallet-ui</a></p>
 <h3 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h3>
 <ul>
 <li>Android Studio installed (see <a href="./eudi_wallet_android_studio.html#installing-android-studio">EUDI Wallet guide — Installing Android Studio</a>)</li>
@@ -223,7 +220,7 @@
 <p><strong>Tip</strong>: Use the same <code>EUDI_Dev_Device</code> emulator as the HAIP wallet. Both wallet apps can be installed simultaneously on the same emulator, and <code>demo.ewqwe.local</code> will already be mapped to the host machine if you previously ran <code>./start_ewqwe_eudi_emulator.sh</code> from the HAIP repo. See the <a href="./eudi_wallet_android_studio.html#ewqwe-demo-setup">EUDI Wallet ewQwe Demo Setup</a> for emulator setup instructions.</p>
 </blockquote>
 <h3 id="step-1-clone-the-repository"><a class="header" href="#step-1-clone-the-repository">Step 1: Clone the Repository</a></h3>
-<pre><code class="language-bash">git clone https://github.com/rd-ewqwe/av-app-android-wallet-ui.git
+<pre><code class="language-bash">git clone https://github.com/eu-digital-identity-wallet/av-app-android-wallet-ui.git
 cd av-app-android-wallet-ui
 </code></pre>
 <h3 id="step-2-build-and-run-the-app"><a class="header" href="#step-2-build-and-run-the-app">Step 2: Build and Run the App</a></h3>
@@ -476,11 +473,11 @@ configureOpenId4Vp {
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="demo_architecture.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="eudi_wallet_android_studio.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="eudi_wallet_android_studio.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="eudi_wallet/local_network.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -490,11 +487,11 @@ configureOpenId4Vp {
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="demo_architecture.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="eudi_wallet_android_studio.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="eudi_wallet_android_studio.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="eudi_wallet/local_network.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

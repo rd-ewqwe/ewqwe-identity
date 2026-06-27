@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>ISO 18013-7 - ewQwe Digital Identity</title>
+        <title>ISO/IEC 18013-7 - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-3b89128e.js";
+            window.path_to_searchindex_js = "../searchindex-df26ae72.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="../toc-e68e16c9.js"></script>
+        <script src="../toc-2cdafee5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -304,131 +304,24 @@
 <p>The RP HPKE-decrypts using its private key to obtain the CBOR <code>DeviceResponse</code>.</p>
 <hr>
 <h2 id="openid4vp-profiles"><a class="header" href="#openid4vp-profiles">OpenID4VP Profiles</a></h2>
-<p>Two OpenID4VP-based profiles coexist in the EUDI ecosystem. They use different Annex B configurations and have fundamentally different trust models.</p>
-<h3 id="comparison-table"><a class="header" href="#comparison-table">Comparison Table</a></h3>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Aspect</th><th>EU-AV Blueprint</th><th>HAIP</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Managed by</strong></td><td>EU Digital Identity ecosystem</td><td>OpenID Foundation</td></tr>
-<tr><td><strong>Purpose</strong></td><td>Privacy-preserving age checks (DSA)</td><td>High-security credential exchange (PID, mDL)</td></tr>
-<tr><td><strong>Primary method</strong></td><td>Annex C (W3C DC API)</td><td>Annex B (OpenID4VP)</td></tr>
-<tr><td><strong>Fallback method</strong></td><td>Annex B (<code>redirect_uri</code>, no JAR)</td><td>—</td></tr>
-<tr><td><strong>Request signing</strong></td><td><strong>No JAR</strong> — deliberately omitted</td><td><strong>Strict JAR required</strong></td></tr>
-<tr><td><strong>Response format</strong></td><td>Plain VP Token (<code>direct_post</code>)</td><td>JWE-encrypted (<code>direct_post.jwt</code>)</td></tr>
-<tr><td><strong>Client ID scheme</strong></td><td><code>redirect_uri</code></td><td><code>x509_san_dns</code>, <code>x509_hash</code>, <code>x509_san_uri</code></td></tr>
-<tr><td><strong>Credential formats</strong></td><td><code>mso_mdoc</code> (EU AV namespace)</td><td><code>mso_mdoc</code> (mDL, PID) + <code>dc+sd-jwt</code> (PID)</td></tr>
-<tr><td><strong>Privacy model</strong></td><td>Double-blind: verifier gets binary yes/no</td><td>Full identity disclosed (PID, mDL)</td></tr>
-<tr><td><strong>Trust model</strong></td><td>RP identified by redirect URI (no registry)</td><td>RP identified by certificate (EU Trust List)</td></tr>
-<tr><td><strong>Wallet support</strong></td><td>France Identité, AVI, AV-compatible wallets</td><td>All major EUDI wallets</td></tr>
-</tbody>
-</table>
-</div>
-<h3 id="eu-age-verification-eu-av-blueprint"><a class="header" href="#eu-age-verification-eu-av-blueprint">EU Age Verification (EU-AV) Blueprint</a></h3>
-<p>Driven by the <a href="https://digital-strategy.ec.europa.eu/en/policies/digital-services-act-package">Digital Services Act (DSA)</a>, the EU-AV blueprint is designed exclusively for privacy-preserving, anonymous age checks.</p>
+<p>Two profiles use Annex B transport. For a detailed comparison see the <a href="../summary_protocols_formats.html">Protocols &amp; Formats Summary</a>.</p>
 <ul>
-<li><strong>Privacy by design:</strong> Employs a double-blind model — the verifier receives a cryptographic binary “yes/no” without learning the user’s identity, and the issuer cannot see where the credential is used.</li>
-<li><strong>Deliberate rejection of JAR:</strong> EU-AV explicitly drops the HAIP JAR requirement. Because the AV ecosystem lacks a master Relying Party Trust List, JAR would not prevent tracking — an attacker could obtain a certificate from a rogue CA and substitute a legitimate JAR.</li>
-<li><strong>Protocol priority:</strong> Annex C (DC API) is the primary method; Annex B (OpenID4VP with <code>redirect_uri</code> scheme, no JAR, plain <code>direct_post</code>) is the fallback.</li>
+<li><strong>EU Age Verification (EU-AV) Blueprint</strong> — privacy-preserving age checks driven by the DSA. Uses Annex B as a fallback with <code>redirect_uri</code> scheme, no JAR, plain <code>direct_post</code>. The primary method is Annex C (DC API).</li>
+<li><strong>High Assurance Interoperability Profile (HAIP)</strong> — high-security credential exchange for PID and mDL. Requires strict JAR signing with X.509 certificates (<code>x509_san_dns</code> or <code>x509_hash</code>), and JWE-encrypted responses (<code>direct_post.jwt</code>).</li>
 </ul>
-<h3 id="high-assurance-interoperability-profile-haip"><a class="header" href="#high-assurance-interoperability-profile-haip">High Assurance Interoperability Profile (HAIP)</a></h3>
-<p>Managed by the OpenID Foundation, HAIP is designed for generalised, high-security credential exchange.</p>
+<h2 id="references"><a class="header" href="#references">References</a></h2>
 <ul>
-<li><strong>Integrity protection:</strong> HAIP strictly relies on JWT Secured Authorization Requests (JAR) to protect the verifier’s request integrity.</li>
-<li><strong>Trust model:</strong> Assumes the existence of Relying Party Trust Lists. The wallet uses PKI/X.509 certificates to verify the verifier’s identity before presenting the mDoc.</li>
-<li><strong>Response:</strong> Demands highly encrypted responses using <code>direct_post.jwt</code> (JWE).</li>
+<li><a href="https://www.iso.org/standard/69084.html">ISO/IEC 18013-5:2021</a> — mDL data model</li>
+<li><a href="https://www.iso.org/standard/91154.html">ISO/IEC 18013-7:2025</a> — mDoc online presentation</li>
+<li><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID4VP 1.0</a></li>
+<li><a href="./references.html">Full reference list</a></li>
 </ul>
-<hr>
-<h2 id="annex-b-vs-haip--detailed-comparison"><a class="header" href="#annex-b-vs-haip--detailed-comparison">Annex B vs HAIP — Detailed Comparison</a></h2>
-<p>This section compares the concrete request/response formats and cryptographic mechanisms.</p>
-<h3 id="request-format"><a class="header" href="#request-format">Request Format</a></h3>
-<p><strong>ISO 18013-7 Annex B (DeviceRequest CBOR):</strong></p>
-<pre><code class="language-cbor">{
-  "docType": "org.iso.18013.5.1.mDL",
-  "itemsRequest": {
-    "org.iso.18013.5.1": {
-      "age_over_18": true,
-      "age_over_21": false
-    }
-  }
-}
-</code></pre>
-<p>Encoded: CBOR → base64url → <code>["dcapi"]</code> wrapper → <code>navigator.credentials.get()</code>.</p>
-<p><strong>HAIP (Authorization Request JWT):</strong></p>
-<pre><code class="language-json">{
-  "iss": "https://rp.example.com",
-  "client_id": "x509_hash:abc123...",
-  "response_type": "vp_token",
-  "response_mode": "direct_post.jwt",
-  "response_uri": "https://rp.example.com/response",
-  "nonce": "n-0S6_WzA2Mj",
-  "state": "af0ifjsldkj",
-  "dcql_query": {
-    "credentials": [{
-      "format": "mso_mdoc",
-      "doctype": "org.iso.18013.5.1.mDL",
-      "claims": [{
-        "namespace": "org.iso.18013.5.1",
-        "claim_name": "age_over_18",
-        "intent_to_retain": false
-      }]
-    }]
-  }
-}
-</code></pre>
-<p>If JAR-signed, this JWT is wrapped in an outer JWT signed with the RP’s private key.</p>
-<h3 id="response-format"><a class="header" href="#response-format">Response Format</a></h3>
-<p><strong>Annex B — DeviceResponse (HPKE-encrypted CBOR):</strong></p>
-<pre><code class="language-cbor">{
-  "documents": [{
-    "docType": "org.iso.18013.5.1.mDL",
-    "issuerSigned": {
-      "nameSpaces": { ... },
-      "issuerAuth": &lt;COSE_Sign1&gt;
-    },
-    "deviceSigned": {
-      "deviceAuth": &lt;COSE_Sign1&gt;
-    }
-  }]
-}
-</code></pre>
-<p><strong>HAIP — VP Token (JWT):</strong></p>
-<pre><code class="language-json">{
-  "vp_token": "eyJ...",
-  "presentation_submission": { ... }
-}
-</code></pre>
-<h3 id="key-differences"><a class="header" href="#key-differences">Key Differences</a></h3>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Aspect</th><th>Annex B (ISO CBOR)</th><th>HAIP (OpenID4VP)</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Request format</strong></td><td>CBOR DeviceRequest</td><td>JWT Authorization Request</td></tr>
-<tr><td><strong>Response format</strong></td><td>HPKE-encrypted CBOR</td><td>JWT VP Token (optionally JWE)</td></tr>
-<tr><td><strong>Integrity</strong></td><td>Asymmetric encryption (confidentiality + integrity)</td><td>Cryptographic signature (integrity + authenticity)</td></tr>
-<tr><td><strong>Key distribution</strong></td><td>RP provides public key in request</td><td>Wallet provides signing key via cert / JWKS</td></tr>
-<tr><td><strong>Nonce binding</strong></td><td>Nonce in <code>encryptionInfo</code> (HPKE context)</td><td>Nonce in JWT claim</td></tr>
-<tr><td><strong>Request signing</strong></td><td>Optional <code>readerAuth</code></td><td>Mandatory JAR</td></tr>
-<tr><td><strong>Client authentication</strong></td><td>Optional (reader certificate)</td><td>Mandatory (JAR + <code>x509_hash</code> / <code>x509_san_dns</code>)</td></tr>
-<tr><td><strong>Replay protection</strong></td><td>Nonce in encryption metadata</td><td>Nonce in JWT + signature</td></tr>
-<tr><td><strong>Response modes</strong></td><td><code>org-iso-mdoc</code> only</td><td><code>direct_post</code>, <code>direct_post.jwt</code>, <code>fragment</code>, <code>form_post</code></td></tr>
-<tr><td><strong>Multi-credential</strong></td><td>mDoc only</td><td>mDoc + SD-JWT</td></tr>
-<tr><td><strong>Browser involvement</strong></td><td>Native DC API (no redirect)</td><td>HTTP redirects or form POST</td></tr>
-<tr><td><strong>Session state</strong></td><td>Implicit in encryptionInfo nonce</td><td>Explicit state + nonce parameters</td></tr>
-<tr><td><strong>Wallet support</strong></td><td>France Identité, EUDIW (via <code>dc_api.jwt</code> wrapper)</td><td>All major EUDI wallets</td></tr>
-</tbody>
-</table>
-</div>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="../technical_references/age_verification_openid4vp.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="../summary_protocols_formats.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
@@ -442,7 +335,7 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="../technical_references/age_verification_openid4vp.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="../summary_protocols_formats.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 

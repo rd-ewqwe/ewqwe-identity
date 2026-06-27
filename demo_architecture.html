@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>The Demo Architecture - ewQwe Digital Identity</title>
+        <title>Demo Architecture - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3b89128e.js";
+            window.path_to_searchindex_js = "searchindex-df26ae72.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e68e16c9.js"></script>
+        <script src="toc-2cdafee5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -175,183 +175,83 @@
                 <div id="mdbook-content" class="content">
                     <main>
                         <h1 id="demo-architecture"><a class="header" href="#demo-architecture">Demo Architecture</a></h1>
-<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
-<p>This demonstration system showcases a complete credential verification flow using three main components:</p>
+<p>The demo system showcases a complete credential verification flow:</p>
 <ol>
-<li>
-<p><strong>Relying Party Demo Webapp</strong> - A reference implementation of a Relying Party (RP) web application that requests and verifies credentials from users.</p>
-</li>
-<li>
-<p><strong>ewQwe Credential Verifier Server</strong> - A production-ready backend service that performs cryptographic verification on behalf of Relying Parties.</p>
-</li>
-<li>
-<p><strong>Demo Wallets</strong>:</p>
-<ol>
-<li>Age Verification Mobile App - A mobile application that acts as a wallet on Android devices, allowing users to manage and present age verification credentials on . Emulator for testing and development purposes.</li>
-<li>EUDI Wallet - A reference implementation of a mobile wallet based on the EU Digital Identity (EUDI) specifications and HAIP profile. The wallet runs in the Android Studio Emulator for testing and development purposes.
-The demo wallets and webapp work together to demonstrate the complete end-to-end flow of credential presentation and verification. The webapp serves as both a functional demonstration and a <strong>starting point for Relying Parties</strong> who want to implement credential verification in their own web applications.</li>
+<li><strong>Demo Webapp</strong> — a Relying Party SPA that requests credentials</li>
+<li><strong>Credential Verifier</strong> — the backend that cryptographically verifies presentations</li>
+<li><strong>Wallet</strong> — a mobile wallet app (EUDI Wallet, France Identité, or Age Verification App)</li>
 </ol>
-</li>
-</ol>
-<blockquote>
-<p><strong>Source Code</strong>: The wallets and relying party webapp source codes are available on GitHub for developers to use as a reference implementation. (GitHub repository details to be provided)</p>
-</blockquote>
 <h2 id="system-architecture"><a class="header" href="#system-architecture">System Architecture</a></h2>
-<p>The following diagram shows how the components interact in a complete credential verification flow:</p>
-<pre class="mermaid">flowchart TB
-subgraph Browser["Browser Environment"]
-    subgraph WebappUI["Demo Webapp Frontend"]
-        RP[Relying Party UI&lt;br/&gt;- Credential Type Selection&lt;br/&gt;- Claims Configuration&lt;br/&gt;- Protocol Selection&lt;br/&gt;- Results Display]
+<pre class="mermaid">flowchart LR
+    subgraph Browser["Browser"]
+        Webapp["Demo Webapp&lt;br/&gt;TypeScript SPA"]
     end
-end
-    
-    subgraph WebappBackend["Webapp Backend&lt;br/&gt;Deno Server"]
-        API[API Server&lt;br/&gt;- /api/verify endpoint&lt;br/&gt;- TLS client config&lt;br/&gt;- Proxied via Vite]
+
+    subgraph Server["Server"]
+        Verifier["Credential Verifier&lt;br/&gt;Rust / actix-web"]
     end
-    
-    subgraph CredVerifier["ewQwe Credential Verifier"]
-        Endpoints[REST API&lt;br/&gt;POST /api/verify&lt;br/&gt;GET /version]
-        Attestation[Attestation Engine&lt;br/&gt;- Parse VP Token&lt;br/&gt;- Verify Signatures&lt;br/&gt;- Sign JWT Attestation]
-        
-        Endpoints --&gt; Attestation
+
+    subgraph Mobile["Mobile Device"]
+        Wallet["EUDI Wallet"]
     end
-    
-    subgraph Infrastructure["Infrastructure"]
-        Redis[(Redis&lt;br/&gt;Session Storage&lt;br/&gt;Port 6379)]
-    end
-    
-    RP --&gt;|fetch /api/verify| API
-    API --&gt;|HTTPS POST| Endpoints
-    Attestation --&gt;|Store Sessions| Redis
-    API --&gt;|Return signed&lt;br/&gt;attestation| RP
-    
-    style Browser fill:#6d28d9
-    style WebappUI fill:##7c3aed
-    style WebappBackend fill:#6d28d9
-    style CredVerifier fill:#6d28d9
-    style Infrastructure fill:#6d28d9
+
+    Webapp --&gt;|Init transaction| Verifier
+    Webapp --&gt;|Display QR code| Wallet
+    Wallet --&gt;|Scan QR, present credential| Verifier
+    Webapp --&gt;|Poll status| Verifier
+    Verifier --&gt;|Signed attestation| Webapp
 </pre>
 
-<h2 id="setting-up-the-demo-environment"><a class="header" href="#setting-up-the-demo-environment">Setting Up the Demo Environment</a></h2>
-<h3 id="verification-checklist"><a class="header" href="#verification-checklist">Verification Checklist</a></h3>
+<p>The credential verifier serves both the verifier API and (when the admin UI is enabled) the embedded SPA at the root URL.</p>
+<h2 id="setting-up"><a class="header" href="#setting-up">Setting Up</a></h2>
+<h3 id="1-start-the-credential-verifier"><a class="header" href="#1-start-the-credential-verifier">1. Start the Credential Verifier</a></h3>
+<pre><code class="language-bash">cargo run -p ewqwe_credential_verifier_server -- \
+  crates/ewqwe-credential-verifier-server/credential-server.toml
+</code></pre>
+<p>The development config uses HTTP on port 9888 with authentication disabled.</p>
+<h3 id="2-start-the-demo-webapp"><a class="header" href="#2-start-the-demo-webapp">2. Start the Demo Webapp</a></h3>
+<pre><code class="language-bash">cd typescript
+pnpm install
+pnpm --filter @ewqwe/digital-identity build
+pnpm --filter @ewqwe/demo-webapp dev
+</code></pre>
+<p>The webapp runs at <code>https://localhost:5174</code> and proxies API calls to the verifier.</p>
+<h3 id="3-run-a-wallet"><a class="header" href="#3-run-a-wallet">3. Run a Wallet</a></h3>
+<p>For full end-to-end testing, you need a wallet on a mobile device (physical or emulator):</p>
 <ul>
-<li>✅ Redis responding to <code>redis-cli ping</code></li>
-<li>✅ Credential Verifier listening on <a href="https://127.0.0.1:9443">https://127.0.0.1:9443</a></li>
-<li>✅ Webapp frontend accessible at <a href="https://localhost:5174">https://localhost:5174</a></li>
-<li>✅ Webapp backend API proxied through Vite</li>
+<li><strong>EUDI Wallet</strong> — see <a href="./eudi_wallet_android_studio.html">EUDI Wallet on Android Studio</a></li>
+<li><strong>Age Verification App</strong> — see <a href="./av_wallet_android_studio.html">Age Verification App on Android Studio</a></li>
+<li><strong>France Identité</strong> — see <a href="./notes/france_identite_wallet.html">France Identité Wallet</a></li>
 </ul>
-<h3 id="test-the-complete-flow"><a class="header" href="#test-the-complete-flow">Test the Complete Flow</a></h3>
-<ol>
-<li>
-<p><strong>Open the Demo Webapp</strong>: Navigate to <a href="https://localhost:5174">https://localhost:5174</a></p>
-</li>
-<li>
-<p><strong>Configure a Request</strong>:</p>
-<ul>
-<li>Select credential type (e.g., “Proof of Age”)</li>
-<li>Choose required claims (e.g., “age_over_18”)</li>
-<li>Select protocol (appropriate for your wallet setup)</li>
-</ul>
-</li>
-<li>
-<p><strong>Initiate Verification</strong>:</p>
-<ul>
-<li>Click “Request Credentials”</li>
-<li>The webapp sends the credential request to the credential verifier via the backend</li>
-</ul>
-</li>
-<li>
-<p><strong>Verification</strong>:</p>
-<ul>
-<li>The credential verifier processes the request</li>
-<li>Verifier validates and returns a signed attestation</li>
-<li>Webapp displays verification results and extracted claims</li>
-</ul>
-</li>
-</ol>
-<p><strong>Expected Result</strong>: You should see verified claims displayed in the webapp UI with a success message and the signed attestation JWT.</p>
+<p>For local network setup connecting the emulator to the verifier, see <a href="./eudi_wallet/local_network.html">Local Network Setup</a>.</p>
 <h2 id="port-assignments"><a class="header" href="#port-assignments">Port Assignments</a></h2>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Component</th><th>Port</th><th>Protocol</th><th>Description</th></tr>
+<tr><th>Component</th><th>Port</th><th>Description</th></tr>
 </thead>
 <tbody>
-<tr><td>Webapp Frontend (Vite)</td><td>5174</td><td>HTTPS</td><td>Demo RP web interface + proxy to backend API</td></tr>
-<tr><td>Webapp Backend (Deno)</td><td>5175</td><td>HTTP</td><td>API server (proxied via Vite)</td></tr>
-<tr><td>Credential Verifier (Rust)</td><td>9443</td><td>HTTPS</td><td>Verification server with TLS</td></tr>
-<tr><td>Redis</td><td>6379</td><td>TCP</td><td>Session storage for Credential Verifier</td></tr>
+<tr><td>Credential Verifier</td><td>9888 (dev)</td><td>Verification server</td></tr>
+<tr><td>Demo Webapp (Vite)</td><td>5174</td><td>RP web interface</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
-<h3 id="common-issues"><a class="header" href="#common-issues">Common Issues</a></h3>
-<p><strong>Issue</strong>: Webapp can’t connect to credential verifier</p>
-<p><strong>Solution</strong>:</p>
-<ul>
-<li>Check verifier is running: <code>curl -k https://127.0.0.1:9443/version</code></li>
-<li>Verify Redis is running: <code>redis-cli ping</code></li>
-<li>Check backend logs for TLS certificate errors</li>
-<li>Ensure CA certificate is correctly configured in <code>webapp/server.ts</code></li>
-</ul>
-<hr>
-<p><strong>Issue</strong>: Verification fails with “Invalid signature”</p>
-<p><strong>Solution</strong>:</p>
-<ul>
-<li>This is expected in demo mode - signature verification is simulated</li>
-<li>For production, ensure proper issuer certificates are configured</li>
-<li>Check that credential was signed by a trusted issuer</li>
-<li>Verify the credential hasn’t expired</li>
-</ul>
-<hr>
-<p><strong>Issue</strong>: Redis connection errors</p>
-<p><strong>Solution</strong>:</p>
-<ul>
-<li>Ensure Redis is running: <code>redis-server</code></li>
-<li>Check Redis is accessible: <code>redis-cli ping</code></li>
-<li>Verify connection string in verifier configuration</li>
-<li>Check firewall rules if Redis is on a different host</li>
-</ul>
 <h2 id="next-steps"><a class="header" href="#next-steps">Next Steps</a></h2>
 <ul>
-<li>Review the <a href="./user-journey.html">User Journey</a> for detailed protocol flow</li>
-<li>Learn about <a href="./credential_verifier_server.html">Credential Verifier Server</a> configuration</li>
-<li>Explore <a href="./dcql_age_verification.html">DCQL Age Verification</a> for credential queries</li>
-<li>Study <a href="./digital_credential_format.html">Credential Format Specifications</a></li>
+<li><a href="./user-journey.html">User Journey</a> — detailed protocol flows</li>
+<li><a href="./summary_protocols_formats.html">Protocols &amp; Formats Summary</a> — standards reference</li>
+<li><a href="./credential_verifier_server.html">Credential Verifier Server</a> — server configuration</li>
 </ul>
-<h2 id="startup-commands-summary"><a class="header" href="#startup-commands-summary">Startup Commands Summary</a></h2>
-<p>For quick reference, here are the commands to start all components:</p>
-<pre><code class="language-bash"># Terminal 1: Redis (required by Credential Verifier)
-redis-server
-
-# Terminal 2: Credential Verifier (Rust)
-cd credential_verifier
-RUST_LOG=info \
-X509_CERT_PATH=src/tests/certificates/ec/ewqwe.server.fullchain.pem \
-X509_KEY_PATH=src/tests/certificates/ec/ewqwe.server.key.pem \
-cargo run --features openssl
-
-# Terminal 3 — Webapp API server (port 5175)
-cd webapp
-deno task api
-
-# Terminal 4 — Webapp Vite dev server (port 5174, HTTPS)
-cd webapp
-deno task vite
-
-# Open: https://localhost:5174
-</code></pre>
-<p><strong>Alternative</strong>: Use the provided shell script or tmux session for one-command startup.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="credential_verifier_ui.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="demo_webapp.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="av_wallet_android_studio.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="user-journey.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -361,11 +261,11 @@ deno task vite
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="credential_verifier_ui.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="demo_webapp.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="av_wallet_android_studio.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="user-journey.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

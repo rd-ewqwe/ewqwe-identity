@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Digital Credential User Journey - ewQwe Digital Identity</title>
+        <title>User Journey - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3b89128e.js";
+            window.path_to_searchindex_js = "searchindex-df26ae72.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e68e16c9.js"></script>
+        <script src="toc-2cdafee5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,318 +174,75 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="the-user-journey"><a class="header" href="#the-user-journey">The User Journey</a></h1>
-<p>This page describes the end-to-end <strong>digital credential verification user journey</strong> in the EU Digital Identity ecosystem and how a Relying Party (RP — you!) can request and validate a <strong>verifiable presentation</strong> from a user’s wallet, such as a proof of age credential.</p>
-<p>The EU ecosystem currently defines <strong>two profiles</strong>, with one of them having two presentation methods:</p>
-<ul>
-<li><strong>EU Age Verification Profile</strong> (Annex A of the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU AV specification</a>) — for age verification. It defines <strong>two presentation methods</strong>:
-<ul>
-<li><strong>Primary: W3C Digital Credentials API</strong> (per ISO 18013-7 Annex C) — browser-native DC API with ISO mDoc.</li>
-<li><strong>Fallback: OpenID4VP</strong> (<code>redirect_uri</code>, no JAR, <code>direct_post</code>) — for when the W3C DC API is unavailable.</li>
-</ul>
-</li>
-<li><strong>HAIP (High Assurance Interoperability Profile)</strong> — a separate profile for high-assurance credentials (PID, mDL). Requires JAR signing, JWE responses, X.509 client IDs. Implemented by the <strong>EUDI Wallet</strong>.</li>
-</ul>
-<blockquote>
-<p><strong>Terminology note:</strong> “Annex A” in this documentation refers to the EU Age Verification Profile document (Annex A of the EU AV specification). It should not be confused with ISO 18013-7 Annex A (reader authentication). The DC API wrapper format is defined by ISO 18013-7 <strong>Annex C</strong>.</p>
-</blockquote>
-<p>All paths ultimately converge on the same backend pattern: the Credential Verifier validates the presented credential (mDoc or SD-JWT) and returns a <strong>signed attestation</strong> the RP can use for access control and session establishment.</p>
-<blockquote>
-<p><strong>New to the ecosystem?</strong> Start with the <a href="./summary_protocols_formats.html">Protocols &amp; Formats Summary</a> for a compact overview of ISO 18013-7 annexes, OpenID4VP profiles (EU-AV vs HAIP), credential formats (mso_mdoc vs SD-JWT VC), and the EU wallet implementation matrix.</p>
-</blockquote>
-<h2 id="w3c-digital-credentials-api-vs-openid4vp"><a class="header" href="#w3c-digital-credentials-api-vs-openid4vp">W3C Digital Credentials API vs OpenID4VP</a></h2>
-<p>Per the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile/#a5-proof-of-age-attestation-presentation">EU Age Verification Profile §A.5</a>:</p>
-<blockquote>
-<p>“The default method for the presentation of a Proof of Age attestation is the W3C Digital Credentials API. The W3C Digital Credentials API is used as specified in [ISO/IEC 18013-7], Annex C. OpenID for Verifiable Presentations is used as a fallback mechanism when the W3C Digital Credentials API is not available.”</p>
-</blockquote>
-<h3 id="recommended-approach"><a class="header" href="#recommended-approach">Recommended approach</a></h3>
-<ul>
-<li><strong>Use the W3C Digital Credentials API as the primary method</strong>: call <code>navigator.credentials.get()</code> with ISO 18013-7 Annex C wrapper format for the smoothest, most “web-native” flow. This is the officially recommended primary path.</li>
-<li><strong>Fallback to OpenID4VP when the W3C API is not available</strong>: use the OpenID4VP presentation flow (<code>av://</code> deep link or QR code, <code>direct_post</code>, no JAR).</li>
-</ul>
-<!--## Two Profiles, Three Presentation Methods-->
-<blockquote>
-<p>For a detailed reference of protocols, ISO 18013-7 annexes, credential formats (mso_mdoc vs SD-JWT VC), and the EU wallet implementation matrix, see the <a href="./summary_protocols_formats.html">Protocols &amp; Formats Summary</a>.</p>
-</blockquote>
-<h2 id="architecture-components"><a class="header" href="#architecture-components">Architecture Components</a></h2>
-<p>All credential verification flows involve these main components:</p>
-<ul>
-<li><strong>Relying Party (RP) Web App</strong>: A web application requesting credential verification from users</li>
-<li><strong>Wallet</strong>: The user’s digital wallet storing credentials — e.g. France Identité, EUDI Wallet Referenz, Age Verification App (AVI), or any OID4VP/DC API-compatible wallet</li>
-<li><strong>ewQwe Credential Verifier</strong>: A trusted backend service that verifies credentials and issues signed attestations</li>
-</ul>
-<hr>
-<h2 id="flow-1-w3c-digital-credentials-api-eu-av-profile--primary-method"><a class="header" href="#flow-1-w3c-digital-credentials-api-eu-av-profile--primary-method">Flow 1: W3C Digital Credentials API (EU AV Profile — Primary Method)</a></h2>
-<p>This flow implements the <strong>EU Age Verification Profile’s primary presentation method</strong> using the <strong>W3C Digital Credentials API</strong> per <strong>ISO 18013-7 Annex C</strong>.</p>
-<blockquote>
-<p><strong>Key difference from OpenID4VP:</strong> No QR code or deep link is used. The browser invokes the wallet directly, passing two CBOR blobs: <code>encryptionInfo</code> (wallet encrypts response to RP’s public key) and <code>deviceRequest</code> (what to present). The wallet returns an <strong>HPKE-encrypted</strong> DeviceResponse which the RP decrypts in the browser.</p>
-</blockquote>
-<blockquote>
-<p><strong>Cross-device support:</strong> The W3C DC API is inherently <strong>same-device</strong> (browser and wallet on one device). For cross-device flows (e.g., QR code on desktop scanned by phone), use the OpenID4VP fallback (Flow 2). Many EU wallets — including France Identité — support both.</p>
-</blockquote>
-<h3 id="dc-api--annex-c-flow"><a class="header" href="#dc-api--annex-c-flow">DC API / Annex C Flow</a></h3>
+                        <h1 id="user-journey"><a class="header" href="#user-journey">User Journey</a></h1>
+<p>This page describes the end-to-end credential verification flow from the perspective of a Relying Party.</p>
+<h2 id="the-two-profiles"><a class="header" href="#the-two-profiles">The Two Profiles</a></h2>
+<p>The EU Digital Identity ecosystem defines two main profiles:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th>Profile</th><th>Purpose</th><th>Transport</th><th>Request Signing</th><th>Response</th></tr>
+</thead>
+<tbody>
+<tr><td><strong>EU Age Verification</strong> (Annex A)</td><td>Privacy-preserving age checks</td><td><code>openid4vp://</code> deep link or QR, <code>direct_post</code></td><td>None (<code>redirect_uri</code> scheme)</td><td>Plain VP Token</td></tr>
+<tr><td><strong>HAIP</strong></td><td>High-assurance identity (PID, mDL)</td><td><code>openid4vp://</code> deep link or QR, <code>direct_post.jwt</code></td><td>JAR with <code>x5c</code> certificate chain</td><td>JWE-encrypted VP Token</td></tr>
+</tbody>
+</table>
+</div>
+<p>For a detailed protocol and format reference, see the <a href="./summary_protocols_formats.html">Protocols &amp; Formats Summary</a>.</p>
+<h2 id="openid4vp-cross-device-flow-qr-code"><a class="header" href="#openid4vp-cross-device-flow-qr-code">OpenID4VP Cross-Device Flow (QR Code)</a></h2>
+<p>This is the primary production flow. The user scans a QR code on the Relying Party’s screen with their mobile wallet.</p>
 <pre class="mermaid">sequenceDiagram
     participant User
-    participant RP as RP Webapp
-    participant Browser
-    participant Wallet as Wallet&lt;br/&gt;(Mobile/Android)
-    participant CV as ewQwe&lt;br/&gt;Credential Verifier
+    participant RP as Relying Party
+    participant Verifier as Credential Verifier
+    participant Wallet as EUDI Wallet
 
-    User-&gt;&gt;RP: Click "Verify Age"
+    User-&gt;&gt;RP: Visits website, clicks "Verify Age"
+    RP-&gt;&gt;Verifier: POST /ewqwe_api/openid4vp/init
+    Verifier--&gt;&gt;RP: { transaction_id, qr_code_data_url, request_uri }
+    RP-&gt;&gt;User: Displays QR code
 
-    Note over RP: 1. Generate keys &amp; nonce (stateless — no /init call needed)
-    RP-&gt;&gt;RP: Generate HPKE key pair (X25519) and random nonce
-    RP-&gt;&gt;RP: Build encryptionInfo:&lt;br/&gt;CBOR(["dcapi", {nonce, recipientPublicKey}])&lt;br/&gt;= base64url(CBOR...)
-    RP-&gt;&gt;RP: Build DeviceRequest:&lt;br/&gt;CBOR({docRequests: [{docType, itemsRequest}]})&lt;br/&gt;= base64url(CBOR...)
+    User-&gt;&gt;Wallet: Scans QR code
+    Wallet-&gt;&gt;Verifier: GET /ewqwe_api/openid4vp/request/{id}
+    Verifier--&gt;&gt;Wallet: Authorization request (JAR or plain JSON)
+    Wallet-&gt;&gt;User: Consent dialog — "Share proof of age?"
+    User-&gt;&gt;Wallet: Approves
 
-    Note over RP,Browser: 2. Call W3C Digital Credentials API
-    RP--&gt;&gt;Browser: navigator.credentials.get({&lt;br/&gt;    digital: {&lt;br/&gt;        requests: [{encryptionInfo, deviceRequest}]&lt;br/&gt;    }&lt;br/&gt;})
+    Wallet-&gt;&gt;Verifier: POST /ewqwe_api/openid4vp/direct_post (VP Token)
+    Verifier-&gt;&gt;Verifier: Validate signatures, expiry, nonce
+    Verifier--&gt;&gt;Wallet: 200 OK
 
-    Browser-&gt;&gt;Browser: Identify wallet&lt;br/&gt;based on credential type / doc type
-    Browser-&gt;&gt;Wallet: Invoke wallet via intent / service
-
-    Note over Wallet: 3. Wallet processes request
-    Wallet-&gt;&gt;Wallet: Decode encryptionInfo&lt;br/&gt;(extract nonce + recipientPublicKey)
-    Wallet-&gt;&gt;Wallet: Decode DeviceRequest&lt;br/&gt;(ISO 18013-5 §8.3.2.1.2.1)
-    Wallet-&gt;&gt;Wallet: Find matching mDoc credential
-
-    Wallet-&gt;&gt;User: Present consent dialog
-    User-&gt;&gt;Wallet: Authorize presentation
-
-    Note over Wallet: 4. Build and encrypt DeviceResponse
-    Wallet-&gt;&gt;Wallet: Build DeviceResponse (CBOR)&lt;br/&gt;- namespace claims&lt;br/&gt;- IssuerAuth (COSE_Sign1)&lt;br/&gt;- DeviceSignature (COSE_Sign1)
-    Wallet-&gt;&gt;Wallet: HPKE encrypt:&lt;br/&gt;cipherText = HPKE.seal(&lt;br/&gt;    recipientPublicKey,&lt;br/&gt;    DeviceResponse CBOR&lt;br/&gt;)
-    Wallet-&gt;&gt;Wallet: Build EncryptedResponse:&lt;br/&gt;CBOR(["dcapi", {enc, cipherText}])&lt;br/&gt;= base64url(CBOR...)
-
-    Wallet-&gt;&gt;Browser: Return EncryptedResponse
-    Browser--&gt;&gt;RP: Promise resolves with credential
-
-    Note over RP: 5. HPKE-decrypt DeviceResponse (in browser)
-    RP-&gt;&gt;RP: Base64url-decode EncryptedResponse&lt;br/&gt;Parse CBOR: [enc, cipherText]
-    RP-&gt;&gt;RP: HPKE open:&lt;br/&gt;DeviceResponse = HPKE.open(&lt;br/&gt;    recipientPrivateKey,&lt;br/&gt;    enc, cipherText&lt;br/&gt;)
-
-    Note over RP,CV: 6. Send decrypted DeviceResponse to Verifier
-    RP-&gt;&gt;CV: POST /ewqwe_api/dc_api/verify&lt;br/&gt;{device_response_b64,&lt;br/&gt; nonce, client_id, doc_type}
-    CV-&gt;&gt;CV: Decode mDoc DeviceResponse&lt;br/&gt;Verify IssuerAuth (COSE_Sign1)&lt;br/&gt;Validate Issuer certificate chain&lt;br/&gt;Verify DeviceSignature&lt;br/&gt;Check nonce binding
-    CV-&gt;&gt;CV: Sign Attestation (JWT, ES256)&lt;br/&gt;Record in journal
-    CV--&gt;&gt;RP: {success, claims, attestation_jwt}
-
-    RP-&gt;&gt;User: Display verification result
+    RP-&gt;&gt;Verifier: GET /ewqwe_api/openid4vp/status/{id} (polling)
+    Verifier--&gt;&gt;RP: { status: "verified", attestation: "&lt;signed JWT&gt;" }
+    RP-&gt;&gt;User: Displays verification result
 </pre>
 
-<h3 id="dc-api-key-characteristics"><a class="header" href="#dc-api-key-characteristics">DC API Key Characteristics</a></h3>
-<ul>
-<li><strong>W3C Digital Credentials API Transport</strong>: Uses <code>navigator.credentials.get()</code> — no redirects, no deep links. The <code>protocol</code> field is <code>"org-iso-mdoc"</code> (as shown in the EU AV Profile examples)</li>
-<li><strong>ISO Annex C Wrapper</strong>: Request and response are wrapped in CBOR <code>["dcapi", ...]</code> arrays, base64url-encoded without padding</li>
-<li><strong>HPKE Encryption (RFC 9180)</strong>: The wallet encrypts the DeviceResponse using HPKE (X25519 + HKDF-SHA256 + AES-128-GCM) with the RP’s public key from <code>encryptionInfo</code></li>
-<li><strong>ISO DeviceRequest/DeviceResponse</strong>: Request format per ISO 18013-5 §8.3.2.1.2.1; response per §8.3.2.1.2.3</li>
-<li><strong>Stateless on the verifier</strong>: The RP generates the HPKE key pair and nonce locally (no server <code>/init</code> call needed). The decrypted DeviceResponse is sent directly to <code>POST /ewqwe_api/dc_api/verify</code> for verification</li>
-<li><strong>mDoc-only</strong>: Only <code>mso_mdoc</code> format is supported in this flow (no SD-JWT)</li>
-<li><strong>Same-device only</strong>: Browser and wallet must be on the same device</li>
-<li><strong>Browser Support</strong>: Requires a browser supporting the W3C Digital Credentials API (Chrome on Android 9+, others in development)</li>
-</ul>
-<hr>
-<h2 id="flow-2-age-verification-app-annex-a-openid4vp-fallback"><a class="header" href="#flow-2-age-verification-app-annex-a-openid4vp-fallback">Flow 2: Age Verification App (Annex A OpenID4VP Fallback)</a></h2>
-<p>This flow implements the <strong>EU Age Verification Profile’s fallback method</strong> using <strong>OpenID4VP</strong> with the <code>redirect_uri</code> Client ID Scheme, no JAR signing, and <code>direct_post</code> response mode.</p>
-<blockquote>
-<p><strong>Same-device vs Cross-device</strong>: The protocol steps are identical regardless of how the Authorization Request reaches the Wallet. In the <strong>cross-device flow</strong>, the RP displays a QR code that the User scans with their Wallet. In the <strong>same-device flow</strong>, the RP opens the <code>av://</code> deep link directly. Both flows use <code>direct_post</code> for the Authorization Response.</p>
-</blockquote>
-<h3 id="annex-a-openid4vp-flow"><a class="header" href="#annex-a-openid4vp-flow">Annex A OpenID4VP Flow</a></h3>
-<pre class="mermaid">sequenceDiagram
-    participant User
-    participant RP as RP Webapp
-    participant AVI as Age Verification&lt;br/&gt;App (Wallet)
-    participant CV as ewQwe&lt;br/&gt;Credential Verifier
-
-    User-&gt;&gt;RP: Click "Verify Age"
-
-    Note over RP,CV: Transaction Initialization
-    RP-&gt;&gt;CV: POST /ewqwe_api/openid4vp/init&lt;br/&gt;{profile: "annex-a", dcql_query}
-    CV-&gt;&gt;CV: Generate transaction_id and nonce&lt;br/&gt;Reuse caller-supplied state or generate request-id state&lt;br/&gt;Build DCQL Credential Query&lt;br/&gt;(format: mso_mdoc, doctype: eu.europa.ec.av.1)
-    CV--&gt;&gt;RP: {transaction_id,&lt;br/&gt;authorization_request_uri}
-
-    Note over RP,AVI: Authorization Request (OpenID4VP §5)
-    RP-&gt;&gt;User: Display QR code / open deep link
-    User-&gt;&gt;AVI: Scan QR code / tap deep link
-
-    Note over AVI: av://?client_id=redirect_uri:{response_uri}&lt;br/&gt;&amp;response_type=vp_token&lt;br/&gt;&amp;response_mode=direct_post&lt;br/&gt;&amp;response_uri=...&amp;nonce=...&amp;state=...&lt;br/&gt;&amp;dcql_query={...}&amp;client_metadata={...}
-
-    AVI-&gt;&gt;AVI: Parse inline Authorization Request&lt;br/&gt;(no signature verification required)
-    AVI-&gt;&gt;AVI: Evaluate DCQL Credential Query&lt;br/&gt;against stored credentials
-    AVI-&gt;&gt;User: Present consent dialog
-    User-&gt;&gt;AVI: Authorize presentation
-
-    Note over AVI,CV: Authorization Response — direct_post (OpenID4VP §8.2)
-    AVI-&gt;&gt;AVI: Build VP Token (DCQL response map)&lt;br/&gt;{credential_query_id: [base64url(DeviceResponse)]}
-    AVI-&gt;&gt;CV: POST {response_uri}&lt;br/&gt;vp_token={...}&amp;state={state}
-    CV-&gt;&gt;CV: Store Authorization Response&lt;br/&gt;Update transaction status -&gt; received
-    CV--&gt;&gt;AVI: HTTP 200 OK {}
-
-    Note over RP,CV: Transaction Status Polling
-    RP-&gt;&gt;CV: GET /ewqwe_api/openid4vp/status/{transaction_id}
-    CV--&gt;&gt;RP: {status: "received",&lt;br/&gt;authorization_response, nonce}
-
-    Note over RP,CV: Credential Verification
-    RP-&gt;&gt;CV: POST /ewqwe_api/verify {vp_token, state, client_id}
-    CV-&gt;&gt;CV: Decode CBOR DeviceResponse (ISO 18013-5)&lt;br/&gt;Verify IssuerAuth (COSE_Sign1)&lt;br/&gt;Validate Issuer certificate chain&lt;br/&gt;Verify DeviceSignature against OpenID4VPHandover&lt;br/&gt;Consume transaction and extract claims
-    CV-&gt;&gt;CV: Sign Attestation (JWT, ES256)
-    CV--&gt;&gt;RP: {success, claims, attestation_jwt}
-
-    RP-&gt;&gt;User: Display verification result
-</pre>
-
-<h3 id="annex-a-key-characteristics"><a class="header" href="#annex-a-key-characteristics">Annex A Key Characteristics</a></h3>
-<ul>
-<li><strong>Inline Authorization Request</strong>: All parameters are passed directly in the <code>av://</code> URI — no <code>request_uri</code> indirection</li>
-<li><strong>No JAR</strong>: The Authorization Request is sent as plain query parameters, not as a JWT-Secured Authorization Request (no RFC 9101)</li>
-<li><strong><code>redirect_uri</code> Client ID Scheme</strong>: <code>client_id</code> = <code>redirect_uri:{response_uri}</code> — the Verifier is identified by its callback URL</li>
-<li><strong><code>direct_post</code> Response Mode</strong> (OpenID4VP §8.2): The Wallet POSTs the plain VP Token directly to <code>response_uri</code></li>
-<li><strong>Simple trust model</strong>: No certificate chain verification; the Verifier is identified solely by its redirect URI</li>
-<li><strong><code>av://</code> URL Scheme</strong>: Custom deep link registered by the Age Verification App</li>
-</ul>
-<hr>
-<h2 id="flow-3-eudi-wallet--haip-profile-mso_mdoc-credential-format"><a class="header" href="#flow-3-eudi-wallet--haip-profile-mso_mdoc-credential-format">Flow 3: EUDI Wallet — HAIP Profile, mso_mdoc Credential Format</a></h2>
-<p>This flow implements the <strong>High Assurance Interoperability Profile (HAIP)</strong> with <code>mso_mdoc</code> credentials (ISO 18013-5). This format is used for mobile driving licenses (<code>org.iso.18013.5.1.mDL</code>) and EU PID documents (<code>eu.europa.ec.eudi.pid.1</code>).</p>
-<blockquote>
-<p><strong>Same-device vs Cross-device</strong>: As with Annex A, the only difference is how the Authorization Request reaches the Wallet. In the <strong>cross-device flow</strong>, the RP displays a QR code. In the <strong>same-device flow</strong>, the RP opens the <code>eudi-openid4vp://</code> deep link directly. The JAR fetch, encrypted response, and verification steps are identical.</p>
-</blockquote>
-<h3 id="haip-mso_mdoc-openid4vp-flow"><a class="header" href="#haip-mso_mdoc-openid4vp-flow">HAIP mso_mdoc OpenID4VP Flow</a></h3>
-<pre class="mermaid">sequenceDiagram
-    participant User
-    participant RP as RP Webapp
-    participant EUDI as EUDI Wallet
-    participant CV as ewQwe&lt;br/&gt;Credential Verifier
-
-    User-&gt;&gt;RP: Click "Verify Credentials"
-
-    Note over RP,CV: Transaction Initialization
-    RP-&gt;&gt;CV: POST /ewqwe_api/openid4vp/init&lt;br/&gt;{profile: "haip", dcql_query}
-    CV-&gt;&gt;CV: Generate transaction_id and nonce&lt;br/&gt;Reuse caller-supplied state or generate request-id state&lt;br/&gt;Build DCQL Credential Query&lt;br/&gt;(format: mso_mdoc, doctype: ...)&lt;br/&gt;Generate ephemeral ECDH key pair for JWE
-    CV--&gt;&gt;RP: {transaction_id,&lt;br/&gt;authorization_request_uri}
-
-    Note over RP,EUDI: Authorization Request (OpenID4VP §5)
-    RP-&gt;&gt;User: Display QR code / open deep link
-    User-&gt;&gt;EUDI: Scan QR code / tap deep link
-
-    Note over EUDI: eudi-openid4vp://?&lt;br/&gt;client_id=x509_san_dns:{dns_san}&lt;br/&gt;&amp;request_uri={request_uri}
-
-    EUDI-&gt;&gt;CV: GET {request_uri}
-    CV-&gt;&gt;CV: Sign Authorization Request Object&lt;br/&gt;(JAR — RFC 9101, alg: ES256,&lt;br/&gt;typ: oauth-authz-req+jwt, x5c chain)
-    CV--&gt;&gt;EUDI: Content-Type: application/oauth-authz-req+jwt
-
-    Note over EUDI: JAR payload: client_id, nonce, state,&lt;br/&gt;response_mode: direct_post.jwt,&lt;br/&gt;response_uri, dcql_query,&lt;br/&gt;client_metadata {jwks, encryption params}
-
-    EUDI-&gt;&gt;EUDI: Verify x5c certificate chain&lt;br/&gt;against Reader Trust Store
-    EUDI-&gt;&gt;EUDI: Verify client_id matches&lt;br/&gt;certificate SAN (DNS name)
-    EUDI-&gt;&gt;EUDI: Verify JWT signature&lt;br/&gt;with leaf certificate public key
-    EUDI-&gt;&gt;EUDI: Evaluate DCQL Credential Query&lt;br/&gt;against stored credentials
-    EUDI-&gt;&gt;User: Present consent dialog&lt;br/&gt;(Verifier identity from certificate)
-    User-&gt;&gt;EUDI: Authorize presentation
-
-    Note over EUDI,CV: Authorization Response — direct_post.jwt (OpenID4VP §8.3)
-    EUDI-&gt;&gt;EUDI: Build VP Token (DCQL response map)&lt;br/&gt;{credential_query_id: [base64url(DeviceResponse)]}
-    EUDI-&gt;&gt;EUDI: Encrypt Authorization Response&lt;br/&gt;as JWE (ECDH-ES + A256GCM)
-    EUDI-&gt;&gt;CV: POST {response_uri}&lt;br/&gt;response={jwe}&amp;state={state}
-    CV-&gt;&gt;CV: Decrypt JWE (ECDH-ES key agreement)&lt;br/&gt;Extract VP Token&lt;br/&gt;Update transaction status -&gt; received
-    CV--&gt;&gt;EUDI: HTTP 200 OK {}
-
-    Note over RP,CV: Transaction Status Polling
-    RP-&gt;&gt;CV: GET /ewqwe_api/openid4vp/status/{transaction_id}
-    CV--&gt;&gt;RP: {status: "received",&lt;br/&gt;authorization_response, nonce}
-
-    Note over RP,CV: Credential Verification
-    RP-&gt;&gt;CV: POST /ewqwe_api/verify {vp_token, state, client_id}
-    CV-&gt;&gt;CV: Decode CBOR DeviceResponse (ISO 18013-5)&lt;br/&gt;Verify IssuerAuth (COSE_Sign1)&lt;br/&gt;Validate Issuer certificate chain&lt;br/&gt;Verify DeviceSignature against OpenID4VPHandover&lt;br/&gt;Consume transaction and extract namespaced claims
-    CV-&gt;&gt;CV: Sign Attestation (JWT, ES256)
-    CV--&gt;&gt;RP: {success, claims, attestation_jwt}
-
-    RP-&gt;&gt;User: Display verification result
-</pre>
-
-<hr>
-<h2 id="flow-4-eudi-wallet--haip-profile-sd-jwt-vc-credential-format"><a class="header" href="#flow-4-eudi-wallet--haip-profile-sd-jwt-vc-credential-format">Flow 4: EUDI Wallet — HAIP Profile, SD-JWT VC Credential Format</a></h2>
-<p>This flow implements HAIP with <code>dc+sd-jwt</code> credentials. This format is used for EU PID documents (<code>urn:eudi:pid:1</code>) and other credentials that use selective disclosure with JSON-based claims.</p>
-<h3 id="haip-sd-jwt-vc-openid4vp-flow"><a class="header" href="#haip-sd-jwt-vc-openid4vp-flow">HAIP SD-JWT VC OpenID4VP Flow</a></h3>
-<pre class="mermaid">sequenceDiagram
-    participant User
-    participant RP as RP Webapp
-    participant EUDI as EUDI Wallet
-    participant CV as ewQwe&lt;br/&gt;Credential Verifier
-
-    User-&gt;&gt;RP: Click "Verify Credentials"
-
-    Note over RP,CV: Transaction Initialization
-    RP-&gt;&gt;CV: POST /ewqwe_api/openid4vp/init&lt;br/&gt;{profile: "haip", dcql_query}
-    CV-&gt;&gt;CV: Generate transaction_id, nonce, state&lt;br/&gt;Build DCQL Credential Query&lt;br/&gt;(format: dc+sd-jwt, vct_values: [...])&lt;br/&gt;Generate ephemeral ECDH key pair for JWE
-    CV--&gt;&gt;RP: {transaction_id,&lt;br/&gt;authorization_request_uri}
-
-    Note over RP,EUDI: Authorization Request (OpenID4VP §5)
-    RP-&gt;&gt;User: Display QR code / open deep link
-    User-&gt;&gt;EUDI: Scan QR code / tap deep link
-
-    Note over EUDI: eudi-openid4vp://?&lt;br/&gt;client_id=x509_san_dns:{dns_san}&lt;br/&gt;&amp;request_uri={request_uri}
-
-    EUDI-&gt;&gt;CV: GET {request_uri}
-    CV-&gt;&gt;CV: Sign Authorization Request Object&lt;br/&gt;(JAR — RFC 9101, alg: ES256,&lt;br/&gt;typ: oauth-authz-req+jwt, x5c chain)
-    CV--&gt;&gt;EUDI: Content-Type: application/oauth-authz-req+jwt
-
-    Note over EUDI: JAR payload: client_id, nonce, state,&lt;br/&gt;response_mode: direct_post.jwt,&lt;br/&gt;response_uri, dcql_query,&lt;br/&gt;client_metadata {jwks, encryption params}
-
-    EUDI-&gt;&gt;EUDI: Verify x5c certificate chain&lt;br/&gt;against Reader Trust Store
-    EUDI-&gt;&gt;EUDI: Verify client_id matches&lt;br/&gt;certificate SAN (DNS name)
-    EUDI-&gt;&gt;EUDI: Verify JWT signature&lt;br/&gt;with leaf certificate public key
-    EUDI-&gt;&gt;EUDI: Evaluate DCQL Credential Query&lt;br/&gt;against stored credentials
-    EUDI-&gt;&gt;User: Present consent dialog&lt;br/&gt;(Verifier identity from certificate)
-    User-&gt;&gt;EUDI: Authorize presentation
-
-    Note over EUDI,CV: Authorization Response — direct_post.jwt (OpenID4VP §8.3)
-    EUDI-&gt;&gt;EUDI: Build VP Token (DCQL response map)&lt;br/&gt;{credential_query_id: [Issuer-signed JWT~Disclosures~KB-JWT]}
-    EUDI-&gt;&gt;EUDI: Encrypt Authorization Response&lt;br/&gt;as JWE (ECDH-ES + A256GCM)
-    EUDI-&gt;&gt;CV: POST {response_uri}&lt;br/&gt;response={jwe}&amp;state={state}
-    CV-&gt;&gt;CV: Decrypt JWE (ECDH-ES key agreement)&lt;br/&gt;Extract VP Token&lt;br/&gt;Update transaction status -&gt; received
-    CV--&gt;&gt;EUDI: HTTP 200 OK {}
-
-    Note over RP,CV: Transaction Status Polling
-    RP-&gt;&gt;CV: GET /ewqwe_api/openid4vp/status/{transaction_id}
-    CV--&gt;&gt;RP: {status: "received",&lt;br/&gt;authorization_response, nonce}
-
-    Note over RP,CV: Credential Verification
-    RP-&gt;&gt;CV: POST /ewqwe_api/verify {vp_token, state, client_id}
-    CV-&gt;&gt;CV: Decode Issuer-signed JWT&lt;br/&gt;Verify SD-JWT Disclosures (SD-JWT VC §6)&lt;br/&gt;Verify Key Binding JWT (if present)&lt;br/&gt;Extract selectively disclosed claims
-    CV-&gt;&gt;CV: Sign Attestation (JWT, ES256)
-    CV--&gt;&gt;RP: {success, claims, attestation_jwt}
-
-    RP-&gt;&gt;User: Display verification result
-</pre>
-
-<h3 id="haip-key-characteristics"><a class="header" href="#haip-key-characteristics">HAIP Key Characteristics</a></h3>
-<ul>
-<li><strong>JWT-Secured Authorization Request (JAR)</strong> (RFC 9101) with <code>ES256</code> and <code>x5c</code> header</li>
-<li><strong><code>x509_san_dns</code> Client ID Scheme</strong>: Verifier identified by certificate DNS SAN</li>
-<li><strong>Certificate chain verification</strong>: Wallet verifies <code>x5c</code> chain against Reader Trust Store</li>
-<li><strong><code>direct_post.jwt</code> Response Mode</strong>: Wallet encrypts response as JWE (ECDH-ES + A256GCM)</li>
-<li><strong>Two Credential Formats</strong>: <code>mso_mdoc</code> and <code>dc+sd-jwt</code></li>
-<li><strong>Root CA required</strong>: Present in Wallet’s Reader Trust Store</li>
-</ul>
-<hr>
 <h2 id="verification-flow-common-to-all"><a class="header" href="#verification-flow-common-to-all">Verification Flow (Common to All)</a></h2>
+<p>Regardless of the transport (QR code, deep link, or DC API), the verification steps are the same:</p>
 <ol>
-<li><strong>RP receives credential data</strong> via DC API promise or OpenID4VP transaction status</li>
-<li><strong>RP sends to verifier</strong>: <code>POST /ewqwe_api/verify</code> (OpenID4VP) or <code>POST /ewqwe_api/dc_api/verify</code> (DC API)</li>
-<li><strong>Verifier validates</strong>: mDoc COSE signatures or SD-JWT disclosures</li>
-<li><strong>Verifier returns signed Attestation JWT</strong> (ES256)</li>
-<li><strong>RP uses Attestation</strong> for session establishment</li>
+<li><strong>RP initiates</strong> a transaction with the Credential Verifier, specifying the credential type and claims</li>
+<li><strong>Wallet presents</strong> the VP Token to the verifier (encrypted with JWE for HAIP, plain for Annex A)</li>
+<li><strong>Verifier validates</strong>: decrypts JWE if present, verifies issuer signatures against the trusted CA directory, checks disclosure digests, validates holder binding (KB-JWT or DeviceSignature), and checks expiry</li>
+<li><strong>Verifier returns</strong> a signed JWT attestation to the RP, confirming the verified claims</li>
 </ol>
+<p>The RP uses the attestation for access control and session establishment.</p>
+<h2 id="related-pages"><a class="header" href="#related-pages">Related Pages</a></h2>
+<ul>
+<li><a href="./summary_protocols_formats.html">Protocols &amp; Formats Summary</a> — complete protocol and format reference</li>
+<li><a href="./credential_verifier_server.html">Credential Verifier Server</a> — server API and configuration</li>
+<li><a href="./demo_webapp.html">Demo Webapp</a> — reference implementation</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="summary_protocols_formats.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="demo_architecture.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="credential_verifier_server.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="eudi_wallet_android_studio.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -495,11 +252,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="summary_protocols_formats.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="demo_architecture.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="credential_verifier_server.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="eudi_wallet_android_studio.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

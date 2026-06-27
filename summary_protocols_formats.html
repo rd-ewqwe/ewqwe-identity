@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Summary of Protocols and Formats - ewQwe Digital Identity</title>
+        <title>Protocols &amp; Formats Summary - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3b89128e.js";
+            window.path_to_searchindex_js = "searchindex-df26ae72.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-e68e16c9.js"></script>
+        <script src="toc-2cdafee5.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -250,7 +250,7 @@ Request</strong> (with <code>dcql_query</code>, <code>nonce</code>, <code>client
 <tr><td><strong>Request payload</strong></td><td>Standard OpenID4VP Authorization Request parameters as JSON in the <code>data</code> field: <code>response_type</code>, <code>response_mode</code>, <code>nonce</code>, <code>dcql_query</code>, <code>client_metadata</code>, optionally <code>client_id</code> and <code>request</code> for signed requests</td></tr>
 <tr><td><strong>Response payload</strong></td><td>OpenID4VP Authorization Response containing the <code>vp_token</code>, optionally JWE-encrypted (<code>response_mode: "dc_api.jwt"</code>): the encrypted JWT is returned as a JSON string in the <code>data</code> field</td></tr>
 <tr><td><strong>Response modes</strong></td><td><code>dc_api</code> (unencrypted JSON, not recommended) or <code>dc_api.jwt</code> (JWE-encrypted Authorization Response — the wallet encrypts the <code>vp_token</code> using the verifier’s public key from <code>client_metadata.jwks</code>, per <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-8.3">OpenID4VP §8.3</a>)</td></tr>
-<tr><td><strong>Wallet support</strong></td><td><strong>Theoretical — not yet confirmed in production.</strong> The EUDI Wallet Core library includes DC API handling code, but production wallets (France Identité, EUDI Wallet DE, IT Wallet, Spanish EUDIW) do not yet recognize the <code>openid4vp</code> protocol identifier inside the DC API handler. See <a href="./demo_webapp.html#why-w3c-digital-credentials-is-disabled-on-mobile">demo_webapp.md</a> for details.</td></tr>
+<tr><td><strong>Wallet support</strong></td><td><strong>Theoretical — not yet confirmed in production.</strong> The EUDI Wallet Core library includes DC API handling code, but production wallets (France Identité, EUDI Wallet DE, IT Wallet, Spanish EUDIW) do not yet recognize the <code>openid4vp</code> protocol identifier inside the DC API handler. See <a href="./demo_webapp.html">the demo webapp page</a> for details.</td></tr>
 </tbody>
 </table>
 </div>
@@ -266,7 +266,7 @@ Request</strong> (with <code>dcql_query</code>, <code>nonce</code>, <code>client
 <tr><td><strong>Request structure</strong></td><td><code>encryptionInfo</code> + <code>deviceRequest</code> CBOR blobs</td><td><code>dcql_query</code>, <code>nonce</code>, <code>client_metadata</code></td></tr>
 <tr><td><strong>Response structure</strong></td><td>CBOR-encoded HPKE ciphertext</td><td>JWE-encrypted VP Token</td></tr>
 <tr><td><strong>Wallet implementation</strong></td><td>Separate code path (CBOR + COSE + HPKE)</td><td>Reuses OpenID4VP logic from Annex B</td></tr>
-<tr><td><strong>Adoption</strong></td><td>Low</td><td><strong>Not yet demonstrated in production</strong> — documented as broken on Android 15+ in practice (see <a href="./demo_webapp.html#why-w3c-digital-credentials-is-disabled-on-mobile">demo_webapp.md</a>)</td></tr>
+<tr><td><strong>Adoption</strong></td><td>Low</td><td><strong>Not yet demonstrated in production</strong> — documented as broken on Android 15+ in practice (see <a href="./demo_webapp.html">the demo webapp page</a>)</td></tr>
 </tbody>
 </table>
 </div>
@@ -308,7 +308,7 @@ returning it through the DC API.</p>
 <tr><td><strong>Response encryption</strong></td><td>JWE (<code>direct_post.jwt</code>) — mandatory</td></tr>
 <tr><td><strong>Client ID schemes</strong></td><td><code>x509_san_dns</code>, <code>x509_hash</code>, <code>x509_san_uri</code></td></tr>
 <tr><td><strong>Credential formats</strong></td><td><code>mso_mdoc</code> (mDL, PID) and <code>dc+sd-jwt</code> (PID)</td></tr>
-<tr><td><strong>Query language</strong></td><td>DCQL (mandated by EUDIW)</td></tr>
+<tr><td><strong>Query language</strong></td><td>DCQL (mandated by EUDIW per <a href="https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework">ARF</a>)</td></tr>
 <tr><td><strong>Wallet support</strong></td><td>All major EUDI wallets (France Identité, EUDI Wallet DE, IT Wallet, Spanish EUDIW)</td></tr>
 </tbody>
 </table>
@@ -369,7 +369,7 @@ returning it through the DC API.</p>
 </div>
 <hr>
 <h2 id="eudi-wallet-implementation-matrix"><a class="header" href="#eudi-wallet-implementation-matrix">EUDI Wallet Implementation Matrix</a></h2>
-<p>Wallet support for ISO/IEC 18013-7 annexes across major European member states (as of May 2026):</p>
+<p>Wallet support for ISO/IEC 18013-7 annexes across major European member states, based on observed behaviour in testing and public documentation (as of May 2026):</p>
 <div class="table-wrapper">
 <table>
 <thead>
@@ -388,15 +388,18 @@ returning it through the DC API.</p>
 </table>
 </div>
 <blockquote>
-<p><strong>Note on Annex C</strong>: While the EUDI Wallet Core library includes DC API plumbing, production wallets reject the <code>openid4vp</code> protocol identifier with “Unsupported protocol” errors. The W3C DC API Annex C flow is therefore <strong>not functional</strong> with any current EUDI wallet. All wallets use Annex B (deep-link OpenID4VP) for production flows. See the <a href="./demo_webapp.html#why-w3c-digital-credentials-is-disabled-on-mobile">webapp documentation</a> for the full technical analysis.
+<p><strong>Note on Annex C</strong>: While the EUDI Wallet Core library includes DC API plumbing, production wallets reject the <code>openid4vp</code> protocol identifier with “Unsupported protocol” errors. The W3C DC API Annex C flow is therefore <strong>not functional</strong> with any current EUDI wallet. All wallets use Annex B (deep-link OpenID4VP) for production flows. See <a href="./demo_webapp.html">the demo webapp page</a> for the full technical analysis.
 | <strong>OpenID4VP HAIP</strong> | OpenID4VP, <code>direct_post.jwt</code> | DCQL | Strict JAR + EU Trust List | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR | ✅ DCQL + strict JAR |
 | <strong>EUDIW EU-AV Blueprint</strong> | Priority: Annex C → Annex B | DCQL (minimal disclosure) | No JAR | ✅ Drops JAR for privacy | ✅ Drops JAR for privacy | ✅ Drops JAR for privacy | ✅ Core focus, drops JAR |</p>
+</blockquote>
+<blockquote>
+<p><strong>Note:</strong> This matrix reflects observed wallet behaviour from testing and public documentation, not formal compliance certifications. Wallet capabilities evolve rapidly — consult each member state’s latest wallet release notes for current status.</p>
 </blockquote>
 <hr>
 <h2 id="references"><a class="header" href="#references">References</a></h2>
 <ul>
 <li><a href="https://www.iso.org/standard/69084.html">ISO/IEC 18013-5</a> — mDL data model and mDoc format</li>
-<li><a href="https://www.iso.org/standard/69086.html">ISO/IEC 18013-7</a> — mDoc online presentation</li>
+<li><a href="https://www.iso.org/standard/91154.html">ISO/IEC 18013-7</a> — mDoc online presentation</li>
 <li><a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID4VP 1.0</a> — OpenID for Verifiable Presentations</li>
 <li><a href="https://datatracker.ietf.org/doc/html/rfc9101">RFC 9101 — JAR</a> — JWT Secured Authorization Request</li>
 <li><a href="https://www.rfc-editor.org/rfc/rfc9180">RFC 9180 — HPKE</a> — Hybrid Public Key Encryption</li>
@@ -404,18 +407,20 @@ returning it through the DC API.</p>
 <li><a href="https://www.w3.org/TR/digital-credentials/">W3C Digital Credentials API</a> — browser API for credential presentation</li>
 <li><a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile/">EU Age Verification Profile</a> — EU AV specification</li>
 <li><a href="https://openid.net/specs/openid-connect-4-verifiable-presentations.html">High Assurance Interoperability Profile (HAIP)</a> — high-security credential exchange</li>
-<li><a href="./notes/iso-18013-7.html">ISO 18013-7 Implementation Notes</a> — detailed technical report</li>
+<li><a href="https://github.com/eu-digital-identity-wallet/eudi-doc-architecture-and-reference-framework">EUDI Wallet ARF</a> — Architecture and Reference Framework</li>
+<li><a href="./technical_references/iso_18013_7.html">ISO 18013-7</a> — detailed reference</li>
+<li><a href="./technical_references/references.html">Full reference list</a> — all authoritative sources</li>
 </ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
-                            <a rel="prev" href="introduction.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                            <a rel="prev" href="eudi_wallet/relying_party_requirements.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                             </a>
 
-                            <a rel="next prefetch" href="user-journey.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="technical_references/iso_18013_7.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -425,11 +430,11 @@ returning it through the DC API.</p>
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
-                    <a rel="prev" href="introduction.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                    <a rel="prev" href="eudi_wallet/relying_party_requirements.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
                     </a>
 
-                    <a rel="next prefetch" href="user-journey.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="technical_references/iso_18013_7.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
