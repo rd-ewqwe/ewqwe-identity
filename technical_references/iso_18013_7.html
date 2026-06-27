@@ -35,7 +35,7 @@
             const path_to_root = "../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "../searchindex-df26ae72.js";
+            window.path_to_searchindex_js = "../searchindex-3986b925.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="../toc-2cdafee5.js"></script>
@@ -299,7 +299,7 @@
 </code></pre>
 <h3 id="annex-c-response-format"><a class="header" href="#annex-c-response-format">Annex C Response Format</a></h3>
 <p>The wallet returns an HPKE-encrypted response:</p>
-<pre><code>["dcapi", { enc: bstr, cipherText: bstr }]
+<pre><code class="language-json">["dcapi", { enc: bstr, cipherText: bstr }]
 </code></pre>
 <p>The RP HPKE-decrypts using its private key to obtain the CBOR <code>DeviceResponse</code>.</p>
 <hr>
