@@ -359,7 +359,7 @@ impl ServerParams {
         cert.subject_name()
             .entries_by_nid(Nid::COMMONNAME)
             .next()
-            .and_then(|e| e.data().as_utf8().ok())
+            .and_then(|e| e.data().to_string().ok())
             .map(|cn| cn.to_string())
             .ok_or_else(|| {
                 AttError::Config(format!(

@@ -131,13 +131,15 @@ impl Drop for LoggingGuards {
 /// tracing::info!("Application started");
 /// ```
 pub fn tracing_init(tracing_config: &TracingConfig) -> LoggingGuards {
-    // Set the RUST_LOG environment variable if a config value is provided
-    if let Some(rust_log) = &tracing_config.rust_log {
-        unsafe { set_var("RUST_LOG", rust_log) };
+    // Enable backtraces for error reports using the standard backtrace
+    // configuration rather than a global environment variable.
+    // RUST_BACKTRACE is set via std::env only when not already present;
+    // this is called before any threads are spawned so the unsafety is
+    // bounded.
+    if std::env::var("RUST_BACKTRACE").is_err() {
+        // SAFETY: Called during startup before multi-threading begins.
+        unsafe { set_var("RUST_BACKTRACE", "full") };
     }
-
-    // Enable backtraces for all errors
-    unsafe { set_var("RUST_BACKTRACE", "full") };
 
     if TRACING_SET.swap(true, Ordering::Acquire) {
         let span = span!(tracing::Level::INFO, "tracing_init");
@@ -146,7 +148,7 @@ pub fn tracing_init(tracing_config: &TracingConfig) -> LoggingGuards {
         return LoggingGuards::default();
     }
 
-    match tracing_init_(tracing_config) {
+    match tracing_init_(tracing_config, tracing_config.rust_log.as_deref()) {
         Ok(guard) => {
             let span = span!(tracing::Level::INFO, "tracing_init");
             let _guard = span.enter();
@@ -226,8 +228,14 @@ macro_rules! configure_fmt_layer {
 /// Returns [`LoggerError`] if:
 /// - Filter parsing fails
 /// - Tracing subscriber registration fails
-fn tracing_init_(config: &TracingConfig) -> Result<LoggingGuards, LoggerError> {
-    let filter = EnvFilter::from_default_env();
+fn tracing_init_(
+    config: &TracingConfig,
+    rust_log: Option<&str>,
+) -> Result<LoggingGuards, LoggerError> {
+    let filter = match rust_log {
+        Some(directives) => EnvFilter::new(directives),
+        None => EnvFilter::from_default_env(),
+    };
 
     let fmt_layer = configure_fmt_layer!(
         tracing_subscriber::fmt::layer(),
@@ -255,8 +263,7 @@ mod tests {
         };
 
         let json = serde_json::to_string(&cfg).expect("serialize tracing config");
-        let cfg2: TracingConfig =
-            serde_json::from_str(&json).expect("deserialize tracing config");
+        let cfg2: TracingConfig = serde_json::from_str(&json).expect("deserialize tracing config");
 
         assert_eq!(cfg.rust_log, cfg2.rust_log);
         assert_eq!(cfg.with_ansi_colors, cfg2.with_ansi_colors);

@@ -76,6 +76,7 @@ Run the provided setup script from the project root. The script requires a roota
 > adb root && adb shell "echo '10.0.2.2  demo.ewqwe.local' >> /etc/hosts"
 > ```
 
+
 > **Physical device?** The emulator's `10.0.2.2` alias is emulator-only. For a physical Android
 > device on your LAN, use [Local Network DNS Setup](#local-network-dns-setup) instead.
 

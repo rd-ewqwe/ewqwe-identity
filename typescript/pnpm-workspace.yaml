@@ -1,3 +1,7 @@
+overrides:
+  vite: ">=6.4.3"
+  esbuild: ">=0.24.3"
+
 packages:
   - "ewqwe-digital-identity"
   - "demo-webapp"

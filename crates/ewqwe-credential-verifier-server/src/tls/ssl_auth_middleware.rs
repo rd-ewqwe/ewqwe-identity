@@ -172,7 +172,7 @@ fn ssl_auth(req: &ServiceRequest) -> AttResult<Option<AuthenticatedUser>> {
             AttError::Authentication("Client certificate has no common name".to_owned())
         })?
         .data()
-        .as_utf8()
+        .to_string()
         .map_err(|e| {
             AttError::Authentication(format!("Client certificate common name is not UTF-8: {e}"))
         })?

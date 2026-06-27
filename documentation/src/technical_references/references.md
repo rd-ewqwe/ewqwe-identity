@@ -89,7 +89,6 @@ Note: In this project, DCQL is used as defined by OpenID4VP (Section 6). The lin
 - Firefox Web API Standards Positions: <https://mozilla.github.io/standards-positions/>
 - MDN Web Docs (Credential Management API): <https://developer.mozilla.org/en-US/docs/Web/API/Credential_Management_API>
 
-
 ## Code Repositories & Reference Implementations
 
 - Age Verifier Frontend (AV web UI): <https://github.com/eu-digital-identity-wallet/av-web-verifier-ui>
