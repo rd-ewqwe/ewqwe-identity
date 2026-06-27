@@ -172,20 +172,23 @@ pnpm test
 
 ## Repository Structure
 
-```
-├── Cargo.toml                    ─ Rust workspace (6 crates)
-├── crates/
-│   ├── ewqwe-logging/           ─ stdout-only logging
-│   ├── ewqwe-digital-credential/─ credential crypto (SD-JWT, mDoc)
-│   ├── ewqwe-openid4vp/         ─ OpenID4VP protocol, DCQL, stores (SQLite)
-│   ├── ewqwe-credential-verifier-client/ ─ RP client library
-│   ├── ewqwe-credential-verifier-ui/     ─ Admin UI (SQLite)
-│   └── ewqwe-credential-verifier-server/ ─ Server + routes
-├── typescript/     ─ pnpm workspace (TypeScript/Node.js)
-│   ├── ewqwe-digital-identity/ ─ Shared JS library (@ewqwe/digital-identity)
-│   └── demo-webapp/            ─ Relying Party demo (@ewqwe/demo-webapp)
-├── documentation/   ─ mdBook docs
-└── certificates/    ─ Dev/test certificates only
+```mermaid
+graph TD
+    ROOT["ewqwe-identity/"] --> CARGO["Cargo.toml<br/>Rust workspace (6 crates)"]
+    ROOT --> CRATES["crates/"]
+    ROOT --> TS["typescript/<br/>pnpm workspace"]
+    ROOT --> DOCS["documentation/<br/>mdBook docs"]
+    ROOT --> CERTS["certificates/<br/>Dev/test certs only"]
+
+    CRATES --> LOGGING["ewqwe-logging/<br/>stdout-only logging"]
+    CRATES --> DIGITAL["ewqwe-digital-credential/<br/>credential crypto (SD-JWT, mDoc)"]
+    CRATES --> OID4VP["ewqwe-openid4vp/<br/>OpenID4VP protocol, DCQL, stores (SQLite)"]
+    CRATES --> CLIENT["ewqwe-credential-verifier-client/<br/>RP client library"]
+    CRATES --> UI["ewqwe-credential-verifier-ui/<br/>Admin UI (SQLite)"]
+    CRATES --> SERVER["ewqwe-credential-verifier-server/<br/>Server + routes"]
+
+    TS --> DIGITAL_ID["ewqwe-digital-identity/<br/>Shared JS library (@ewqwe/digital-identity)"]
+    TS --> DEMO["demo-webapp/<br/>Relying Party demo"]
 ```
 
 ## License

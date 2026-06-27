@@ -193,12 +193,23 @@ All request/response types are in [`models`] and re-exported at the crate root.
 
 ### Transaction lifecycle
 
-```
-InitTransactionRequest → init_openid4vp_transaction → InitTransactionResponse
-                                                              ↓ (tx.transaction_id)
-TransactionStatusResult ← get_openid4vp_transaction_status ← poll until received/expired
-       ↓ (authorization_response.vp_token)
-  VerifyRequest → verify_presentation → VerifyResponse (attestation JWT)
+```mermaid
+sequenceDiagram
+    participant Client as Rust Client
+    participant Server as Credential Verifier
+
+    Client->>Server: init_openid4vp_transaction(InitTransactionRequest)
+    Server-->>Client: InitTransactionResponse<br/>(transaction_id)
+
+    loop Poll until received/expired
+        Client->>Server: get_openid4vp_transaction_status(transaction_id)
+        Server-->>Client: TransactionStatusResult
+    end
+
+    Note over Client,Server: Wallet submits VP Token via direct_post
+
+    Client->>Server: verify_presentation(VerifyRequest)
+    Server-->>Client: VerifyResponse (attestation JWT)
 ```
 
 ### `DcqlQuery` — custom credential request
