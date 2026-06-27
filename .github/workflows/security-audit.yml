@@ -31,12 +31,9 @@ jobs:
 
       - name: Install cargo-audit (cached)
         run: |
-          mkdir -p ~/.cargo/bin
           if ! command -v cargo-audit &>/dev/null; then
-            curl -sSfL https://github.com/rustsec/rustsec/releases/download/cargo-audit%2Fv0.22.2/cargo-audit-x86_64-unknown-linux-musl-v0.22.2.tgz | tar xz -C ~/.cargo/bin
-            chmod +x ~/.cargo/bin/cargo-audit
+            cargo install cargo-audit --locked
           fi
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
 
       - name: Run audit
         run: cargo audit
