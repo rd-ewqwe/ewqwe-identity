@@ -33,16 +33,16 @@ This repository contains:
 
 ```mermaid
 graph TD
-    RP["Relying Party<br/>(typescript/demo-webapp/ — MIT)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>(ewqwe-credential-verifier-server — AG)"]
-    VERIFIER -->|validates VP Token| CRYPTO["ewqwe-digital-credential"]
-    VERIFIER -->|transaction lifecycle| OPENID4VP["ewqwe-openid4vp"]
-    VERIFIER -->|serves UI| UI["Admin UI<br/>(ewqwe-credential-verifier-ui)"]
+    RP["Relying Party<br/>(typescript/demo-webapp/ — MIT)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>ewqwe-credential-verifier-server<br/> (AGPL-3.0)"]
+    VERIFIER -->|validates VP Token| CRYPTO["ewqwe-digital-credential<br/>(AGPL-3.0)"]
+    VERIFIER -->|transaction lifecycle| OPENID4VP["ewqwe-openid4vp<br/>(AGPL-3.0)"]
+    VERIFIER -->|serves UI| UI["Admin UI<br/>ewqwe-credential-verifier-ui<br/>(AGPL-3.0)"]
     subgraph open-core
         CRYPTO
         OPENID4VP
         VERIFIER
         UI
-        CLIENT["ewqwe-credential-verifier-client"]
+        CLIENT["ewqwe-credential-verifier-client<br/>(AGPL-3.0)"]
     end
 ```
 
@@ -169,27 +169,6 @@ pnpm test
 ```
 
 ---
-
-## Repository Structure
-
-```mermaid
-graph TD
-    ROOT["ewqwe-identity/"] --> CARGO["Cargo.toml<br/>Rust workspace (6 crates)"]
-    ROOT --> CRATES["crates/"]
-    ROOT --> TS["typescript/<br/>pnpm workspace"]
-    ROOT --> DOCS["documentation/<br/>mdBook docs"]
-    ROOT --> CERTS["certificates/<br/>Dev/test certs only"]
-
-    CRATES --> LOGGING["ewqwe-logging/<br/>stdout-only logging"]
-    CRATES --> DIGITAL["ewqwe-digital-credential/<br/>credential crypto (SD-JWT, mDoc)"]
-    CRATES --> OID4VP["ewqwe-openid4vp/<br/>OpenID4VP protocol, DCQL, stores (SQLite)"]
-    CRATES --> CLIENT["ewqwe-credential-verifier-client/<br/>RP client library"]
-    CRATES --> UI["ewqwe-credential-verifier-ui/<br/>Admin UI (SQLite)"]
-    CRATES --> SERVER["ewqwe-credential-verifier-server/<br/>Server + routes"]
-
-    TS --> DIGITAL_ID["ewqwe-digital-identity/<br/>Shared JS library (@ewqwe/digital-identity)"]
-    TS --> DEMO["demo-webapp/<br/>Relying Party demo"]
-```
 
 ## License
 
