@@ -62,14 +62,14 @@ pub(crate) async fn issuer_certs_endpoint(
                 .subject_name()
                 .entries_by_nid(openssl::nid::Nid::COMMONNAME)
                 .next()
-                .and_then(|e| e.data().as_utf8().ok())
+                .and_then(|e| e.data().to_string().ok())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| "<unknown>".to_string());
             let issuer = cert
                 .issuer_name()
                 .entries_by_nid(openssl::nid::Nid::COMMONNAME)
                 .next()
-                .and_then(|e| e.data().as_utf8().ok())
+                .and_then(|e| e.data().to_string().ok())
                 .map(|s| s.to_string())
                 .unwrap_or_else(|| "<unknown>".to_string());
 

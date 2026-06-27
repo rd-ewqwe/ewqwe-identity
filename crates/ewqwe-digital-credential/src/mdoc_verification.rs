@@ -203,7 +203,11 @@ pub fn verify_mdoc_presentation(
         CredentialError::InvalidPresentation("mDoc presentation contains no namespaces".to_string())
     })?;
     let claims = if decoded.namespaces.len() == 1 {
-        let (_, ns_claims) = decoded.namespaces.into_iter().next().unwrap();
+        let (_, ns_claims) = decoded.namespaces.into_iter().next().ok_or_else(|| {
+            CredentialError::InvalidPresentation(
+                "mDoc presentation contains no namespaces".to_string(),
+            )
+        })?;
         serde_json::Value::Object(ns_claims.into_iter().collect())
     } else {
         let mut obj = serde_json::Map::new();

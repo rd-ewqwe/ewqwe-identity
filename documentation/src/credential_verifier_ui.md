@@ -238,7 +238,7 @@ Entries are paginated (50 per page). The journal backend must be enabled in the 
 
 The UI fetches locale strings from:
 
-```
+```text
 GET /api/v1/i18n?lang=<code>
 ```
 
@@ -310,7 +310,9 @@ All API endpoints are under `/api/v1/` and require `Content-Type: application/js
 |--------|------|------|-------------|
 | `GET`  | `/api/v1/settings` | — | `{"app_name": "...", "logo_url": "...\|null", "allowed_credential_types": [...]}` |
 
-### Admin: Settings
+### Admin Settings
+
+Use these endpoints to manage the display settings for the credential verifier UI.
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
@@ -325,7 +327,7 @@ All API endpoints are under `/api/v1/` and require `Content-Type: application/js
 }
 ```
 
-### Admin: Users
+### Admin Users
 
 | Method | Path | Body | Description |
 |--------|------|------|-------------|
@@ -334,7 +336,7 @@ All API endpoints are under `/api/v1/` and require `Content-Type: application/js
 | `PUT`    | `/api/v1/admin/users/{id}` | `{first_name?, last_name?, role?, is_active?, new_password?, allowed_credential_types?}` | Update user |
 | `DELETE` | `/api/v1/admin/users/{id}` | — | Delete user |
 
-### Admin: Journal
+### Admin Journal
 
 | Method | Path | Query | Description |
 |--------|------|-------|-------------|
