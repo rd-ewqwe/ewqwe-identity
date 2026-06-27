@@ -9,6 +9,9 @@ on:
     - cron: "0 8 * * 1" # Every Monday at 08:00 UTC
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   rust-audit:
     name: cargo audit
