@@ -1,0 +1,16 @@
+[advisories]
+ignore = [
+    # RUSTSEC-2023-0071: rsa — Marvin Attack timing sidechannel
+    #
+    # `rsa` is a transitive dependency of `sqlx-mysql`. It is used by sqlx's
+    # MySQL driver exclusively for client-side RSA public-key encryption of
+    # the password during the `caching_sha2_password` auth handshake.
+    #
+    # The Marvin Attack targets PKCS#1 v1.5 *decryption oracles* — servers
+    # that decrypt attacker-chosen ciphertexts and leak timing information.
+    # Our usage is encryption-only (client → server), so there is no
+    # decryption oracle and the attack is not exploitable.
+    #
+    # When sqlx upgrades its `rsa` dependency, this ignore should be removed.
+    "RUSTSEC-2023-0071",
+]
