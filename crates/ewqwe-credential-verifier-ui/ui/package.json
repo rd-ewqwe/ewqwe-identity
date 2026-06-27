@@ -5,7 +5,9 @@
   "license": "AGPL-3.0",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/assemble-html.mjs",
     "dev": "vite",
+    "prebuild": "node scripts/assemble-html.mjs",
     "build": "vite build",
     "preview": "vite preview"
   },

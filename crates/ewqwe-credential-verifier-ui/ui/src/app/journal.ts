@@ -27,7 +27,7 @@ export function initJournalPage(): void {
 function setJournalDefaultDates(): void {
   const fromEl = $("journal-filter-from") as HTMLInputElement | null;
   const toEl = $("journal-filter-to") as HTMLInputElement | null;
-  if (fromEl) fromEl.value = "2025-01-01";
+  if (fromEl) fromEl.value = "2026-01-01";
   if (toEl) toEl.value = new Date().toISOString().slice(0, 10);
 }
 
@@ -84,17 +84,66 @@ export async function loadJournal(offset: number): Promise<void> {
 
 function renderClaims(claims: Record<string, unknown>): string {
   const entries = Object.entries(claims);
-  if (entries.length === 0) return '<span class="text-white/40">—</span>';
+  if (entries.length === 0) return '<span class="text-white/40">\u2014</span>';
+
+  /** Claim keys whose values are raw binary encoded as base64. */
+  const IMAGE_CLAIMS = new Set([
+    "portrait",
+    "signature",
+    "signature_usual_mark",
+  ]);
+
   return entries
     .map(([k, v]) => {
+      // Image claims: render as a thumbnail
+      if (IMAGE_CLAIMS.has(k) && typeof v === "string" && v.length > 0) {
+        const standardBase64 = v.replace(/-/g, "+").replace(/_/g, "/");
+        const mimeType = detectImageMimeType(standardBase64);
+        // Browsers cannot render JPEG 2000 — show label instead of broken image
+        if (mimeType === "image/jp2") {
+          return `<span class="text-white/40 text-xs">${escapeHtml(k)}</span>`;
+        }
+        const src = `data:${mimeType};base64,${standardBase64}`;
+        return `<span class="inline-flex"><img src="${src}" alt="" class="claim-thumbnail cursor-pointer" /></span>`;
+      }
+
       if (typeof v === "boolean") {
-        const icon = v ? "✓" : "✗";
+        const icon = v ? "\u2713" : "\u2717";
         const cls = v ? "text-green-400" : "text-red-400";
         return `<span class="${cls} text-xs" title="${escapeHtml(k)}">${icon}&thinsp;${escapeHtml(k)}</span>`;
       }
-      return `<span class="text-white/60 text-xs">${escapeHtml(k)}: ${escapeHtml(String(v))}</span>`;
+      return `<span class="text-white/60 text-xs">${escapeHtml(k)}: ${escapeHtml(String(v)).slice(0, 30)}</span>`;
     })
-    .join('<span class="text-white/25 mx-1">·</span>');
+    .join('<span class="text-white/25 mx-1">\u00b7</span>');
+}
+
+function detectImageMimeType(base64Std: string): string {
+  try {
+    const padded = base64Std.padEnd(
+      base64Std.length + ((4 - (base64Std.length % 4)) % 4),
+      "=",
+    );
+    const raw = atob(padded);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) bytes[i] = raw.charCodeAt(i);
+
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff)
+      return "image/jpeg";
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e)
+      return "image/png";
+    if (
+      bytes[0] === 0x00 &&
+      bytes[1] === 0x00 &&
+      bytes[2] === 0x00 &&
+      bytes[3] === 0x0c &&
+      bytes[4] === 0x6a &&
+      bytes[5] === 0x50
+    )
+      return "image/jp2";
+    return "image/jpeg";
+  } catch {
+    return "image/jpeg";
+  }
 }
 
 function renderJournal(entries: JournalEntry[]): void {

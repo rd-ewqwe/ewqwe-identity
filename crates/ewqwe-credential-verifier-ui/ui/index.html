@@ -9,10 +9,11 @@
     </head>
 
     <body class="text-white min-h-screen flex flex-col">
-        <!-- ═══════════════════════════════════════════════════════ TOAST ══ -->
+        <!-- ════════════════════════════════════════════════ TOAST ══ -->
         <div id="toast"></div>
 
-        <!-- ═══════════════════════════════════════════════════ MOBILE DRAWER ══ -->
+
+        <!-- ════════════════════════════════════════════ MOBILE DRAWER ══ -->
         <div
             id="drawer-overlay"
             class="fixed inset-0 bg-black/50 z-40 hidden"
@@ -36,9 +37,8 @@
             <nav id="drawer-nav"></nav>
         </aside>
 
-        <!-- ════════════════════════════════════════════════════════════════ -->
-        <!-- PAGE: login -->
-        <!-- ════════════════════════════════════════════════════════════════ -->
+
+        <!-- ════════════════════════════════════════════ PAGE: login ══ -->
         <div
             id="page-login"
             class="hidden flex-1 flex-col items-center justify-center p-4"
@@ -129,9 +129,8 @@
             </div>
         </div>
 
-        <!-- ════════════════════════════════════════════════════════════════ -->
-        <!-- PAGE: bootstrap -->
-        <!-- ════════════════════════════════════════════════════════════════ -->
+
+        <!-- ════════════════════════════════════════════ PAGE: bootstrap ══ -->
         <div
             id="page-bootstrap"
             class="hidden flex-1 items-center justify-center p-4 flex-col"
@@ -161,7 +160,6 @@
                 >
                     One-time initial setup
                 </p>
-
                 <form
                     id="bootstrap-form"
                     onsubmit="doBootstrap(event)"
@@ -259,9 +257,8 @@
             </div>
         </div>
 
-        <!-- ════════════════════════════════════════════════════════════════ -->
-        <!-- APP SHELL (nav + page area) — shown when logged in -->
-        <!-- ════════════════════════════════════════════════════════════════ -->
+
+        <!-- ════════════════════════════════════════════ APP SHELL ══ -->
         <div id="app-shell" class="hidden flex-1 flex-col overflow-hidden">
             <!-- Top bar -->
             <header
@@ -287,7 +284,6 @@
                         />
                     </svg>
                 </button>
-
                 <!-- Company logo + name in top bar -->
                 <div class="flex items-center gap-2 flex-1">
                     <img
@@ -302,7 +298,6 @@
                         >Verifier App</span
                     >
                 </div>
-
                 <!-- Desktop nav -->
                 <nav
                     id="topbar-nav"
@@ -310,9 +305,9 @@
                 ></nav>
             </header>
 
-            <!-- Page content -->
+
             <main class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-                <!-- ── Home (QR verification) ───────────────────────────── -->
+                <!-- ── Home (QR verification) ──────────────── -->
                 <section
                     id="page-home"
                     class="hidden flex-col items-center gap-6 pt-4"
@@ -326,7 +321,6 @@
                         >
                             Credential Verification QR
                         </h2>
-
                         <!-- Credential type selector -->
                         <div id="qr-type-selector" class="mb-4">
                             <label
@@ -364,7 +358,6 @@
                                 </option>
                             </select>
                         </div>
-
                         <div id="qr-area-empty" class="">
                             <p
                                 class="text-white/55 text-sm mb-4"
@@ -382,7 +375,6 @@
                                 Generate QR Code
                             </button>
                         </div>
-
                         <div
                             id="qr-area-loading"
                             class="hidden flex-col items-center gap-3 py-4"
@@ -395,7 +387,6 @@
                                 Creating verification request…
                             </p>
                         </div>
-
                         <div
                             id="qr-area-code"
                             class="hidden flex-col items-center gap-4"
@@ -432,7 +423,6 @@
                                 </button>
                             </div>
                         </div>
-
                         <div
                             id="qr-area-verified"
                             class="hidden flex-col items-center gap-3 py-2"
@@ -489,7 +479,6 @@
                                 New Verification
                             </button>
                         </div>
-
                         <div
                             id="qr-area-failed"
                             class="hidden flex-col items-center gap-3 py-2"
@@ -529,7 +518,6 @@
                             </button>
                         </div>
                     </div>
-
                     <!-- ewqwe branding -->
                     <div class="flex flex-col items-center gap-2 opacity-45">
                         <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
@@ -539,6 +527,8 @@
                     </div>
                 </section>
 
+
+                <!-- ── Users ───────────────────────────────── -->
                 <!-- ── Users ─────────────────────────────────────────────── -->
                 <section id="page-users" class="hidden flex-col gap-4">
                     <div class="flex items-center justify-between">
@@ -552,7 +542,6 @@
                             + <span data-i18n="add_user">New User</span>
                         </button>
                     </div>
-
                     <div class="glass overflow-x-auto">
                         <table class="tbl">
                             <thead>
@@ -577,7 +566,6 @@
                             </tbody>
                         </table>
                     </div>
-
                     <div
                         class="flex flex-col items-center gap-2 opacity-45 mt-4"
                     >
@@ -588,6 +576,8 @@
                     </div>
                 </section>
 
+
+                <!-- ── Journal ─────────────────────────────── -->
                 <!-- ── Journal ───────────────────────────────────────────── -->
                 <section id="page-journal" class="hidden flex-col gap-4">
                     <div
@@ -606,7 +596,6 @@
                             </button>
                         </div>
                     </div>
-
                     <!-- Filters -->
                     <div class="glass p-4 flex flex-wrap gap-3 items-end">
                         <div class="flex-1 min-w-[160px]">
@@ -668,7 +657,6 @@
                             </button>
                         </div>
                     </div>
-
                     <div class="glass overflow-x-auto">
                         <table class="tbl">
                             <thead>
@@ -692,7 +680,6 @@
                             </tbody>
                         </table>
                     </div>
-
                     <!-- Pagination -->
                     <div
                         class="flex justify-between items-center text-sm text-white/55"
@@ -723,7 +710,7 @@
                                 class="form-input text-xs py-0.5 px-2 h-7"
                                 onchange="loadJournal(0)"
                             >
-                                <option value="10" selected>10</option>
+                                <option value="10" selected>10</option></option>
                                 <option value="25">25</option>
                                 <option value="50">50</option>
                                 <option value="100">100</option>
@@ -738,7 +725,6 @@
                             Next →
                         </button>
                     </div>
-
                     <div
                         class="flex flex-col items-center gap-2 opacity-45 mt-4"
                     >
@@ -749,7 +735,8 @@
                     </div>
                 </section>
 
-                <!-- ── Settings ──────────────────────────────────────────── -->
+
+                <!-- ── Settings ────────────────────────────── -->
                 <section
                     id="page-settings"
                     class="hidden flex-col gap-6 max-w-lg"
@@ -757,7 +744,6 @@
                     <h2 class="text-xl font-bold" data-i18n="settings">
                         Settings
                     </h2>
-
                     <!-- Display settings -->
                     <div class="glass p-6 flex flex-col gap-5">
                         <h3
@@ -833,7 +819,6 @@
                             </select>
                         </div>
                     </div>
-
                     <!-- France Identité Numérique claim settings -->
                     <div class="glass p-5 flex flex-col gap-3">
                         <h4
@@ -893,7 +878,6 @@
                             >
                         </div>
                     </div>
-
                     <!-- PID claim settings -->
                     <div class="glass p-5 flex flex-col gap-3">
                         <h4
@@ -1007,7 +991,6 @@
                             >
                         </div>
                     </div>
-
                     <!-- mDL claim settings -->
                     <div class="glass p-5 flex flex-col gap-3">
                         <h4
@@ -1130,7 +1113,6 @@
                             >
                         </div>
                     </div>
-
                     <div class="flex gap-3 mt-1">
                         <button
                             onclick="saveSettings()"
@@ -1147,7 +1129,6 @@
                             Cancel
                         </button>
                     </div>
-
                     <div
                         class="flex flex-col items-center gap-2 opacity-45 mt-4"
                     >
@@ -1157,13 +1138,11 @@
                         </p>
                     </div>
                 </section>
+
             </main>
         </div>
 
-        <!-- ════════════════════════════════════════════════════════════════ -->
-        <!-- MODALS -->
-        <!-- ════════════════════════════════════════════════════════════════ -->
-
+        <!-- ════════════════════════════════════════════ MODALS ══ -->
         <!-- Create / Edit User Modal -->
         <div id="modal-user" class="modal-bg hidden">
             <div class="glass modal-card p-7">
@@ -1343,6 +1322,7 @@
                 </form>
             </div>
         </div>
+
 
         <script type="module" src="/src/main.ts"></script>
     </body>

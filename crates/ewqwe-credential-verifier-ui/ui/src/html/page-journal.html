@@ -1,0 +1,156 @@
+<!-- ── Journal ───────────────────────────────────────────── -->
+<section id="page-journal" class="hidden flex-col gap-4">
+    <div
+        class="flex items-center justify-between flex-wrap gap-2"
+    >
+        <h2 class="text-xl font-bold" data-i18n="audit_journal">
+            Audit Journal
+        </h2>
+        <div class="flex gap-2">
+            <button
+                onclick="loadJournal(0)"
+                class="btn-ghost text-sm"
+                data-i18n="refresh"
+            >
+                ↻ Refresh
+            </button>
+        </div>
+    </div>
+    <!-- Filters -->
+    <div class="glass p-4 flex flex-wrap gap-3 items-end">
+        <div class="flex-1 min-w-[160px]">
+            <label
+                class="block text-xs text-white/60 mb-1"
+                data-i18n="verifier"
+                >Verifier</label
+            >
+            <select
+                id="journal-filter-user"
+                class="form-input text-sm"
+                onchange="loadJournal(0)"
+            >
+                <option value="" data-i18n="all_verifiers">
+                    All verifiers
+                </option>
+            </select>
+        </div>
+        <div class="flex-1 min-w-[140px]">
+            <label
+                class="block text-xs text-white/60 mb-1"
+                data-i18n="from"
+                >From</label
+            >
+            <input
+                id="journal-filter-from"
+                type="date"
+                class="form-input text-sm"
+                onchange="loadJournal(0)"
+            />
+        </div>
+        <div class="flex-1 min-w-[140px]">
+            <label
+                class="block text-xs text-white/60 mb-1"
+                data-i18n="to"
+                >To</label
+            >
+            <input
+                id="journal-filter-to"
+                type="date"
+                class="form-input text-sm"
+                onchange="loadJournal(0)"
+            />
+        </div>
+        <div class="flex gap-2">
+            <button
+                onclick="loadJournal(0)"
+                class="btn-primary text-sm"
+                data-i18n="filter"
+            >
+                Filter
+            </button>
+            <button
+                onclick="clearJournalFilters()"
+                class="btn-ghost text-sm"
+                data-i18n="clear"
+            >
+                Clear
+            </button>
+        </div>
+    </div>
+    <div class="glass overflow-x-auto">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th data-i18n="time">Time</th>
+                    <th data-i18n="verifier">Verifier</th>
+                    <th data-i18n="claims">Claims</th>
+                    <th data-i18n="status">Status</th>
+                </tr>
+            </thead>
+            <tbody id="journal-tbody">
+                <tr>
+                    <td
+                        colspan="4"
+                        class="text-center text-white/40 py-6"
+                        data-i18n="loading"
+                    >
+                        Loading…
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <!-- Pagination -->
+    <div
+        class="flex justify-between items-center text-sm text-white/55"
+    >
+        <button
+            id="journal-prev"
+            onclick="journalPage(-1)"
+            class="btn-ghost text-sm"
+            disabled
+            data-i18n="prev"
+        >
+            ← Prev
+        </button>
+        <div class="flex items-center gap-3">
+            <span
+                id="journal-page-info"
+                class="whitespace-nowrap"
+                >Page 1</span
+            >
+            <span class="text-white/40">|</span>
+            <label
+                class="text-white/50 text-xs"
+                data-i18n="rows_per_page"
+                >Rows</label
+            >
+            <select
+                id="journal-limit-select"
+                class="form-input text-xs py-0.5 px-2 h-7"
+                onchange="loadJournal(0)"
+            >
+                <option value="10" selected>10</option></option>
+                <option value="25">25</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
+        </div>
+        <button
+            id="journal-next"
+            onclick="journalPage(1)"
+            class="btn-ghost text-sm"
+            data-i18n="next"
+        >
+            Next →
+        </button>
+    </div>
+    <div
+        class="flex flex-col items-center gap-2 opacity-45 mt-4"
+    >
+        <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45" data-i18n="powered_by">
+            powered by ewQwe Digital Identity
+        </p>
+    </div>
+</section>

@@ -1,0 +1,401 @@
+<section
+    id="page-settings"
+    class="hidden flex-col gap-6 max-w-lg"
+>
+    <h2 class="text-xl font-bold" data-i18n="settings">
+        Settings
+    </h2>
+    <!-- Display settings -->
+    <div class="glass p-6 flex flex-col gap-5">
+        <h3
+            class="font-semibold text-white/80"
+            data-i18n="display"
+        >
+            Display
+        </h3>
+        <div>
+            <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="company_name"
+                >Company Name</label
+            >
+            <input
+                id="settings-app-name"
+                type="text"
+                class="form-input"
+                placeholder="ACME.eu"
+            />
+            <p
+                class="text-white/40 text-xs mt-1"
+                data-i18n="app_name_hint"
+            >
+                Displayed in the navigation bar and login
+                screen.
+            </p>
+        </div>
+        <div>
+            <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="logo_url"
+            >
+                Logo URL
+                <span class="text-white/35">(optional)</span>
+            </label>
+            <input
+                id="settings-logo-url"
+                type="text"
+                class="form-input"
+                placeholder="https://example.com/logo.png or data:image/png;base64,..."
+            />
+            <p
+                class="text-white/40 text-xs mt-1"
+                data-i18n="logo_url_hint"
+            >
+                HTTPS URL or base64 data URL
+                (data:image/png;base64,…)
+            </p>
+        </div>
+        <div>
+            <label
+                class="block text-sm text-white/70 mb-1"
+                data-i18n="language"
+                >Language</label
+            >
+            <select id="settings-language" class="form-input">
+                <option
+                    value="default"
+                    data-i18n="language_default"
+                >
+                    Default (browser language)
+                </option>
+                <option value="en">English</option>
+                <option value="fr">Français</option>
+                <option value="de">Deutsch</option>
+                <option value="it">Italiano</option>
+                <option value="es">Español</option>
+                <option value="sv">Svenska</option>
+                <option value="pl">Polski</option>
+                <option value="cs">Čeština</option>
+                <option value="hr">Hrvatski</option>
+            </select>
+        </div>
+    </div>
+    <!-- France Identité Numérique claim settings -->
+    <div class="glass p-5 flex flex-col gap-3">
+        <h4
+            class="font-semibold text-white/80"
+            data-i18n="france_identite_numerique_claims"
+        >
+            France Identité Numérique
+        </h4>
+        <div
+            id="settings-france-claims"
+            class="flex flex-wrap gap-3"
+        >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="age_over_18"
+                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                age_over_18</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="family_name"
+                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                family_name</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="given_name"
+                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                given_name</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="birth_date"
+                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                birth_date</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="portrait"
+                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                portrait</label
+            >
+        </div>
+    </div>
+    <!-- PID claim settings -->
+    <div class="glass p-5 flex flex-col gap-3">
+        <h4
+            class="font-semibold text-white/80"
+            data-i18n="pid_claims"
+        >
+            PID Claims (National ID)
+        </h4>
+        <div
+            id="settings-pid-claims"
+            class="flex flex-wrap gap-3"
+        >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="family_name"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                family_name</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="given_name"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                given_name</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="birth_date"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                birth_date</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="age_birth_year"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                age_birth_year</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="nationality"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                nationality</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="resident_country"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                resident_country</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="issuing_authority"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issuing_authority</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="document_number"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                document_number</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="issuance_date"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issuance_date</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="expiry_date"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                expiry_date</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="portrait"
+                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                portrait</label
+            >
+        </div>
+    </div>
+    <!-- mDL claim settings -->
+    <div class="glass p-5 flex flex-col gap-3">
+        <h4
+            class="font-semibold text-white/80"
+            data-i18n="mdl_claims"
+        >
+            mDL Claims (Driver's License)
+        </h4>
+        <div
+            id="settings-mdl-claims"
+            class="flex flex-wrap gap-3"
+        >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="family_name"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                family_name</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="given_name"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                given_name</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="birth_date"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                birth_date</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="age_over_18"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                age_over_18</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="age_over_21"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                age_over_21</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="issue_date"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issue_date</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="expiry_date"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                expiry_date</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="issuing_country"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issuing_country</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="issuing_authority"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                issuing_authority</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="document_number"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                document_number</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="portrait"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                portrait</label
+            >
+            <label
+                class="flex items-center gap-1 text-sm text-white/70"
+                ><input
+                    type="checkbox"
+                    value="driving_privileges"
+                    class="mdl-claim-cb w-4 h-4 accent-brand-indigo"
+                />
+                driving_privileges</label
+            >
+        </div>
+    </div>
+    <div class="flex gap-3 mt-1">
+        <button
+            onclick="saveSettings()"
+            class="btn-primary"
+            data-i18n="save_settings"
+        >
+            Save Settings
+        </button>
+        <button
+            onclick="loadSettings()"
+            class="btn-ghost"
+            data-i18n="cancel"
+        >
+            Cancel
+        </button>
+    </div>
+    <div
+        class="flex flex-col items-center gap-2 opacity-45 mt-4"
+    >
+        <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45" data-i18n="powered_by">
+            powered by ewQwe Digital Identity
+        </p>
+    </div>
+</section>

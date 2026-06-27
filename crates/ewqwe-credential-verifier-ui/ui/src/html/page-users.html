@@ -1,0 +1,46 @@
+<!-- ── Users ─────────────────────────────────────────────── -->
+<section id="page-users" class="hidden flex-col gap-4">
+    <div class="flex items-center justify-between">
+        <h2 class="text-xl font-bold" data-i18n="users">
+            Users
+        </h2>
+        <button
+            onclick="openCreateUserModal()"
+            class="btn-primary text-sm"
+        >
+            + <span data-i18n="add_user">New User</span>
+        </button>
+    </div>
+    <div class="glass overflow-x-auto">
+        <table class="tbl">
+            <thead>
+                <tr>
+                    <th data-i18n="email">Email</th>
+                    <th data-i18n="name">Name</th>
+                    <th data-i18n="role">Role</th>
+                    <th data-i18n="status">Status</th>
+                    <th data-i18n="actions">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="users-tbody">
+                <tr>
+                    <td
+                        colspan="5"
+                        class="text-center text-white/40 py-6"
+                        data-i18n="loading"
+                    >
+                        Loading…
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div
+        class="flex flex-col items-center gap-2 opacity-45 mt-4"
+    >
+        <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45" data-i18n="powered_by">
+            powered by ewQwe Digital Identity
+        </p>
+    </div>
+</section>

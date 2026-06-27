@@ -1,0 +1,125 @@
+<div
+    id="page-bootstrap"
+    class="hidden flex-1 items-center justify-center p-4 flex-col"
+>
+    <div class="glass p-8 w-full max-w-sm">
+        <div class="flex flex-col items-center gap-2 mb-6">
+            <img
+                id="bootstrap-logo"
+                src="/logo.png"
+                alt="Logo"
+                class="h-10 w-auto"
+            />
+            <span
+                id="bootstrap-company-name"
+                class="font-bold text-lg text-white"
+            ></span>
+        </div>
+        <h1
+            class="text-2xl font-bold mb-1"
+            data-i18n="create_admin_account"
+        >
+            Create Admin Account
+        </h1>
+        <p
+            class="text-white/55 text-sm mb-7"
+            data-i18n="one_time_setup"
+        >
+            One-time initial setup
+        </p>
+        <form
+            id="bootstrap-form"
+            onsubmit="doBootstrap(event)"
+            class="flex flex-col gap-4"
+        >
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label
+                        class="block text-sm text-white/70 mb-1"
+                        data-i18n="first_name"
+                        >First Name</label
+                    >
+                    <input
+                        id="bs-first"
+                        type="text"
+                        class="form-input"
+                        placeholder="Alice"
+                    />
+                </div>
+                <div>
+                    <label
+                        class="block text-sm text-white/70 mb-1"
+                        data-i18n="last_name"
+                        >Last Name</label
+                    >
+                    <input
+                        id="bs-last"
+                        type="text"
+                        class="form-input"
+                        placeholder="Smith"
+                    />
+                </div>
+            </div>
+            <div>
+                <label
+                    class="block text-sm text-white/70 mb-1"
+                    data-i18n="email"
+                    >Email</label
+                >
+                <input
+                    id="bs-email"
+                    type="email"
+                    required
+                    class="form-input"
+                    placeholder="admin@example.com"
+                />
+            </div>
+            <div>
+                <label class="block text-sm text-white/70 mb-1">
+                    <span data-i18n="password">Password</span>
+                    <span class="text-white/40" data-i18n="min_chars"
+                        >(min 12 chars)</span
+                    >
+                </label>
+                <input
+                    id="bs-password"
+                    type="password"
+                    required
+                    minlength="12"
+                    class="form-input"
+                    placeholder="••••••••••••"
+                />
+            </div>
+            <div>
+                <label
+                    class="block text-sm text-white/70 mb-1"
+                    data-i18n="confirm_password"
+                    >Confirm Password</label
+                >
+                <input
+                    id="bs-password2"
+                    type="password"
+                    required
+                    minlength="12"
+                    class="form-input"
+                    placeholder="••••••••••••"
+                />
+            </div>
+            <p id="bs-error" class="text-red-400 text-sm hidden"></p>
+            <button
+                type="submit"
+                class="btn-primary w-full mt-1"
+                data-i18n="create_admin"
+            >
+                Create Admin Account
+            </button>
+        </form>
+    </div>
+    <!-- Powered by footer on bootstrap -->
+    <div class="flex flex-col items-center gap-2 opacity-45 mt-8">
+        <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45" data-i18n="powered_by">
+            powered by ewQwe Digital Identity
+        </p>
+    </div>
+</div>

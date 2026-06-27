@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en" class="h-full">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title id="page-title">Verifier App</title>
+        <link rel="icon" type="image/png" href="/logo.png" />
+        <link rel="stylesheet" href="/src/styles.css" />
+    </head>
+
+    <body class="text-white min-h-screen flex flex-col">
+        <!-- ════════════════════════════════════════════════ TOAST ══ -->
+        <!--#include src="src/html/toast.html" -->
+
+        <!-- ════════════════════════════════════════════ MOBILE DRAWER ══ -->
+        <!--#include src="src/html/drawer.html" -->
+
+        <!-- ════════════════════════════════════════════ PAGE: login ══ -->
+        <!--#include src="src/html/login.html" -->
+
+        <!-- ════════════════════════════════════════════ PAGE: bootstrap ══ -->
+        <!--#include src="src/html/bootstrap.html" -->
+
+        <!-- ════════════════════════════════════════════ APP SHELL ══ -->
+        <div id="app-shell" class="hidden flex-1 flex-col overflow-hidden">
+            <!--#include src="src/html/header.html" -->
+
+            <main class="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                <!-- ── Home (QR verification) ──────────────── -->
+                <!--#include src="src/html/page-home.html" -->
+
+                <!-- ── Users ───────────────────────────────── -->
+                <!--#include src="src/html/page-users.html" -->
+
+                <!-- ── Journal ─────────────────────────────── -->
+                <!--#include src="src/html/page-journal.html" -->
+
+                <!-- ── Settings ────────────────────────────── -->
+                <!--#include src="src/html/page-settings.html" -->
+            </main>
+        </div>
+
+        <!-- ════════════════════════════════════════════ MODALS ══ -->
+        <!--#include src="src/html/modal-user.html" -->
+
+        <script type="module" src="/src/main.ts"></script>
+    </body>
+</html>

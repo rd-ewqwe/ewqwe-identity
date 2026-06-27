@@ -398,8 +398,21 @@ pub(crate) fn create_attestation(
     server_params: &ServerParams,
 ) -> Result<String, AttError> {
     let credential_claims = claims.as_object().cloned().unwrap_or_default();
-    // Convert JPEG2000 portrait to JPEG (e.g. France Identité wallet)
-    let credential_claims = crate::attestation::convert_portrait_to_jpeg(credential_claims);
+    // Convert JPEG2000 portrait to JPEG (e.g. France Identité wallet).
+    // Claims may be namespace-nested (mDoc) or flat (SD-JWT).
+    let all_nested =
+        !credential_claims.is_empty() && credential_claims.values().all(|v| v.is_object());
+    let credential_claims = if all_nested {
+        let mut converted = serde_json::Map::new();
+        for (ns, inner) in credential_claims {
+            let inner_map = inner.as_object().cloned().unwrap_or_default();
+            let converted_inner = crate::attestation::convert_portrait_to_jpeg(inner_map);
+            converted.insert(ns, serde_json::Value::Object(converted_inner));
+        }
+        converted
+    } else {
+        crate::attestation::convert_portrait_to_jpeg(credential_claims)
+    };
 
     if let Some(portrait_val) = credential_claims.get("portrait").and_then(|v| v.as_str()) {
         tracing::info!(
@@ -518,6 +531,23 @@ pub(crate) async fn verify_vp_token_for_qr(
     );
     let age_over_18 = extract_age_over_18_claim(&result.claims);
 
+    // Convert JPEG2000 portrait to JPEG for the QR response (display only).
+    // The raw wallet data is stored as-is in the journal — conversion happens
+    // at read time in JournalEntryView.
+    let raw_map = result.claims.as_object().cloned().unwrap_or_default();
+    let all_nested = !raw_map.is_empty() && raw_map.values().all(|v| v.is_object());
+    let display_claims = if all_nested {
+        let mut converted = serde_json::Map::new();
+        for (ns, inner) in raw_map {
+            let inner_map = inner.as_object().cloned().unwrap_or_default();
+            let converted_inner = crate::attestation::convert_portrait_to_jpeg(inner_map);
+            converted.insert(ns, serde_json::Value::Object(converted_inner));
+        }
+        serde_json::Value::Object(converted)
+    } else {
+        serde_json::Value::Object(crate::attestation::convert_portrait_to_jpeg(raw_map))
+    };
+
     if let Some(journal_store) = journal {
         let summary = serde_json::json!({
             "success": true,
@@ -549,9 +579,7 @@ pub(crate) async fn verify_vp_token_for_qr(
         namespace: result.namespace,
         errors: Vec::new(),
         age_over_18,
-        verified_claims: serde_json::Value::Object(crate::attestation::convert_portrait_to_jpeg(
-            result.claims.as_object().cloned().unwrap_or_default(),
-        )),
+        verified_claims: display_claims,
     })
 }
 

@@ -1,0 +1,89 @@
+<div
+    id="page-login"
+    class="hidden flex-1 flex-col items-center justify-center p-4"
+>
+    <div class="glass p-8 w-full max-w-sm">
+        <!-- Company logo + name on login -->
+        <div
+            id="login-branding"
+            class="flex flex-col items-center gap-2 mb-6"
+        >
+            <img
+                id="login-logo"
+                src="/logo.png"
+                alt="Logo"
+                class="h-10 w-auto"
+            />
+            <span
+                id="login-company-name"
+                class="font-bold text-lg text-white"
+            ></span>
+        </div>
+        <h1
+            id="login-title"
+            class="text-2xl font-bold mb-1"
+            data-i18n="login_title"
+        >
+            Sign In
+        </h1>
+        <p
+            id="login-subtitle"
+            class="text-white/55 text-sm mb-7"
+            data-i18n="login_subtitle"
+        >
+            Credential Verification Application
+        </p>
+
+        <form
+            id="login-form"
+            onsubmit="doLogin(event)"
+            class="flex flex-col gap-4"
+        >
+            <div>
+                <label
+                    class="block text-sm text-white/70 mb-1"
+                    data-i18n="email"
+                    >Email</label
+                >
+                <input
+                    id="login-email"
+                    type="email"
+                    required
+                    autocomplete="username"
+                    class="form-input"
+                    placeholder="admin@example.com"
+                />
+            </div>
+            <div>
+                <label
+                    class="block text-sm text-white/70 mb-1"
+                    data-i18n="password"
+                    >Password</label
+                >
+                <input
+                    id="login-password"
+                    type="password"
+                    required
+                    autocomplete="current-password"
+                    class="form-input"
+                    placeholder="••••••••••••"
+                />
+            </div>
+            <p id="login-error" class="text-red-400 text-sm hidden"></p>
+            <button
+                type="submit"
+                class="btn-primary w-full mt-1"
+                data-i18n="sign_in"
+            >
+                Sign In
+            </button>
+        </form>
+    </div>
+    <!-- Powered by footer on login -->
+    <div class="flex flex-col items-center gap-2 opacity-45 mt-8">
+        <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45" data-i18n="powered_by">
+            powered by ewQwe Digital Identity
+        </p>
+    </div>
+</div>

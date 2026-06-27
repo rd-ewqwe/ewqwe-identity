@@ -65,6 +65,14 @@ impl From<JournalEntry> for JournalEntryView {
 
         let claims = flatten_credential_claims(raw.clone());
 
+        // Convert JPEG2000 portrait to JPEG for display only.
+        // The raw data stays untouched in the database.
+        let claims = if let Some(obj) = claims.as_object() {
+            serde_json::Value::Object(crate::attestation::convert_portrait_to_jpeg(obj.clone()))
+        } else {
+            claims
+        };
+
         JournalEntryView {
             created_at: e.created_at,
             qrcode_app_user_email: e.qrcode_app_user_email,

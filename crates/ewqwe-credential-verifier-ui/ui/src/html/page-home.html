@@ -1,0 +1,218 @@
+<section
+    id="page-home"
+    class="hidden flex-col items-center gap-6 pt-4"
+>
+    <!-- QR + status -->
+    <div class="glass p-6 w-full max-w-sm text-center">
+        <h2
+            id="qr-title"
+            class="text-lg font-bold mb-4"
+            data-i18n="credential_verification_qr"
+        >
+            Credential Verification QR
+        </h2>
+        <!-- Credential type selector -->
+        <div id="qr-type-selector" class="mb-4">
+            <label
+                class="block text-sm text-white/60 mb-1 text-left"
+                data-i18n="credential_type"
+                >Credential Type</label
+            >
+            <select
+                id="qr-credential-type"
+                class="form-input text-sm"
+            >
+                <option
+                    value="france-identite-numerique"
+                    data-i18n="france_identite_numerique"
+                >
+                    France Identité Numérique
+                </option>
+                <option
+                    value="national-id"
+                    data-i18n="national_id"
+                >
+                    National ID (EU PID)
+                </option>
+                <option
+                    value="mdl"
+                    data-i18n="mobile_drivers_license"
+                >
+                    Mobile Driver's License (mDL)
+                </option>
+                <option
+                    value="proof-of-age"
+                    data-i18n="proof_of_age"
+                >
+                    Proof of Age (EU AV)
+                </option>
+            </select>
+        </div>
+        <div id="qr-area-empty" class="">
+            <p
+                class="text-white/55 text-sm mb-4"
+                data-i18n="generate_qr_prompt"
+            >
+                Generate a QR code for the user to scan with
+                their wallet.
+            </p>
+            <button
+                onclick="generateQR()"
+                id="qr-generate-btn"
+                class="btn-primary"
+                data-i18n="generate_qr"
+            >
+                Generate QR Code
+            </button>
+        </div>
+        <div
+            id="qr-area-loading"
+            class="hidden flex-col items-center gap-3 py-4"
+        >
+            <div class="spinner"></div>
+            <p
+                class="text-white/55 text-sm"
+                data-i18n="creating_verification_request"
+            >
+                Creating verification request…
+            </p>
+        </div>
+        <div
+            id="qr-area-code"
+            class="hidden flex-col items-center gap-4"
+        >
+            <img id="qr-img" src="" alt="QR Code" />
+            <div
+                id="qr-status-badge"
+                class="badge badge-indigo px-4 py-1 text-sm"
+                data-i18n="waiting_for_scan"
+            >
+                Waiting for scan…
+            </div>
+            <p
+                class="text-white/45 text-xs"
+                data-i18n="scan_with_wallet_short"
+            >
+                Scan with your digital identity wallet
+            </p>
+            <div class="flex gap-2">
+                <button
+                    onclick="generateQR()"
+                    class="btn-ghost text-sm"
+                    data-i18n="new_qr"
+                >
+                    New QR Code
+                </button>
+                <button
+                    id="qr-cancel-btn"
+                    onclick="cancelQR()"
+                    class="btn-ghost text-sm hidden"
+                    data-i18n="cancel"
+                >
+                    Cancel
+                </button>
+            </div>
+        </div>
+        <div
+            id="qr-area-verified"
+            class="hidden flex-col items-center gap-3 py-2"
+        >
+            <svg
+                class="w-14 h-14 text-green-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+                />
+            </svg>
+            <p
+                class="text-green-300 font-bold text-xl"
+                data-i18n="verified"
+            >
+                Verified ✓
+            </p>
+            <p
+                id="qr-age-result"
+                class="hidden text-base font-semibold px-4 py-1 rounded-full"
+            ></p>
+            <div
+                id="qr-verified-claims"
+                class="hidden w-full max-w-md mt-1"
+            >
+                <p
+                    class="text-white/50 text-xs uppercase tracking-wider mb-1"
+                    data-i18n="verified_claims"
+                >
+                    Verified Claims
+                </p>
+                <div
+                    id="qr-claims-list"
+                    class="bg-brand-bg/60 rounded-lg p-3 text-xs text-white/80 font-mono max-h-40 overflow-y-auto break-all"
+                ></div>
+            </div>
+            <p
+                class="text-white/55 text-sm"
+                data-i18n="credential_verified_success"
+            >
+                The credential was successfully verified.
+            </p>
+            <button
+                onclick="generateQR()"
+                class="btn-primary mt-2"
+                data-i18n="new_verification"
+            >
+                New Verification
+            </button>
+        </div>
+        <div
+            id="qr-area-failed"
+            class="hidden flex-col items-center gap-3 py-2"
+        >
+            <svg
+                class="w-14 h-14 text-red-400"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+            >
+                <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="m9.75 9.75 4.5 4.5m0-4.5-4.5 4.5M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0z"
+                />
+            </svg>
+            <p
+                class="text-red-300 font-bold text-xl"
+                data-i18n="verification_failed_title"
+            >
+                Verification Failed
+            </p>
+            <p
+                id="qr-fail-reason"
+                class="text-white/55 text-sm"
+                data-i18n="presentation_rejected"
+            >
+                The presentation was rejected or expired.
+            </p>
+            <button
+                onclick="generateQR()"
+                class="btn-primary mt-2"
+                data-i18n="try_again"
+            >
+                Try Again
+            </button>
+        </div>
+    </div>
+    <!-- ewqwe branding -->
+    <div class="flex flex-col items-center gap-2 opacity-45">
+        <img src="/logo.png" alt="ewQwe" class="h-7 w-auto" />
+        <p class="text-xs text-white/45" data-i18n="powered_by">
+            powered by ewQwe Digital Identity
+        </p>
+    </div>
+</section>

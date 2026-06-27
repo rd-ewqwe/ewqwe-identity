@@ -1,0 +1,22 @@
+<div
+    id="drawer-overlay"
+    class="fixed inset-0 bg-black/50 z-40 hidden"
+    onclick="closeDrawer()"
+></div>
+<aside
+    id="drawer"
+    class="fixed top-0 left-0 h-full w-64 z-50 glass p-5 hidden flex-col gap-1 shadow-2xl"
+>
+    <div class="flex items-center justify-between mb-4">
+        <span id="drawer-app-name" class="font-bold text-lg text-white"
+            >Verifier App</span
+        >
+        <button
+            onclick="closeDrawer()"
+            class="text-white/60 hover:text-white text-xl leading-none"
+        >
+            &times;
+        </button>
+    </div>
+    <nav id="drawer-nav"></nav>
+</aside>

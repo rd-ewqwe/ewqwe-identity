@@ -4,178 +4,189 @@
 
 /* ── Body: dual-gradient background (no Tailwind equivalent) ── */
 body {
-  background:
-    radial-gradient(
-      circle at top,
-      rgba(115, 88, 207, 0.26) 0%,
-      transparent 48%
-    ),
-    linear-gradient(135deg, #181f38 0%, #1f2745 52%, #181f38 100%);
-  min-height: 100vh;
+    background:
+        radial-gradient(
+            circle at top,
+            rgba(115, 88, 207, 0.26) 0%,
+            transparent 48%
+        ),
+        linear-gradient(135deg, #181f38 0%, #1f2745 52%, #181f38 100%);
+    min-height: 100vh;
 }
 
 /* ── Drawer: transform toggled by JS adding/removing .open ── */
 #drawer {
-  transform: translateX(-100%);
-  transition: transform 0.25s ease;
+    transform: translateX(-100%);
+    transition: transform 0.25s ease;
 }
 #drawer.open {
-  transform: translateX(0);
+    transform: translateX(0);
 }
 
 /* ── Thin custom scrollbar ── */
 ::-webkit-scrollbar {
-  width: 5px;
-  height: 5px;
+    width: 5px;
+    height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: transparent;
+    background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(115, 88, 207, 0.4);
-  border-radius: 9999px;
+    background: rgba(115, 88, 207, 0.4);
+    border-radius: 9999px;
 }
 
 /* ── Spinner keyframes (custom 0.8 s duration; Tailwind's animate-spin is 1 s) ── */
 @keyframes spin-fast {
-  to {
-    transform: rotate(360deg);
-  }
+    to {
+        transform: rotate(360deg);
+    }
 }
 
 @layer components {
-  /* Glass card */
-  .glass {
-    @apply bg-white/[0.08] backdrop-blur-lg border border-white/[0.14] rounded-2xl;
-  }
+    /* Glass card */
+    .glass {
+        @apply bg-white/[0.08] backdrop-blur-lg border border-white/[0.14] rounded-2xl;
+    }
 
-  /* Primary gradient button */
-  .btn-primary {
-    @apply bg-gradient-to-br from-indigo-500 to-violet-600 text-white border-none
+    /* Primary gradient button */
+    .btn-primary {
+        @apply bg-gradient-to-br from-indigo-500 to-violet-600 text-white border-none
            rounded-lg px-5 py-2.5 font-semibold cursor-pointer transition-opacity duration-150;
-  }
-  .btn-primary:hover {
-    @apply opacity-90;
-  }
-  .btn-primary:disabled {
-    @apply opacity-45 cursor-not-allowed;
-  }
+    }
+    .btn-primary:hover {
+        @apply opacity-90;
+    }
+    .btn-primary:disabled {
+        @apply opacity-45 cursor-not-allowed;
+    }
 
-  /* Ghost / outline button */
-  .btn-ghost {
-    @apply bg-transparent text-white/75 border border-white/25 rounded-lg
+    /* Ghost / outline button */
+    .btn-ghost {
+        @apply bg-transparent text-white/75 border border-white/25 rounded-lg
            px-4 py-2 font-medium cursor-pointer transition-colors duration-150;
-  }
-  .btn-ghost:hover {
-    @apply bg-white/[0.08];
-  }
+    }
+    .btn-ghost:hover {
+        @apply bg-white/[0.08];
+    }
 
-  /* Danger button */
-  .btn-danger {
-    @apply bg-gradient-to-br from-red-600 to-red-700 text-white border-none
+    /* Danger button */
+    .btn-danger {
+        @apply bg-gradient-to-br from-red-600 to-red-700 text-white border-none
            rounded-lg px-4 py-2 font-semibold cursor-pointer transition-opacity duration-150;
-  }
-  .btn-danger:hover {
-    @apply opacity-85;
-  }
+    }
+    .btn-danger:hover {
+        @apply opacity-85;
+    }
 
-  /* Form input */
-  .form-input {
-    @apply w-full bg-white/[0.07] border border-white/[0.18] rounded-lg text-white
+    /* Form input */
+    .form-input {
+        @apply w-full bg-white/[0.07] border border-white/[0.18] rounded-lg text-white
            px-3.5 py-2.5 text-[0.95rem] outline-none transition-colors duration-150
            placeholder:text-white/35;
-  }
-  .form-input:focus {
-    @apply border-brand-indigo;
-  }
-  select.form-input option {
-    background: #1f2745;
-    color: #fff;
-  }
+    }
+    .form-input:focus {
+        @apply border-brand-indigo;
+    }
+    select.form-input option {
+        background: #1f2745;
+        color: #fff;
+    }
 
-  /* Sidebar navigation link */
-  .nav-link {
-    @apply flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-white/65 text-sm
+    /* Sidebar navigation link */
+    .nav-link {
+        @apply flex items-center gap-2.5 px-3.5 py-2 rounded-lg text-white/65 text-sm
            font-medium cursor-pointer border-none bg-transparent w-full text-left
            whitespace-nowrap transition-all duration-150;
-  }
-  .nav-link:hover {
-    @apply bg-white/[0.07] text-white;
-  }
-  .nav-link.active {
-    @apply bg-brand-indigo/30 text-white;
-  }
+    }
+    .nav-link:hover {
+        @apply bg-white/[0.07] text-white;
+    }
+    .nav-link.active {
+        @apply bg-brand-indigo/30 text-white;
+    }
 
-  /* Data table */
-  .tbl {
-    @apply w-full text-sm;
-    border-collapse: collapse;
-  }
-  .tbl th {
-    @apply bg-white/[0.07] text-white/60 text-left text-xs font-semibold uppercase tracking-wider px-3 py-2.5;
-  }
-  .tbl td {
-    @apply text-white/85 px-3 py-2.5;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  }
-  .tbl tr:last-child td {
-    border-bottom: none;
-  }
-  .tbl tr:hover td {
-    @apply bg-white/[0.04];
-  }
+    /* Data table */
+    .tbl {
+        @apply w-full text-sm;
+        border-collapse: collapse;
+    }
+    .tbl th {
+        @apply bg-white/[0.07] text-white/60 text-left text-xs font-semibold uppercase tracking-wider px-3 py-2.5;
+    }
+    .tbl td {
+        @apply text-white/85 px-3 py-2.5;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    }
+    .tbl tr:last-child td {
+        border-bottom: none;
+    }
+    .tbl tr:hover td {
+        @apply bg-white/[0.04];
+    }
 
-  /* Status badges */
-  .badge {
-    @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold;
-  }
-  .badge-green {
-    @apply bg-green-600/25 text-green-300;
-  }
-  .badge-amber {
-    @apply bg-amber-600/25 text-amber-300;
-  }
-  .badge-red {
-    @apply bg-red-600/25 text-red-400;
-  }
-  .badge-indigo {
-    @apply bg-brand-indigo/25 text-violet-300;
-  }
+    /* Status badges */
+    .badge {
+        @apply inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold;
+    }
+    .badge-green {
+        @apply bg-green-600/25 text-green-300;
+    }
+    .badge-amber {
+        @apply bg-amber-600/25 text-amber-300;
+    }
+    .badge-red {
+        @apply bg-red-600/25 text-red-400;
+    }
+    .badge-indigo {
+        @apply bg-brand-indigo/25 text-violet-300;
+    }
 
-  /* Loading spinner */
-  .spinner {
-    @apply w-8 h-8 rounded-full;
-    border: 3px solid rgba(255, 255, 255, 0.15);
-    border-top-color: #7358cf;
-    animation: spin-fast 0.8s linear infinite;
-  }
+    /* Loading spinner */
+    .spinner {
+        @apply w-8 h-8 rounded-full;
+        border: 3px solid rgba(255, 255, 255, 0.15);
+        border-top-color: #7358cf;
+        animation: spin-fast 0.8s linear infinite;
+    }
 
-  /* Toast notification */
-  #toast {
-    @apply fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-2.5 rounded-xl
+    /* Toast notification */
+    #toast {
+        @apply fixed bottom-6 left-1/2 -translate-x-1/2 px-6 py-2.5 rounded-xl
            font-semibold text-sm z-[9999] pointer-events-none opacity-0
            transition-opacity duration-[250ms];
-  }
-  #toast.show {
-    @apply opacity-100;
-  }
-  #toast.ok {
-    @apply bg-green-600/90 text-white;
-  }
-  #toast.err {
-    @apply bg-red-600/90 text-white;
-  }
+    }
+    #toast.show {
+        @apply opacity-100;
+    }
+    #toast.ok {
+        @apply bg-green-600/90 text-white;
+    }
+    #toast.err {
+        @apply bg-red-600/90 text-white;
+    }
 
-  /* Modal overlay & card */
-  .modal-bg {
-    @apply fixed inset-0 bg-black/55 backdrop-blur-sm z-50 flex items-center justify-center p-4;
-  }
-  .modal-card {
-    @apply max-w-[480px] w-full;
-  }
+    /* Modal overlay & card */
+    .modal-bg {
+        @apply fixed inset-0 bg-black/55 backdrop-blur-sm z-50 flex items-center justify-center p-4;
+    }
+    .modal-card {
+        @apply max-w-[480px] w-full;
+    }
 
-  /* QR code image */
-  #qr-img {
-    @apply block max-w-[280px] w-full rounded-xl mx-auto bg-white p-3;
-  }
+    /* QR code image */
+    #qr-img {
+        @apply block max-w-[280px] w-full rounded-xl mx-auto bg-white p-3;
+    }
+
+    /* Claim thumbnail — enlarge on hover */
+    .claim-thumbnail {
+        @apply h-8 w-6 object-cover rounded;
+        transition: transform 0.2s ease;
+    }
+    .claim-thumbnail:hover {
+        transform: scale(5);
+        position: relative;
+        z-index: 10;
+    }
 }
