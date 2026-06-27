@@ -28,7 +28,12 @@ export function setupQRPage(): void {
   if (!currentUser) return;
 
   const userTypes = currentUser.allowed_credential_types ?? [];
-  const allTypes = ["proof-of-age", "mdl", "national-id"];
+  const allTypes = [
+    "proof-of-age",
+    "mdl",
+    "national-id",
+    "france-identite-numerique",
+  ];
 
   let effectiveTypes: string[];
   if (userTypes.length > 0) {
@@ -78,6 +83,8 @@ function getClaimsForCredentialType(credType: string): string[] {
   let storageKey: string;
   if (credType === "mdl") {
     storageKey = "verifier_ui_mdl_claims";
+  } else if (credType === "france-identite-numerique") {
+    storageKey = "verifier_ui_france_claims";
   } else {
     // "proof-of-age" and "national-id" both use pid claims
     storageKey = "verifier_ui_pid_claims";
@@ -92,13 +99,100 @@ function getClaimsForCredentialType(credType: string): string[] {
 
 /** Format a claim value for display — trims long strings, shows booleans/text. */
 function formatClaimValue(val: unknown): string {
-  if (typeof val === "boolean") return val ? "✓" : "✗";
+  if (typeof val === "boolean") return val ? "\u2713" : "\u2717";
   if (typeof val === "string") {
     // Truncate long strings (e.g. base64 portraits)
-    return val.length > 60 ? val.slice(0, 57) + "…" : val;
+    return val.length > 60 ? val.slice(0, 57) + "\u2026" : val;
   }
-  if (val === null || val === undefined) return "—";
+  if (val === null || val === undefined) return "\u2014";
   return String(val);
+}
+
+/** Claim keys whose values are raw binary encoded as base64. */
+const IMAGE_CLAIMS = new Set(["portrait", "signature", "signature_usual_mark"]);
+
+/**
+ * Render a single claim entry. Image claims (portrait) show an <img> instead of text.
+ */
+function renderClaimEntry(key: string, val: unknown): string {
+  const label = escapeHtml(key);
+  if (IMAGE_CLAIMS.has(key) && typeof val === "string" && val.length > 0) {
+    // The portrait value from the mDoc credential is base64url-encoded
+    // (CBOR byte strings use URL-safe base64). Convert to standard base64
+    // for the data: URI, which does not understand base64url characters.
+    const standardBase64 = val.replace(/-/g, "+").replace(/_/g, "/");
+    const mimeType = detectImageMimeType(standardBase64);
+    const src = `data:${mimeType};base64,${standardBase64}`;
+    const altAttr = `${label}${mimeType === "image/jp2" ? " (JPEG 2000 — may not display)" : ""}`;
+    return `
+      <div class="flex justify-between items-center py-0.5">
+        <span class="text-white/60">${label}</span>
+        <img src="${src}" alt="${altAttr}" class="h-16 w-12 object-cover rounded" />
+      </div>`;
+  }
+  return `
+    <div class="flex justify-between items-center py-0.5">
+      <span class="text-white/60">${label}</span>
+      <span class="text-white text-right truncate max-w-[60%]">${escapeHtml(formatClaimValue(val))}</span>
+    </div>`;
+}
+
+/**
+ * Detect image MIME type from magic bytes encoded in standard base64.
+ * Adds missing `=` padding before decoding.
+ */
+function detectImageMimeType(base64Std: string): string {
+  try {
+    // Restore padding — base64 length must be a multiple of 4
+    const padded = base64Std.padEnd(
+      base64Std.length + ((4 - (base64Std.length % 4)) % 4),
+      "=",
+    );
+    // Decode the first 12 bytes (enough for all signatures below)
+    const raw = atob(padded);
+    const bytes = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) {
+      bytes[i] = raw.charCodeAt(i);
+    }
+    // JPEG (SOI marker \xff\xd8\xff)
+    if (bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) {
+      return "image/jpeg";
+    }
+    // PNG
+    if (bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e) {
+      return "image/png";
+    }
+    // JPEG 2000
+    if (
+      bytes[0] === 0x00 &&
+      bytes[1] === 0x00 &&
+      bytes[2] === 0x00 &&
+      bytes[3] === 0x0c &&
+      bytes[4] === 0x6a &&
+      bytes[5] === 0x50
+    ) {
+      return "image/jp2";
+    }
+    // WebP
+    if (
+      bytes[0] === 0x52 &&
+      bytes[1] === 0x49 &&
+      bytes[2] === 0x46 &&
+      bytes[8] === 0x57 &&
+      bytes[9] === 0x45 &&
+      bytes[10] === 0x42 &&
+      bytes[11] === 0x50
+    ) {
+      return "image/webp";
+    }
+    // GIF
+    if (bytes[0] === 0x47 && bytes[1] === 0x49 && bytes[2] === 0x46) {
+      return "image/gif";
+    }
+    return "image/jpeg"; // best guess fallback
+  } catch {
+    return "image/jpeg"; // fallback
+  }
 }
 
 // ── Generate QR ───────────────────────────────────────────────────────────
@@ -199,24 +293,6 @@ async function pollStatus(txId: string): Promise<void> {
       stopPolling();
       hideAllQRStates();
 
-      // ── age_over_18 badge ──────────────────────────────────────
-      const ageEl = $("qr-age-result");
-      if (ageEl) {
-        if (data.age_over_18 === true) {
-          ageEl.textContent = t("age_over_18_true");
-          ageEl.className =
-            "text-base font-semibold px-4 py-1 rounded-full text-green-900 bg-green-300";
-          ageEl.classList.remove("hidden");
-        } else if (data.age_over_18 === false) {
-          ageEl.textContent = t("age_over_18_false");
-          ageEl.className =
-            "text-base font-semibold px-4 py-1 rounded-full text-amber-900 bg-amber-300";
-          ageEl.classList.remove("hidden");
-        } else {
-          ageEl.classList.add("hidden");
-        }
-      }
-
       // ── All verified claims ────────────────────────────────────
       const claimsContainer = $("qr-verified-claims");
       const claimsList = $("qr-claims-list");
@@ -224,10 +300,7 @@ async function pollStatus(txId: string): Promise<void> {
         const entries = Object.entries(data.verified_claims);
         if (entries.length > 0) {
           claimsList.innerHTML = entries
-            .map(
-              ([key, val]) =>
-                `<div class="flex justify-between gap-2 py-0.5"><span class="text-white/60">${escapeHtml(key)}</span><span class="text-white text-right truncate max-w-[60%]">${escapeHtml(formatClaimValue(val))}</span></div>`,
-            )
+            .map(([key, val]) => renderClaimEntry(key, val))
             .join("");
           claimsContainer.classList.remove("hidden");
         } else {

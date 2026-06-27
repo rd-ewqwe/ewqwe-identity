@@ -44,6 +44,9 @@ export function navigateTo(page: string): void {
   ["page-home", "page-users", "page-journal", "page-settings"].forEach(hide);
   show("page-" + page);
 
+  // Stop QR polling when leaving the home/QR page
+  if (page !== "home") resetQR();
+
   // Update nav highlight
   document.querySelectorAll<HTMLElement>(".nav-link").forEach((btn) => {
     btn.classList.toggle("active", btn.textContent?.trim() === page);

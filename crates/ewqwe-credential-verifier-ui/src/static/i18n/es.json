@@ -87,6 +87,8 @@
   "from": "Desde",
   "to": "Hasta",
   "filter": "Filtrar",
+  "france_identite_numerique": "France Identité Numérique",
+  "france_identite_numerique_claims": "Atributos France Identité",
   "clear": "Limpiar",
   "time": "Hora",
   "action": "Acción",

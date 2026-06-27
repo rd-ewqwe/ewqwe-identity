@@ -549,7 +549,9 @@ pub(crate) async fn verify_vp_token_for_qr(
         namespace: result.namespace,
         errors: Vec::new(),
         age_over_18,
-        verified_claims: result.claims,
+        verified_claims: serde_json::Value::Object(crate::attestation::convert_portrait_to_jpeg(
+            result.claims.as_object().cloned().unwrap_or_default(),
+        )),
     })
 }
 

@@ -87,6 +87,8 @@
   "from": "Od",
   "to": "Do",
   "filter": "Filtriraj",
+  "france_identite_numerique": "France Identité Numérique",
+  "france_identite_numerique_claims": "Atributi France Identité",
   "clear": "Očisti",
   "time": "Vrijeme",
   "action": "Radnja",

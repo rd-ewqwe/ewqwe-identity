@@ -69,6 +69,20 @@ function loadClaimsSettings(): void {
   } catch {
     // ignore
   }
+
+  try {
+    const franceClaims: string[] = JSON.parse(
+      localStorage.getItem("verifier_ui_france_claims") ??
+        JSON.stringify(["age_over_18", "portrait"]),
+    );
+    document
+      .querySelectorAll<HTMLInputElement>(".france-claim-cb")
+      .forEach((cb) => {
+        cb.checked = franceClaims.includes(cb.value);
+      });
+  } catch {
+    // ignore
+  }
 }
 
 // ── Save settings ─────────────────────────────────────────────────────────
@@ -76,7 +90,10 @@ function loadClaimsSettings(): void {
 export async function saveSettings(): Promise<void> {
   const pidChecked = document.querySelectorAll(".pid-claim-cb:checked").length;
   const mdlChecked = document.querySelectorAll(".mdl-claim-cb:checked").length;
-  if (pidChecked === 0 || mdlChecked === 0) {
+  const franceChecked = document.querySelectorAll(
+    ".france-claim-cb:checked",
+  ).length;
+  if (pidChecked === 0 || mdlChecked === 0 || franceChecked === 0) {
     toast(
       i18n["claims_min_one"] ??
         "Select at least one claim per credential type.",
@@ -120,6 +137,15 @@ export async function saveSettings(): Promise<void> {
     .querySelectorAll<HTMLInputElement>(".mdl-claim-cb:checked")
     .forEach((cb) => mdlClaims.push(cb.value));
   localStorage.setItem("verifier_ui_mdl_claims", JSON.stringify(mdlClaims));
+
+  const franceClaims: string[] = [];
+  document
+    .querySelectorAll<HTMLInputElement>(".france-claim-cb:checked")
+    .forEach((cb) => franceClaims.push(cb.value));
+  localStorage.setItem(
+    "verifier_ui_france_claims",
+    JSON.stringify(franceClaims),
+  );
 
   await applyBranding();
   toast(t("settings_saved"), true);

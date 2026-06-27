@@ -169,6 +169,22 @@ export const CREDENTIAL_TYPES: Record<CredentialType, CredentialTypeConfig> = {
     claims: [{ id: "age_over_18", name: "Age Over 18" }],
   },
 
+  "france-identite-numerique": {
+    id: "france-identite-numerique",
+    name: "France Identité Numérique",
+    format: "mso_mdoc",
+    docType: "eu.europa.ec.eudi.pid.1",
+    namespace: "eu.europa.ec.eudi.pid.1",
+    profile: "haip",
+    claims: [
+      { id: "age_over_18", name: "Age Over 18" },
+      { id: "family_name", name: "Family Name" },
+      { id: "given_name", name: "Given Names" },
+      { id: "birth_date", name: "Birth Date" },
+      { id: "portrait", name: "Portrait" },
+    ],
+  },
+
   tax: {
     id: "tax",
     name: "Tax Identification",

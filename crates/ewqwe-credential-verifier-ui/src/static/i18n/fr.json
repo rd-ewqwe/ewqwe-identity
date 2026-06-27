@@ -87,6 +87,8 @@
   "from": "Du",
   "to": "Au",
   "filter": "Filtrer",
+  "france_identite_numerique": "France Identité Numérique",
+  "france_identite_numerique_claims": "Attributs France Identité",
   "clear": "Effacer",
   "time": "Heure",
   "action": "Action",

@@ -620,6 +620,8 @@ pub enum CredentialType {
     NationalId,
     /// EU Proof of Age attestation.
     ProofOfAge,
+    /// France Identité Numérique (PID mDoc).
+    FranceIdentiteNumerique,
 }
 
 impl std::fmt::Display for CredentialType {
@@ -628,6 +630,9 @@ impl std::fmt::Display for CredentialType {
             CredentialType::Mdl => write!(f, "mdl"),
             CredentialType::NationalId => write!(f, "national-id"),
             CredentialType::ProofOfAge => write!(f, "proof-of-age"),
+            CredentialType::FranceIdentiteNumerique => {
+                write!(f, "france-identite-numerique")
+            }
         }
     }
 }

@@ -87,6 +87,8 @@
   "from": "Von",
   "to": "Bis",
   "filter": "Filtern",
+  "france_identite_numerique": "France Identité Numérique",
+  "france_identite_numerique_claims": "France Identité Numérique Claims",
   "clear": "Zurücksetzen",
   "time": "Zeit",
   "action": "Aktion",

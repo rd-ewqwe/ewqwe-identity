@@ -87,6 +87,8 @@
   "from": "Od",
   "to": "Do",
   "filter": "Filtrovat",
+  "france_identite_numerique": "France Identité Numérique",
+  "france_identite_numerique_claims": "Atributy France Identité",
   "clear": "Vymazat",
   "time": "Čas",
   "action": "Akce",

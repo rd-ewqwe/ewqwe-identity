@@ -207,6 +207,41 @@ const PROOF_OF_AGE_CLAIMS: &[ClaimDefinition] = &[ClaimDefinition {
     description: Some("Whether the holder is 18 years of age or older"),
 }];
 
+// --- France Identité Numérique Claims (PID mDoc) ---
+
+const FRANCE_IDENTITE_CLAIMS: &[ClaimDefinition] = &[
+    ClaimDefinition {
+        id: "age_over_18",
+        name: "Age Over 18",
+        path: "age_over_18",
+        description: Some("Whether the holder is 18 years of age or older"),
+    },
+    ClaimDefinition {
+        id: "family_name",
+        name: "Family Name",
+        path: "family_name",
+        description: Some("Last/surname"),
+    },
+    ClaimDefinition {
+        id: "given_name",
+        name: "Given Name",
+        path: "given_name",
+        description: Some("First name"),
+    },
+    ClaimDefinition {
+        id: "birth_date",
+        name: "Birth Date",
+        path: "birth_date",
+        description: Some("Date of birth"),
+    },
+    ClaimDefinition {
+        id: "portrait",
+        name: "Portrait",
+        path: "portrait",
+        description: Some("Photo of the holder"),
+    },
+];
+
 // --- Credential Type Configs ---
 
 /// Mobile Driver's License (ISO 18013-5).
@@ -239,14 +274,25 @@ pub const CREDENTIAL_TYPE_PROOF_OF_AGE: CredentialTypeConfig = CredentialTypeCon
     claims: PROOF_OF_AGE_CLAIMS,
 };
 
+/// France Identité Numérique (PID mDoc, e.g. France Identité wallet).
+pub const CREDENTIAL_TYPE_FRANCE_IDENTITE: CredentialTypeConfig = CredentialTypeConfig {
+    id: CredentialType::FranceIdentiteNumerique,
+    name: "France Identité Numérique",
+    doc_type: "eu.europa.ec.eudi.pid.1",
+    namespace: "eu.europa.ec.eudi.pid.1",
+    profile: ProfileId::Haip,
+    claims: FRANCE_IDENTITE_CLAIMS,
+};
+
 /// Look up a credential type configuration by string key.
 ///
-/// Accepts: `"mdl"`, `"national-id"`, `"proof-of-age"`, `"proof_of_age"`.
+/// Accepts: `"mdl"`, `"national-id"`, `"proof-of-age"`, `"proof_of_age"`, `"france-identite-numerique"`.
 pub fn get_credential_type(key: &str) -> Option<&'static CredentialTypeConfig> {
     match key {
         "mdl" => Some(&CREDENTIAL_TYPE_MDL),
         "national-id" | "national_id" | "pid" => Some(&CREDENTIAL_TYPE_PID),
         "proof-of-age" | "proof_of_age" => Some(&CREDENTIAL_TYPE_PROOF_OF_AGE),
+        "france-identite-numerique" => Some(&CREDENTIAL_TYPE_FRANCE_IDENTITE),
         _ => None,
     }
 }

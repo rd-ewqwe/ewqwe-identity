@@ -60,9 +60,8 @@ pub struct VerifierAppUser {
     /// Superadmin accounts cannot be deleted via the UI.
     pub is_superadmin: bool,
     /// Credential types this user is allowed to request.
-    ///
     /// Empty means all types are allowed.
-    /// Valid values: `"proof-of-age"`, `"mdl"`, `"national-id"`.
+    /// Valid values: `"proof-of-age"`, `"mdl"`, `"national-id"`, `"france-identite-numerique"`.
     #[serde(default)]
     pub allowed_credential_types: Vec<String>,
     pub created_at: DateTime<Utc>,
@@ -185,7 +184,7 @@ pub struct UpdateUserRequest {
 /// Body for `POST /verifier_ui/api/qr/generate`.
 #[derive(Debug, Deserialize, Default)]
 pub struct GenerateQrRequest {
-    /// Credential type to request: `"proof-of-age"`, `"mdl"`, or `"national-id"`.
+    /// Credential type to request: `"proof-of-age"`, `"mdl"`, `"national-id"`, or `"france-identite-numerique"`.
     ///
     /// Defaults to `"proof-of-age"` when absent.
     pub credential_type: Option<String>,

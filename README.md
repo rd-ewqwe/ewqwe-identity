@@ -3,18 +3,21 @@
 [![License](https://img.shields.io/badge/AGPL--3.0-blue)](LICENSE)
 ([![License](https://img.shields.io/badge/MIT-blue)](typescript/LICENSE) for the TypeScript library and demo webapp)
 
-**Open-source** credential verifier developped in the EU andcompatible with the **EUDI/EIDAS wallet ecosystem**.
+**Open-source** credential **verifier** developped in the EU, and compatible with the **EUDI/EIDAS wallet ecosystem**.
 
-This project provides a complete solution, with a user interface, for verifying digital credentials, including the "age over 18" verification for the widely deployed France Identité Numérique wallet.
+This project provides a complete solution, including a multi-lingual user interface, for verifying digital credentials.
+
+Out of the box **age over 18** verification using the widely deployed **France Identité Numérique** wallet.
 
 See the [Technical Documentation](https://rd-ewqwe.github.io/ewqwe-identity/)
+
 ---
 
 ## Why an open-source credential verifier
 
 The EU Digital Identity (EUDI) Wallet ecosystem enables citizens to present electronically signed credentials — such as Proof of Age — to relying parties. This project provides the **verifier side** of that ecosystem: a server that accepts Verifiable Presentations from EUDI Wallets (via OpenID4VP), validates their cryptographic integrity, and returns signed attestations.
 
-The credential verifier server ships with an **embedded admin UI** (build the SPA, enable it in the config, and it's served at the server root URL — no separate frontend deployment required). A **MIT-licensed demo webapp** is also provided so you can see how to embed digital credential verification into an existing web application.
+The credential verifier server ships with an **embedded multi-lingual admin UI** (build the SPA, enable it in the config, and it's served at the server root URL — no separate frontend deployment required). A **MIT-licensed demo webapp** is also provided so you can see how to embed digital credential verification into an existing web application.
 
 ## Components
 

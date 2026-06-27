@@ -84,6 +84,7 @@ export type CredentialType =
   | "tax-sd-jwt"
   | "pseudonym-age"
   | "pseudonym-age-sd-jwt"
+  | "france-identite-numerique"
   | "ehic"
   | "ehic-sd-jwt"
   | "health-id"

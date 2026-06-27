@@ -209,8 +209,9 @@ pub async fn me(
 /// QR code data URL together with the transaction ID for status polling.
 ///
 /// Accepts an optional `credential_type` in the JSON body: `"proof-of-age"`
-/// (default), `"mdl"`, or `"national-id"`.  The profile (AnnexA / HAIP) is
-/// determined automatically from the credential type.
+/// (default), `"mdl"`, `"national-id"`, or `"france-identite-numerique"`.
+/// The profile (AnnexA / HAIP) is determined automatically from the
+/// credential type.
 pub async fn generate_qr(
     req: HttpRequest,
     identity: Option<Identity>,
@@ -232,6 +233,11 @@ pub async fn generate_qr(
 
     // Validate the credential type is known.
     if get_credential_type(credential_type).is_none() {
+        tracing::warn!(
+            user_id = %user.id,
+            credential_type = %credential_type,
+            "Verifier UI: unknown credential type requested for QR generation"
+        );
         return bad_request(&format!("unknown credential type: {credential_type}"));
     }
 

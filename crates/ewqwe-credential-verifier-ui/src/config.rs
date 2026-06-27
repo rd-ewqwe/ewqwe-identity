@@ -62,7 +62,7 @@ pub struct VerifierUiConfig {
 
     /// Credential types that verifier users are allowed to request.
     ///
-    /// Valid values: `"proof-of-age"`, `"mdl"`, `"national-id"`.
+    /// Valid values: `"proof-of-age"`, `"mdl"`, `"national-id"`, `"france-identite-numerique"`.
     /// When empty or absent, all credential types are allowed.
     #[serde(default)]
     pub allowed_credential_types: Vec<String>,

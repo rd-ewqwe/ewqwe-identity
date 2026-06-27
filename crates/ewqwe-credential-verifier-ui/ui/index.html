@@ -339,10 +339,16 @@
                                 class="form-input text-sm"
                             >
                                 <option
-                                    value="proof-of-age"
-                                    data-i18n="proof_of_age"
+                                    value="france-identite-numerique"
+                                    data-i18n="france_identite_numerique"
                                 >
-                                    Proof of Age (EU AV)
+                                    France Identité Numérique
+                                </option>
+                                <option
+                                    value="national-id"
+                                    data-i18n="national_id"
+                                >
+                                    National ID (EU PID)
                                 </option>
                                 <option
                                     value="mdl"
@@ -351,10 +357,10 @@
                                     Mobile Driver's License (mDL)
                                 </option>
                                 <option
-                                    value="national-id"
-                                    data-i18n="national_id"
+                                    value="proof-of-age"
+                                    data-i18n="proof_of_age"
                                 >
-                                    National ID (EU PID)
+                                    Proof of Age (EU AV)
                                 </option>
                             </select>
                         </div>
@@ -828,6 +834,66 @@
                         </div>
                     </div>
 
+                    <!-- France Identité Numérique claim settings -->
+                    <div class="glass p-5 flex flex-col gap-3">
+                        <h4
+                            class="font-semibold text-white/80"
+                            data-i18n="france_identite_numerique_claims"
+                        >
+                            France Identité Numérique
+                        </h4>
+                        <div
+                            id="settings-france-claims"
+                            class="flex flex-wrap gap-3"
+                        >
+                            <label
+                                class="flex items-center gap-1 text-sm text-white/70"
+                                ><input
+                                    type="checkbox"
+                                    value="age_over_18"
+                                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                                />
+                                age_over_18</label
+                            >
+                            <label
+                                class="flex items-center gap-1 text-sm text-white/70"
+                                ><input
+                                    type="checkbox"
+                                    value="family_name"
+                                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                                />
+                                family_name</label
+                            >
+                            <label
+                                class="flex items-center gap-1 text-sm text-white/70"
+                                ><input
+                                    type="checkbox"
+                                    value="given_name"
+                                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                                />
+                                given_name</label
+                            >
+                            <label
+                                class="flex items-center gap-1 text-sm text-white/70"
+                                ><input
+                                    type="checkbox"
+                                    value="birth_date"
+                                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                                />
+                                > birth_date</label
+                            >
+                            <label
+                                class="flex items-center gap-1 text-sm text-white/70"
+                                ><input
+                                    type="checkbox"
+                                    value="portrait"
+                                    class="france-claim-cb w-4 h-4 accent-brand-indigo"
+                                />
+                                portrait</label
+                            >
+                        </div>
+                    </div>
+
                     <!-- PID claim settings -->
                     <div class="glass p-5 flex flex-col gap-3">
                         <h4
@@ -866,15 +932,6 @@
                                     class="pid-claim-cb w-4 h-4 accent-brand-indigo"
                                 />
                                 birth_date</label
-                            >
-                            <label
-                                class="flex items-center gap-1 text-sm text-white/70"
-                                ><input
-                                    type="checkbox"
-                                    value="age_over_18"
-                                    class="pid-claim-cb w-4 h-4 accent-brand-indigo"
-                                />
-                                age_over_18</label
                             >
                             <label
                                 class="flex items-center gap-1 text-sm text-white/70"
@@ -1218,11 +1275,25 @@
                             >
                                 <input
                                     type="checkbox"
-                                    value="proof-of-age"
+                                    value="france-identite-numerique"
                                     class="mu-cred-cb w-4 h-4 accent-brand-indigo"
                                 />
-                                <span data-i18n="proof_of_age"
-                                    >Proof of Age</span
+                                <span
+                                    data-i18n="france_identite_numerique"
+                                    aria-flowto="mu-cred-types"
+                                    >France Identité Numérique</span
+                                >
+                            </label>
+                            <label
+                                class="flex items-center gap-1 text-sm text-white/70"
+                            >
+                                <input
+                                    type="checkbox"
+                                    value="national-id"
+                                    class="mu-cred-cb w-4 h-4 accent-brand-indigo"
+                                />
+                                <span data-i18n="national_id"
+                                    >National ID (PID)</span
                                 >
                             </label>
                             <label
@@ -1242,11 +1313,11 @@
                             >
                                 <input
                                     type="checkbox"
-                                    value="national-id"
+                                    value="proof-of-age"
                                     class="mu-cred-cb w-4 h-4 accent-brand-indigo"
                                 />
-                                <span data-i18n="national_id"
-                                    >National ID (PID)</span
+                                <span data-i18n="proof_of_age"
+                                    >Proof of Age</span
                                 >
                             </label>
                         </div>
