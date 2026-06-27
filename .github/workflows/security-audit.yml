@@ -9,9 +9,6 @@ on:
     - cron: "0 8 * * 1" # Every Monday at 08:00 UTC
   workflow_dispatch:
 
-permissions:
-  contents: read
-
 jobs:
   rust-audit:
     name: cargo audit
@@ -25,18 +22,15 @@ jobs:
   pnpm-audit:
     name: pnpm audit
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: typescript
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
-        with:
-          version: latest
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: pnpm
           cache-dependency-path: typescript/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+        working-directory: typescript
       - run: pnpm audit
+        working-directory: typescript
