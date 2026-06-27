@@ -1,14 +1,13 @@
 # ewQwe *`/you-kwee/`* Identity — Open Core
 
-
 [![License](https://img.shields.io/badge/AGPL--3.0-blue)](LICENSE)
-&
-[![License](https://img.shields.io/badge/MIT-blue)](typescript/LICENSE)
+([![License](https://img.shields.io/badge/MIT-blue)](typescript/LICENSE) for the TypeScript library and demo webapp)
 
 **Open-source** credential verifier developped in the EU andcompatible with the **EUDI/EIDAS wallet ecosystem**.
 
 This project provides a complete solution, with a user interface, for verifying digital credentials, including the "age over 18" verification for the widely deployed France Identité Numérique wallet.
 
+See the [Technical Documentation](https://rd-ewqwe.github.io/ewqwe-identity/)
 ---
 
 ## Why an open-source credential verifier
@@ -58,6 +57,26 @@ The **Relying Party** (your application, or the demo-webapp) initiates an OpenID
 The **Admin UI** provides an operator-facing dashboard — no separate deployment needed, the SPA is compiled into the server binary and served at the root URL.
 
 ## Using
+
+### Docker (Quick Start)
+
+The fastest way to try the credential verifier is with the pre-built container image:
+
+```bash
+docker pull ghcr.io/rd-ewqwe/ewqwe-identity:latest
+
+docker run --rm -p 9888:9888 \
+  -e PUBLIC_ROOT_URL="https://verifier.your-domain.com" \
+  --name credential-verifier \
+  ghcr.io/rd-ewqwe/ewqwe-identity:latest
+```
+
+The server starts in HTTP mode on port 9888. Navigate to `http://localhost:9888`
+and complete the one-time bootstrap to create an admin account.
+
+See the [Container README](container/README.md) for configuration options,
+environment variables, persistent storage, TLS, Kubernetes deployment,
+and production signer certificates.
 
 ### Embedded Admin UI
 
@@ -153,6 +172,24 @@ For development with hot-reload:
 ```bash
 pnpm dev    # https://localhost:5174
 ```
+
+### Docker Container
+
+Pre-built images are published to **GitHub Container Registry** for every push
+to `main`:
+
+```bash
+docker pull ghcr.io/rd-ewqwe/ewqwe-identity:latest
+```
+
+To build locally instead:
+
+```bash
+docker build -t ewqwe/credential-verifier -f container/Dockerfile .
+```
+
+See the [Container README](container/README.md) for configuration options,
+environment variables, persistent storage, TLS, and Kubernetes deployment.
 
 ## Testing
 
