@@ -3,7 +3,10 @@ name: Deploy Documentation
 on:
   push:
     branches:
-      - main
+      - main # Change to master if your default branch is named master
+
+permissions:
+  contents: write
 
 jobs:
   deploy:
@@ -12,19 +15,27 @@ jobs:
       - name: Checkout Source Code
         uses: actions/checkout@v4
 
+      - name: Setup mdBook
+        uses: peaceiris/actions-mdbook@v2
+        with:
+          mdbook-version: "latest"
+
       - name: Install Rust Toolchain
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Cache Cargo Binaries
+      - name: Cache mdbook-mermaid
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin
-          key: ${{ runner.os }}-mdbook-${{ hashFiles('**/book.toml') }}
+          key: ${{ runner.os }}-mermaid-${{ hashFiles('**/book.toml') }}
 
-      - name: Install mdBook and Mermaid Preprocessor
+      - name: Install mdbook-mermaid Preprocessor
         run: |
-          cargo install --skip-type-check mdbook || true
-          cargo install --skip-type-check mdbook-mermaid || true
+          if ! command -v mdbook-mermaid &> /dev/null; then
+            cargo install mdbook-mermaid
+          fi
+          # Add the cargo binary path to the global environment PATH
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
 
       - name: Build Documentation Site
         run: mdbook build
