@@ -53,7 +53,7 @@
 Assuming the package will be publicly available under `@ewqwe`:
 
 ```bash
-pnpm publish --access public
+npm publish --access public
 ```
 
 
