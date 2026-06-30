@@ -377,12 +377,29 @@ fn verify_cose_certificate_chain(
     let trusted = match verification_result {
         Ok(true) => true,
         Ok(false) => {
+            // output the leaf and certificate chain in PEM format for debugging
+            let leaf_pem = leaf
+                .to_pem()
+                .map(|pem| String::from_utf8_lossy(&pem).to_string())
+                .unwrap_or_else(|e| format!("<failed to convert leaf to PEM: {e}>"));
+            let chain_pem: Vec<String> = cert_chain
+                .iter()
+                .map(|cert_der| {
+                    X509::from_der(cert_der)
+                        .and_then(|c| c.to_pem())
+                        .map(|pem| String::from_utf8_lossy(&pem).to_string())
+                        .unwrap_or_else(|e| format!("<failed to convert cert to PEM: {e}>"))
+                })
+                .collect();
+
             tracing::warn!(
-                "issuerAuth certificate chain is not trusted: {} (depth={}, subject={:?}, issuer={:?})",
-                ctx.error(),
-                ctx.error_depth(),
-                leaf.subject_name(),
-                leaf.issuer_name(),
+                leaf_pem = %leaf_pem,
+                chain_pem = %chain_pem.join(""),
+                error = %ctx.error(),
+                error_depth = %ctx.error_depth(),
+                subject = ?leaf.subject_name(),
+                issuer = ?leaf.issuer_name(),
+                "issuerAuth certificate chain is not trusted"
             );
             false
         }
