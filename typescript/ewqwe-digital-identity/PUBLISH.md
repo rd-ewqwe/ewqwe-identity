@@ -14,15 +14,15 @@
    - `major` — breaking API changes
 
    ```bash
-   cd js-lib/ewqwe-digital-identity
-   npm version patch   # or minor / major
+   cd typescript/ewqwe-digital-identity
+   pnpm version patch   # or minor / major
    ```
 
 2. **Run the full build and tests:**
 
    ```bash
-   npm run build
-   npm test
+   pnpm run build
+   pnpm test
    ```
 
    The build script (`vite build && tsc --emitDeclarationOnly`) produces:
@@ -37,7 +37,7 @@
 3. **Verify the published file list** (`files` in `package.json`):
 
    ```bash
-   npm pack --dry-run
+   pnpm pack --dry-run
    ```
 
    Expected output includes `dist/`, `README.md`, and `LICENSE`.
@@ -50,30 +50,15 @@
 
 ## Publishing
 
-### Public scoped package
-
-If the package is publicly available under `@ewqwe`:
+Assuming the package will be publicly available under `@ewqwe`:
 
 ```bash
 npm publish --access public
 ```
 
-### Private scoped package (e.g., GitHub Packages or private npm registry)
 
-Configure `.npmrc` in the project root (do **not** commit auth tokens):
 
-```ini
-@ewqwe:registry=https://npm.pkg.github.com
-//npm.pkg.github.com/:_authToken=${NPM_TOKEN}
-```
-
-Then publish normally:
-
-```bash
-npm publish
-```
-
-### CI / GitHub Actions example
+### CI / GitHub Actions (NOT YET ENFORCED)
 
 ```yaml
 - name: Publish @ewqwe/digital-identity
@@ -97,23 +82,3 @@ npm publish
   ```
 
 - Update the `CHANGELOG.md` with the new version and release notes.
-
-## Notes on the Chrome `crbug/1173575` warning
-
-This warning — _"non-JS module files deprecated"_ — appears when Chrome's native
-ES module loader receives a file that is not `text/javascript` (e.g., a raw
-TypeScript `.ts` source file served with a wrong MIME type via a Vite alias).
-
-The fix applied here ensures:
-
-- The Vite build target is `es2022 / node18` — no legacy transforms that could
-  rewrite top-level `await` or class fields into incompatible code.
-- `dist/index.mjs` is pure compiled JavaScript (no TypeScript syntax) and is
-  served with `Content-Type: text/javascript` by every HTTP server.
-- The webapp `vite.config.ts` alias resolves `@ewqwe/digital-identity` to
-  `dist/index.mjs` (compiled JS), **not** the raw TypeScript source.
-- `"sideEffects": false` in `package.json` enables bundler tree-shaking without
-  any extra analysis.
-
-To verify: open Chrome DevTools → Console; there should be no `crbug/1173575`
-entries after the fix is deployed.
