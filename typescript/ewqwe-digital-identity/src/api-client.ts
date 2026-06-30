@@ -32,7 +32,7 @@ export class EwqweApiClient {
       throw new Error("No fetch implementation available");
     }
 
-    this.baseUrl = options?.baseUrl?.replace(/\/+$/u, "") ?? "";
+    this.baseUrl = options?.baseUrl?.replace(/\/$/u, "") ?? "";
   }
 
   private buildUrl(path: string): string {

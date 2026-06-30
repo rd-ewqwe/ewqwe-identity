@@ -158,6 +158,8 @@ impl Attestation {
 
 #[cfg(test)]
 mod claim_tests {
+    use uuid::Uuid;
+
     use super::*;
 
     #[test]
@@ -172,15 +174,16 @@ mod claim_tests {
 
     #[test]
     fn test_builder_pattern() {
+        let nonce = Uuid::new_v4().to_string();
         let mut claims = serde_json::Map::new();
         claims.insert("age_over_18".to_owned(), serde_json::Value::Bool(true));
         let attestation = Attestation::new("verifier", "rp", "txn-456")
-            .with_nonce("random-nonce-value")
+            .with_nonce(&nonce)
             .with_doc_type("org.iso.18013.5.1.mDL")
             .with_namespace("org.iso.18013.5.1")
             .with_credential_claims(claims);
 
-        assert_eq!(attestation.nonce, Some("random-nonce-value".to_owned()));
+        assert_eq!(attestation.nonce, Some(nonce));
         assert_eq!(
             attestation.doc_type,
             Some("org.iso.18013.5.1.mDL".to_owned())

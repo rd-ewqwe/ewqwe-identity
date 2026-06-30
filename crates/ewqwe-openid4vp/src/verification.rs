@@ -345,21 +345,18 @@ pub(crate) fn verify_vp_token_against_cas(
         .map_err(|e| format!("mDoc presentation verification failed: {e}"))?;
 
         if !mdoc_result.not_expired {
-            return Err("mDoc credential has expired: MSO validUntil is in the past".to_string());
+            return Err("credential has expired: MSO validUntil is in the past".to_string());
         }
 
         let mut warnings = Vec::new();
         if !mdoc_result.issuer_trusted {
-            warnings.push(
-                "mDoc issuerAuth certificate chain is not in the trusted CA list; \
-                 issuer trust check bypassed for this presentation"
-                    .to_string(),
-            );
-            tracing::warn!(
+            warnings.push("issuerAuth certificate chain is not in the trusted CA list".to_string());
+            tracing::error!(
                 iss = ?warnings.last(),
                 doc_type = %mdoc_result.doc_type,
-                "mDoc issuer trust bypassed"
+                "issuerAuth certificate chain is not in the trusted CA list"
             );
+            return Err("issuerAuth certificate chain is not in the trusted CA list".to_owned());
         }
 
         let vr = VerificationResult {

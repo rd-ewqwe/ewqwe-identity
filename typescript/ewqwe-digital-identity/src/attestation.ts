@@ -121,7 +121,7 @@ export function importVerifierPublicKey(pemOrSpki: string): Promise<CryptoKey> {
       .replace(/-----BEGIN CERTIFICATE-----/, "")
       .replace(/-----END CERTIFICATE-----/, "")
       .replace(/\s+/g, "");
-    const certDer = base64urlDecode(b64.replace(/\+/g, "+").replace(/\//g, "/"))
+    const certDer = base64urlDecode(b64.replace(/\+/g, "-").replace(/\//g, "_"))
       .buffer as ArrayBuffer;
     spkiDer = extractSpkiFromCert(certDer);
   } else if (trimmed.startsWith("-----BEGIN PUBLIC KEY-----")) {
@@ -129,12 +129,12 @@ export function importVerifierPublicKey(pemOrSpki: string): Promise<CryptoKey> {
       .replace(/-----BEGIN PUBLIC KEY-----/, "")
       .replace(/-----END PUBLIC KEY-----/, "")
       .replace(/\s+/g, "");
-    spkiDer = base64urlDecode(b64.replace(/\+/g, "+").replace(/\//g, "/"))
+    spkiDer = base64urlDecode(b64.replace(/\+/g, "-").replace(/\//g, "_"))
       .buffer as ArrayBuffer;
   } else {
     // Assume raw base64 (not base64url) SPKI DER
     const b64 = trimmed.replace(/\s+/g, "");
-    spkiDer = base64urlDecode(b64.replace(/\+/g, "+").replace(/\//g, "/"))
+    spkiDer = base64urlDecode(b64.replace(/\+/g, "-").replace(/\//g, "_"))
       .buffer as ArrayBuffer;
   }
 
