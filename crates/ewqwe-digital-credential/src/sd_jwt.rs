@@ -16,7 +16,7 @@ use jsonwebtoken::{Algorithm, EncodingKey, Header};
 use openssl::pkey::{PKey, Private};
 use serde_json::{Value as Json, json};
 
-use crate::{error::Result, util::now_unix};
+use crate::{error::CredentialResult, util::now_unix};
 
 /// Build an **EU Age Verification Profile** SD-JWT VC.
 ///
@@ -32,8 +32,8 @@ pub fn build_eu_age_sd_jwt(
     device_key: &PKey<Private>,
     nonce: &str,
     client_id: &str,
-) -> Result<String> {
-    let now = now_unix();
+) -> CredentialResult<String> {
+    let now = now_unix()?;
     let payload = json!({
         "iss": "https://test-issuer.example",
         "vct": "eu.europa.ec.av.1",
@@ -61,8 +61,8 @@ pub fn build_eudi_pid_sd_jwt(
     device_key: &PKey<Private>,
     nonce: &str,
     client_id: &str,
-) -> Result<String> {
-    let now = now_unix();
+) -> CredentialResult<String> {
+    let now = now_unix()?;
     let payload = json!({
         "iss": "https://test-issuer.example",
         "vct": "eu.europa.ec.eudi.pid.1",
@@ -91,7 +91,7 @@ fn sign_issuer_jwt(
     issuer_key: &PKey<Private>,
     issuer_cert_der: &[u8],
     payload: Json,
-) -> Result<String> {
+) -> CredentialResult<String> {
     let issuer_cert_b64 = base64::engine::general_purpose::STANDARD.encode(issuer_cert_der);
     let mut header = Header::new(Algorithm::ES256);
     header.x5c = Some(vec![issuer_cert_b64]);
@@ -106,7 +106,7 @@ fn sign_issuer_jwt(
 ///
 /// The `nonce` claim binds the KB-JWT to the server's transaction (replay
 /// prevention); `aud` identifies the relying party (client_id).
-fn sign_kb_jwt(device_key: &PKey<Private>, nonce: &str, aud: &str) -> Result<String> {
+fn sign_kb_jwt(device_key: &PKey<Private>, nonce: &str, aud: &str) -> CredentialResult<String> {
     let kb_payload = json!({
         "nonce": nonce,
         "aud":   aud,

@@ -68,7 +68,11 @@ pub struct DcApiVerifyRequest {
 /// }
 /// ```
 pub async fn generate_nonce() -> HttpResponse {
-    let nonce = ewqwe_openid4vp::generate_nonce();
+    let Ok(nonce) = ewqwe_openid4vp::generate_nonce() else {
+        return HttpResponse::InternalServerError().json(serde_json::json!({
+            "error": "failed to generate nonce"
+        }));
+    };
     HttpResponse::Ok().json(serde_json::json!({
         "nonce": nonce,
         "expires_in": 300,

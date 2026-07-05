@@ -414,16 +414,6 @@ pub(crate) fn create_attestation(
         crate::attestation::convert_portrait_to_jpeg(credential_claims)
     };
 
-    if let Some(portrait_val) = credential_claims.get("portrait").and_then(|v| v.as_str()) {
-        tracing::info!(
-            portrait_len = portrait_val.len(),
-            portrait_prefix = %portrait_val.chars().take(40).collect::<String>(),
-            "Portrait in attestation claims"
-        );
-    } else {
-        tracing::warn!("No portrait claim found in credential claims before attestation");
-    }
-
     let iss = server_params.attestation_issuer_iss()?;
 
     let mut attestation =

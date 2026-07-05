@@ -25,7 +25,8 @@ use openssl::{
 use serde_json::Value as Json;
 
 use crate::{
-    error::Result,
+    CredentialError,
+    error::CredentialResult,
     mdoc::{build_eudi_pid_mdoc, ec_key_to_public_jwk},
     pki::{build_ca_cert, build_issuer_cert},
     sd_jwt::{build_eu_age_sd_jwt, build_eudi_pid_sd_jwt},
@@ -72,7 +73,7 @@ impl CredentialIssuer {
     ///
     /// Creates three independent EC P-256 key pairs (CA, issuer leaf, device
     /// holder) and builds the corresponding X.509 certificates.
-    pub fn generate() -> Result<Self> {
+    pub fn generate() -> CredentialResult<Self> {
         let group = EcGroup::from_curve_name(Nid::X9_62_PRIME256V1)?;
 
         let ca_key = PKey::from_ec_key(EcKey::generate(&group)?)?;
@@ -109,7 +110,7 @@ impl CredentialIssuer {
     /// - The KB-JWT binds to `nonce` for replay prevention.
     ///
     /// Returns `"<issuer-jwt>~<kb-jwt>"`.
-    pub fn build_eu_age_sd_jwt(&self, nonce: &str, client_id: &str) -> String {
+    pub fn build_eu_age_sd_jwt(&self, nonce: &str, client_id: &str) -> CredentialResult<String> {
         build_eu_age_sd_jwt(
             &self.issuer_key,
             &self.issuer_cert_der,
@@ -118,7 +119,6 @@ impl CredentialIssuer {
             nonce,
             client_id,
         )
-        .expect("build EU Age SD-JWT")
     }
 
     /// Build a signed **EUDI PID SD-JWT VC**.
@@ -127,7 +127,7 @@ impl CredentialIssuer {
     /// - Claims: `given_name`, `family_name`, `birth_date`, `age_over_18`
     ///
     /// Returns `"<issuer-jwt>~<kb-jwt>"`.
-    pub fn build_eudi_sd_jwt(&self, nonce: &str, client_id: &str) -> String {
+    pub fn build_eudi_sd_jwt(&self, nonce: &str, client_id: &str) -> CredentialResult<String> {
         build_eudi_pid_sd_jwt(
             &self.issuer_key,
             &self.issuer_cert_der,
@@ -136,7 +136,6 @@ impl CredentialIssuer {
             nonce,
             client_id,
         )
-        .expect("build EUDI PID SD-JWT")
     }
 
     // -------------------------------------------------------------------------
@@ -150,7 +149,12 @@ impl CredentialIssuer {
     /// - `DeviceSignature` bound to `SessionTranscript` via OpenID4VP handover.
     ///
     /// Returns a **base64url-encoded** CBOR `DeviceResponse`.
-    pub fn build_eudi_mdoc(&self, nonce: &str, client_id: &str, response_uri: &str) -> String {
+    pub fn build_eudi_mdoc(
+        &self,
+        nonce: &str,
+        client_id: &str,
+        response_uri: &str,
+    ) -> CredentialResult<String> {
         build_eudi_pid_mdoc(
             &self.issuer_key,
             &self.issuer_cert_der,
@@ -160,7 +164,6 @@ impl CredentialIssuer {
             client_id,
             response_uri,
         )
-        .expect("build EUDI PID mDoc")
     }
 
     // -------------------------------------------------------------------------
@@ -170,14 +173,15 @@ impl CredentialIssuer {
     /// Return the device public key as a compact JWK byte string.
     ///
     /// Useful for embedding the holder key in external credential payloads.
-    pub fn device_pubkey_jwk_bytes(&self) -> Vec<u8> {
-        serde_json::to_vec(&self.device_pubkey_jwk).expect("serialise device JWK")
+    pub fn device_pubkey_jwk_bytes(&self) -> CredentialResult<Vec<u8>> {
+        serde_json::to_vec(&self.device_pubkey_jwk)
+            .map_err(|e| CredentialError::Serde(e.to_string()))
     }
 
     /// Extract raw (x, y) coordinates from the device public key.
     ///
     /// Each coordinate is zero-padded to 32 bytes (P-256 field size).
-    pub fn device_pubkey_raw_xy(&self) -> Result<(Vec<u8>, Vec<u8>)> {
+    pub fn device_pubkey_raw_xy(&self) -> CredentialResult<(Vec<u8>, Vec<u8>)> {
         let ec = self.device_key.ec_key()?;
         let group = ec.group();
         let point = ec.public_key();

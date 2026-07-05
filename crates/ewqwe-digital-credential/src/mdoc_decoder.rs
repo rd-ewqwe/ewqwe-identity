@@ -40,7 +40,7 @@ use ciborium::Value as Cbor;
 use std::collections::BTreeMap;
 
 use crate::{
-    error::{CredentialError, Result},
+    error::{CredentialError, CredentialResult},
     util::{
         as_cbor_array, as_cbor_map, cbor_map_get, cbor_map_get_text, cbor_to_json, cbor_type_name,
         unwrap_cbor_tags,
@@ -72,7 +72,7 @@ pub struct DecodedMdoc {
 /// Returns a [`DecodedMdoc`] on success.  No signature or certificate
 /// verification is performed — see [`crate::mdoc_verification::verify_mdoc_presentation`]
 /// for full cryptographic verification.
-pub fn decode_mdoc_presentation(encoded: &str) -> Result<DecodedMdoc> {
+pub fn decode_mdoc_presentation(encoded: &str) -> CredentialResult<DecodedMdoc> {
     let bytes = base64::engine::general_purpose::URL_SAFE_NO_PAD
         .decode(encoded)
         .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(encoded))
@@ -90,7 +90,7 @@ pub fn decode_mdoc_presentation(encoded: &str) -> Result<DecodedMdoc> {
 // Internal helpers
 // ============================================================================
 
-fn extract_document(val: &Cbor) -> Result<&Cbor> {
+fn extract_document(val: &Cbor) -> CredentialResult<&Cbor> {
     let val = unwrap_cbor_tags(val);
     let map = as_cbor_map(val).ok_or_else(|| {
         CredentialError::InvalidPresentation(format!(
@@ -115,7 +115,7 @@ fn extract_document(val: &Cbor) -> Result<&Cbor> {
     }
 }
 
-fn parse_document(doc: &Cbor) -> Result<DecodedMdoc> {
+fn parse_document(doc: &Cbor) -> CredentialResult<DecodedMdoc> {
     let doc = unwrap_cbor_tags(doc);
     let map = as_cbor_map(doc)
         .ok_or_else(|| CredentialError::InvalidPresentation("Document is not a CBOR map".into()))?;
@@ -200,7 +200,7 @@ fn parse_document(doc: &Cbor) -> Result<DecodedMdoc> {
     Ok(decoded)
 }
 
-fn parse_issuer_signed_item(val: &Cbor) -> Result<(String, serde_json::Value)> {
+fn parse_issuer_signed_item(val: &Cbor) -> CredentialResult<(String, serde_json::Value)> {
     let inner_cbor = unwrap_tag24_bytes(val)?;
     let map = as_cbor_map(&inner_cbor).ok_or_else(|| {
         CredentialError::InvalidPresentation("IssuerSignedItem is not a map".into())
@@ -217,7 +217,7 @@ fn parse_issuer_signed_item(val: &Cbor) -> Result<(String, serde_json::Value)> {
 }
 
 /// Decode CBOR Tag 24 (a byte string containing more CBOR) to the inner value.
-fn unwrap_tag24_bytes(val: &Cbor) -> Result<Cbor> {
+fn unwrap_tag24_bytes(val: &Cbor) -> CredentialResult<Cbor> {
     match val {
         Cbor::Tag(24, inner) => match inner.as_ref() {
             Cbor::Bytes(b) => ciborium::from_reader(&b[..]).map_err(|e| {

@@ -302,7 +302,11 @@ async fn e2e_full_verification_eu_age_profile_sd_jwt() -> AttResult<()> {
     info!(nonce = %nonce, client_id = %client_id, "Auth request parsed");
 
     // ── 5. Build EU Age SD-JWT VC bound to transaction nonce ─────────────
-    let sd_jwt = issuer.build_eu_age_sd_jwt(&nonce, &client_id);
+    let sd_jwt = issuer
+        .build_eu_age_sd_jwt(&nonce, &client_id)
+        .expect("building age sd-jwt failed");
+
+    info!(sd_jwt = %sd_jwt, "EU Age SD-JWT built");
 
     // DCQL VP token: object with credential ID → [credential string]
     let vp_token_obj = serde_json::json!({ "eu_age_credential": [sd_jwt] });
@@ -391,7 +395,9 @@ async fn e2e_full_verification_eudi_mdoc() -> AttResult<()> {
     );
 
     // ── 5. Build EUDI mDoc bound to transaction nonce ────────────────────
-    let mdoc_b64 = issuer.build_eudi_mdoc(&nonce, &client_id, &response_uri);
+    let mdoc_b64 = issuer
+        .build_eudi_mdoc(&nonce, &client_id, &response_uri)
+        .expect("building eudi mdoc failed");
 
     let vp_token_obj = serde_json::json!({ "eudi_pid_mdoc": [mdoc_b64] });
 
@@ -473,7 +479,9 @@ async fn e2e_full_verification_eudi_sd_jwt() -> AttResult<()> {
     info!(nonce = %nonce, client_id = %client_id, "Auth request parsed");
 
     // ── 5. Build EUDI PID SD-JWT VC ───────────────────────────────────────
-    let sd_jwt = issuer.build_eudi_sd_jwt(&nonce, &client_id);
+    let sd_jwt = issuer
+        .build_eudi_sd_jwt(&nonce, &client_id)
+        .expect("building eudi sd-jwt failed");
 
     let vp_token_obj = serde_json::json!({ "eudi_pid_credential": [sd_jwt] });
 

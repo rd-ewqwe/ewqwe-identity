@@ -11,7 +11,7 @@
 //! Cryptographic verification of mDoc COSE signatures and SD-JWT VC `x5c`
 //! chains is delegated to the `ewqwe_digital_credential` crate.
 
-use crate::types::OpenID4VPTransaction;
+use crate::{OpenID4VPError, OpenID4VPResult, types::OpenID4VPTransaction};
 use ewqwe_digital_credential::{
     SigVerificationResult, decode_mdoc_presentation, decode_sd_jwt_presentation,
     verify_mdoc_presentation, verify_sd_jwt_signatures,
@@ -69,7 +69,7 @@ pub(crate) struct VerificationResult {
 // ============================================================================
 
 /// Parse a VP token — handles DCQL-wrapped format and direct JSON format.
-fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), String> {
+fn parse_vp_token(vp_token_str: &str) -> OpenID4VPResult<(VpToken, Option<String>)> {
     // Try DCQL format first (object with credential IDs as keys)
     if let Ok(dcql_token) = serde_json::from_str::<DcqlVpToken>(vp_token_str) {
         if let Some((credential_id, presentations)) = dcql_token.iter().next() {
@@ -102,7 +102,9 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), Strin
                             }
                             Err(e) => {
                                 tracing::warn!("SD-JWT VC decode failed: {}", e);
-                                return Err(format!("SD-JWT VC decode failed: {e}"));
+                                return Err(OpenID4VPError::DecodingError(format!(
+                                    "SD-JWT VC decode failed: {e}"
+                                )));
                             }
                         }
                     }
@@ -119,14 +121,19 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), Strin
                                 namespaces = decoded.namespaces.len(),
                                 "mDoc decoded"
                             );
-                            let first_ns = decoded
-                                .namespaces
-                                .keys()
-                                .next()
-                                .cloned()
-                                .ok_or_else(|| "mDoc contains no namespaces".to_string())?;
+                            let first_ns =
+                                decoded.namespaces.keys().next().cloned().ok_or_else(|| {
+                                    OpenID4VPError::DecodingError(
+                                        "mDoc contains no namespaces".to_string(),
+                                    )
+                                })?;
                             let claims = if decoded.namespaces.len() == 1 {
-                                let (_, ns_claims) = decoded.namespaces.into_iter().next().unwrap();
+                                let (_, ns_claims) =
+                                    decoded.namespaces.into_iter().next().ok_or_else(|| {
+                                        OpenID4VPError::DecodingError(
+                                            "mDoc contains no namespaces".to_string(),
+                                        )
+                                    })?;
                                 serde_json::Value::Object(ns_claims.into_iter().collect())
                             } else {
                                 let mut obj = serde_json::Map::new();
@@ -152,24 +159,32 @@ fn parse_vp_token(vp_token_str: &str) -> Result<(VpToken, Option<String>), Strin
                             return Ok((vp_token, Some(credential_id.clone())));
                         }
                         Err(e) => {
-                            return Err(format!("mDoc CBOR decode failed: {e}"));
+                            return Err(OpenID4VPError::DecodingError(format!(
+                                "mDoc CBOR decode failed: {e}"
+                            )));
                         }
                     }
                 } else if presentation.is_object() {
                     tracing::debug!("presentation is JSON object");
-                    let vp_token: VpToken = serde_json::from_value(presentation.clone())
-                        .map_err(|e| format!("Failed to parse DCQL presentation: {e}"))?;
+                    let vp_token: VpToken =
+                        serde_json::from_value(presentation.clone()).map_err(|e| {
+                            OpenID4VPError::DecodingError(format!(
+                                "Failed to parse DCQL presentation: {e}"
+                            ))
+                        })?;
                     return Ok((vp_token, Some(credential_id.clone())));
                 }
             }
         }
-        return Err("DCQL VP token has no presentations".to_string());
+        return Err(OpenID4VPError::DecodingError(
+            "DCQL VP token has no presentations".to_string(),
+        ));
     }
 
     // Fallback: direct VpToken JSON format
     tracing::debug!("VP token is direct JSON format");
-    let vp_token: VpToken =
-        serde_json::from_str(vp_token_str).map_err(|e| format!("Invalid VP token format: {e}"))?;
+    let vp_token: VpToken = serde_json::from_str(vp_token_str)
+        .map_err(|e| OpenID4VPError::DecodingError(format!("Invalid VP token format: {e}")))?;
     Ok((vp_token, None))
 }
 
@@ -301,21 +316,20 @@ pub(crate) fn verify_vp_token_against_cas(
     client_id: Option<&str>,
     trusted_cas: &[openssl::x509::X509],
     response_jwk_thumbprint: Option<&[u8]>,
-) -> Result<
-    (
-        serde_json::Value,
-        String,
-        String,
-        VerificationResult,
-        Option<String>,
-    ),
+) -> OpenID4VPResult<(
+    serde_json::Value,
     String,
-> {
+    String,
+    VerificationResult,
+    Option<String>,
+)> {
     // Validate client_id against transaction if both are provided.
     if let (Some(tx), Some(cid)) = (transaction, client_id)
         && tx.client_id != cid
     {
-        return Err("client_id does not match the transaction-bound request".to_string());
+        return Err(OpenID4VPError::BadRequest(
+            "client_id does not match the transaction-bound request".to_string(),
+        ));
     }
 
     let server_nonce = transaction.map(|tx| tx.nonce.as_str());
@@ -325,9 +339,11 @@ pub(crate) fn verify_vp_token_against_cas(
         vp_token.raw_mdoc.as_deref()
     {
         let tx = transaction.ok_or_else(|| {
-            "state is required for mDoc verification so the verifier can reconstruct \
+            OpenID4VPError::BadRequest(
+                "state is required for mDoc verification so the verifier can reconstruct \
              the OpenID4VP handover"
-                .to_string()
+                    .to_string(),
+            )
         })?;
 
         let mdoc_result = verify_mdoc_presentation(
@@ -342,10 +358,14 @@ pub(crate) fn verify_vp_token_against_cas(
             response_jwk_thumbprint,
             trusted_cas,
         )
-        .map_err(|e| format!("mDoc presentation verification failed: {e}"))?;
+        .map_err(|e| {
+            OpenID4VPError::DecodingError(format!("mDoc presentation verification failed: {e}"))
+        })?;
 
         if !mdoc_result.not_expired {
-            return Err("credential has expired: MSO validUntil is in the past".to_string());
+            return Err(OpenID4VPError::DecodingError(
+                "credential has expired: MSO validUntil is in the past".to_string(),
+            ));
         }
 
         let mut warnings = Vec::new();
@@ -356,7 +376,9 @@ pub(crate) fn verify_vp_token_against_cas(
                 doc_type = %mdoc_result.doc_type,
                 "issuerAuth certificate chain is not in the trusted CA list"
             );
-            return Err("issuerAuth certificate chain is not in the trusted CA list".to_owned());
+            return Err(OpenID4VPError::DecodingError(
+                "issuerAuth certificate chain is not in the trusted CA list".to_string(),
+            ));
         }
 
         let vr = VerificationResult {

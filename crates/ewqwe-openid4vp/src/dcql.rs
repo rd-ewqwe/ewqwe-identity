@@ -8,8 +8,11 @@
 //! - <https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#section-6>
 //! - EU Age Verification Profile Annex A
 
-use crate::types::{
-    ClaimsPathComponent, DCQLClaimsQuery, DCQLCredentialMeta, DCQLCredentialQuery, DCQLQuery,
+use crate::{
+    OpenID4VPError, OpenID4VPResult,
+    types::{
+        ClaimsPathComponent, DCQLClaimsQuery, DCQLCredentialMeta, DCQLCredentialQuery, DCQLQuery,
+    },
 };
 
 // ============================================================================
@@ -432,11 +435,13 @@ pub fn convert_presentation_definition_to_dcql(
 }
 
 /// Generate a cryptographically random nonce (32 bytes, base64url-encoded).
-pub fn generate_nonce() -> String {
+pub fn generate_nonce() -> OpenID4VPResult<String> {
     use base64::Engine;
     let mut bytes = [0u8; 32];
-    openssl::rand::rand_bytes(&mut bytes).expect("openssl random bytes");
-    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes)
+    openssl::rand::rand_bytes(&mut bytes).map_err(|_| {
+        OpenID4VPError::Crypto("failed to generate nonce using OpenSSL".to_string())
+    })?;
+    Ok(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(bytes))
 }
 
 // ============================================================================
@@ -521,13 +526,13 @@ mod tests {
 
     #[test]
     fn test_generate_nonce() {
-        let nonce = generate_nonce();
+        let nonce = generate_nonce().unwrap();
         assert!(!nonce.is_empty());
         // base64url-encoded 32 bytes = 43 characters
         assert_eq!(nonce.len(), 43);
 
         // Nonces should be unique
-        let nonce2 = generate_nonce();
+        let nonce2 = generate_nonce().unwrap();
         assert_ne!(nonce, nonce2);
     }
 
@@ -654,9 +659,12 @@ mod tests {
     // https://openid.net/specs/openid-4-verifiable-presentations-1_0.html#appendix-D
     // =========================================================================
     mod appendix_d {
-        use crate::types::{
-            ClaimsPathComponent, DCQLClaimsQuery, DCQLCredentialMeta, DCQLCredentialQuery,
-            DCQLQuery,
+        use crate::{
+            OpenID4VPError, OpenID4VPResult,
+            types::{
+                ClaimsPathComponent, DCQLClaimsQuery, DCQLCredentialMeta, DCQLCredentialQuery,
+                DCQLQuery,
+            },
         };
 
         // Helper: key component from a &str.
@@ -666,15 +674,17 @@ mod tests {
 
         // Helper: assert a DCQLQuery round-trips through JSON unchanged.
         // Returns the deserialized value so callers can do further assertions.
-        fn roundtrip(q: &DCQLQuery) -> DCQLQuery {
-            let json = serde_json::to_value(q).expect("serialize");
-            let back: DCQLQuery = serde_json::from_value(json).expect("deserialize");
-            back
+        fn roundtrip(q: &DCQLQuery) -> OpenID4VPResult<DCQLQuery> {
+            let json =
+                serde_json::to_value(q).map_err(|e| OpenID4VPError::Internal(e.to_string()))?;
+            let back: DCQLQuery = serde_json::from_value(json)
+                .map_err(|e| OpenID4VPError::Internal(e.to_string()))?;
+            Ok(back)
         }
 
         // Helper: deserialize the verbatim spec JSON into a DCQLQuery.
-        fn from_spec(json: serde_json::Value) -> DCQLQuery {
-            serde_json::from_value(json).expect("parse spec JSON")
+        fn from_spec(json: serde_json::Value) -> OpenID4VPResult<DCQLQuery> {
+            serde_json::from_value(json).map_err(|e| OpenID4VPError::Internal(e.to_string()))
         }
 
         /// Appendix D §1 — mVRC: single mso_mdoc credential requesting
@@ -695,7 +705,7 @@ mod tests {
                 }]
             });
 
-            let parsed = from_spec(spec_json);
+            let parsed = from_spec(spec_json).unwrap();
             assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
             assert_eq!(parsed.credentials.len(), 1);
             assert!(parsed.credential_sets.is_none());
@@ -750,7 +760,7 @@ mod tests {
                 credential_sets: None,
             };
             assert!(built.is_valid().is_ok());
-            let rt = roundtrip(&built);
+            let rt = roundtrip(&built).expect("roundtrip failed");
             assert_eq!(rt.credentials[0].format, "mso_mdoc");
             assert_eq!(
                 rt.credentials[0].claims.as_ref().unwrap()[0].path,
@@ -788,7 +798,7 @@ mod tests {
                 ]
             });
 
-            let parsed = from_spec(spec_json);
+            let parsed = from_spec(spec_json).unwrap();
             assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
             // Without credential_sets, all credentials are required (§6.4.2).
             assert_eq!(parsed.credentials.len(), 2);
@@ -813,7 +823,7 @@ mod tests {
             assert_eq!(mdl.id, "mdl");
             assert_eq!(mdl.format, "mso_mdoc");
 
-            roundtrip(&parsed); // must not panic
+            roundtrip(&parsed).unwrap(); // must not panic
         }
 
         /// Appendix D §3 — Complex credential_sets:
@@ -884,7 +894,7 @@ mod tests {
                 ]
             });
 
-            let parsed = from_spec(spec_json);
+            let parsed = from_spec(spec_json).unwrap();
             assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
             assert_eq!(parsed.credentials.len(), 5);
 
@@ -905,7 +915,7 @@ mod tests {
             assert_eq!(sets[1].required, Some(false));
             assert_eq!(sets[1].options[0], vec!["nice_to_have"]);
 
-            roundtrip(&parsed);
+            roundtrip(&parsed).unwrap();
         }
 
         /// Appendix D §4 — mdl/photo_card: ID and address can come from either mDL
@@ -964,7 +974,7 @@ mod tests {
                 ]
             });
 
-            let parsed = from_spec(spec_json);
+            let parsed = from_spec(spec_json).unwrap();
             assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
             assert_eq!(parsed.credentials.len(), 4);
 
@@ -988,7 +998,7 @@ mod tests {
                 vec![key("org.iso.18013.5.1"), key("given_name")]
             );
 
-            roundtrip(&parsed);
+            roundtrip(&parsed).unwrap();
         }
 
         /// Appendix D §5 — claim_sets: mandatory (last_name, date_of_birth) plus
@@ -1016,7 +1026,7 @@ mod tests {
                 }]
             });
 
-            let parsed = from_spec(spec_json);
+            let parsed = from_spec(spec_json).unwrap();
             assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
             let cred = &parsed.credentials[0];
             assert_eq!(cred.format, "dc+sd-jwt");
@@ -1037,7 +1047,7 @@ mod tests {
             // Second option: last_name + postal_code + date_of_birth.
             assert_eq!(claim_sets[1], vec!["a", "b", "e"]);
 
-            roundtrip(&parsed);
+            roundtrip(&parsed).unwrap();
         }
 
         /// Appendix D §6 — values constraints: specific expected values for
@@ -1060,7 +1070,7 @@ mod tests {
                 }]
             });
 
-            let parsed = from_spec(spec_json);
+            let parsed = from_spec(spec_json).unwrap();
             assert!(parsed.is_valid().is_ok(), "{:?}", parsed.is_valid());
             let claims = parsed.credentials[0].claims.as_ref().unwrap();
             assert_eq!(claims.len(), 4);
@@ -1086,7 +1096,7 @@ mod tests {
                 &[serde_json::json!("90210"), serde_json::json!("90211")]
             );
 
-            roundtrip(&parsed);
+            roundtrip(&parsed).unwrap();
         }
     }
 }

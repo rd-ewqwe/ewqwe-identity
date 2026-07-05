@@ -54,7 +54,7 @@ mod error;
 pub use error::LoggerError;
 
 mod tracing_bridge;
-pub use tracing_bridge::{tracing_init, LoggingGuards, TracingConfig};
+pub use tracing_bridge::{LoggingGuards, TracingConfig, tracing_init};
 
 /// Initialize stdout-only logging.
 ///
@@ -101,7 +101,7 @@ pub fn log_init(rust_log: Option<&str>) {
         rust_log: rust_log
             .or(option_env!("RUST_LOG"))
             .map(std::borrow::ToOwned::to_owned),
-        with_ansi_colors: false,
+        with_ansi_colors: true,
     };
     tracing_init(&config);
 }

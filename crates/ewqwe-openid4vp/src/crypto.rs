@@ -302,7 +302,7 @@ pub fn initialize_jwe_key(key_id: &str) -> OpenID4VPResult<JweKeyMaterial> {
         "alg": "ECDH-ES"
     });
 
-    tracing::info!(key_id = %key_id, "Generated ECDH P-256 encryption key pair");
+    tracing::debug!(key_id = %key_id, "Generated ECDH P-256 encryption key pair");
 
     Ok(JweKeyMaterial {
         private_key,
@@ -577,7 +577,7 @@ pub fn decrypt_jwe_response(
         apu.as_deref(),
         apv.as_deref(),
         key_bits,
-    );
+    )?;
 
     // Decrypt with AES-GCM (128 or 256 depending on enc)
     // AAD = ASCII bytes of the base64url-encoded protected header
@@ -705,51 +705,48 @@ fn concat_kdf_sha256(
     apu: Option<&[u8]>,
     apv: Option<&[u8]>,
     key_length_bits: u32,
-) -> Vec<u8> {
-    let mut hasher = Hasher::new(MessageDigest::sha256()).expect("SHA-256 hasher");
+) -> OpenID4VPResult<Vec<u8>> {
+    let mut hasher =
+        Hasher::new(MessageDigest::sha256()).map_err(|e| OpenID4VPError::Crypto(e.to_string()))?;
 
     // Round number (4 bytes, big-endian, starting at 1)
-    hasher.update(&1u32.to_be_bytes()).expect("hash update");
+    hasher.update(&1u32.to_be_bytes())?;
 
     // Shared secret Z
-    hasher.update(shared_secret).expect("hash update");
+    hasher.update(shared_secret)?;
 
     // AlgorithmID: length-prefixed algorithm name
-    hasher
-        .update(&(algorithm.len() as u32).to_be_bytes())
-        .expect("hash update");
-    hasher.update(algorithm.as_bytes()).expect("hash update");
+    hasher.update(&(algorithm.len() as u32).to_be_bytes())?;
+    hasher.update(algorithm.as_bytes())?;
 
     // PartyUInfo: length-prefixed apu (or zero-length)
     match apu {
         Some(data) => {
-            hasher
-                .update(&(data.len() as u32).to_be_bytes())
-                .expect("hash update");
-            hasher.update(data).expect("hash update");
+            hasher.update(&(data.len() as u32).to_be_bytes())?;
+            hasher.update(data)?;
         }
-        None => hasher.update(&0u32.to_be_bytes()).expect("hash update"),
+        None => hasher
+            .update(&0u32.to_be_bytes())
+            .map_err(|e| OpenID4VPError::Crypto(e.to_string()))?,
     }
 
     // PartyVInfo: length-prefixed apv (or zero-length)
     match apv {
         Some(data) => {
-            hasher
-                .update(&(data.len() as u32).to_be_bytes())
-                .expect("hash update");
-            hasher.update(data).expect("hash update");
+            hasher.update(&(data.len() as u32).to_be_bytes())?;
+            hasher.update(data)?;
         }
-        None => hasher.update(&0u32.to_be_bytes()).expect("hash update"),
+        None => hasher
+            .update(&0u32.to_be_bytes())
+            .map_err(|e| OpenID4VPError::Crypto(e.to_string()))?,
     }
 
     // SuppPubInfo: key length in bits (4 bytes, big-endian)
-    hasher
-        .update(&key_length_bits.to_be_bytes())
-        .expect("hash update");
+    hasher.update(&key_length_bits.to_be_bytes())?;
 
-    let result = hasher.finish().expect("hash finish");
+    let result = hasher.finish()?;
     let key_length_bytes = (key_length_bits / 8) as usize;
-    result[..key_length_bytes].to_vec()
+    Ok(result[..key_length_bytes].to_vec())
 }
 
 // ============================================================================
@@ -845,8 +842,8 @@ mod tests {
     #[test]
     fn test_concat_kdf_sha256_deterministic() {
         let secret = [0x42u8; 32];
-        let key1 = concat_kdf_sha256(&secret, "A256GCM", None, None, 256);
-        let key2 = concat_kdf_sha256(&secret, "A256GCM", None, None, 256);
+        let key1 = concat_kdf_sha256(&secret, "A256GCM", None, None, 256).unwrap();
+        let key2 = concat_kdf_sha256(&secret, "A256GCM", None, None, 256).unwrap();
         assert_eq!(key1, key2);
         assert_eq!(key1.len(), 32); // 256 bits
     }
@@ -854,15 +851,15 @@ mod tests {
     #[test]
     fn test_concat_kdf_sha256_a128gcm_key_length() {
         let secret = [0x42u8; 32];
-        let key = concat_kdf_sha256(&secret, "A128GCM", None, None, 128);
+        let key = concat_kdf_sha256(&secret, "A128GCM", None, None, 128).unwrap();
         assert_eq!(key.len(), 16); // 128 bits
     }
 
     #[test]
     fn test_concat_kdf_sha256_different_alg() {
         let secret = [0x42u8; 32];
-        let key1 = concat_kdf_sha256(&secret, "A256GCM", None, None, 256);
-        let key2 = concat_kdf_sha256(&secret, "A128GCM", None, None, 128);
+        let key1 = concat_kdf_sha256(&secret, "A256GCM", None, None, 256).unwrap();
+        let key2 = concat_kdf_sha256(&secret, "A128GCM", None, None, 128).unwrap();
         // Different lengths, can't directly compare, but first 16 bytes should differ
         // because the algorithm name and keydatalen in the hash input differ
         assert_ne!(&key1[..16], &key2[..]);
@@ -871,8 +868,9 @@ mod tests {
     #[test]
     fn test_concat_kdf_sha256_with_apu_apv() {
         let secret = [0x42u8; 32];
-        let key1 = concat_kdf_sha256(&secret, "A256GCM", None, None, 256);
-        let key2 = concat_kdf_sha256(&secret, "A256GCM", Some(b"sender"), Some(b"receiver"), 256);
+        let key1 = concat_kdf_sha256(&secret, "A256GCM", None, None, 256).unwrap();
+        let key2 =
+            concat_kdf_sha256(&secret, "A256GCM", Some(b"sender"), Some(b"receiver"), 256).unwrap();
         assert_ne!(key1, key2);
     }
 
@@ -917,7 +915,7 @@ mod tests {
         let wallet_shared = deriver.derive_to_vec().unwrap();
 
         // 3. Derive CEK
-        let cek = concat_kdf_sha256(&wallet_shared, "A256GCM", None, None, 256);
+        let cek = concat_kdf_sha256(&wallet_shared, "A256GCM", None, None, 256).unwrap();
 
         // 4. Encrypt with AES-256-GCM using openssl
         let iv_bytes = [0x01u8; 12]; // Deterministic IV for testing

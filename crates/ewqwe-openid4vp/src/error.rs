@@ -32,6 +32,16 @@ pub enum OpenID4VPError {
     /// Internal/unexpected error.
     #[error("internal error: {0}")]
     Internal(String),
+
+    /// Error occurred while decoding a VP token.
+    #[error("decoding error: {0}")]
+    DecodingError(String),
+}
+
+impl From<openssl::error::ErrorStack> for OpenID4VPError {
+    fn from(e: openssl::error::ErrorStack) -> Self {
+        OpenID4VPError::Crypto(e.to_string())
+    }
 }
 
 /// Convenience type alias for OpenID4VP results.

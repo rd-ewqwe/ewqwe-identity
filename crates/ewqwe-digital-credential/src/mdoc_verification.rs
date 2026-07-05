@@ -35,7 +35,7 @@ use openssl::{
 };
 
 use crate::{
-    error::{CredentialError, Result},
+    error::{CredentialError, CredentialResult},
     mdoc_decoder,
     util::{
         as_cbor_array, as_cbor_map, cbor_integer_to_u64, cbor_map_get, cbor_map_get_text,
@@ -100,7 +100,7 @@ pub fn verify_mdoc_presentation(
     response_mode_requires_encryption: bool,
     response_jwk_thumbprint: Option<&[u8]>,
     trusted_cas: &[X509],
-) -> Result<MdocVerificationResult> {
+) -> CredentialResult<MdocVerificationResult> {
     let decoded = mdoc_decoder::decode_mdoc_presentation(encoded).map_err(|e| {
         CredentialError::InvalidPresentation(format!("mDoc CBOR decode failed: {e}"))
     })?;
@@ -258,7 +258,7 @@ fn decode_base64url_or_base64(input: &str) -> std::result::Result<Vec<u8>, base6
         .or_else(|_| base64::engine::general_purpose::STANDARD.decode(input))
 }
 
-fn extract_first_document(cbor: &ciborium::Value) -> Result<&ciborium::Value> {
+fn extract_first_document(cbor: &ciborium::Value) -> CredentialResult<&ciborium::Value> {
     let cbor = unwrap_cbor_tags(cbor);
     let map = as_cbor_map(cbor).ok_or_else(|| {
         CredentialError::InvalidPresentation("mDoc top-level value is not a map".to_string())
@@ -283,7 +283,7 @@ fn extract_first_document(cbor: &ciborium::Value) -> Result<&ciborium::Value> {
 // COSE helpers
 // ============================================================================
 
-fn parse_cose_sign1_from_value(value: &ciborium::Value) -> Result<CoseSign1> {
+fn parse_cose_sign1_from_value(value: &ciborium::Value) -> CredentialResult<CoseSign1> {
     let untagged = match value {
         ciborium::Value::Tag(18, inner) => inner.as_ref().clone(),
         other => other.clone(),
@@ -296,7 +296,7 @@ fn parse_cose_sign1_from_value(value: &ciborium::Value) -> Result<CoseSign1> {
         .map_err(|e| CredentialError::InvalidPresentation(format!("COSE_Sign1 parse failed: {e}")))
 }
 
-fn extract_x5chain_from_cose(cose: &CoseSign1) -> Result<Vec<Vec<u8>>> {
+fn extract_x5chain_from_cose(cose: &CoseSign1) -> CredentialResult<Vec<Vec<u8>>> {
     for headers in [&cose.protected.header, &cose.unprotected] {
         for (label, value) in &headers.rest {
             if *label == Label::Int(33) {
@@ -328,7 +328,7 @@ fn extract_x5chain_from_cose(cose: &CoseSign1) -> Result<Vec<Vec<u8>>> {
 fn verify_cose_certificate_chain(
     cert_chain: &[Vec<u8>],
     trusted_cas: &[X509],
-) -> Result<(PKey<Public>, bool)> {
+) -> CredentialResult<(PKey<Public>, bool)> {
     let leaf = cert_chain.first().ok_or_else(|| {
         CredentialError::InvalidPresentation(
             "issuerAuth x5chain does not contain a leaf certificate".to_string(),
@@ -424,7 +424,7 @@ fn verify_cose_certificate_chain(
     Ok((key, trusted))
 }
 
-fn verify_cose_sign1_embedded(cose: &CoseSign1, key: &PKey<Public>) -> Result<()> {
+fn verify_cose_sign1_embedded(cose: &CoseSign1, key: &PKey<Public>) -> CredentialResult<()> {
     let alg = cose_algorithm_id(cose)?;
     match alg {
         -7 | -35 | -36 => cose.verify_signature(&[], |signature, data| {
@@ -440,7 +440,7 @@ fn verify_cose_sign1_embedded(cose: &CoseSign1, key: &PKey<Public>) -> Result<()
     }
 }
 
-fn verify_cose_sign1_detached(cose: &CoseSign1, key: &PKey<Public>, payload: &[u8]) -> Result<()> {
+fn verify_cose_sign1_detached(cose: &CoseSign1, key: &PKey<Public>, payload: &[u8]) -> CredentialResult<()> {
     let alg = cose_algorithm_id(cose)?;
     match alg {
         -7 | -35 | -36 => cose.verify_detached_signature(payload, &[], |signature, data| {
@@ -456,7 +456,7 @@ fn verify_cose_sign1_detached(cose: &CoseSign1, key: &PKey<Public>, payload: &[u
     }
 }
 
-fn cose_algorithm_id(cose: &CoseSign1) -> Result<i64> {
+fn cose_algorithm_id(cose: &CoseSign1) -> CredentialResult<i64> {
     let alg = cose
         .protected
         .header
@@ -481,7 +481,7 @@ fn verify_ecdsa_signature(
     data: &[u8],
     signature: &[u8],
     key: &PKey<Public>,
-) -> Result<()> {
+) -> CredentialResult<()> {
     let (part_len, digest) = match alg {
         -7 => (32, MessageDigest::sha256()),
         -35 => (48, MessageDigest::sha384()),
@@ -529,7 +529,7 @@ fn verify_ecdsa_signature(
     Ok(())
 }
 
-fn verify_rsa_signature(alg: i64, data: &[u8], signature: &[u8], key: &PKey<Public>) -> Result<()> {
+fn verify_rsa_signature(alg: i64, data: &[u8], signature: &[u8], key: &PKey<Public>) -> CredentialResult<()> {
     let digest = match alg {
         -257 => MessageDigest::sha256(),
         -258 => MessageDigest::sha384(),
@@ -595,7 +595,7 @@ fn cose_key_param_bytes(key: &CoseKey, label: i64) -> Option<Vec<u8>> {
 // MSO parsing and validation
 // ============================================================================
 
-fn parse_mobile_security_object(payload: &[u8]) -> Result<ParsedMobileSecurityObject> {
+fn parse_mobile_security_object(payload: &[u8]) -> CredentialResult<ParsedMobileSecurityObject> {
     let cbor: ciborium::Value = ciborium::from_reader(payload).map_err(|e| {
         CredentialError::InvalidPresentation(format!(
             "failed to parse issuerAuth payload CBOR: {e}"
@@ -718,7 +718,7 @@ fn parse_mobile_security_object(payload: &[u8]) -> Result<ParsedMobileSecurityOb
 fn verify_issuer_signed_item_digests(
     name_spaces_map: &[(ciborium::Value, ciborium::Value)],
     mso: &ParsedMobileSecurityObject,
-) -> Result<()> {
+) -> CredentialResult<()> {
     for (ns_key, items_value) in name_spaces_map {
         let namespace = match ns_key {
             ciborium::Value::Text(text) => text,
@@ -808,7 +808,7 @@ fn verify_issuer_signed_item_digests(
     Ok(())
 }
 
-fn hash_issuer_signed_item(algorithm: &str, data: &[u8]) -> Result<Vec<u8>> {
+fn hash_issuer_signed_item(algorithm: &str, data: &[u8]) -> CredentialResult<Vec<u8>> {
     let digest = match algorithm.to_ascii_lowercase().as_str() {
         "sha-256" | "sha256" => MessageDigest::sha256(),
         "sha-384" | "sha384" => MessageDigest::sha384(),
@@ -833,7 +833,7 @@ fn hash_issuer_signed_item(algorithm: &str, data: &[u8]) -> Result<Vec<u8>> {
 
 fn extract_device_namespaces_bytes(
     device_signed_map: &[(ciborium::Value, ciborium::Value)],
-) -> Result<Vec<u8>> {
+) -> CredentialResult<Vec<u8>> {
     match cbor_map_get(device_signed_map, "nameSpaces") {
         Some(ciborium::Value::Bytes(bytes)) => Ok(bytes.clone()),
         Some(ciborium::Value::Tag(24, inner)) => match inner.as_ref() {
@@ -882,7 +882,7 @@ pub fn build_openid4vp_session_transcript(
     response_uri: &str,
     requires_encryption: bool,
     response_jwk_thumbprint: Option<&[u8]>,
-) -> Result<Vec<u8>> {
+) -> CredentialResult<Vec<u8>> {
     let jwk_thumbprint = if requires_encryption {
         Some(
             response_jwk_thumbprint
@@ -923,7 +923,7 @@ fn build_device_authentication_payload(
     session_transcript: &[u8],
     doc_type: &str,
     device_namespaces_bytes: &[u8],
-) -> Result<Vec<u8>> {
+) -> CredentialResult<Vec<u8>> {
     let session_transcript: ciborium::Value =
         ciborium::from_reader(session_transcript).map_err(|e| {
             CredentialError::InvalidPresentation(format!(
@@ -946,7 +946,7 @@ fn build_device_authentication_payload(
     cbor_to_vec_fallible(&payload)
 }
 
-fn cose_key_to_public_key(key: &CoseKey) -> Result<PKey<Public>> {
+fn cose_key_to_public_key(key: &CoseKey) -> CredentialResult<PKey<Public>> {
     let kty = match key.kty {
         coset::RegisteredLabel::Assigned(kty) => iana::EnumI64::to_i64(&kty),
         _ => {
@@ -996,7 +996,7 @@ fn cose_key_to_public_key(key: &CoseKey) -> Result<PKey<Public>> {
     })
 }
 
-fn validate_mso_validity(mso: &ParsedMobileSecurityObject) -> Result<bool> {
+fn validate_mso_validity(mso: &ParsedMobileSecurityObject) -> CredentialResult<bool> {
     let now = chrono::Utc::now();
 
     if let Some(valid_from) = &mso.valid_from {

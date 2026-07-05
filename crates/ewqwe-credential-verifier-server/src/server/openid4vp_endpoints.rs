@@ -450,5 +450,10 @@ fn openid4vp_error_response(e: OpenID4VPError) -> HttpResponse {
             HttpResponse::InternalServerError()
                 .json(serde_json::json!({"error": format!("Internal server error: {msg}")}))
         }
+        OpenID4VPError::DecodingError(e) => {
+            error!(error = %e, "Decoding error");
+            HttpResponse::InternalServerError()
+                .json(serde_json::json!({"error": format!("Decoding error: {e}")}))
+        }
     }
 }

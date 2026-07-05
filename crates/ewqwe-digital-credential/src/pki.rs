@@ -14,10 +14,10 @@ use openssl::{
     },
 };
 
-use crate::error::Result;
+use crate::error::CredentialResult;
 
 /// Build a self-signed CA certificate from `ca_key`.
-pub fn build_ca_cert(ca_key: &PKey<Private>) -> Result<X509> {
+pub fn build_ca_cert(ca_key: &PKey<Private>) -> CredentialResult<X509> {
     let mut b = X509Builder::new()?;
     b.set_version(2)?;
     let serial_bn = BigNum::from_u32(1)?;
@@ -55,7 +55,7 @@ pub fn build_issuer_cert(
     ca_key: &PKey<Private>,
     ca_cert: &X509,
     issuer_key: &PKey<Private>,
-) -> Result<X509> {
+) -> CredentialResult<X509> {
     let mut b = X509Builder::new()?;
     b.set_version(2)?;
     let serial_bn = BigNum::from_u32(2)?;

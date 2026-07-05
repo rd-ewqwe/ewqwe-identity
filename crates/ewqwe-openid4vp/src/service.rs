@@ -41,11 +41,11 @@ use serde::{Deserialize, Serialize};
 /// Produces 16 random bytes encoded as base64url (no padding), yielding a
 /// 22-character string with 128 bits of entropy — equivalent to a UUID v4
 /// but ~38 % shorter, which matters for QR code complexity.
-fn gen_compact_token() -> String {
+fn gen_compact_token() -> OpenID4VPResult<String> {
     use base64::Engine as _;
     let mut buf = [0u8; 16];
-    openssl::rand::rand_bytes(&mut buf).expect("openssl rand_bytes failed");
-    base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(buf)
+    openssl::rand::rand_bytes(&mut buf).map_err(|e| OpenID4VPError::Crypto(e.to_string()))?;
+    Ok(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(buf))
 }
 
 fn compute_jwk_thumbprint_bytes(jwk: &serde_json::Value) -> Option<Vec<u8>> {
@@ -145,7 +145,7 @@ impl OpenID4VPService {
     /// the configured transaction store.
     pub async fn create(config: OpenID4VPServiceConfig) -> OpenID4VPResult<Self> {
         let (jar_key, jwe_key) = if let Some(haip_config) = &config.haip_config {
-            tracing::info!("HAIP profile enabled — JAR signing configured");
+            tracing::debug!("HAIP profile enabled — JAR signing configured");
             let cert_pem = std::fs::read_to_string(&haip_config.x509_cert_path).map_err(|e| {
                 OpenID4VPError::Config(format!(
                     "Failed to read certificate from {}: {e}",
@@ -180,7 +180,7 @@ impl OpenID4VPService {
         tracing::info!(
             san = %jar_key.as_ref().map(|k| &k.san_dns_name).unwrap_or(&"N/A".to_string()),
             ttl_secs = ttl_secs,
-            "OpenID4VP service initialized"
+            "OpenID4VP service initialized. {}", jar_key.as_ref().map(|_| "HAIP profile enabled").unwrap_or("Annex A mode only")
         );
 
         Ok(Self {
@@ -215,8 +215,16 @@ impl OpenID4VPService {
         let profile = determine_profile(request.credential_type.as_deref(), request.profile);
 
         let transaction_id = uuid::Uuid::new_v4().to_string();
-        let state = request.state.unwrap_or_else(gen_compact_token);
-        let nonce = request.nonce.unwrap_or_else(gen_compact_token);
+        let state = if let Some(state) = request.state {
+            state
+        } else {
+            gen_compact_token()?
+        };
+        let nonce = if let Some(nonce) = request.nonce {
+            nonce
+        } else {
+            gen_compact_token()?
+        };
         let now = chrono::Utc::now().timestamp_millis();
         let expires_at = now + (self.ttl_secs * 1000);
 
@@ -768,8 +776,7 @@ impl OpenID4VPService {
                 client_id,
                 trusted_cas,
                 response_jwk_thumbprint.as_deref(),
-            )
-            .map_err(OpenID4VPError::BadRequest)?;
+            )?;
 
         // Save presentation nonce from the parsed token (extracted during verify_vp_token_against_cas).
         // We re-parse the first ~-separated segment to extract the nonce from the presentation.

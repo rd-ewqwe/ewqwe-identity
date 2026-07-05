@@ -55,7 +55,7 @@ pub mod sd_jwt;
 pub mod sd_jwt_verification;
 pub(crate) mod util;
 
-pub use error::{CredentialError, Result};
+pub use error::{CredentialError, CredentialResult};
 pub use issuer::CredentialIssuer;
 pub use mdoc_decoder::{DecodedMdoc, decode_mdoc_presentation};
 pub use mdoc_verification::{MdocVerificationResult, verify_mdoc_presentation};

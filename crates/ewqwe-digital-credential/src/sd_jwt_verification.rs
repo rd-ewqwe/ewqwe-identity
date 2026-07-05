@@ -11,7 +11,7 @@
 
 use base64::Engine;
 
-use crate::error::{CredentialError, Result};
+use crate::error::{CredentialError, CredentialResult};
 
 // ============================================================================
 // Return types
@@ -80,7 +80,7 @@ impl SigVerificationResult {
 ///
 /// Returns [`CredentialError::InvalidPresentation`] if the input is not an SD-JWT
 /// or the issuer JWT payload cannot be decoded.
-pub fn decode_sd_jwt_presentation(raw: &str) -> Result<DecodedSdJwt> {
+pub fn decode_sd_jwt_presentation(raw: &str) -> CredentialResult<DecodedSdJwt> {
     if !raw.contains('~') {
         return Err(CredentialError::InvalidPresentation(
             "not an SD-JWT: no '~' separator found".into(),
@@ -101,10 +101,13 @@ pub fn decode_sd_jwt_presentation(raw: &str) -> Result<DecodedSdJwt> {
         .decode(jwt_parts[1])
         .or_else(|_| base64::engine::general_purpose::URL_SAFE.decode(jwt_parts[1]))
         .map_err(|e| {
-            CredentialError::InvalidPresentation(format!("base64 decode of JWT payload failed: {e}"))
+            CredentialError::InvalidPresentation(format!(
+                "base64 decode of JWT payload failed: {e}"
+            ))
         })?;
-    let payload: serde_json::Value = serde_json::from_slice(&payload_bytes)
-        .map_err(|e| CredentialError::InvalidPresentation(format!("JSON parse of JWT payload: {e}")))?;
+    let payload: serde_json::Value = serde_json::from_slice(&payload_bytes).map_err(|e| {
+        CredentialError::InvalidPresentation(format!("JSON parse of JWT payload: {e}"))
+    })?;
 
     tracing::debug!("SD-JWT payload claims: {}", payload);
 
@@ -248,7 +251,11 @@ pub fn verify_sd_jwt_signatures(
     };
 
     let alg = header.alg;
-    tracing::debug!(?alg, x5c_present = header.x5c.is_some(), "issuer JWT header");
+    tracing::debug!(
+        ?alg,
+        x5c_present = header.x5c.is_some(),
+        "issuer JWT header"
+    );
 
     let (issuer_decoding_key, issuer_trusted) = match &header.x5c {
         Some(x5c) if !x5c.is_empty() => match extract_key_from_x5c(x5c, trusted_cas, alg) {
@@ -283,23 +290,26 @@ pub fn verify_sd_jwt_signatures(
     validation.validate_aud = false;
     validation.required_spec_claims.clear();
 
-    let issuer_token_data =
-        match jsonwebtoken::decode::<serde_json::Value>(issuer_jwt, &issuer_decoding_key, &validation) {
-            Ok(data) => {
-                tracing::debug!("issuer JWT signature verified");
-                data
-            }
-            Err(e) => {
-                errors.push(format!("issuer JWT signature invalid: {e}"));
-                return SigVerificationResult {
-                    issuer_sig_valid: false,
-                    kb_sig_valid: false,
-                    issuer_trusted,
-                    skipped: false,
-                    errors,
-                };
-            }
-        };
+    let issuer_token_data = match jsonwebtoken::decode::<serde_json::Value>(
+        issuer_jwt,
+        &issuer_decoding_key,
+        &validation,
+    ) {
+        Ok(data) => {
+            tracing::debug!("issuer JWT signature verified");
+            data
+        }
+        Err(e) => {
+            errors.push(format!("issuer JWT signature invalid: {e}"));
+            return SigVerificationResult {
+                issuer_sig_valid: false,
+                kb_sig_valid: false,
+                issuer_trusted,
+                skipped: false,
+                errors,
+            };
+        }
+    };
 
     let kb_sig_valid = verify_kb_jwt(rest, &issuer_token_data.claims, &mut errors);
 
@@ -330,8 +340,7 @@ fn extract_key_from_x5c(
     let leaf_der = base64::engine::general_purpose::STANDARD
         .decode(&x5c[0])
         .map_err(|e| format!("base64 decode of x5c[0] failed: {e}"))?;
-    let leaf =
-        X509::from_der(&leaf_der).map_err(|e| format!("DER parse of x5c[0] failed: {e}"))?;
+    let leaf = X509::from_der(&leaf_der).map_err(|e| format!("DER parse of x5c[0] failed: {e}"))?;
     tracing::debug!(
         subject = ?leaf.subject_name(),
         issuer = ?leaf.issuer_name(),
@@ -355,8 +364,8 @@ fn extract_key_from_x5c(
         let der = base64::engine::general_purpose::STANDARD
             .decode(b64_cert)
             .map_err(|e| format!("base64 decode of x5c intermediate failed: {e}"))?;
-        let cert =
-            X509::from_der(&der).map_err(|e| format!("DER parse of x5c intermediate failed: {e}"))?;
+        let cert = X509::from_der(&der)
+            .map_err(|e| format!("DER parse of x5c intermediate failed: {e}"))?;
         tracing::info!(subject = ?cert.subject_name(), "loaded intermediate certificate from x5c");
         intermediates
             .push(cert)
@@ -428,11 +437,7 @@ fn extract_key_from_x5c(
 ///
 /// `rest` is the portion of the SD-JWT after the first `~`
 /// (disclosures + optional KB-JWT).
-fn verify_kb_jwt(
-    rest: &str,
-    issuer_claims: &serde_json::Value,
-    errors: &mut Vec<String>,
-) -> bool {
+fn verify_kb_jwt(rest: &str, issuer_claims: &serde_json::Value, errors: &mut Vec<String>) -> bool {
     let kb_jwt = rest
         .split('~')
         .filter(|s| !s.is_empty())
@@ -523,8 +528,8 @@ fn build_decoding_key_from_jwk(
                 "P-521" => openssl::nid::Nid::SECP521R1,
                 _ => return Err(format!("unsupported EC curve: {crv}")),
             };
-            let group = openssl::ec::EcGroup::from_curve_name(nid)
-                .map_err(|e| format!("EcGroup: {e}"))?;
+            let group =
+                openssl::ec::EcGroup::from_curve_name(nid).map_err(|e| format!("EcGroup: {e}"))?;
             let x_bn =
                 openssl::bn::BigNum::from_slice(&x_bytes).map_err(|e| format!("BigNum x: {e}"))?;
             let y_bn =
