@@ -15,8 +15,8 @@
 
         <link rel="shortcut icon" href="favicon-f4c7a024.png">
         <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-0392ca55.css">
-        <link rel="stylesheet" href="css/chrome-fc474251.css">
+        <link rel="stylesheet" href="css/general-e96d0476.css">
+        <link rel="stylesheet" href="css/chrome-d279d366.css">
         <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
@@ -36,7 +36,7 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-3986b925.js";
+            window.path_to_searchindex_js = "searchindex-afdaaa9f.js";
         </script>
         <!-- Start loading toc.js asap -->
         <script src="toc-2cdafee5.js"></script>
@@ -179,7 +179,7 @@
 <p><strong>ewQwe</strong> (pronounced */juːˈkwiː/ — <em>you-kwee</em>) <strong>Identity</strong> is an <strong>open-source credential verifier</strong> developed in the EU, compatible with the <strong>EUDI/eIDAS wallet ecosystem</strong>.</p>
 <p>The project provides a complete solution — including a multi-lingual admin UI — for verifying digital credentials such as <strong>Proof of Age</strong>, <strong>Person Identification Data (PID)</strong>, and <strong>Mobile Driving Licences (mDL)</strong>.</p>
 <p>Out of the box: <strong>age over 18</strong> verification using the widely deployed <strong>France Identité Numérique</strong> wallet.</p>
-<p><img src="assets/cv_ui_qr_code.png" alt="France Identité Wallet"></p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="assets/cv_ui_qr_code.png" alt="France Identité Wallet"><span class="img-wrapper"><img src="assets/cv_ui_qr_code.png" alt="France Identité Wallet"></span></label></p>
 <h2 id="what-it-does"><a class="header" href="#what-it-does">What it does</a></h2>
 <p>The Credential Verifier is a Rust server that accepts <strong>Verifiable Presentations</strong> from EUDI Wallets via <strong>OpenID4VP</strong>, validates their cryptographic integrity, and returns signed JWT attestations to Relying Parties.</p>
 <p>It ships with an <strong>embedded multi-lingual admin UI</strong> — build the SPA, enable it in config, and it’s served at the server root URL with no separate frontend deployment.</p>
@@ -207,12 +207,12 @@
 <tr><th>Component</th><th>Description</th><th>License</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Credential Verifier</strong></td><td>Core server: VP Token validation, signed JWT attestations, OpenID4VP transaction lifecycle</td><td>AGPL-3.0</td></tr>
-<tr><td><strong>Admin UI</strong></td><td>Embedded SPA: QR-code-driven verification dashboard, user management, audit journal, i18n</td><td>AGPL-3.0</td></tr>
+<tr><td><strong>Credential Verifier</strong></td><td>Core server: VP Token validation, signed JWT attestations, OpenID4VP transaction lifecycle</td><td>EUPL-1.2</td></tr>
+<tr><td><strong>Admin UI</strong></td><td>Embedded SPA: QR-code-driven verification dashboard, user management, audit journal, i18n</td><td>EUPL-1.2</td></tr>
 <tr><td><strong>Demo Webapp</strong></td><td>Relying Party demo — vanilla TypeScript SPA that requests credentials via OpenID4VP</td><td>MIT</td></tr>
 <tr><td><strong>Shared JS Library</strong></td><td>TypeScript library: DCQL query builders, protocol profiles, API client</td><td>MIT</td></tr>
-<tr><td><strong>OpenID4VP Library</strong></td><td>Reusable Rust crate: DCQL, JAR signing, JWE decryption, transaction stores</td><td>AGPL-3.0</td></tr>
-<tr><td><strong>Digital Credential Library</strong></td><td>Rust crate: SD-JWT VC and mDoc credential building, signing, verification</td><td>AGPL-3.0</td></tr>
+<tr><td><strong>OpenID4VP Library</strong></td><td>Reusable Rust crate: DCQL, JAR signing, JWE decryption, transaction stores</td><td>EUPL-1.2</td></tr>
+<tr><td><strong>Digital Credential Library</strong></td><td>Rust crate: SD-JWT VC and mDoc credential building, signing, verification</td><td>EUPL-1.2</td></tr>
 </tbody>
 </table>
 </div>
@@ -232,7 +232,7 @@
 </table>
 </div>
 <h2 id="license"><a class="header" href="#license">License</a></h2>
-<p>The open-core crates are licensed under <strong>AGPL-3.0</strong>. The TypeScript packages (<code>@ewqwe/digital-identity</code> and <code>demo-webapp</code>) are licensed under <strong>MIT</strong>.</p>
+<p>The open-core crates are licensed under <strong>EUPL-1.2</strong>. The TypeScript packages (<code>@ewqwe/digital-identity</code> and <code>demo-webapp</code>) are licensed under <strong>MIT</strong>.</p>
 <h2 id="enterprise-version"><a class="header" href="#enterprise-version">Enterprise Version</a></h2>
 <p>The <strong>enterprise</strong> version adds production-grade infrastructure:</p>
 <div class="table-wrapper">
@@ -477,7 +477,7 @@ url = "http://localhost:4317"
 <h1 id="credential-verifier-ui"><a class="header" href="#credential-verifier-ui">Credential Verifier UI</a></h1>
 <p>The Credential Verifier UI is a Vite+TypeScript+Tailwind SPA served directly by the credential verifier. It provides a self-contained UI for credential verification operators — no separate deployment is required.</p>
 <p>The SPA is built from <code>crates/ewqwe-credential-verifier-ui/ui/</code> and served from the root URL (<code>/</code>). All API endpoints are under <code>/api/v1/</code>.</p>
-<p><img src="assets/cv_ui_qr_code.png" alt="UI Overview"></p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="assets/cv_ui_qr_code.png" alt="UI Overview"><span class="img-wrapper"><img src="assets/cv_ui_qr_code.png" alt="UI Overview"></span></label></p>
 <hr>
 <h2 id="building-the-ui"><a class="header" href="#building-the-ui">Building the UI</a></h2>
 <p>The SPA must be built before the credential verifier can serve it.</p>
@@ -5789,6 +5789,11 @@ The JSON/JWT equivalent of <code>x5chain</code>. An array of base64-encoded DER 
 <li>iOS: <a href="https://github.com/eu-digital-identity-wallet/av-app-ios-wallet-ui">https://github.com/eu-digital-identity-wallet/av-app-ios-wallet-ui</a></li>
 </ul>
 </li>
+<li>The Valera Austrian wallet:
+<ul>
+<li>Main site: <a href="https://wallet.a-sit.plus">https://wallet.a-sit.plus</a></li>
+</ul>
+</li>
 </ul>
 <h2 id="eu-pid--mdl-regulation"><a class="header" href="#eu-pid--mdl-regulation">EU PID / mDL Regulation</a></h2>
 <ul>
@@ -6127,7 +6132,7 @@ curl -s https://letsencrypt.org/certs/isrg-root-x2.pem -o isrg_root_x2.pem
 
         <script src="clipboard-1626706a.min.js"></script>
         <script src="highlight-abc7f01d.js"></script>
-        <script src="book-c22b7243.js"></script>
+        <script src="book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
         <script src="mermaid-eefea253.min.js"></script>
