@@ -31,12 +31,14 @@
 //! let token = signer.sign(&attestation)?;
 //! ```
 
+mod attestation_material;
 mod attestation_struct;
 mod cose_signer;
 mod jwt_signer;
 #[cfg(test)]
 mod tests;
 
+pub use attestation_material::AttestationMaterial;
 pub use attestation_struct::Attestation;
 pub use cose_signer::{CoseSigner, CoseSigningAlgorithm, verify_cose_attestation};
 pub use jwt_signer::{JwtSigner, SigningAlgorithm};

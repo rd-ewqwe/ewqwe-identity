@@ -54,12 +54,14 @@ pub struct ServerParams {
     /// attestation JWTs.  The `iss` claim is set to the CN of the certificate's
     /// Subject Name.  Resolved relative to the config file directory.
     /// Defaults to `tls_params.server_certificate` when not set.
+    /// Read once at server startup — restart the server to rotate.
     #[serde(default)]
     pub attestation_issuer_certificate: Option<String>,
 
     /// Path to the PEM private key used to sign attestation JWTs.
     /// Resolved relative to the config file directory.
     /// Defaults to `tls_params.server_private_key` if not set.
+    /// Read once at server startup — restart the server to rotate.
     #[serde(default)]
     pub attestation_issuer_key: Option<String>,
 
@@ -335,53 +337,6 @@ impl ServerParams {
     /// Returns a copy of the configured tracing settings.
     pub fn tracing_config(&self) -> ewqwe_logging::TracingConfig {
         self.tracing_config.clone()
-    }
-
-    /// Issuer identifier for the `iss` claim — the CN from the attestation signing certificate.
-    ///
-    /// Reads `attestation_issuer_certificate` (or falls back to
-    /// `tls_params.server_certificate`) and extracts the Subject CN.
-    pub fn attestation_issuer_iss(&self) -> AttResult<String> {
-        use openssl::nid::Nid;
-        use openssl::x509::X509;
-
-        let cert_path = self.attestation_issuer_certificate_path()?;
-        let cert_pem = std::fs::read(cert_path).map_err(|e| {
-            AttError::Config(format!(
-                "Failed to read attestation issuer certificate '{cert_path}': {e}"
-            ))
-        })?;
-        let cert = X509::from_pem(&cert_pem).map_err(|e| {
-            AttError::Config(format!(
-                "Failed to parse attestation issuer certificate '{cert_path}': {e}"
-            ))
-        })?;
-        cert.subject_name()
-            .entries_by_nid(Nid::COMMONNAME)
-            .next()
-            .and_then(|e| e.data().to_string().ok())
-            .map(|cn| cn.to_string())
-            .ok_or_else(|| {
-                AttError::Config(format!(
-                    "No CN found in attestation issuer certificate subject: {cert_path}"
-                ))
-            })
-    }
-
-    /// RFC 7638 JWK thumbprint of the attestation signing certificate's public key.
-    ///
-    /// Used as the `kid` in both the JWKS and the signed attestation JWT header
-    /// so the verifier can locate the right key without ambiguity.
-    pub fn attestation_issuer_kid(&self) -> Option<String> {
-        use base64::Engine as _;
-        use openssl::x509::X509;
-
-        let cert_path = self.attestation_issuer_certificate_path().ok()?;
-        let cert_pem = std::fs::read(cert_path).ok()?;
-        let cert = X509::from_pem(&cert_pem).ok()?;
-        let cert_der = cert.to_der().ok()?;
-        let fingerprint = openssl::sha::sha256(&cert_der);
-        Some(base64::engine::general_purpose::URL_SAFE_NO_PAD.encode(fingerprint))
     }
 
     /// Path to the PEM private key for signing attestation JWTs.

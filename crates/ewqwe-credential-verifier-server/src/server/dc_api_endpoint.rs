@@ -25,10 +25,10 @@ use std::sync::Arc;
 use tracing::{error, info, warn};
 
 use crate::AttError;
+use crate::attestation::AttestationMaterial;
 use crate::authenticated_user::AuthenticatedUser;
 use crate::journal::DynJournalStore;
 use crate::journal::append_verification;
-use crate::parameters::ServerParams;
 use crate::server::verify_endpoint::create_attestation;
 use ewqwe_digital_credential::verify_mdoc_presentation;
 use ewqwe_openid4vp::{VerificationDetails, VerifyCredentialResponse};
@@ -109,7 +109,7 @@ pub async fn generate_nonce() -> HttpResponse {
 pub async fn verify_dc_api(
     req: HttpRequest,
     body: web::Json<DcApiVerifyRequest>,
-    server_params: web::Data<Arc<ServerParams>>,
+    attestation_issuer: Option<web::Data<Arc<AttestationMaterial>>>,
     trusted_cas: web::Data<Arc<Vec<X509>>>,
     journal: Option<web::Data<Arc<DynJournalStore>>>,
 ) -> Result<HttpResponse, AttError> {
@@ -120,6 +120,11 @@ pub async fn verify_dc_api(
         .get::<AuthenticatedUser>()
         .map(|u| u.username.clone())
         .unwrap_or_else(|| "anonymous".to_string());
+
+    // Attestation issuer material pre-loaded at startup (None when not configured).
+    let issuer = attestation_issuer
+        .as_ref()
+        .map(|data| data.as_ref().as_ref());
 
     info!(
         enduser.id = %username,
@@ -173,7 +178,7 @@ pub async fn verify_dc_api(
             &mdoc_result.claims,
             &mdoc_result.doc_type,
             &mdoc_result.namespace,
-            &server_params,
+            issuer,
         )?;
 
         return Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
@@ -206,7 +211,7 @@ pub async fn verify_dc_api(
             &mdoc_result.claims,
             &mdoc_result.doc_type,
             &mdoc_result.namespace,
-            &server_params,
+            issuer,
         )?;
 
         return Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
@@ -232,7 +237,7 @@ pub async fn verify_dc_api(
         &mdoc_result.claims,
         &mdoc_result.doc_type,
         &mdoc_result.namespace,
-        &server_params,
+        issuer,
     )?;
 
     info!(
