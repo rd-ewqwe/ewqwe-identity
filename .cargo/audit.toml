@@ -13,4 +13,7 @@ ignore = [
     #
     # When sqlx upgrades its `rsa` dependency, this ignore should be removed.
     "RUSTSEC-2023-0071",
+
+    # h2 - unbounded data frames - need an update of actix-web
+    "RUSTSEC-2026-0258",
 ]
