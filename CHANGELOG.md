@@ -5,22 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.2.0] — 2026-09-08
 
 ### Security
 
-- **Rust** (`ewqwe-credential-verifier-server`): the attestation issuer certificate and
-  signing key are now loaded and parsed **once at server startup** instead of on every
-  `/verify`, `/dc_api/verify`, and `.well-known/jwks.json` request. This removes
-  per-request disk access to operator-configured paths (CodeQL `rust/path-injection`,
-  alerts 28–31). Restart the server to apply certificate/key rotations.
+- The attestation issuer certificate and signing key are loaded **once at server startup**
+  instead of on every `/verify`, `/dc_api/verify`, and `.well-known/jwks.json` request.
+  Removes per-request disk access to operator-configured paths (CodeQL
+  `rust/path-injection`). Restart the server to rotate certificates/keys.
+- Added an ignore for RUSTSEC-2026-0258 (`h2` — unbounded data frames, transitive via
+  `actix-web`) to `.cargo/audit.toml` pending an upstream fix.
 
 ### Changed
 
-- `ServerComponents` gained an `attestation_material` field (pre-loaded via
-  [`AttestationMaterial::load`](crates/ewqwe-credential-verifier-server/src/attestation/attestation_material.rs)).
+- Open-core crates relicensed from AGPL-3.0 to **EUPL-1.2**.
+- Rust workspace: pinned toolchain (`rust-toolchain.toml`, 1.95.0) and added a CI
+  workflow running fmt, clippy, tests, and `cargo audit`.
+- Cargo dependencies upgraded (including `rand` 0.10).
+- `ServerComponents` gained an `attestation_material` field (pre-loaded at startup).
   Downstream consumers constructing `ServerComponents` manually must populate it
   (`Some(Arc<AttestationMaterial>)` when configured, otherwise `None`).
+- Bumped UI dev dependency `postcss`.
 
 ## [1.1.3] — 2026-07-05
 
@@ -69,5 +74,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial open-core release.
 
+[1.2.0]: https://github.com/rd-ewqwe/ewqwe-identity/compare/v1.1.3...v1.2.0
 [1.1.1]: https://github.com/rd-ewqwe/ewqwe-identity/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/rd-ewqwe/ewqwe-identity/releases/tag/v1.1.0
