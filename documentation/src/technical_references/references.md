@@ -30,6 +30,8 @@ This chapter centralizes external references used throughout this documentation.
 - the Age Verification Wallet (AVI reference implementation)
   - Android: <https://github.com/eu-digital-identity-wallet/av-app-android-wallet-ui)>
   - iOS: <https://github.com/eu-digital-identity-wallet/av-app-ios-wallet-ui>
+- The Valera Austrian wallet:
+  - Main site: <https://wallet.a-sit.plus>
 
 ## EU PID / mDL Regulation
 

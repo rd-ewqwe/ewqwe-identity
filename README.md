@@ -1,6 +1,6 @@
 # ewQwe *`/you-kwee/`* Identity — Open Core
 
-[![License](https://img.shields.io/badge/AGPL--3.0-blue)](LICENSE)
+[![License](https://img.shields.io/badge/EUPL--1.2-blue)](LICENSE)
 ([![License](https://img.shields.io/badge/MIT-blue)](typescript/LICENSE) for the TypeScript library and demo webapp)
 
 **Open-source** credential **verifier** developped in the EU, and compatible with the **EUDI/EIDAS wallet ecosystem**.
@@ -27,26 +27,26 @@ This repository contains:
 
 | Component | Description | License |
 |---|---|---|
-| **Credential Verifier** (`ewqwe-credential-verifier-server`) | Core server: receives VP Tokens, validates proofs (SD-JWT, mDoc), issues signed JWT attestations. Handles the full OpenID4VP transaction lifecycle. | AGPL-3.0 |
-| **Admin UI** (`ewqwe-credential-verifier-ui`) | Embedded SPA served by the verifier. Age Verification dashboard with QR-code-driven flow, user management, audit journal, and i18n. Works out of the box. | AGPL-3.0 |
+| **Credential Verifier** (`ewqwe-credential-verifier-server`) | Core server: receives VP Tokens, validates proofs (SD-JWT, mDoc), issues signed JWT attestations. Handles the full OpenID4VP transaction lifecycle. | EUPL-1.2 |
+| **Admin UI** (`ewqwe-credential-verifier-ui`) | Embedded SPA served by the verifier. Age Verification dashboard with QR-code-driven flow, user management, audit journal, and i18n. Works out of the box. | EUPL-1.2 |
 | **Demo Webapp** (`typescript/demo-webapp`) | Relying Party (RP) demo — vanilla TypeScript SPA that requests credentials via OpenID4VP and displays verification results. MIT-licensed so you can freely adapt and embed it. | MIT |
 | **Shared JS Library** (`typescript/@ewqwe/digital-identity`) | TypeScript library: DCQL query builders, protocol profiles, EwqweApiClient, attestation parsing. Published to npm. | MIT |
-| **OpenID4VP Library** (`ewqwe-openid4vp`) | Reusable Rust crate: DCQL query building, JAR signing, JWE decryption, transaction stores. | AGPL-3.0 |
-| **Digital Credential Library** (`ewqwe-digital-credential`) | Rust crate: SD-JWT VC and mDoc (ISO 18013-5) credential building, signing, and verification with ephemeral PKI. | AGPL-3.0 |
-| **RP Client Library** (`ewqwe-credential-verifier-client`) | Rust client library for the credential verification API. | AGPL-3.0 |
+| **OpenID4VP Library** (`ewqwe-openid4vp`) | Reusable Rust crate: DCQL query building, JAR signing, JWE decryption, transaction stores. | EUPL-1.2 |
+| **Digital Credential Library** (`ewqwe-digital-credential`) | Rust crate: SD-JWT VC and mDoc (ISO 18013-5) credential building, signing, and verification with ephemeral PKI. | EUPL-1.2 |
+| **RP Client Library** (`ewqwe-credential-verifier-client`) | Rust client library for the credential verification API. | EUPL-1.2 |
 
 ```mermaid
 graph TD
-    RP["Relying Party<br/>(typescript/demo-webapp/ — MIT)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>ewqwe-credential-verifier-server<br/> (AGPL-3.0)"]
-    VERIFIER -->|validates VP Token| CRYPTO["ewqwe-digital-credential<br/>(AGPL-3.0)"]
-    VERIFIER -->|transaction lifecycle| OPENID4VP["ewqwe-openid4vp<br/>(AGPL-3.0)"]
-    VERIFIER -->|serves UI| UI["Admin UI<br/>ewqwe-credential-verifier-ui<br/>(AGPL-3.0)"]
+    RP["Relying Party<br/>(typescript/demo-webapp/ — MIT)"] -->|OpenID4VP| VERIFIER["Credential Verifier<br/>ewqwe-credential-verifier-server<br/> (EUPL-1.2)"]
+    VERIFIER -->|validates VP Token| CRYPTO["ewqwe-digital-credential<br/>(EUPL-1.2)"]
+    VERIFIER -->|transaction lifecycle| OPENID4VP["ewqwe-openid4vp<br/>(EUPL-1.2)"]
+    VERIFIER -->|serves UI| UI["Admin UI<br/>ewqwe-credential-verifier-ui<br/>(EUPL-1.2)"]
     subgraph open-core
         CRYPTO
         OPENID4VP
         VERIFIER
         UI
-        CLIENT["ewqwe-credential-verifier-client<br/>(AGPL-3.0)"]
+        CLIENT["ewqwe-credential-verifier-client<br/>(EUPL-1.2)"]
     end
 ```
 
@@ -214,7 +214,7 @@ pnpm test
 
 ## License
 
-The open-core crates are licensed under the **AGPL-3.0** — see [LICENSE](LICENSE). The TypeScript packages `@ewqwe/digital-identity` and `demo-webapp` are licensed under **MIT**.
+The open-core crates are licensed under the **EUPL-1.2** — see [LICENSE](LICENSE). The TypeScript packages `@ewqwe/digital-identity` and `demo-webapp` are licensed under **MIT**.
 
 ## Enterprise Version
 

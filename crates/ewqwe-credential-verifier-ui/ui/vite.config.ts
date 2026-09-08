@@ -22,7 +22,7 @@ function stripSecureCookie(proxyRes: {
 // secure:false accepts the self-signed dev certificate on localhost:9443.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const backendProxy = {
-  target: "https://192.168.1.90:9443",
+  target: "https://192.168.27.65:9443",
   changeOrigin: true,
   secure: false,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
