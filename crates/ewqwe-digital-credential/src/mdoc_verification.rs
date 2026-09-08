@@ -440,7 +440,11 @@ fn verify_cose_sign1_embedded(cose: &CoseSign1, key: &PKey<Public>) -> Credentia
     }
 }
 
-fn verify_cose_sign1_detached(cose: &CoseSign1, key: &PKey<Public>, payload: &[u8]) -> CredentialResult<()> {
+fn verify_cose_sign1_detached(
+    cose: &CoseSign1,
+    key: &PKey<Public>,
+    payload: &[u8],
+) -> CredentialResult<()> {
     let alg = cose_algorithm_id(cose)?;
     match alg {
         -7 | -35 | -36 => cose.verify_detached_signature(payload, &[], |signature, data| {
@@ -529,7 +533,12 @@ fn verify_ecdsa_signature(
     Ok(())
 }
 
-fn verify_rsa_signature(alg: i64, data: &[u8], signature: &[u8], key: &PKey<Public>) -> CredentialResult<()> {
+fn verify_rsa_signature(
+    alg: i64,
+    data: &[u8],
+    signature: &[u8],
+    key: &PKey<Public>,
+) -> CredentialResult<()> {
     let digest = match alg {
         -257 => MessageDigest::sha256(),
         -258 => MessageDigest::sha384(),

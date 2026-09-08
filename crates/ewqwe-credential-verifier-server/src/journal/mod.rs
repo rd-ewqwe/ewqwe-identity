@@ -402,8 +402,11 @@ pub async fn append_verification(
             attestation_jwt.into()
         };
         let attestation_signature_hash = compute_attestation_signature_hash(&att_hash_input);
-        let entry_hash =
-            compute_entry_hash(username, current_head.as_deref(), &attestation_signature_hash);
+        let entry_hash = compute_entry_hash(
+            username,
+            current_head.as_deref(),
+            &attestation_signature_hash,
+        );
 
         let entry = JournalEntry {
             id: entry_id,
