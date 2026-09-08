@@ -8,10 +8,9 @@
 
 use crate::{
     AttError,
-    attestation::{Attestation, AttestationSigner, JwtSigner, SigningAlgorithm},
+    attestation::{Attestation, AttestationMaterial},
     ewqwe_credential_verifier_ui::qr_user_map::QrUserMap,
     journal::{DynJournalStore, append_verification},
-    parameters::ServerParams,
     server::Version,
     tls::AuthenticatedUser,
 };
@@ -190,7 +189,7 @@ pub(crate) async fn verify_credential_endpoint(
     req: HttpRequest,
     body: web::Json<VerifyCredentialRequest>,
     service: web::Data<Arc<OpenID4VPService>>,
-    server_params: web::Data<Arc<ServerParams>>,
+    attestation_issuer: Option<web::Data<Arc<AttestationMaterial>>>,
     trusted_cas: web::Data<Arc<Vec<X509>>>,
     journal: Option<web::Data<Arc<DynJournalStore>>>,
     qr_map: Option<web::Data<Arc<QrUserMap>>>,
@@ -204,6 +203,11 @@ pub(crate) async fn verify_credential_endpoint(
                 "mTLS authentication required: authenticated user not found".to_string(),
             )
         })?;
+
+    // Attestation issuer material pre-loaded at startup (None when not configured).
+    let issuer = attestation_issuer
+        .as_ref()
+        .map(|data| data.as_ref().as_ref());
 
     info!(
         enduser.id = %username,
@@ -279,7 +283,7 @@ pub(crate) async fn verify_credential_endpoint(
             &result.claims,
             &result.doc_type,
             &result.namespace,
-            &server_params,
+            issuer,
         )?;
         return Ok(HttpResponse::Ok().json(VerifyCredentialResponse {
             success: false,
@@ -318,7 +322,7 @@ pub(crate) async fn verify_credential_endpoint(
         &result.claims,
         &result.doc_type,
         &result.namespace,
-        &server_params,
+        issuer,
     )?;
     info!(
         enduser.id = %username,
@@ -383,10 +387,11 @@ pub(crate) async fn verify_credential_endpoint(
 /// `doc_type` and `namespace` (credential metadata) are bound into the attestation so
 /// the relying party does not need a separate `VerificationDetails` channel.
 ///
-/// The signing key is read from disk per [`ServerParams::attestation_issuer_key_path`].
-/// The issuer (`iss`) claim is the Subject CN of [`ServerParams::attestation_issuer_certificate`].
-/// The `kid` JWT header is the SHA-256 fingerprint of the certificate so the verifier
-/// can locate the matching public key in the JWKS served at
+/// The issuer material (certificate + signing key) is pre-loaded once at startup by
+/// [`AttestationMaterial::load`] — no file I/O happens on the request path. The issuer
+/// (`iss`) claim is the Subject CN of the issuer certificate, and the `kid` JWT header
+/// is the SHA-256 fingerprint of the certificate so the verifier can locate the
+/// matching public key in the JWKS served at
 /// `/ewqwe_api/openid4vp/.well-known/jwks.json`.
 pub(crate) fn create_attestation(
     client_id: &str,
@@ -395,7 +400,7 @@ pub(crate) fn create_attestation(
     claims: &serde_json::Value,
     doc_type: &str,
     namespace: &str,
-    server_params: &ServerParams,
+    issuer: Option<&AttestationMaterial>,
 ) -> Result<String, AttError> {
     let credential_claims = claims.as_object().cloned().unwrap_or_default();
     // Convert JPEG2000 portrait to JPEG (e.g. France Identité wallet).
@@ -414,41 +419,26 @@ pub(crate) fn create_attestation(
         crate::attestation::convert_portrait_to_jpeg(credential_claims)
     };
 
-    let iss = server_params.attestation_issuer_iss()?;
-
-    let mut attestation =
-        Attestation::new(&iss, client_id, transaction_id).with_credential_claims(credential_claims);
-
-    attestation = attestation
-        .with_doc_type(doc_type)
-        .with_namespace(namespace);
-    if let Some(n) = nonce {
-        attestation = attestation.with_nonce(n);
-    }
-
-    let key_path = server_params.attestation_issuer_key_path()?;
-    let private_key_pem = std::fs::read(key_path).map_err(|e| {
-        AttError::Config(format!(
-            "Failed to read attestation issuer key '{key_path}': {e}"
-        ))
+    let material = issuer.ok_or_else(|| {
+        AttError::Config(
+            "An attestation issuer certificate must be provided if no TLS certificates are set"
+                .to_owned(),
+        )
     })?;
 
-    let mut signer =
-        JwtSigner::from_pem(SigningAlgorithm::ES256, &private_key_pem).map_err(|e| {
-            AttError::Generic(format!("Failed to create attestation issuer signer: {e}"))
-        })?;
+    let attestation = Attestation::new(material.issuer(), client_id, transaction_id)
+        .with_credential_claims(credential_claims)
+        .with_doc_type(doc_type)
+        .with_namespace(namespace);
+    let attestation = match nonce {
+        Some(n) => attestation.with_nonce(n),
+        None => attestation,
+    };
 
-    // Include the cert fingerprint as `kid` so the RP can find the right JWKS key.
-    if let Some(kid) = server_params.attestation_issuer_kid() {
-        signer = signer.with_key_id(&kid);
-    }
-
-    let token_bytes = signer
-        .sign(&attestation)
-        .map_err(|e| AttError::Generic(format!("Failed to sign attestation: {e}")))?;
-
-    String::from_utf8(token_bytes)
-        .map_err(|e| AttError::Generic(format!("Failed to encode attestation: {e}")))
+    material
+        .signer()
+        .sign_to_string(&attestation)
+        .map_err(|e| AttError::Generic(format!("Failed to sign attestation: {e}")))
 }
 
 /// Extract the `jti` claim from a compact JWT without full signature verification.

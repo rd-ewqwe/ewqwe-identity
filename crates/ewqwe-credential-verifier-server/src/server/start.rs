@@ -76,6 +76,7 @@ async fn prepare_server(
     let verifier_ui_config = components.verifier_ui_config.clone();
     let journal_provider_for_va = components.journal_provider_for_va.clone();
     let qr_credential_verifier = components.qr_credential_verifier.clone();
+    let attestation_material = components.attestation_material.clone();
 
     // Create the `HttpServer` instance.
     let server = HttpServer::new(move || {
@@ -84,6 +85,10 @@ async fn prepare_server(
             .app_data(Data::new(server_params.clone()))
             .app_data(Data::new(openid4vp_service.clone()))
             .app_data(Data::new(trusted_cas.clone()));
+
+        if let Some(ref material) = attestation_material {
+            app = app.app_data(Data::new(material.clone()));
+        }
 
         if let Some(ref store) = journal_store {
             app = app.app_data(Data::new(store.clone()));

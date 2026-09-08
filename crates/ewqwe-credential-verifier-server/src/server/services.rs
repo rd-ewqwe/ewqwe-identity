@@ -32,6 +32,7 @@
 
 use crate::{
     AttResult,
+    attestation::AttestationMaterial,
     journal::{DynJournalStore, JournalStore},
     parameters::ServerParams,
     server::{
@@ -118,6 +119,13 @@ pub struct ServerComponents {
 
     /// Verifier App session cookie signing key (generated when UI is enabled).
     pub verifier_ui_session_key: Option<actix_web::cookie::Key>,
+
+    /// Attestation issuer signing material, pre-loaded from the configured issuer
+    /// certificate/key (see [`AttestationMaterial::load`]).
+    ///
+    /// `None` when no issuer certificate is configured (e.g. HTTP bootstrap mode) —
+    /// attestation-signing endpoints then report a configuration error.
+    pub attestation_material: Option<Arc<AttestationMaterial>>,
 }
 
 impl ServerComponents {
@@ -187,6 +195,12 @@ impl ServerComponents {
 
         let qr_user_map: Arc<QrUserMap> = Arc::new(QrUserMap::new());
 
+        let attestation_material: Option<Arc<AttestationMaterial>> =
+            AttestationMaterial::load(params)?.map(Arc::new);
+        if attestation_material.is_none() {
+            info!("No attestation issuer certificate configured — attestation signing is disabled");
+        }
+
         let journal_provider_for_va: Option<Arc<dyn VerifierJournalProvider>> =
             journal_store.as_ref().map(|j| {
                 Arc::new(JournalProviderForVerifier(j.clone())) as Arc<dyn VerifierJournalProvider>
@@ -215,6 +229,7 @@ impl ServerComponents {
             journal_provider_for_va,
             qr_credential_verifier,
             verifier_ui_session_key,
+            attestation_material,
         })
     }
 }
@@ -246,6 +261,7 @@ impl ServerComponents {
 /// | `Arc<VerifierUiConfig>` | `components.verifier_ui_config` |
 /// | `Option<Arc<dyn VerifierJournalProvider>>` | `components.journal_provider_for_va` |
 /// | `Option<Arc<dyn VerifierCredentialVerifier>>` | `components.qr_credential_verifier` |
+/// | `Option<Arc<AttestationMaterial>>` | `components.attestation_material` |
 #[allow(dead_code)] // Used by enterprise binary
 pub fn configure_services(cfg: &mut web::ServiceConfig, components: &ServerComponents) {
     // ── Shared application data ──────────────────────────────────────────
@@ -267,6 +283,9 @@ pub fn configure_services(cfg: &mut web::ServiceConfig, components: &ServerCompo
     }
     if let Some(ref v) = components.qr_credential_verifier {
         cfg.app_data(Data::new(v.clone()));
+    }
+    if let Some(ref material) = components.attestation_material {
+        cfg.app_data(Data::new(material.clone()));
     }
 
     // ── Wallet-facing routes (no authentication required) ────────────────

@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Security
+
+- **Rust** (`ewqwe-credential-verifier-server`): the attestation issuer certificate and
+  signing key are now loaded and parsed **once at server startup** instead of on every
+  `/verify`, `/dc_api/verify`, and `.well-known/jwks.json` request. This removes
+  per-request disk access to operator-configured paths (CodeQL `rust/path-injection`,
+  alerts 28–31). Restart the server to apply certificate/key rotations.
+
+### Changed
+
+- `ServerComponents` gained an `attestation_material` field (pre-loaded via
+  [`AttestationMaterial::load`](crates/ewqwe-credential-verifier-server/src/attestation/attestation_material.rs)).
+  Downstream consumers constructing `ServerComponents` manually must populate it
+  (`Some(Arc<AttestationMaterial>)` when configured, otherwise `None`).
+
 ## [1.1.3] — 2026-07-05
 
 ### Fixed
