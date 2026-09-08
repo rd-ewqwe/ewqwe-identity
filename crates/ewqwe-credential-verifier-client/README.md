@@ -10,7 +10,7 @@ Mirrors the `@ewqwe/digital-identity` JavaScript library and covers:
 
 [![crates.io](https://img.shields.io/crates/v/ewqwe_digital_identity.svg)](https://crates.io/crates/ewqwe_digital_identity)
 [![docs.rs](https://img.shields.io/docsrs/ewqwe_digital_identity)](https://docs.rs/ewqwe_digital_identity)
-[![AGPL-3.0](https://img.shields.io/badge/license-AGPL--3.0-blue.svg)](LICENSE)
+[![EUPL-1.2](https://img.shields.io/badge/license-EUPL--1.2-blue.svg)](LICENSE)
 
 ---
 
@@ -312,4 +312,4 @@ This library targets the following standards:
 
 ## License
 
-AGPL-3.0 — see [LICENSE](LICENSE).
+EUPL-1.2 — see [LICENSE](LICENSE).

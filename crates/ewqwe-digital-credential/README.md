@@ -437,7 +437,7 @@ for complete working examples of all three credential types.
 
 ## License
 
-AGPL-3.0 — see [LICENSE](LICENSE).
+EUPL-1.2 — see [LICENSE](LICENSE).
 
 ---
 

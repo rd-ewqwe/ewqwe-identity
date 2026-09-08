@@ -31,12 +31,12 @@ A **MIT-licensed demo webapp** is also provided, showing how to embed credential
 
 | Component | Description | License |
 |-----------|-------------|---------|
-| **Credential Verifier** | Core server: VP Token validation, signed JWT attestations, OpenID4VP transaction lifecycle | AGPL-3.0 |
-| **Admin UI** | Embedded SPA: QR-code-driven verification dashboard, user management, audit journal, i18n | AGPL-3.0 |
+| **Credential Verifier** | Core server: VP Token validation, signed JWT attestations, OpenID4VP transaction lifecycle | EUPL-1.2 |
+| **Admin UI** | Embedded SPA: QR-code-driven verification dashboard, user management, audit journal, i18n | EUPL-1.2 |
 | **Demo Webapp** | Relying Party demo — vanilla TypeScript SPA that requests credentials via OpenID4VP | MIT |
 | **Shared JS Library** | TypeScript library: DCQL query builders, protocol profiles, API client | MIT |
-| **OpenID4VP Library** | Reusable Rust crate: DCQL, JAR signing, JWE decryption, transaction stores | AGPL-3.0 |
-| **Digital Credential Library** | Rust crate: SD-JWT VC and mDoc credential building, signing, verification | AGPL-3.0 |
+| **OpenID4VP Library** | Reusable Rust crate: DCQL, JAR signing, JWE decryption, transaction stores | EUPL-1.2 |
+| **Digital Credential Library** | Rust crate: SD-JWT VC and mDoc credential building, signing, verification | EUPL-1.2 |
 
 ## Roadmap
 
@@ -51,7 +51,7 @@ Based on your role:
 
 ## License
 
-The open-core crates are licensed under **AGPL-3.0**. The TypeScript packages (`@ewqwe/digital-identity` and `demo-webapp`) are licensed under **MIT**.
+The open-core crates are licensed under **EUPL-1.2**. The TypeScript packages (`@ewqwe/digital-identity` and `demo-webapp`) are licensed under **MIT**.
 
 ## Enterprise Version
 

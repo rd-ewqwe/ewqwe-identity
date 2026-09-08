@@ -339,4 +339,4 @@ The library is organized into modules:
 
 ## License
 
-AGPL-3.0 — see [LICENSE](LICENSE).
+EUPL-1.2 — see [LICENSE](LICENSE).

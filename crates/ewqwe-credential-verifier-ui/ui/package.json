@@ -2,7 +2,7 @@
   "name": "ewqwe-verifier-app-ui",
   "private": true,
   "version": "1.1.1",
-  "license": "AGPL-3.0",
+  "license": "EUPL-1.2",
   "type": "module",
   "scripts": {
     "predev": "node scripts/assemble-html.mjs",

@@ -10,7 +10,7 @@ This is a human-readable summary of (and not a substitute for) the full agreemen
 
 • **No Warranty or Support Obligations.** By making a contribution, you are not obligating yourself to provide support for the contribution, and you are not taking on any warranty obligations or providing any assurances about how it will perform.
 
-The CLA does not change the terms of the underlying license used by our software, such as the GNU Affero General Public License v3 (AGPLv3) or the MIT License. You are still free to use our projects within your own projects or businesses, republish modified source code, and more, subject to the terms of the project license. Please reference the appropriate license for the project you're contributing to to learn more.
+The CLA does not change the terms of the underlying license used by our software, such as the European Union Public Licence v1.2 (EUPL-1.2) or the MIT License. You are still free to use our projects within your own projects or businesses, republish modified source code, and more, subject to the terms of the project license. Please reference the appropriate license for the project you're contributing to to learn more.
 
 ## Why Require a CLA?
 
