@@ -11,7 +11,7 @@ Produce a credential of a supported type, trust its issuer in the verifier, and 
 - The credential verifier runs and answers on a known URL. See [Install and run](../credential-verifier/install-and-run.md).
 - The Rust toolchain with Cargo is installed.
 - The `jq` tool is installed, to read values from JSON responses. Read the values by hand if `jq` is not available.
-- You can write to the `credentials_cas_dir` directory of the verifier. The default directory is `credentials_cas` next to the configuration file. See [Configuration](../../reference/credential-verifier/configuration.md).
+- You can write to the `issuers_cas_dir` directory of the verifier. The default directory is `issuers_cas` next to the configuration file. See [Configuration](../../reference/credential-verifier/configuration.md).
 - You know the type of credential to build. See [Credential types](../../reference/digital-credential/credential-types.md).
 
 The library signs with ES256 (ECDSA with P-256 and SHA-256). The library keeps all private keys in memory, and a test credential is valid for one hour in the SD-JWT VC format and for one year in the mDoc format.
@@ -89,8 +89,8 @@ The library writes the issuer leaf certificate and the CA certificate into each 
 
 The verifier trusts an issuer only when the issuer certificate chains to a CA in the trusted CA directory.
 
-1. Write the value of `issuer.ca_cert_pem` to a `.pem` file in the `credentials_cas_dir` directory. The program above writes `credentials_cas/test-ca.pem`.
-2. If the verifier runs in another directory, move the file to the configured `credentials_cas_dir` instead.
+1. Write the value of `issuer.ca_cert_pem` to a `.pem` file in the `issuers_cas_dir` directory. The program above writes `issuers_cas/test-ca.pem`.
+2. If the verifier runs in another directory, move the file to the configured `issuers_cas_dir` instead.
 3. Restart the credential verifier. The verifier loads the directory at startup only, so a new file needs a restart.
 
 Expected result: the log line `Loaded credential issuer CAs at startup` reports a count of at least one.
@@ -106,7 +106,7 @@ The credential must bind to the nonce and the `client_id` of one transaction, an
 # Start a transaction. Save the response.
 curl --cacert ca.pem --cert client.pem --key client.key \
   -H 'Content-Type: application/json' \
-  -d '{"public_url":"https://localhost:9443","profile":"annex-a","credential_type":"proof-of-age"}' \
+  -d '{"profile":"annex-a","credential_type":"proof-of-age"}' \
   https://localhost:9443/ewqwe_api/openid4vp/init > init-response.json
 
 # Read the transaction id. The examples use jq to read JSON.
@@ -120,7 +120,7 @@ curl --cacert ca.pem --cert client.pem --key client.key \
 
 Expected result: `init-response.json` holds the `transaction_id` value, and `auth-request.json` holds the values `state`, `nonce`, `client_id`, and `response_uri`. The program reads those four values from `auth-request.json` in the next step.
 
-For the Annex A profile, the verifier derives `client_id` as `redirect_uri:` followed by the `response_uri`. The `response_uri` is the `public_url` followed by `/ewqwe_api/openid4vp/direct_post`.
+For the Annex A profile, the verifier derives `client_id` as `redirect_uri:` followed by the `response_uri`. The `response_uri` is the `public_root_url` followed by `/ewqwe_api/openid4vp/direct_post`.
 
 The `credential_type` value shapes the authorization request for a real wallet. This guide bypasses the wallet, so the value does not restrict the credential that you build in the next step.
 

@@ -133,16 +133,17 @@ Starts a new OpenID4VP transaction. This endpoint requires a client certificate.
 
 The request body is a JSON object.
 
-| Field              | Type   | Required | Description                                                                         |
-| :----------------- | :----- | :------- | :---------------------------------------------------------------------------------- |
-| `public_url`       | string | Yes      | Relying-party URL used to build the `response_uri` and `request_uri`.               |
-| `dcql_query`       | object | No       | Digital Credentials Query Language query. A default age query is used when omitted. |
-| `nonce`            | string | No       | Request nonce. The server generates one when omitted.                               |
-| `state`            | string | No       | Client state value. The server generates one when omitted.                          |
-| `profile`          | string | No       | Protocol profile, `haip` or `annex-a`.                                              |
-| `credential_type`  | string | No       | Credential shorthand, `mdl`, `national-id`, or `proof-of-age`.                      |
-| `client_metadata`  | object | No       | Relying-party metadata shown by the wallet.                                         |
-| `transaction_data` | array  | No       | Base64url-encoded transaction data entries.                                         |
+| Field              | Type   | Required | Description                                                                                 |
+| :----------------- | :----- | :------- | :------------------------------------------------------------------------------------------ |
+| `dcql_query`       | object | No       | Digital Credentials Query Language query. A default age query is used when omitted.         |
+| `nonce`            | string | No       | Request nonce. The server generates one when omitted.                                       |
+| `state`            | string | No       | Client state value. The server generates one when omitted.                                  |
+| `profile`          | string | No       | Protocol profile, `haip` or `annex-a`.                                                      |
+| `credential_type`  | string | No       | Credential shorthand: `mdl`, `national-id`, `proof-of-age`, or `france-identite-numerique`. |
+| `client_metadata`  | object | No       | Relying-party metadata shown by the wallet.                                                 |
+| `transaction_data` | array  | No       | Base64url-encoded transaction data entries.                                                 |
+
+The server builds the `response_uri` and the `request_uri` from `public_root_url`, or from the incoming request when `public_root_url` is not set. See [Credential verifier configuration](./configuration.md).
 
 ### Response body
 

@@ -88,7 +88,7 @@ The full sequence is in [the verification process](verification-process.md).
 
 ## The trusted issuer CA directory
 
-A signature proves only that some key signed a credential. The verifier must also know which issuers it trusts. The `credentials_cas_dir` setting names a directory of PEM files, and the verifier loads every `*.pem` file in that directory at startup.
+A signature proves only that some key signed a credential. The verifier must also know which issuers it trusts. The `issuers_cas_dir` setting names a directory of PEM files, and the verifier loads every `*.pem` file in that directory at startup.
 
 The verifier accepts a chain that terminates at any certificate in the directory, including an intermediate CA. A credential whose chain does not reach the directory is marked as untrusted, and the verifier does not accept it for an attestation.
 

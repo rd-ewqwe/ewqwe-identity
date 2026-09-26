@@ -35,8 +35,8 @@ TLS encrypts every connection. Mutual TLS adds authentication of the caller, and
 3. Restart the server and check the startup output.
 
    ```text
-   INFO credential_verifier: Server will listen on https://127.0.0.1:9443
-   INFO credential_verifier::server::start: Attestation Provider server listening on 127.0.0.1:9443
+   INFO ewqwe_credential_verifier_server: Server will listen on https://127.0.0.1:9443
+   INFO ewqwe_credential_verifier_server::server::start: Attestation Provider server listening on 127.0.0.1:9443
    ```
 
 4. Test the server certificate. The `/version` endpoint requires no client certificate.
@@ -70,7 +70,7 @@ TLS encrypts every connection. Mutual TLS adds authentication of the caller, and
 2. Restart the server. The server logs one line for each loaded client CA.
 
    ```text
-   INFO credential_verifier::tls::openssl_config: Client CA cert subject: "CN=acme.com"
+   INFO ewqwe_credential_verifier_server::tls::openssl_config: Client CA cert subject: "CN=acme.com"
    ```
 
 3. Call an endpoint that requires authentication, and present a client certificate.

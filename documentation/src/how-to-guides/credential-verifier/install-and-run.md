@@ -10,16 +10,16 @@ This guide builds the credential verifier from source, gives it a minimal config
 
 ## Steps
 
-1. Build the server. Run the command from the `credential_verifier` directory.
+1. Build the server. Run the command from the `crates/ewqwe-credential-verifier-server` directory.
 
    ```bash
-   cd credential_verifier
+   cd crates/ewqwe-credential-verifier-server
    cargo build --release
    ```
 
-   The workspace writes the binary to `target/release/credential-verifier` at the repository root.
+   The workspace writes the binary to `target/release/ewqwe_credential_verifier_server` at the repository root.
 
-2. Create the configuration file. Write a file named `credential-server.toml` in the `credential_verifier` directory with the content below. The paths point at the test certificates in this repository, so do not use them in production.
+2. Create the configuration file. Write a file named `credential-server.toml` in the `crates/ewqwe-credential-verifier-server` directory with the content below. The paths point at the test certificates in this repository, so do not use them in production.
 
    ```toml
    host_name = "127.0.0.1"
@@ -27,7 +27,7 @@ This guide builds the credential verifier from source, gives it a minimal config
    default_username = "demo-user"
    rust_log = "info"
 
-   credentials_cas_dir = "../certificates/issuers_cas"
+   issuers_cas_dir = "../certificates/issuers_cas"
    attestation_issuer_certificate = "../certificates/signer/ewqwe.signer.leaf.cert.pem"
    attestation_issuer_key = "../certificates/signer/ewqwe.signer.leaf.key.pem"
 
@@ -50,13 +50,13 @@ This guide builds the credential verifier from source, gives it a minimal config
 | Setting                          | Purpose                                                              |
 | :------------------------------- | :------------------------------------------------------------------- |
 | `host_name`, `host_port`         | The address and port on which the server listens.                    |
-| `credentials_cas_dir`            | The directory of trusted issuer CA certificates. It must exist.      |
+| `issuers_cas_dir`                | The directory of trusted issuer CA certificates. It must exist.      |
 | `attestation_issuer_certificate` | The certificate whose common name becomes the `iss` claim.           |
 | `attestation_issuer_key`         | The private key that signs the attestations.                         |
 | `[tls_params]`                   | The server key, certificate, CA chain, and optional client CA chain. |
 | `[openid4vp_config.haip_config]` | The certificate chain and key that sign authorization requests.      |
 
-Most relative paths in the file are resolved against the directory that contains the configuration file, not against the working directory. The SQLite path of the transaction store is the exception, because it is used as given.
+Every relative path in the file is resolved against the directory that contains the configuration file.
 
 3. Start the server. Run the built binary, or use Cargo.
 
@@ -78,13 +78,13 @@ Most relative paths in the file are resolved against the directory that contains
 4. Read the startup output. The server logs its progress when `rust_log` is set to `info` or higher.
 
    ```text
-   INFO credential_verifier: Starting ewQwe Credential Verifier
-   INFO credential_verifier: Loaded configuration from /path/to/credential-server.toml
-   INFO credential_verifier: Server will listen on https://127.0.0.1:9443
+   INFO ewqwe_credential_verifier_server: Starting ewQwe Credential Verifier
+   INFO ewqwe_credential_verifier_server: Loaded configuration from /path/to/credential-server.toml
+   INFO ewqwe_credential_verifier_server: Server will listen on https://127.0.0.1:9443
    INFO ewqwe_openid4vp::service: OpenID4VP service initialized san=<dns-name> ttl_secs=300
-   INFO credential_verifier::server::start: Verification journal disabled
-   INFO credential_verifier::server::start: Loaded credential issuer CAs at startup; restart required to reload count=<number>
-   INFO credential_verifier::server::start: Attestation Provider server listening on 127.0.0.1:9443
+   INFO ewqwe_credential_verifier_server::server::start: Verification journal disabled
+   INFO ewqwe_credential_verifier_server::server::start: Loaded credential issuer CAs at startup; restart required to reload count=<number>
+   INFO ewqwe_credential_verifier_server::server::start: Attestation Provider server listening on 127.0.0.1:9443
    ```
 
    The server also logs the whole loaded configuration as one structured line at info level. If the log shows a `Credentials issuers CA directory not found` error, the server stops before it binds the port.
@@ -106,7 +106,7 @@ Most relative paths in the file are resolved against the directory that contains
 ## Troubleshooting
 
 - **The server stops with `No configuration file found. Searched: ...`.** Create `credential-server.toml` in the current directory, or pass an explicit path as the first argument.
-- **The server stops with `Credentials issuers CA directory not found`.** Create the directory named by `credentials_cas_dir`, or point the setting at an existing directory. An empty directory is valid, but then no issuer is trusted.
+- **The server stops with `Credentials issuers CA directory not found`.** Create the directory named by `issuers_cas_dir`, or point the setting at an existing directory. An empty directory is valid, but then no issuer is trusted.
 - **The server stops with `Failed to read server private key file` or a PEM parse error.** Check that each path in `[tls_params]` exists relative to the configuration file, and that the key is in PKCS#8 PEM format.
 - **The server stops with `Address already in use`.** Another process holds the port. Change `host_port`, or stop the other process.
 - **The server stops while it initialises the transaction store or the journal.** Check the database URL and that the database is reachable. See [configure storage](configure-storage.md).
