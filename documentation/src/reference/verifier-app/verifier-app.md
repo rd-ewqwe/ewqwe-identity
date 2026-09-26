@@ -1,6 +1,6 @@
 # The verifier app
 
-The verifier app is a web application that the credential verifier serves. It gives an operator a browser interface to start credential verification transactions and to read their results. The app has two parts: a single-page application (SPA) and a JSON API. The credential verifier serves the SPA from the root URL (`/`) and mounts the JSON API under `/api/v1`.
+The verifier app is a web application that the credential verifier serves. It gives an operator a browser interface to start credential verification transactions and to read their results. The app has two parts: a single-page application (SPA) and a JSON API. The credential verifier serves the SPA from the root URL (`/`) and mounts the JSON API under `/verifier_ui/api`.
 
 An operator signs in, selects a credential type, and shows a QR code. The holder scans the QR code with a wallet. The wallet sends a verifiable presentation to the credential verifier. A verifiable presentation is a signed set of credential claims that the holder chooses to share. The verifier app polls the transaction and shows the result.
 
@@ -20,7 +20,7 @@ flowchart LR
         direction TB
         SP2[" "]
         SPA["SPA served from the root URL"]
-        API["JSON API under /api/v1"]
+        API["JSON API under /verifier_ui/api"]
         SP2 ~~~ SPA
     end
     subgraph CV["Credential verifier"]
@@ -49,43 +49,43 @@ flowchart LR
 
 ## Relation to the credential verifier
 
-The verifier app runs inside the credential verifier process. The crate `crates/ewqwe-verifier-app/` holds the routes, the user store, the locale files, and the SPA sources. The credential verifier:
+The verifier app runs inside the credential verifier process. The crate `crates/ewqwe-credential-verifier-ui/` holds the routes, the user store, the locale files, and the SPA sources. The credential verifier:
 
-- mounts the app routes under the `/api/v1` scope;
+- mounts the app routes under the `/verifier_ui/api` scope;
 - serves the SPA from the directory named by `ui_dist_path`;
 - shares its OpenID4VP service with the app, so that the app can start wallet transactions;
 - writes journal entries for successful verifications.
 
-The app is disabled when the `[verifier_app]` section is absent from the server configuration file. When the section is present, the app is enabled unless `enabled = false`. When the app is disabled, every `/api/v1` route returns 404 and the server does not serve the SPA. See [Credential verifier configuration](../credential-verifier/configuration.md).
+The app is disabled when the `[verifier_ui]` section is absent from the server configuration file. When the section is present, the app is enabled unless `enabled = false`. When the app is disabled, every `/verifier_ui/api` route returns 404 and the server does not serve the SPA. See [Credential verifier configuration](../credential-verifier/configuration.md).
 
 ## HTTP routes
 
-All routes use JSON request and response bodies. A POST or PUT request must send `Content-Type: application/json`. Sessions use an `HttpOnly` cookie named `verifier_app_session`. In the table, `{id}` is a transaction identifier or a user identifier, depending on the route.
+All routes use JSON request and response bodies. A POST or PUT request must send `Content-Type: application/json`. Sessions use an `HttpOnly` session cookie. In the table, `{id}` is a transaction identifier or a user identifier, depending on the route.
 
-| Method | Path                       | Access  | Description                                               |
-| :----- | :------------------------- | :------ | :-------------------------------------------------------- |
-| GET    | `/api/v1/setup/status`     | public  | Report whether the first administrator exists.            |
-| POST   | `/api/v1/setup/bootstrap`  | public  | Create the first administrator account.                   |
-| POST   | `/api/v1/auth/login`       | public  | Sign in and set the session cookie.                       |
-| POST   | `/api/v1/auth/logout`      | session | End the session.                                          |
-| GET    | `/api/v1/auth/me`          | session | Return the signed-in user profile.                        |
-| GET    | `/api/v1/settings`         | public  | Return the app name, the logo URL, and the allowed types. |
-| POST   | `/api/v1/qr/generate`      | session | Start a transaction and return a QR code.                 |
-| GET    | `/api/v1/qr/{id}/status`   | session | Return the status of a transaction.                       |
-| GET    | `/api/v1/admin/users`      | admin   | List user accounts.                                       |
-| POST   | `/api/v1/admin/users`      | admin   | Create a user account.                                    |
-| PUT    | `/api/v1/admin/users/{id}` | admin   | Update a user account.                                    |
-| DELETE | `/api/v1/admin/users/{id}` | admin   | Delete a user account.                                    |
-| GET    | `/api/v1/admin/journal`    | admin   | List journal entries for the app users.                   |
-| PUT    | `/api/v1/admin/settings`   | admin   | Update the display settings.                              |
-| GET    | `/api/v1/i18n`             | public  | Return locale strings for one language.                   |
-| GET    | `/`                        | public  | Serve the SPA entry page.                                 |
-| GET    | `/assets/*`                | public  | Serve the bundled JavaScript and CSS assets.              |
-| GET    | `/logo.png`                | public  | Serve the logo image.                                     |
+| Method | Path                                | Access  | Description                                               |
+| :----- | :---------------------------------- | :------ | :-------------------------------------------------------- |
+| GET    | `/verifier_ui/api/setup/status`     | public  | Report whether the first administrator exists.            |
+| POST   | `/verifier_ui/api/setup/bootstrap`  | public  | Create the first administrator account.                   |
+| POST   | `/verifier_ui/api/auth/login`       | public  | Sign in and set the session cookie.                       |
+| POST   | `/verifier_ui/api/auth/logout`      | session | End the session.                                          |
+| GET    | `/verifier_ui/api/auth/me`          | session | Return the signed-in user profile.                        |
+| GET    | `/verifier_ui/api/settings`         | public  | Return the app name, the logo URL, and the allowed types. |
+| POST   | `/verifier_ui/api/qr/generate`      | session | Start a transaction and return a QR code.                 |
+| GET    | `/verifier_ui/api/qr/{id}/status`   | session | Return the status of a transaction.                       |
+| GET    | `/verifier_ui/api/admin/users`      | admin   | List user accounts.                                       |
+| POST   | `/verifier_ui/api/admin/users`      | admin   | Create a user account.                                    |
+| PUT    | `/verifier_ui/api/admin/users/{id}` | admin   | Update a user account.                                    |
+| DELETE | `/verifier_ui/api/admin/users/{id}` | admin   | Delete a user account.                                    |
+| GET    | `/verifier_ui/api/admin/journal`    | admin   | List journal entries for the app users.                   |
+| PUT    | `/verifier_ui/api/admin/settings`   | admin   | Update the display settings.                              |
+| GET    | `/verifier_ui/api/i18n`             | public  | Return locale strings for one language.                   |
+| GET    | `/`                                 | public  | Serve the SPA entry page.                                 |
+| GET    | `/assets/*`                         | public  | Serve the bundled JavaScript and CSS assets.              |
+| GET    | `/logo.png`                         | public  | Serve the logo image.                                     |
 
 ### Start a transaction
 
-`POST /api/v1/qr/generate` accepts an optional body:
+`POST /verifier_ui/api/qr/generate` accepts an optional body:
 
 ```json
 {
@@ -106,7 +106,7 @@ The `credential_type` value is `proof-of-age` (the default), `mdl`, or `national
 
 ### Poll a transaction
 
-`GET /api/v1/qr/{id}/status` returns the transaction status:
+`GET /verifier_ui/api/qr/{id}/status` returns the transaction status:
 
 ```json
 {
@@ -127,7 +127,7 @@ When the verifier app verifies the presentation in process, a `verified` respons
 
 ## Configuration
 
-The `[verifier_app]` section of the server configuration file controls the app. A path resolves relative to the directory that contains the configuration file.
+The `[verifier_ui]` section of the server configuration file controls the app. A path resolves relative to the directory that contains the configuration file.
 
 | Key                        | Type             | Default                  | Description                                   |
 | :------------------------- | :--------------- | :----------------------- | :-------------------------------------------- |
@@ -144,7 +144,7 @@ The `allowed_credential_types` value accepts `proof-of-age`, `mdl`, and `nationa
 
 ### Database backends
 
-The app stores user accounts in the backend named by the `[verifier_app.db]` table.
+The app stores user accounts in the backend named by the `[verifier_ui.db]` table.
 
 | Backend         | Persistence | Extra keys | Use                                       |
 | :-------------- | :---------- | :--------- | :---------------------------------------- |
@@ -178,7 +178,7 @@ See [Protocol modes](../../explanation/openid4vp/protocol-modes.md) and [Credent
 
 ## Languages
 
-`GET /api/v1/i18n?lang={code}` returns the locale strings for the requested language. The app detects the browser language and uses the closest supported language. A user can override the language on the Settings page. The browser stores the preference under the key `verifier_app_lang`.
+`GET /verifier_ui/api/i18n?lang={code}` returns the locale strings for the requested language. The app detects the browser language and uses the closest supported language. A user can override the language on the Settings page. The browser stores the preference under the key `verifier_ui_lang`.
 
 | Code | Language |
 | :--- | :------- |

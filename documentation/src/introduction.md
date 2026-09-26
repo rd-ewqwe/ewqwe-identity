@@ -1,67 +1,63 @@
-# ewQwe Identity — Introduction
+# Introduction
 
-**ewQwe** (pronounced */juːˈkwiː/ — *you-kwee*) **Identity** is an **open-source credential verifier** developed in the EU, compatible with the **EUDI/eIDAS wallet ecosystem**.
+![ewQwe logo](images/ewqwe_logo.png)
 
-The project provides a complete solution — including a multi-lingual admin UI — for verifying digital credentials such as **Proof of Age**, **Person Identification Data (PID)**, and **Mobile Driving Licences (mDL)**.
+**ewQwe Digital Identity** is a software suite for digital identity based on the European Digital Identity (EUDI) standards. Its principal product is the **ewQwe Credential Verifier**, a server that a Relying Party uses to verify the credentials that a user presents from a digital wallet.
 
-Out of the box: **age over 18** verification using the widely deployed **France Identité Numérique** wallet.
+A **Relying Party** (RP) is a web application or service that needs a fact about a user, for example that the user is at least 18 years old. A **wallet** is the application that stores the user's credentials and presents them. A **credential** is a signed document that an issuer, such as a government authority, has issued to the user.
 
-![France Identité Wallet](./assets/cv_ui_qr_code.png)
+The verifier performs the cryptographic work of verification, so a web application does not implement it. The Relying Party sends a Verifiable Presentation to the verifier. The verifier validates the presentation and returns a signed attestation that states the result.
 
-## What it does
+## What the credential verifier does
 
-The Credential Verifier is a Rust server that accepts **Verifiable Presentations** from EUDI Wallets via **OpenID4VP**, validates their cryptographic integrity, and returns signed JWT attestations to Relying Parties.
+- It accepts a Verifiable Presentation in the ISO/IEC 18013-5 mDoc format or the SD-JWT VC format.
+- It extracts the disclosed claims and checks the credential expiration.
+- It binds the presentation to the nonce that the server issued for the transaction, which prevents replay.
+- It verifies the issuer signature and the holder signature, using the trusted issuer certificate authorities that the operator configures.
+- It returns a signed attestation, in JWT or COSE/CBOR form, that states the verification result.
+- It records every verification in an append-only journal.
 
-It ships with an **embedded multi-lingual admin UI** — build the SPA, enable it in config, and it's served at the server root URL with no separate frontend deployment.
+The server implements the [W3C Digital Credentials API](https://www.w3.org/TR/digital-credentials/), [OpenID for Verifiable Presentations 1.0](https://openid.net/specs/openid-4-verifiable-presentations-1_0.html) (OpenID4VP), and the [EU Age Verification Profile](https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile). It supports the High Assurance Interoperability Profile (HAIP) additions for the EUDI Wallet.
 
-A **MIT-licensed demo webapp** is also provided, showing how to embed credential verification into an existing web application.
+## The verifier app
 
-## Supported Standards
+The credential verifier ships with its own web application, the **verifier app**. An operator signs in, selects a credential type, and shows a QR code. The holder scans the QR code with a wallet, and the app shows the verification result. The verifier app is the standard user interface of the credential verifier and needs no other software.
 
-| Standard | Purpose |
-|----------|---------|
-| **OpenID4VP 1.0** | Credential presentation protocol |
-| **ISO/IEC 18013-5** | mDoc / mDL credential format |
-| **ISO/IEC 18013-7 Annex B** | Online mDoc presentation via OpenID4VP |
-| **SD-JWT VC** | Selective Disclosure JWT credentials |
-| **HAIP** | High Assurance Interoperability Profile (JAR, JWE, X.509) |
-| **EU Age Verification Profile** | Privacy-preserving age checks (DSA-compliant) |
+The verifier also exposes an HTTP API, so a product can build a user interface of its own. The repository contains an example relying party in `webapp/` that shows one way to do this. See [Develop your own relying-party UI](./how-to-guides/credential-verifier/develop-a-relying-party-ui.md).
 
-## Components
+## Who this documentation is for
 
-| Component | Description | License |
-|-----------|-------------|---------|
-| **Credential Verifier** | Core server: VP Token validation, signed JWT attestations, OpenID4VP transaction lifecycle | EUPL-1.2 |
-| **Admin UI** | Embedded SPA: QR-code-driven verification dashboard, user management, audit journal, i18n | EUPL-1.2 |
-| **Demo Webapp** | Relying Party demo — vanilla TypeScript SPA that requests credentials via OpenID4VP | MIT |
-| **Shared JS Library** | TypeScript library: DCQL query builders, protocol profiles, API client | MIT |
-| **OpenID4VP Library** | Reusable Rust crate: DCQL, JAR signing, JWE decryption, transaction stores | EUPL-1.2 |
-| **Digital Credential Library** | Rust crate: SD-JWT VC and mDoc credential building, signing, verification | EUPL-1.2 |
+This documentation addresses the users of the credential verifier server:
 
-## Roadmap
+| Reader                  | Starting point                                                                                                                                                    |
+| :---------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| System operator         | [Run the verifier app](./tutorials/verifier-app/run-the-verifier-app.md) and [Install and run the server](./how-to-guides/credential-verifier/install-and-run.md) |
+| Relying Party developer | [HTTP API](./reference/credential-verifier/http-api.md) and [Verify a credential](./how-to-guides/credential-verifier/verify-a-credential.md)                     |
+| Product developer       | [Develop your own relying-party UI](./how-to-guides/credential-verifier/develop-a-relying-party-ui.md)                                                            |
+| Security architect      | [Verification process](./explanation/credential-verifier/verification-process.md) and [Security model](./explanation/credential-verifier/security-model.md)       |
+| Standards engineer      | [OpenID4VP request parameters](./reference/openid4vp/request-parameters.md) and [Credential formats](./reference/digital-credential/credential-formats.md)        |
 
-Based on your role:
+## How this documentation is organized
 
-| Role | Start here |
-|------|-----------|
-| **Deploying the verifier** | [Credential Verifier Server](./credential_verifier_server.md) |
-| **Using the admin dashboard** | [Credential Verifier UI](./credential_verifier_ui.md) |
-| **Building a Relying Party** | [Demo Webapp](./demo_webapp.md) then [Demo Architecture](./demo_architecture.md) |
-| **Understanding the standards** | [Protocols & Formats Summary](./summary_protocols_formats.md) |
+The book follows the [Diataxis framework](https://diataxis.fr). Each section serves one need of the reader:
 
-## License
+- **Tutorials** teach the verifier app in a guided lesson.
+- **Reference** states the facts of the server: the configuration, the HTTP API, the attestations, the journal, the protocols, and the credential formats.
+- **Explanation** describes why the server works the way it does.
+- **How-to guides** give the steps for a specific task, such as deploying the server with TLS.
+- **FAQ** answers recurring questions and links to the page that holds the full answer.
 
-The open-core crates are licensed under **EUPL-1.2**. The TypeScript packages (`@ewqwe/digital-identity` and `demo-webapp`) are licensed under **MIT**.
+The [Glossary](./glossary.md) defines the terms that the documentation uses. The [References](./references.md) page lists the external standards.
 
-## Enterprise Version
+> [!NOTE]
+> The example relying party in `webapp/` is an advanced reference for building your own interface. It is not part of the credential verifier server, and it is not intended for production use as it stands.
 
-The **enterprise** version adds production-grade infrastructure:
+## Related components
 
-| Feature | Enterprise Crate |
-|---------|-----------------|
-| OpenTelemetry (OTLP) tracing & metrics | `ewqwe-enterprise-logging` |
-| PostgreSQL & Redis stores | `ewqwe-enterprise-stores` |
-| APISIX/eIDAS authentication | `ewqwe-enterprise-auth` |
-| mTLS, multi-tenancy, K8s Helm charts | `ewqwe-enterprise-server` |
+The credential verifier depends on three crates of this repository:
 
-**Credential Verification as a Service** is coming soon — check [ewqwe.eu](https://ewqwe.eu) for updates.
+- `crates/openid4vp` builds and validates OpenID4VP requests and matches DCQL queries.
+- `crates/ewqwe-digital-credential` builds and verifies mDoc and SD-JWT VC credentials.
+- `crates/ewqwe-credential-verifier-ui` is the verifier app, the built-in web application that an operator uses to run age verifications.
+
+The server returns a signed attestation, so a Relying Party can trust the result without performing the verification itself. See the [HTTP API](./reference/credential-verifier/http-api.md) for the request and response of each endpoint.

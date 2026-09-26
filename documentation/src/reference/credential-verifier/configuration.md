@@ -58,9 +58,9 @@ The table below lists the top-level keys of the configuration file.
 | `rust_log`                       | string  | No       | —                               | Log filter string.                                                                        |
 | `tracing_config`                 | table   | No       | See below                       | Logging and telemetry settings.                                                           |
 | `journal_config`                 | table   | No       | Journal disabled                | Verification journal settings. See [Verification journal](./verification-journal.md).     |
-| `verifier_app`                   | table   | No       | App disabled                    | Embedded verifier app. See the [Verifier app](../verifier-app/verifier-app.md) reference. |
+| `verifier_ui`                   | table   | No       | App disabled                    | Embedded verifier app. See the [Verifier app](../verifier-app/verifier-app.md) reference. |
 
-The key `verifier_app` accepts the alias `qrcode_app`.
+The key `verifier_ui` accepts the alias `qrcode_app`.
 
 ### Public root URL
 
@@ -70,7 +70,7 @@ The server chooses the base URL in this order:
 
 | Priority | Source                            |
 | :------- | :-------------------------------- |
-| 1        | `verifier_app.public_url`         |
+| 1        | `verifier_ui.public_url`         |
 | 2        | `public_root_url`                 |
 | 3        | The URL inferred from the request |
 
@@ -282,4 +282,4 @@ The server validates the configuration at startup. The server stops with a confi
 - A TLS key or certificate file cannot be read or parsed.
 - The OpenID4VP service cannot initialize, for example when a HAIP certificate file is missing.
 - The configured transaction store or journal backend cannot be reached.
-- `verifier_app.session_secret` is shorter than 8 characters when the verifier app is enabled.
+- `verifier_ui.session_secret` is shorter than 8 characters when the verifier app is enabled.

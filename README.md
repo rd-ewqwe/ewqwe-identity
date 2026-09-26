@@ -1,4 +1,4 @@
-# ewQwe *`/you-kwee/`* Identity — Open Core
+# ewQwe _`/you-kwee/`_ Identity — Open Core
 
 [![License](https://img.shields.io/badge/EUPL--1.2-blue)](LICENSE)
 ([![License](https://img.shields.io/badge/MIT-blue)](typescript/LICENSE) for the TypeScript library and demo webapp)
@@ -19,21 +19,21 @@ The EU Digital Identity (EUDI) Wallet ecosystem enables citizens to present elec
 
 The credential verifier server ships with an **embedded multi-lingual admin UI** (build the SPA, enable it in the config, and it's served at the server root URL — no separate frontend deployment required). A **MIT-licensed demo webapp** is also provided so you can see how to embed digital credential verification into an existing web application.
 
-![Adin UI](documentation/src/assets/cv_ui_qr_code.png)
+![Admin UI](documentation/src/images/cv_ui_qr_code.png)
 
 ## Components
 
 This repository contains:
 
-| Component | Description | License |
-|---|---|---|
-| **Credential Verifier** (`ewqwe-credential-verifier-server`) | Core server: receives VP Tokens, validates proofs (SD-JWT, mDoc), issues signed JWT attestations. Handles the full OpenID4VP transaction lifecycle. | EUPL-1.2 |
-| **Admin UI** (`ewqwe-credential-verifier-ui`) | Embedded SPA served by the verifier. Age Verification dashboard with QR-code-driven flow, user management, audit journal, and i18n. Works out of the box. | EUPL-1.2 |
-| **Demo Webapp** (`typescript/demo-webapp`) | Relying Party (RP) demo — vanilla TypeScript SPA that requests credentials via OpenID4VP and displays verification results. MIT-licensed so you can freely adapt and embed it. | MIT |
-| **Shared JS Library** (`typescript/@ewqwe/digital-identity`) | TypeScript library: DCQL query builders, protocol profiles, EwqweApiClient, attestation parsing. Published to npm. | MIT |
-| **OpenID4VP Library** (`ewqwe-openid4vp`) | Reusable Rust crate: DCQL query building, JAR signing, JWE decryption, transaction stores. | EUPL-1.2 |
-| **Digital Credential Library** (`ewqwe-digital-credential`) | Rust crate: SD-JWT VC and mDoc (ISO 18013-5) credential building, signing, and verification with ephemeral PKI. | EUPL-1.2 |
-| **RP Client Library** (`ewqwe-credential-verifier-client`) | Rust client library for the credential verification API. | EUPL-1.2 |
+| Component                                                    | Description                                                                                                                                                                    | License  |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| **Credential Verifier** (`ewqwe-credential-verifier-server`) | Core server: receives VP Tokens, validates proofs (SD-JWT, mDoc), issues signed JWT attestations. Handles the full OpenID4VP transaction lifecycle.                            | EUPL-1.2 |
+| **Admin UI** (`ewqwe-credential-verifier-ui`)                | Embedded SPA served by the verifier. Age Verification dashboard with QR-code-driven flow, user management, audit journal, and i18n. Works out of the box.                      | EUPL-1.2 |
+| **Demo Webapp** (`typescript/demo-webapp`)                   | Relying Party (RP) demo — vanilla TypeScript SPA that requests credentials via OpenID4VP and displays verification results. MIT-licensed so you can freely adapt and embed it. | MIT      |
+| **Shared JS Library** (`typescript/@ewqwe/digital-identity`) | TypeScript library: DCQL query builders, protocol profiles, EwqweApiClient, attestation parsing. Published to npm.                                                             | MIT      |
+| **OpenID4VP Library** (`ewqwe-openid4vp`)                    | Reusable Rust crate: DCQL query building, JAR signing, JWE decryption, transaction stores.                                                                                     | EUPL-1.2 |
+| **Digital Credential Library** (`ewqwe-digital-credential`)  | Rust crate: SD-JWT VC and mDoc (ISO 18013-5) credential building, signing, and verification with ephemeral PKI.                                                                | EUPL-1.2 |
+| **RP Client Library** (`ewqwe-credential-verifier-client`)   | Rust client library for the credential verification API.                                                                                                                       | EUPL-1.2 |
 
 ```mermaid
 graph TD
@@ -103,10 +103,10 @@ cargo run -p ewqwe_credential_verifier_server -- \
 ```
 
 When the `[verifier_ui]` section has `enabled = true` and the `dist/` directory
-exists, the UI is served at the root URL and the API at `/api/v1/*`.
+exists, the UI is served at the root URL and the API at `/verifier_ui/api/*`.
 
 On first start, navigate to the server URL and complete the one-time bootstrap
-to create an admin account.  Then you can:
+to create an admin account. Then you can:
 
 - Generate QR codes for cross-device OpenID4VP flows
 - Monitor transactions and verification results in real time
@@ -141,7 +141,7 @@ ewqwe_credential_verifier_client = { git = "https://github.com/rd-ewqwe/ewqwe-id
 
 ### Prerequisites
 
-- **Rust** 1.70+ (install via [rustup](https://rustup.rs))
+- **Rust** 1.92+ (install via [rustup](https://rustup.rs))
 - **pnpm** >= 9 (install via `npm install -g pnpm`)
 
 > The open-core uses SQLite and in-memory stores by default. No PostgreSQL or Redis setup is needed for basic operation.
@@ -220,11 +220,11 @@ The open-core crates are licensed under the **EUPL-1.2** — see [LICENSE](LICEN
 
 The **enterprise** version adds:
 
-| Feature | Enterprise Crate |
-|---------|-----------------|
+| Feature                                | Enterprise Crate           |
+| -------------------------------------- | -------------------------- |
 | OpenTelemetry (OTLP) tracing & metrics | `ewqwe-enterprise-logging` |
-| PostgreSQL & Redis stores | `ewqwe-enterprise-stores` |
-| APISIX/EIDAS authentication | `ewqwe-enterprise-auth` |
-| mTLS, multi-tenancy, K8s Helm charts | `ewqwe-enterprise-server` |
+| PostgreSQL & Redis stores              | `ewqwe-enterprise-stores`  |
+| APISIX/EIDAS authentication            | `ewqwe-enterprise-auth`    |
+| mTLS, multi-tenancy, K8s Helm charts   | `ewqwe-enterprise-server`  |
 
 **Credential Verification as a Service** is coming soon — check [ewqwe.eu](https://ewqwe.eu) for updates and details on the enterprise offering.

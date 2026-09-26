@@ -13,14 +13,14 @@ Configure the verifier app for a deployment: set the display name and logo, rest
 
 ## Configure the display
 
-Set the display keys in the `[verifier_app]` section of the server configuration file:
+Set the display keys in the `[verifier_ui]` section of the server configuration file:
 
 ```toml
-[verifier_app]
+[verifier_ui]
 enabled = true
 app_name = "City of Example Age Check"
 logo_url = "https://example.com/logo.svg"
-ui_dist_path = "../crates/ewqwe-verifier-app/ui/dist"
+ui_dist_path = "../crates/ewqwe-credential-verifier-ui/ui/dist"
 ```
 
 - `app_name` sets the text in the header.
@@ -34,7 +34,7 @@ An administrator can also change the display name and the logo on the Settings p
 The `allowed_credential_types` key limits the types that any user can request:
 
 ```toml
-[verifier_app]
+[verifier_ui]
 allowed_credential_types = ["proof-of-age", "mdl"]
 ```
 
@@ -51,7 +51,7 @@ openssl rand -hex 64
 ```
 
 ```toml
-[verifier_app]
+[verifier_ui]
 session_secret = "<the generated value>"
 ```
 
@@ -59,12 +59,12 @@ The value must contain at least 8 characters.
 
 ## Choose the user database
 
-The app stores the user accounts in the backend named by the `[verifier_app.db]` table.
+The app stores the user accounts in the backend named by the `[verifier_ui.db]` table.
 
 ```toml
-[verifier_app.db]
+[verifier_ui.db]
 backend = "sqlite_file"
-path = "/var/lib/ewqwe/verifier_app.db"
+path = "/var/lib/ewqwe/verifier_ui.db"
 ```
 
 | Backend         | Persistence | Extra keys | Use                                       |
@@ -92,7 +92,7 @@ The first account that the bootstrap route creates is an administrator with `is_
 | Symptom                              | Cause                                   | Action                                                          |
 | :----------------------------------- | :-------------------------------------- | :-------------------------------------------------------------- |
 | The config key has no effect         | The app reads the value at startup.     | Restart the server after a change to the configuration file.   |
-| Every `/api/v1` route returns 404    | The app is disabled.                    | Keep the `[verifier_app]` section with `enabled = true`.        |
+| Every `/verifier_ui/api` route returns 404    | The app is disabled.                    | Keep the `[verifier_ui]` section with `enabled = true`.        |
 | Accounts disappear after a restart   | The database is `sqlite_memory`.        | Configure `sqlite_file`, `postgres`, or `mysql`.                |
 | Sessions end after a restart         | `session_secret` is not set.            | Set a stable `session_secret` value.                            |
 | A user cannot request a type         | The type is not allowed for that user.  | Widen the per-user list or the `allowed_credential_types` list. |

@@ -12,7 +12,7 @@ The verifier app is the standard user interface of the credential verifier. Use 
 
 ## How the verifier app works
 
-The verifier app has two parts: a single-page application (SPA) that the server serves from the root URL, and a JSON API that the server mounts under `/api/v1`. An operator signs in, selects a credential type, and shows a QR code. The holder scans the QR code with a wallet, and the wallet sends a verifiable presentation to the credential verifier. The verifier app polls the transaction and shows the result.
+The verifier app has two parts: a single-page application (SPA) that the server serves from the root URL, and a JSON API that the server mounts under `/verifier_ui/api`. An operator signs in, selects a credential type, and shows a QR code. The holder scans the QR code with a wallet, and the wallet sends a verifiable presentation to the credential verifier. The verifier app polls the transaction and shows the result.
 
 A verifiable presentation is a signed set of credential claims that the holder chooses to share. A transaction is one credential request and its result.
 
@@ -43,15 +43,15 @@ sequenceDiagram
 ### 1. Build the single-page application
 
 ```bash
-cd crates/ewqwe-verifier-app/ui
-npm install
-npm run build
+cd crates/ewqwe-credential-verifier-ui/ui
+pnpm install
+pnpm build
 ```
 
-Expected: the build writes the SPA to `crates/ewqwe-verifier-app/ui/dist/`. Confirm the output:
+Expected: the build writes the SPA to `crates/ewqwe-credential-verifier-ui/ui/dist/`. Confirm the output:
 
 ```bash
-ls crates/ewqwe-verifier-app/ui/dist
+ls crates/ewqwe-credential-verifier-ui/ui/dist
 ```
 
 Expected: `index.html` and an `assets` directory.
@@ -61,10 +61,10 @@ Expected: `index.html` and an `assets` directory.
 Open the server configuration file and add this section:
 
 ```toml
-[verifier_app]
+[verifier_ui]
 enabled = true
 app_name = "My Age Verifier"
-ui_dist_path = "../crates/ewqwe-verifier-app/ui/dist"
+ui_dist_path = "../crates/ewqwe-credential-verifier-ui/ui/dist"
 ```
 
 The path in `ui_dist_path` resolves relative to the directory that holds the configuration file. When the file is `credential_verifier/credential-server.toml`, the value above points at the build output from step 1. See [the verifier app reference](../../reference/verifier-app/verifier-app.md) for every key.
@@ -88,18 +88,18 @@ Expected: the app signs you in and shows the control page with the **Generate QR
 
 ## What happened
 
-The server built the SPA once, in step 1, and serves the built files. In step 3 it mounted the app under `/api/v1` and enabled the app because the configuration file contains a `[verifier_app]` section. In step 4 the app created the first account, stored the account in the user database, and set a session cookie. The session cookie is named `verifier_app_session`.
+The server built the SPA once, in step 1, and serves the built files. In step 3 it mounted the app under `/verifier_ui/api` and enabled the app because the configuration file contains a `[verifier_ui]` section. In step 4 the app created the first account, stored the account in the user database, and set a session cookie.
 
 The default user database is SQLite in memory, so the account disappears when the server stops. To keep accounts across restarts, configure the database and the session secret. See [Configure the verifier app](../../how-to-guides/verifier-app/configure-the-verifier-app.md).
 
 ## Troubleshooting
 
-| Symptom                                  | Cause                                       | Action                                                                |
-| :--------------------------------------- | :------------------------------------------ | :-------------------------------------------------------------------- |
-| Every `/api/v1` route returns 404        | The app is disabled.                        | Add the `[verifier_app]` section with `enabled = true`, then restart. |
-| The root URL returns 404 or a blank page | The SPA is not built, or the path is wrong. | Build the SPA and correct `ui_dist_path`. Check the server log.       |
-| Bootstrap returns `409 Conflict`         | An administrator already exists.            | Sign in instead of bootstrapping a second administrator.              |
-| The session ends after each restart      | `session_secret` is not set.                | Set a stable `session_secret` value.                                  |
+| Symptom                                    | Cause                                       | Action                                                               |
+| :----------------------------------------- | :------------------------------------------ | :------------------------------------------------------------------- |
+| Every `/verifier_ui/api` route returns 404 | The app is disabled.                        | Add the `[verifier_ui]` section with `enabled = true`, then restart. |
+| The root URL returns 404 or a blank page   | The SPA is not built, or the path is wrong. | Build the SPA and correct `ui_dist_path`. Check the server log.      |
+| Bootstrap returns `409 Conflict`           | An administrator already exists.            | Sign in instead of bootstrapping a second administrator.             |
+| The session ends after each restart        | `session_secret` is not set.                | Set a stable `session_secret` value.                                 |
 
 ## Next steps
 

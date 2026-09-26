@@ -1,4 +1,4 @@
-# ADB Troubleshooting Reference for Wallet Testing
+# ADB troubleshooting reference for wallet testing
 
 A comprehensive reference of `adb` commands used when testing digital wallets (EUDI Wallet, France Identité, etc.) with the ewQwe Credential Verifier.
 
@@ -99,14 +99,13 @@ adb shell dumpsys credential
 ```
 
 **Interpretation**:
+
 - **Empty/missing output** → No wallet has registered as a `CredentialProviderService` with Android's CredentialManager on this device.
 - **Populated output** → Wallets that implement a `CredentialProviderService` will appear here. Look for entries under `credential-services`.
 
 > **Important caveat**: Some wallets (including the EUDI Wallet) implement Annex C Sub-protocol B using an **Activity intent filter** on their MainActivity (for actions `androidx.credentials.registry.provider.action.GET_CREDENTIAL` / `androidx.identitycredentials.action.GET_CREDENTIALS`) **instead** of a `CredentialProviderService`. This approach does NOT appear in `dumpsys credential`.
 >
 > Unfortunately, this Activity-based approach **does not work** with Chrome on Android 14+. Chrome delegates to Android's CredentialManager, which only dispatches to `CredentialProviderService` implementations — not to Activities with intent filters. The DC API request is never received by the wallet.
->
-> See [`eudi_wallet_dc_api_analysis.md`](../technical_references/eudi_wallet_dc_api_analysis.md) for the full analysis.
 
 ---
 
@@ -120,7 +119,8 @@ For the Android emulator, the host machine is reachable at `10.0.2.2`. Map the d
 adb root && adb shell "echo '10.0.2.2  demo.ewqwe.local' >> /etc/hosts"
 ```
 
-> ⚠️ Requires `adb root` (only works on emulator or rooted devices). The emulator must be started with `-writable-system`.
+> [!WARNING]
+> This command requires `adb root`, which works only on an emulator or a rooted device. Start the emulator with `-writable-system`.
 
 ### Verify the Hosts File
 
@@ -298,27 +298,27 @@ adb remount
 
 ## Quick Reference by Use Case
 
-| What You Need | Command |
-|---|---|
-| See connected devices | `adb devices` |
-| Install an APK | `adb install /path/to/app.apk` |
-| Force reinstall | `adb install -r /path/to/app.apk` |
-| Check W3C credential providers | `adb shell dumpsys credential` |
-| Map demo domain in emulator | `adb root && adb shell "echo '10.0.2.2 demo.ewqwe.local' >> /etc/hosts"` |
-| Push CA cert to Downloads | `adb push cert.crt /sdcard/Downloads/` |
-| Push CA cert to system store | `adb root && adb remount && adb push cert.crt /system/etc/security/cacerts/` |
-| Stream wallet logs | `adb logcat --pid=$(adb shell pidof <package>)` |
-| Filter logcat by tags | `adb logcat -s "Tag1" "Tag2"` |
-| Search logs for keywords | `adb logcat \| grep -iE "eudi\|openid4vp"` |
-| Restart ADB server | `adb kill-server && adb start-server` |
-| Check Android version | `adb shell getprop ro.build.version.release` |
-| List installed packages | `adb shell pm list packages \| grep -i <keyword>` |
-| Open a deep link | `adb shell am start -d "<url>" -a android.intent.action.VIEW` |
-| Force-stop an app | `adb shell am force-stop <package>` |
-| Clear app data | `adb shell pm clear <package>` |
-| Reboot device | `adb reboot` |
-| Root the emulator | `adb root` |
-| Remount system as writable | `adb remount` |
+| What You Need                  | Command                                                                      |
+| ------------------------------ | ---------------------------------------------------------------------------- |
+| See connected devices          | `adb devices`                                                                |
+| Install an APK                 | `adb install /path/to/app.apk`                                               |
+| Force reinstall                | `adb install -r /path/to/app.apk`                                            |
+| Check W3C credential providers | `adb shell dumpsys credential`                                               |
+| Map demo domain in emulator    | `adb root && adb shell "echo '10.0.2.2 demo.ewqwe.local' >> /etc/hosts"`     |
+| Push CA cert to Downloads      | `adb push cert.crt /sdcard/Downloads/`                                       |
+| Push CA cert to system store   | `adb root && adb remount && adb push cert.crt /system/etc/security/cacerts/` |
+| Stream wallet logs             | `adb logcat --pid=$(adb shell pidof <package>)`                              |
+| Filter logcat by tags          | `adb logcat -s "Tag1" "Tag2"`                                                |
+| Search logs for keywords       | `adb logcat \| grep -iE "eudi\|openid4vp"`                                   |
+| Restart ADB server             | `adb kill-server && adb start-server`                                        |
+| Check Android version          | `adb shell getprop ro.build.version.release`                                 |
+| List installed packages        | `adb shell pm list packages \| grep -i <keyword>`                            |
+| Open a deep link               | `adb shell am start -d "<url>" -a android.intent.action.VIEW`                |
+| Force-stop an app              | `adb shell am force-stop <package>`                                          |
+| Clear app data                 | `adb shell pm clear <package>`                                               |
+| Reboot device                  | `adb reboot`                                                                 |
+| Root the emulator              | `adb root`                                                                   |
+| Remount system as writable     | `adb remount`                                                                |
 
 ---
 
