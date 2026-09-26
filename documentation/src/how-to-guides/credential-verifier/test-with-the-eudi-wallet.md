@@ -222,7 +222,7 @@ Expected result: the credential appears in the wallet.
 4. On the Android device, open the EUDI Wallet and scan the QR code.
 5. Review the authorization request in the wallet. The wallet shows the verifier name from the common name (CN) of the certificate, and a trusted badge when the certificate chain validates. Approve the request with your biometric confirmation.
 
-Expected result: the status badge in the verifier app changes from `pending` to `scanned` and then to `verified`.
+Expected result: the status badge in the verifier app changes from `pending` to `verified`.
 
 For the full set of status values and their meanings, see [The verifier app](../../reference/verifier-app/verifier-app.md).
 

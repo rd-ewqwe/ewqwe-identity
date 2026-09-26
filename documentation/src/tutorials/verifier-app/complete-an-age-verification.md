@@ -25,7 +25,7 @@ Expected: the page shows a QR code and a status badge with the value `pending`. 
 
 Open the wallet on the holder device, choose the option to present a credential, and scan the QR code. Approve the request.
 
-Expected: the status badge changes from `pending` to `scanned`, and then to `verified`.
+Expected: the status badge changes from `pending` to `verified`.
 
 ### 4. Read the result
 
@@ -35,10 +35,11 @@ When the badge shows `verified`, the holder presentation passed verification. Th
 
 | Status     | Meaning                                  |
 | :--------- | :--------------------------------------- |
-| `pending`  | The wallet has not scanned the code.     |
-| `scanned`  | The wallet received the request.         |
+| `pending`  | The wallet has not answered the request. |
+| `received` | The wallet returned a presentation.      |
 | `verified` | The credential passed verification.      |
-| `failed`   | The credential failed verification.     |
+| `failed`   | The credential failed verification.      |
+| `error`    | The transaction failed with an error.    |
 | `expired`  | The transaction passed its time to live. |
 
 A `failed` result shows the errors that the verifier returned. The most common cause is an untrusted issuer. See [the security model](../../explanation/credential-verifier/security-model.md).
@@ -53,13 +54,13 @@ In step 4 the verifier app read the transaction status and showed the result. Th
 
 ## Troubleshooting
 
-| Symptom                              | Cause                                        | Action                                                       |
-| :----------------------------------- | :------------------------------------------- | :----------------------------------------------------------- |
-| The badge stays `pending`            | The wallet did not scan the code.            | Scan the code again, or generate a new code.                 |
-| The QR code expires before the scan  | The transaction passed its time to live.     | Generate a new QR code.                                      |
-| The result is `failed`               | The credential failed a check.               | Read the errors. An untrusted issuer is the common cause.    |
-| QR generation returns `400`          | The credential type is not allowed.          | Check `allowed_credential_types` and the per-user types.     |
-| The wallet rejects the request       | The wallet does not trust the verifier.      | Load the verifier CA certificate into the wallet trust store. |
+| Symptom                             | Cause                                    | Action                                                        |
+| :---------------------------------- | :--------------------------------------- | :------------------------------------------------------------ |
+| The badge stays `pending`           | The wallet did not scan the code.        | Scan the code again, or generate a new code.                  |
+| The QR code expires before the scan | The transaction passed its time to live. | Generate a new QR code.                                       |
+| The result is `failed`              | The credential failed a check.           | Read the errors. An untrusted issuer is the common cause.     |
+| QR generation returns `400`         | The credential type is not allowed.      | Check `allowed_credential_types` and the per-user types.      |
+| The wallet rejects the request      | The wallet does not trust the verifier.  | Load the verifier CA certificate into the wallet trust store. |
 
 ## Next steps
 

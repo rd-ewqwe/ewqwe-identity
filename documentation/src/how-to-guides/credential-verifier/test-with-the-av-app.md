@@ -127,7 +127,7 @@ Expected result: the Proof of Age credential appears in the app.
 4. On the Android device, open the AV app and scan the QR code.
 5. Approve the credential sharing in the app.
 
-Expected result: the status badge in the verifier app changes from `pending` to `scanned` and then to `verified`.
+Expected result: the status badge in the verifier app changes from `pending` to `verified`.
 
 For the full set of status values and their meanings, see [The verifier app](../../reference/verifier-app/verifier-app.md).
 
