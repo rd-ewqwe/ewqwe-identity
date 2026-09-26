@@ -25,14 +25,13 @@ The table below lists the components of the repository, their source path, and t
 | Component             | Source path                                 | Role in the documentation                              |
 | :-------------------- | :------------------------------------------ | :----------------------------------------------------- |
 | Credential verifier   | `credential_verifier/`                      | Principal subject. The verification server.            |
+| Verifier app          | `crates/ewqwe-verifier-app/`                | The built-in user interface of the verifier.           |
 | OpenID4VP protocol    | `crates/openid4vp/`                         | Verifier dependency. Request, DCQL, and HAIP handling. |
 | Digital credential    | `crates/ewqwe-digital-credential/`          | Verifier dependency. Credential building and checking. |
-| Verifier app          | `crates/ewqwe-verifier-app/`                | Companion age-verification web application.            |
-| Demo webapp           | `webapp/`                                   | Demo relying party. Tutorials only.                    |
-| Demo wallet extension | `wallet-extension/`                         | Demo wallet. Tutorials only.                           |
-| Client libraries      | `crates/ewqwe-digital-identity/`, `js-lib/` | Clients that the demos use. Tutorials only.            |
+| Example relying party | `webapp/`                                   | An advanced example of a relying-party UI.             |
+| Client libraries      | `crates/ewqwe-digital-identity/`, `js-lib/` | Clients that the example uses.                         |
 
-The credential verifier is documented across all four Diataxis quadrants. The OpenID4VP protocol, the digital credential library, and the verifier app are documented beside it, because the credential verifier depends on them. The demo webapp, the demo wallet extension, and the client libraries are demos, so they are documented only as tutorials.
+The credential verifier is documented across all four Diataxis quadrants. The verifier app is the standard user interface of the verifier, so it is documented beside the server and it leads the tutorials. The OpenID4VP protocol and the digital credential library are documented beside the server, because the credential verifier depends on them. The example relying party and the client libraries are not part of the verifier, so they are documented as an advanced how-to guide.
 
 ## The book has five sections
 
@@ -40,20 +39,19 @@ The table of contents has five parts: Tutorials, Reference, Explanation, How-to 
 
 Diataxis defines four quadrants: tutorials, how-to guides, reference, and explanation. The FAQ section sits outside those quadrants as a service to them. An FAQ page answers a recurring question in a few sentences and links to the page that holds the full answer.
 
-The `documentation/src/tutorials/` directory holds the demo lessons. A tutorial leads a beginner from a working setup to a first result, so each demo has a tutorial that starts from the installation of the demo and ends in a completed verification.
+The `documentation/src/tutorials/` directory holds the verifier app lessons. A tutorial leads a beginner from a working setup to a first result, so the verifier app has tutorials that start from the build of the app and end in a completed verification.
 
 ## Each section separates the documented components
 
-Every non-tutorial section holds one subdirectory per documented component, and the tutorial section holds one subdirectory per demo, so a reader always knows which part of the system a page describes.
+Every non-tutorial section holds one subdirectory per documented component, and the tutorial section holds the verifier app lessons, so a reader always knows which part of the system a page describes.
 
-The subdirectory name is the component in lowercase with hyphens, or the demo name:
+The subdirectory name is the component in lowercase with hyphens:
 
 - `documentation/src/reference/credential-verifier/`
+- `documentation/src/reference/verifier-app/`
 - `documentation/src/reference/openid4vp/`
 - `documentation/src/reference/digital-credential/`
-- `documentation/src/reference/verifier-app/`
-- `documentation/src/tutorials/webapp/`
-- `documentation/src/tutorials/wallet-extension/`
+- `documentation/src/tutorials/verifier-app/`
 
 The same component names apply under `explanation/`, `how-to-guides/`, and `faq/`, in place of `reference/`.
 
@@ -113,15 +111,15 @@ Every page belongs to exactly one quadrant. Do not mix modes on a single page.
 | **Explanation**   | `documentation/src/explanation/`   | Understanding | Clarifies design choices, architecture, background context, and trade-offs. Discusses models rather than internal code details.                         |
 | **FAQ**           | `documentation/src/faq/`           | Recall        | Answers the recurring questions in a few sentences and links to the page that holds the full answer. This section is an addition to the four quadrants. |
 
-Each of the four non-tutorial directories above holds one `credential-verifier/`, `openid4vp/`, `digital-credential/`, or `verifier-app/` subdirectory, and a page goes into the subdirectory of its component. The `tutorials/` directory holds one `webapp/` or `wallet-extension/` subdirectory, and a page goes into the subdirectory of its demo.
+Each of the four non-tutorial directories above holds one `credential-verifier/`, `verifier-app/`, `openid4vp/`, or `digital-credential/` subdirectory, and a page goes into the subdirectory of its component. The `tutorials/` directory holds the `verifier-app/` subdirectory.
 
 ### Quadrant Guidelines
 
-1. **Tutorials** (`tutorials/<demo>/`):
+1. **Tutorials** (`tutorials/verifier-app/`):
    - Provide a guaranteed path from start to finish.
    - Introduce concepts progressively through action.
    - Explain what happened immediately after each action.
-   - Cover the demo webapp, the demo wallet extension, and the client libraries that serve them.
+   - Cover the verifier app: build it, sign in, and complete an age verification.
 
 2. **How-to Guides** (`how-to-guides/<component>/`):
    - State the target goal and prerequisites at the beginning.
@@ -156,7 +154,7 @@ All documentation is compiled with [mdBook](https://rust-lang.github.io/mdBook/)
 - **mdBook ignores every other heading level in `SUMMARY.md`.** A `##` or `###` line is discarded without a warning, which leaves the chapters flat and hides the sections. Use `#` for a section.
 - **The component groups are draft chapters.** A line such as `- [Credential verifier]()` declares a chapter that holds no file, and mdBook renders it as an unclickable group label that folds the sub-chapters below it. This is the only mechanism that the format offers for a group of pages that has no page of its own, so the empty destination is deliberate and does not mark a missing page. A Markdown formatter may print that destination as `(<>)`, which mdBook reads in the same way; do not "fix" it into a real path.
 - **Nesting is indentation.** A chapter that is indented under another item becomes its sub-chapter, which is what places the pages of a component under its group label. Two spaces and four spaces both nest, and the two must not be mixed within one file. The formatter of this repository writes two spaces, and the pages of a component sit one level deep.
-- **Registration in `SUMMARY.md`**: Every page must be listed under its section, inside the group of its component or demo. mdBook ignores a file that is not registered.
+- **Registration in `SUMMARY.md`**: Every page must be listed under its section, inside the group of its component. mdBook ignores a file that is not registered.
 - **Strict relative paths**: Never use absolute file paths (such as `/Users/...` or `/mnt/...`). Use relative markdown links between files, or workspace-relative paths from the repository root (`documentation/src/...`).
 - **No unfinished pages**: Committed documentation must not contain `TODO` items or empty placeholder pages. A draft chapter appears in `SUMMARY.md` only as a component group label.
 - **Avoid stub file regeneration**: If `mdbook watch` or `mdbook serve` is running, it creates a stub `.md` file for every path that `SUMMARY.md` declares and the disk does not hold. When you move or rename a page, update `SUMMARY.md` first, then delete the stub files that the watcher creates at the old paths.
@@ -170,38 +168,37 @@ The skeleton below shows the five sections and the component groups of each one.
 
 # Tutorials
 
-- [Demo webapp](<>)
-  - [Run the demo webapp](./tutorials/webapp/run-the-demo-webapp.md)
-  - [Request an age proof](./tutorials/webapp/request-an-age-proof.md)
-- [Demo wallet extension](<>)
-  - [Install the demo wallet extension](./tutorials/wallet-extension/install-the-demo-wallet-extension.md)
-  - [Present a stored credential](./tutorials/wallet-extension/present-a-stored-credential.md)
+- [Verifier app](<>)
+  - [Run the verifier app](./tutorials/verifier-app/run-the-verifier-app.md)
+  - [Complete an age verification](./tutorials/verifier-app/complete-an-age-verification.md)
 
 # Reference
 
 - [Credential verifier](<>)
-  - [HTTP API](./reference/credential-verifier/http-api.md)
   - [Configuration](./reference/credential-verifier/configuration.md)
-- [OpenID4VP](<>)
-  - [The OpenID4VP crate](./reference/openid4vp/openid4vp-crate.md)
-- [Digital credential](<>)
-  - [Credential formats](./reference/digital-credential/credential-formats.md)
+  - [HTTP API](./reference/credential-verifier/http-api.md)
 - [Verifier app](<>)
   - [The verifier app](./reference/verifier-app/verifier-app.md)
+- [OpenID4VP](<>)
+  - [Request parameters](./reference/openid4vp/request-parameters.md)
+- [Digital credential](<>)
+  - [Credential formats](./reference/digital-credential/credential-formats.md)
 
 # Explanation
 
 - [Credential verifier](<>)
   - [The verification process](./explanation/credential-verifier/verification-process.md)
 - [OpenID4VP](<>)
-  - [How DCQL matching works](./explanation/openid4vp/dcql-matching.md)
+  - [Protocol modes](./explanation/openid4vp/protocol-modes.md)
 - [Digital credential](<>)
   - [Selective disclosure](./explanation/digital-credential/selective-disclosure.md)
 
 # How-to guides
 
 - [Credential verifier](<>)
-  - [Deploy the server with TLS](./how-to-guides/credential-verifier/deploy-with-tls.md)
+  - [Develop your own relying-party UI](./how-to-guides/credential-verifier/develop-a-relying-party-ui.md)
+- [Verifier app](<>)
+  - [Configure the verifier app](./how-to-guides/verifier-app/configure-the-verifier-app.md)
 - [Digital credential](<>)
   - [Issue a test credential](./how-to-guides/digital-credential/issue-a-test-credential.md)
 
@@ -350,8 +347,8 @@ classDef cObs fill:#faf5ff,stroke:#8b5cf6,stroke-width:2px,color:#5b21b6;
 
 Before completing documentation updates, verify the following:
 
-- [ ] **Diataxis placement**: The page is in the directory of its quadrant and its component (`how-to-guides/<component>/`, `reference/<component>/`, `explanation/<component>/`, or `faq/<component>/`), or, for a demo, in `tutorials/<demo>/`.
-- [ ] **Section and group**: `SUMMARY.md` lists the page under one of the five `#` sections and inside the group of its component or demo.
+- [ ] **Diataxis placement**: The page is in the directory of its quadrant and its component (`how-to-guides/<component>/`, `reference/<component>/`, `explanation/<component>/`, or `faq/<component>/`), or, for a tutorial, in `tutorials/verifier-app/`.
+- [ ] **Section and group**: `SUMMARY.md` lists the page under one of the five `#` sections and inside the group of its component.
 - [ ] **Nesting**: The chapter is indented under its group label, and the file uses one indentation width throughout.
 - [ ] **No orphan page**: Every file under `documentation/src/` appears in `SUMMARY.md`, and no stub file remains at an old path.
 - [ ] **Simplified Technical English**: Sentences are short and direct; vocabulary is precise; no complex clauses or idioms.
