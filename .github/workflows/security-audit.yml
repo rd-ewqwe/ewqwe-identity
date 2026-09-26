@@ -53,3 +53,10 @@ jobs:
         working-directory: typescript
       - run: pnpm audit
         working-directory: typescript
+
+      # The verifier app UI is a separate project with its own committed
+      # lockfile, so it needs its own audit. Dependabot flagged it while the
+      # job above scanned only the typescript workspace.
+      - name: Audit the verifier app UI
+        run: pnpm audit
+        working-directory: crates/ewqwe-credential-verifier-ui/ui
