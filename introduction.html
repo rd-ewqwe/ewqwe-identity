@@ -35,10 +35,10 @@
             const path_to_root = "";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-418fd3cc.js";
+            window.path_to_searchindex_js = "searchindex-cc994d5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-2cdafee5.js"></script>
+        <script src="toc-b4360556.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -174,87 +174,86 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="ewqwe-identity--introduction"><a class="header" href="#ewqwe-identity--introduction">ewQwe Identity — Introduction</a></h1>
-<p><strong>ewQwe</strong> (pronounced */juːˈkwiː/ — <em>you-kwee</em>) <strong>Identity</strong> is an <strong>open-source credential verifier</strong> developed in the EU, compatible with the <strong>EUDI/eIDAS wallet ecosystem</strong>.</p>
-<p>The project provides a complete solution — including a multi-lingual admin UI — for verifying digital credentials such as <strong>Proof of Age</strong>, <strong>Person Identification Data (PID)</strong>, and <strong>Mobile Driving Licences (mDL)</strong>.</p>
-<p>Out of the box: <strong>age over 18</strong> verification using the widely deployed <strong>France Identité Numérique</strong> wallet.</p>
-<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="./assets/cv_ui_qr_code.png" alt="France Identité Wallet"><span class="img-wrapper"><img src="./assets/cv_ui_qr_code.png" alt="France Identité Wallet"></span></label></p>
-<h2 id="what-it-does"><a class="header" href="#what-it-does">What it does</a></h2>
-<p>The Credential Verifier is a Rust server that accepts <strong>Verifiable Presentations</strong> from EUDI Wallets via <strong>OpenID4VP</strong>, validates their cryptographic integrity, and returns signed JWT attestations to Relying Parties.</p>
-<p>It ships with an <strong>embedded multi-lingual admin UI</strong> — build the SPA, enable it in config, and it’s served at the server root URL with no separate frontend deployment.</p>
-<p>A <strong>MIT-licensed demo webapp</strong> is also provided, showing how to embed credential verification into an existing web application.</p>
-<h2 id="supported-standards"><a class="header" href="#supported-standards">Supported Standards</a></h2>
+                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/ewqwe_logo.png" alt="ewQwe logo"><span class="img-wrapper"><img src="images/ewqwe_logo.png" alt="ewQwe logo"></span></label></p>
+<p><strong>ewQwe Digital Identity</strong> is a software suite for digital identity based on the European Digital Identity (EUDI) standards. Its principal product is the <strong>ewQwe Credential Verifier</strong>, a server that a Relying Party uses to verify the credentials that a user presents from a digital wallet.</p>
+<p>A <strong>Relying Party</strong> (RP) is a web application or service that needs a fact about a user, for example that the user is at least 18 years old. A <strong>wallet</strong> is the application that stores the user’s credentials and presents them. A <strong>credential</strong> is a signed document that an issuer, such as a government authority, has issued to the user.</p>
+<p>The verifier performs the cryptographic work of verification, so a web application does not implement it. The Relying Party sends a Verifiable Presentation to the verifier. The verifier validates the presentation and returns a signed attestation that states the result.</p>
+<h2 id="what-the-credential-verifier-does"><a class="header" href="#what-the-credential-verifier-does">What the credential verifier does</a></h2>
+<ul>
+<li>It accepts a Verifiable Presentation in the ISO/IEC 18013-5 mDoc format or the SD-JWT VC format.</li>
+<li>It extracts the disclosed claims and checks the credential expiration.</li>
+<li>It binds the presentation to the nonce that the server issued for the transaction, which prevents replay.</li>
+<li>It verifies the issuer signature and the holder signature, using the trusted issuer certificate authorities that the operator configures.</li>
+<li>It returns a signed attestation, in JWT or COSE/CBOR form, that states the verification result.</li>
+<li>It records every verification in an append-only journal.</li>
+</ul>
+<p>The server implements the <a href="https://www.w3.org/TR/digital-credentials/">W3C Digital Credentials API</a>, <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID for Verifiable Presentations 1.0</a> (OpenID4VP), and the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile</a>. It supports the High Assurance Interoperability Profile (HAIP) additions for the EUDI Wallet.</p>
+<h2 id="the-verifier-app"><a class="header" href="#the-verifier-app">The verifier app</a></h2>
+<p>The credential verifier ships with its own web application, the <strong>verifier app</strong>. An operator signs in, selects a credential type, and shows a QR code. The holder scans the QR code with a wallet, and the app shows the verification result. The verifier app is the standard user interface of the credential verifier and needs no other software.</p>
+<p>The verifier also exposes an HTTP API, so a product can build a user interface of its own. The repository contains an example relying party in <code>typescript/demo-webapp/</code> that shows one way to do this. See <a href="./how-to-guides/credential-verifier/develop-a-relying-party-ui.html">Develop your own relying-party UI</a>.</p>
+<h2 id="who-this-documentation-is-for"><a class="header" href="#who-this-documentation-is-for">Who this documentation is for</a></h2>
+<p>This documentation addresses the users of the credential verifier server:</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Standard</th><th>Purpose</th></tr>
+<tr><th style="text-align: left">Reader</th><th style="text-align: left">Starting point</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>OpenID4VP 1.0</strong></td><td>Credential presentation protocol</td></tr>
-<tr><td><strong>ISO/IEC 18013-5</strong></td><td>mDoc / mDL credential format</td></tr>
-<tr><td><strong>ISO/IEC 18013-7 Annex B</strong></td><td>Online mDoc presentation via OpenID4VP</td></tr>
-<tr><td><strong>SD-JWT VC</strong></td><td>Selective Disclosure JWT credentials</td></tr>
-<tr><td><strong>HAIP</strong></td><td>High Assurance Interoperability Profile (JAR, JWE, X.509)</td></tr>
-<tr><td><strong>EU Age Verification Profile</strong></td><td>Privacy-preserving age checks (DSA-compliant)</td></tr>
+<tr><td style="text-align: left">System operator</td><td style="text-align: left"><a href="./tutorials/verifier-app/run-the-verifier-app.html">Run the verifier app</a> and <a href="./how-to-guides/credential-verifier/install-and-run.html">Install and run the server</a></td></tr>
+<tr><td style="text-align: left">Relying Party developer</td><td style="text-align: left"><a href="./reference/credential-verifier/http-api.html">HTTP API</a> and <a href="./how-to-guides/credential-verifier/verify-a-credential.html">Verify a credential</a></td></tr>
+<tr><td style="text-align: left">Product developer</td><td style="text-align: left"><a href="./how-to-guides/credential-verifier/develop-a-relying-party-ui.html">Develop your own relying-party UI</a></td></tr>
+<tr><td style="text-align: left">Security architect</td><td style="text-align: left"><a href="./explanation/credential-verifier/verification-process.html">Verification process</a> and <a href="./explanation/credential-verifier/security-model.html">Security model</a></td></tr>
+<tr><td style="text-align: left">Standards engineer</td><td style="text-align: left"><a href="./reference/openid4vp/request-parameters.html">OpenID4VP request parameters</a> and <a href="./reference/digital-credential/credential-formats.html">Credential formats</a></td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="components"><a class="header" href="#components">Components</a></h2>
+<h2 id="how-this-documentation-is-organized"><a class="header" href="#how-this-documentation-is-organized">How this documentation is organized</a></h2>
+<p>The book follows the <a href="https://diataxis.fr">Diataxis framework</a>. Each section serves one need of the reader:</p>
+<ul>
+<li><strong>Tutorials</strong> teach the verifier app in a guided lesson.</li>
+<li><strong>Reference</strong> states the facts of the server: the configuration, the HTTP API, the attestations, the journal, the protocols, and the credential formats.</li>
+<li><strong>Explanation</strong> describes why the server works the way it does.</li>
+<li><strong>How-to guides</strong> give the steps for a specific task, such as deploying the server with TLS.</li>
+<li><strong>FAQ</strong> answers recurring questions and links to the page that holds the full answer.</li>
+</ul>
+<p>The <a href="./glossary.html">Glossary</a> defines the terms that the documentation uses. The <a href="./references.html">References</a> page lists the external standards.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>The example relying party in <code>typescript/demo-webapp/</code> is an advanced reference for building your own interface. It is not part of the credential verifier server, and it is not intended for production use as it stands.</p>
+</blockquote>
+<h2 id="related-components"><a class="header" href="#related-components">Related components</a></h2>
+<p>The credential verifier depends on three crates of this repository:</p>
+<ul>
+<li><code>crates/ewqwe-openid4vp</code> builds and validates OpenID4VP requests and matches DCQL queries.</li>
+<li><code>crates/ewqwe-digital-credential</code> builds and verifies mDoc and SD-JWT VC credentials.</li>
+<li><code>crates/ewqwe-credential-verifier-ui</code> is the verifier app, the built-in web application that an operator uses to run age verifications.</li>
+</ul>
+<p>The server returns a signed attestation, so a Relying Party can trust the result without performing the verification itself. See the <a href="./reference/credential-verifier/http-api.html">HTTP API</a> for the request and response of each endpoint.</p>
+<h2 id="licenses"><a class="header" href="#licenses">Licenses</a></h2>
+<p>The components of this repository use two open-source licenses. The Rust server, its crates, and the verifier app are released under the <a href="https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12">European Union Public Licence v1.2</a> (EUPL-1.2). The TypeScript library <code>typescript/ewqwe-digital-identity</code> and the demo webapp <code>typescript/demo-webapp</code> are released under the <a href="https://opensource.org/license/mit">MIT License</a>.</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th>Component</th><th>Description</th><th>License</th></tr>
+<tr><th style="text-align: left">Component</th><th style="text-align: left">Location</th><th style="text-align: left">License</th></tr>
 </thead>
 <tbody>
-<tr><td><strong>Credential Verifier</strong></td><td>Core server: VP Token validation, signed JWT attestations, OpenID4VP transaction lifecycle</td><td>EUPL-1.2</td></tr>
-<tr><td><strong>Admin UI</strong></td><td>Embedded SPA: QR-code-driven verification dashboard, user management, audit journal, i18n</td><td>EUPL-1.2</td></tr>
-<tr><td><strong>Demo Webapp</strong></td><td>Relying Party demo — vanilla TypeScript SPA that requests credentials via OpenID4VP</td><td>MIT</td></tr>
-<tr><td><strong>Shared JS Library</strong></td><td>TypeScript library: DCQL query builders, protocol profiles, API client</td><td>MIT</td></tr>
-<tr><td><strong>OpenID4VP Library</strong></td><td>Reusable Rust crate: DCQL, JAR signing, JWE decryption, transaction stores</td><td>EUPL-1.2</td></tr>
-<tr><td><strong>Digital Credential Library</strong></td><td>Rust crate: SD-JWT VC and mDoc credential building, signing, verification</td><td>EUPL-1.2</td></tr>
+<tr><td style="text-align: left">Credential verifier server and crates</td><td style="text-align: left"><code>crates/</code></td><td style="text-align: left">EUPL-1.2</td></tr>
+<tr><td style="text-align: left">Verifier app (embedded SPA)</td><td style="text-align: left"><code>crates/ewqwe-credential-verifier-ui</code></td><td style="text-align: left">EUPL-1.2</td></tr>
+<tr><td style="text-align: left">Shared TypeScript library</td><td style="text-align: left"><code>typescript/ewqwe-digital-identity</code></td><td style="text-align: left">MIT</td></tr>
+<tr><td style="text-align: left">Demo webapp</td><td style="text-align: left"><code>typescript/demo-webapp</code></td><td style="text-align: left">MIT</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="roadmap"><a class="header" href="#roadmap">Roadmap</a></h2>
-<p>Based on your role:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Role</th><th>Start here</th></tr>
-</thead>
-<tbody>
-<tr><td><strong>Deploying the verifier</strong></td><td><a href="./credential_verifier_server.html">Credential Verifier Server</a></td></tr>
-<tr><td><strong>Using the admin dashboard</strong></td><td><a href="./credential_verifier_ui.html">Credential Verifier UI</a></td></tr>
-<tr><td><strong>Building a Relying Party</strong></td><td><a href="./demo_webapp.html">Demo Webapp</a> then <a href="./demo_architecture.html">Demo Architecture</a></td></tr>
-<tr><td><strong>Understanding the standards</strong></td><td><a href="./summary_protocols_formats.html">Protocols &amp; Formats Summary</a></td></tr>
-</tbody>
-</table>
-</div>
-<h2 id="license"><a class="header" href="#license">License</a></h2>
-<p>The open-core crates are licensed under <strong>EUPL-1.2</strong>. The TypeScript packages (<code>@ewqwe/digital-identity</code> and <code>demo-webapp</code>) are licensed under <strong>MIT</strong>.</p>
-<h2 id="enterprise-version"><a class="header" href="#enterprise-version">Enterprise Version</a></h2>
-<p>The <strong>enterprise</strong> version adds production-grade infrastructure:</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th>Feature</th><th>Enterprise Crate</th></tr>
-</thead>
-<tbody>
-<tr><td>OpenTelemetry (OTLP) tracing &amp; metrics</td><td><code>ewqwe-enterprise-logging</code></td></tr>
-<tr><td>PostgreSQL &amp; Redis stores</td><td><code>ewqwe-enterprise-stores</code></td></tr>
-<tr><td>APISIX/eIDAS authentication</td><td><code>ewqwe-enterprise-auth</code></td></tr>
-<tr><td>mTLS, multi-tenancy, K8s Helm charts</td><td><code>ewqwe-enterprise-server</code></td></tr>
-</tbody>
-</table>
-</div>
-<p><strong>Credential Verification as a Service</strong> is coming soon — check <a href="https://ewqwe.eu">ewqwe.eu</a> for updates.</p>
+<p>The full license texts are in the <code>LICENSE</code> file at the repository root and in the <code>LICENSE</code> file of each TypeScript package.</p>
+<p>Some components are not part of this open-source repository. The enterprise add-ons are available under a separate commercial license. See the README and <a href="https://ewqwe.eu">ewqwe.eu</a> for the enterprise offering.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
 
-                            <a rel="next prefetch" href="credential_verifier_server.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="tutorials/verifier-app/run-the-verifier-app.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -265,7 +264,7 @@
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
 
-                    <a rel="next prefetch" href="credential_verifier_server.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="tutorials/verifier-app/run-the-verifier-app.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>

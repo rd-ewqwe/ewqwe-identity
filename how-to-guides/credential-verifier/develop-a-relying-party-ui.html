@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - ewQwe Digital Identity</title>
-        <base href="/">
+        <title>Develop your own relying-party UI - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -13,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="shortcut icon" href="favicon-f4c7a024.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-e96d0476.css">
-        <link rel="stylesheet" href="css/chrome-d279d366.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="shortcut icon" href="../../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="custom-theme-1e0c8f96.css">
+        <link rel="stylesheet" href="../../custom-theme-1e0c8f96.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cc994d5a.js";
+            window.path_to_searchindex_js = "../../searchindex-cc994d5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b4360556.js"></script>
+        <script src="../../toc-b4360556.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -106,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -141,7 +140,7 @@
                     <h1 class="menu-title">ewQwe Digital Identity</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -175,14 +174,123 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="develop-your-own-relying-party-ui"><a class="header" href="#develop-your-own-relying-party-ui">Develop your own relying-party UI</a></h1>
+<p>This guide shows how to add credential verification to a user interface of your own. The credential verifier already ships with a standard user interface, the <a href="../../reference/verifier-app/verifier-app.html">verifier app</a>. Build your own interface only when you need to embed verification in your own product, with your own layout and your own session.</p>
+<p>The repository contains an <strong>example relying party</strong> in <code>typescript/demo-webapp/</code>. The example is an advanced, working reference that shows one way to build such an interface. It is not part of the credential verifier and is not a supported deployment.</p>
+<h2 id="goal"><a class="header" href="#goal">Goal</a></h2>
+<p>Build a user interface that requests a credential from a wallet, sends the presentation to the credential verifier, and shows the result.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<ul>
+<li>A running credential verifier. See <a href="./install-and-run.html">Install and run the server</a>.</li>
+<li>Node.js 18 or later and pnpm, to run the example.</li>
+<li>A wallet that holds a credential. See <a href="./test-with-the-av-app.html">Test with the age verification app</a> or <a href="./test-with-the-eudi-wallet.html">Test with the EUDI wallet</a>.</li>
+</ul>
+<h2 id="choose-an-interface"><a class="header" href="#choose-an-interface">Choose an interface</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Interface</th><th style="text-align: left">Use it when</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">The verifier app</td><td style="text-align: left">You want the standard interface, with no extra development.</td></tr>
+<tr><td style="text-align: left">Your own UI, with the HTTP API</td><td style="text-align: left">You want your own layout, integrated in your own product.</td></tr>
+<tr><td style="text-align: left">The example relying party</td><td style="text-align: left">You want a working reference to start from.</td></tr>
+</tbody>
+</table>
+</div>
+<p>The verifier app is described in <a href="../../tutorials/verifier-app/run-the-verifier-app.html">Run the verifier app</a>. This guide covers the other two rows.</p>
+<h2 id="what-your-interface-must-do"><a class="header" href="#what-your-interface-must-do">What your interface must do</a></h2>
+<p>A relying-party interface performs five steps. The credential verifier performs the cryptography; your interface drives the flow and shows the result.</p>
+<ol>
+<li>Start a transaction with <a href="../../reference/credential-verifier/http-api.html">the OpenID4VP init endpoint</a>.</li>
+<li>Present the authorization request to the wallet. Use the W3C Digital Credentials API when the browser provides it, and the OpenID4VP redirect or QR-code flow otherwise. See <a href="../../explanation/openid4vp/protocol-modes.html">Protocol modes</a>.</li>
+<li>Receive the verifiable presentation. The wallet either posts the presentation directly, or your interface collects it and sends it to the verifier.</li>
+<li>Ask the credential verifier to verify the presentation. See <a href="./verify-a-credential.html">Verify a credential</a>.</li>
+<li>Show the result, which is the signed attestation that the verifier returns.</li>
+</ol>
+<p>The request parameters and the DCQL query are described in <a href="../../reference/openid4vp/request-parameters.html">OpenID4VP request parameters</a> and <a href="../../reference/openid4vp/dcql-queries.html">DCQL queries</a>.</p>
+<h2 id="the-example-relying-party"><a class="header" href="#the-example-relying-party">The example relying party</a></h2>
+<p>The example lives in <code>typescript/demo-webapp/</code>. It uses TypeScript, Vite, and Tailwind CSS, without a front-end framework.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Path</th><th style="text-align: left">Contents</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/vite.config.ts</code></td><td style="text-align: left">The Vite configuration and the reverse proxy.</td></tr>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/index.html</code></td><td style="text-align: left">The HTML entry page.</td></tr>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/src/main.ts</code></td><td style="text-align: left">The entry point that starts the application.</td></tr>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/src/relying_party_app.ts</code></td><td style="text-align: left">The relying-party application logic.</td></tr>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/src/credentials.ts</code></td><td style="text-align: left">The credential request and verification logic.</td></tr>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/src/dc_api_service.ts</code></td><td style="text-align: left">The W3C Digital Credentials API integration.</td></tr>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/src/hpke.ts</code></td><td style="text-align: left">The HPKE decryption helper for the Annex C flow.</td></tr>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/src/debug.ts</code></td><td style="text-align: left">The debug helpers.</td></tr>
+<tr><td style="text-align: left"><code>typescript/demo-webapp/package.json</code></td><td style="text-align: left">The scripts and the dependencies.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Run the example from the TypeScript workspace root.</p>
+<pre><code class="language-bash">cd typescript
+pnpm install
+pnpm --filter @ewqwe/digital-identity build
+pnpm --filter @ewqwe/demo-webapp dev
+</code></pre>
+<p>Open <code>https://localhost:5174/</code>. The Vite dev server serves the interface and forwards each <code>/ewqwe_api/</code> request to the credential verifier. Vite generates a development certificate on the first run, so the browser shows a warning; accept the certificate and continue.</p>
+<p>The Vite server reads one environment variable:</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Variable</th><th style="text-align: left">Default</th><th style="text-align: left">Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>CREDENTIAL_VERIFIER_URL</code></td><td style="text-align: left"><code>https://127.0.0.1:9443</code></td><td style="text-align: left">The base URL of the credential verifier.</td></tr>
+</tbody>
+</table>
+</div>
+<p>The dev server forwards every <code>/ewqwe_api/</code> request to the credential verifier, so the browser talks to one origin and no client certificate is needed in the browser. In a production deployment, terminate the client certificate at your own proxy or web server.</p>
+<h2 id="incorporate-verification-in-your-own-interface"><a class="header" href="#incorporate-verification-in-your-own-interface">Incorporate verification in your own interface</a></h2>
+<p>Use the example as a template and keep the following points.</p>
+<ol>
+<li>Keep the verifier call on your backend. The browser must not hold the client certificate, and the verifier must not be reachable without one in production.</li>
+<li>Bind each request to a transaction. Never invent the nonce in the browser. Read the nonce and the <code>state</code> from the transaction that the verifier created, and send that <code>state</code> back with the presentation.</li>
+<li>Verify the attestation that the verifier returns before you trust the result. Fetch the public key from the JWKS endpoint and check the signature and the <code>exp</code> claim. See <a href="../../reference/credential-verifier/attestations.html">Attestations</a>.</li>
+<li>Request only the claims that your product needs. An age check asks for the derived claim <code>age_over_18</code>, not the birth date. See <a href="../../explanation/digital-credential/selective-disclosure.html">Selective disclosure</a>.</li>
+<li>Handle every status. A transaction can expire, and a presentation can fail a check.</li>
+</ol>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Symptom</th><th style="text-align: left">Cause</th><th style="text-align: left">Action</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">The dev server cannot reach the verifier</td><td style="text-align: left">The verifier is not running, or the URL is wrong.</td><td style="text-align: left">Start the verifier and check <code>CREDENTIAL_VERIFIER_URL</code>.</td></tr>
+<tr><td style="text-align: left">Every request returns 404</td><td style="text-align: left">The verifier does not serve the path.</td><td style="text-align: left">Check the base URL of the verifier.</td></tr>
+<tr><td style="text-align: left">The verifier rejects the presentation</td><td style="text-align: left">The nonce or the <code>state</code> does not match.</td><td style="text-align: left">Read the nonce and the <code>state</code> from the stored transaction.</td></tr>
+<tr><td style="text-align: left">The browser shows a certificate warning</td><td style="text-align: left">The development certificate is self-signed.</td><td style="text-align: left">Accept the certificate for <code>https://localhost:5174/</code>.</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="related-pages"><a class="header" href="#related-pages">Related pages</a></h2>
+<ul>
+<li><a href="../../reference/credential-verifier/http-api.html">HTTP API</a></li>
+<li><a href="./verify-a-credential.html">Verify a credential</a></li>
+<li><a href="../../reference/openid4vp/request-parameters.html">OpenID4VP request parameters</a></li>
+<li><a href="../../explanation/openid4vp/protocol-modes.html">Protocol modes</a></li>
+<li><a href="../../reference/verifier-app/verifier-app.html">The verifier app</a></li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../how-to-guides/credential-verifier/verify-a-credential.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
+                            <a rel="next prefetch" href="../../how-to-guides/credential-verifier/test-with-the-eudi-wallet.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -190,7 +298,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../how-to-guides/credential-verifier/verify-a-credential.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
+                    <a rel="next prefetch" href="../../how-to-guides/credential-verifier/test-with-the-eudi-wallet.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
             </nav>
 
         </div>
@@ -208,17 +322,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-609e4cb8.js"></script>
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-eefea253.min.js"></script>
-        <script src="mermaid-init-e19dc18e.js"></script>
+        <script src="../../mermaid-eefea253.min.js"></script>
+        <script src="../../mermaid-init-e19dc18e.js"></script>
 
 
 

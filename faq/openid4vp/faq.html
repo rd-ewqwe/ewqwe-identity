@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - ewQwe Digital Identity</title>
-        <base href="/">
+        <title>Questions about OpenID4VP - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -13,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="shortcut icon" href="favicon-f4c7a024.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-e96d0476.css">
-        <link rel="stylesheet" href="css/chrome-d279d366.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="shortcut icon" href="../../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="custom-theme-1e0c8f96.css">
+        <link rel="stylesheet" href="../../custom-theme-1e0c8f96.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cc994d5a.js";
+            window.path_to_searchindex_js = "../../searchindex-cc994d5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b4360556.js"></script>
+        <script src="../../toc-b4360556.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -106,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -141,7 +140,7 @@
                     <h1 class="menu-title">ewQwe Digital Identity</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -175,14 +174,49 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="questions-about-openid4vp"><a class="header" href="#questions-about-openid4vp">Questions about OpenID4VP</a></h1>
+<h2 id="what-is-openid4vp"><a class="header" href="#what-is-openid4vp">What is OpenID4VP?</a></h2>
+<p>OpenID for Verifiable Presentations (OpenID4VP) is an OpenID specification that lets a relying party ask a wallet for a verifiable presentation. The relying party encodes the request in a URL, and the wallet returns the presentation over HTTP. See <a href="../../reference/openid4vp/request-parameters.html">OpenID4VP authorization request parameters</a>.</p>
+<h2 id="why-does-the-system-use-openid4vp-at-all"><a class="header" href="#why-does-the-system-use-openid4vp-at-all">Why does the system use OpenID4VP at all?</a></h2>
+<p>The EU Age Verification Profile names the W3C Digital Credentials API as the primary method and OpenID4VP as the fallback for browsers that do not provide that API. See <a href="../../explanation/openid4vp/protocol-modes.html">Protocol modes</a>.</p>
+<h2 id="does-the-verifier-need-a-signed-authorization-request"><a class="header" href="#does-the-verifier-need-a-signed-authorization-request">Does the verifier need a signed authorization request?</a></h2>
+<p>No. The age verification profile uses the <code>redirect_uri</code> client identifier scheme, which forbids a signed request. Trust rests on TLS and the web PKI instead of a trust list of relying parties. See <a href="../../reference/openid4vp/request-parameters.html">Client identifier schemes</a>.</p>
+<h2 id="which-client-identifier-scheme-should-i-use"><a class="header" href="#which-client-identifier-scheme-should-i-use">Which client identifier scheme should I use?</a></h2>
+<p>Use <code>redirect_uri</code> for a proof of age from the age verification app, and use <code>x509_san_dns</code> for a mobile driving licence or a national identity from the EUDI Wallet. The scheme must match the target wallet, because the EUDI Wallet rejects the <code>redirect_uri</code> scheme. See <a href="../../reference/openid4vp/request-parameters.html">Client identifier schemes</a>.</p>
+<h2 id="what-is-the-difference-between-direct_post-and-fragment"><a class="header" href="#what-is-the-difference-between-direct_post-and-fragment">What is the difference between direct_post and fragment?</a></h2>
+<p>With <code>direct_post</code>, the wallet posts the presentation to the <code>response_uri</code> of the relying party, which enables cross-device flows. With <code>fragment</code>, the wallet returns the presentation in the URL fragment, which only works on one device. The age verification profile requires <code>direct_post</code>. See <a href="../../reference/openid4vp/request-parameters.html">Response modes</a>.</p>
+<h2 id="why-does-the-response-arrive-as-an-http-post-instead-of-a-redirect"><a class="header" href="#why-does-the-response-arrive-as-an-http-post-instead-of-a-redirect">Why does the response arrive as an HTTP POST instead of a redirect?</a></h2>
+<p>The cross-device flow needs a response channel that does not depend on the device that started the request. An HTTP POST to a public <code>response_uri</code> reaches the relying party from any phone that scanned the QR code. See <a href="../../explanation/openid4vp/protocol-modes.html">Protocol modes</a>.</p>
+<h2 id="what-is-dcql-and-why-does-it-replace-presentation_definition"><a class="header" href="#what-is-dcql-and-why-does-it-replace-presentation_definition">What is DCQL, and why does it replace presentation_definition?</a></h2>
+<p>DCQL is the Digital Credentials Query Language, defined in Section 6 of OpenID4VP 1.0. It expresses the required credentials and claims, and the age verification profile mandates it in place of the older DIF Presentation Exchange <code>presentation_definition</code>. See <a href="../../reference/openid4vp/dcql-queries.html">DCQL queries</a>.</p>
+<h2 id="how-do-i-request-age-over-21-instead-of-age-over-18"><a class="header" href="#how-do-i-request-age-over-21-instead-of-age-over-18">How do I request age over 21 instead of age over 18?</a></h2>
+<p>Change the claim name in the query path from <code>age_over_18</code> to <code>age_over_21</code>. The document type and the namespace stay the same. See <a href="../../reference/openid4vp/dcql-queries.html">Age verification query examples</a>.</p>
+<h2 id="can-i-accept-either-a-proof-of-age-or-a-driving-licence"><a class="header" href="#can-i-accept-either-a-proof-of-age-or-a-driving-licence">Can I accept either a proof of age or a driving licence?</a></h2>
+<p>Yes. Add one credential query for each option and group them in a <code>credential_sets</code> entry, so the wallet can satisfy the query with either credential. See <a href="../../reference/openid4vp/dcql-queries.html">Multiple credential options</a>.</p>
+<h2 id="how-does-the-system-prevent-replay-attacks"><a class="header" href="#how-does-the-system-prevent-replay-attacks">How does the system prevent replay attacks?</a></h2>
+<p>The relying party generates a fresh random <code>nonce</code> for every request, stores it, and rejects any presentation that carries a different nonce. The wallet echoes the nonce in the presentation, which binds the presentation to one transaction. See <a href="../../reference/openid4vp/request-parameters.html">OpenID4VP authorization request parameters</a>.</p>
+<h2 id="do-i-need-to-send-client_metadata"><a class="header" href="#do-i-need-to-send-client_metadata">Do I need to send client_metadata?</a></h2>
+<p>No. The age verification profile does not require <code>client_metadata</code>, and the system omits it to keep the request URL short for QR codes. See <a href="../../reference/openid4vp/request-parameters.html">OpenID4VP authorization request parameters</a>.</p>
+<h2 id="does-the-wallet-send-a-presentation_submission-with-a-dcql-query"><a class="header" href="#does-the-wallet-send-a-presentation_submission-with-a-dcql-query">Does the wallet send a presentation_submission with a DCQL query?</a></h2>
+<p>No. With a DCQL query, the <code>vp_token</code> itself maps credential identifiers to presentations, so the wallet does not send <code>presentation_submission</code>. That field belongs to the older <code>presentation_definition</code> queries. See <a href="../../reference/openid4vp/dcql-queries.html">The vp_token response</a>.</p>
+<h2 id="what-does-the-av-link-scheme-do"><a class="header" href="#what-does-the-av-link-scheme-do">What does the av:// link scheme do?</a></h2>
+<p>The <code>av://</code> link scheme lets the operating system open the age verification application on the device. The wallet then returns the response with an HTTP POST, not through the link itself. See <a href="../../reference/openid4vp/request-parameters.html">The av:// application link scheme</a>.</p>
+<h2 id="why-must-i-send-the-request-parameters-by-value-instead-of-using-a-request_uri"><a class="header" href="#why-must-i-send-the-request-parameters-by-value-instead-of-using-a-request_uri">Why must I send the request parameters by value instead of using a request_uri?</a></h2>
+<p>The profile forbids a JWT-secured authorization request by reference, because that mechanism protects the request only when a trust list of relying parties exists. For age verification no such trust list exists, so the profile requires all parameters inline in the URL. See <a href="../../explanation/openid4vp/protocol-modes.html">Protocol modes</a>.</p>
+<h2 id="what-is-the-difference-between-the-same-device-and-cross-device-flows"><a class="header" href="#what-is-the-difference-between-the-same-device-and-cross-device-flows">What is the difference between the same-device and cross-device flows?</a></h2>
+<p>In the same-device flow, the relying party and the wallet run on one device and the browser redirects to the result. In the cross-device flow, the wallet runs on a second device that scans a QR code, and the first device learns about the result through polling or a WebSocket. See <a href="../../explanation/openid4vp/protocol-modes.html">Same-device and cross-device flows</a>.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../faq/credential-verifier/faq.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
+                            <a rel="next prefetch" href="../../faq/digital-credential/faq.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -190,7 +224,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../faq/credential-verifier/faq.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
+                    <a rel="next prefetch" href="../../faq/digital-credential/faq.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
             </nav>
 
         </div>
@@ -208,17 +248,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-609e4cb8.js"></script>
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-eefea253.min.js"></script>
-        <script src="mermaid-init-e19dc18e.js"></script>
+        <script src="../../mermaid-eefea253.min.js"></script>
+        <script src="../../mermaid-init-e19dc18e.js"></script>
 
 
 

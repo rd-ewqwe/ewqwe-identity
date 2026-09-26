@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - ewQwe Digital Identity</title>
+        <title>Verification process - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="shortcut icon" href="favicon-f4c7a024.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-e96d0476.css">
-        <link rel="stylesheet" href="css/chrome-d279d366.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="shortcut icon" href="../../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="custom-theme-1e0c8f96.css">
+        <link rel="stylesheet" href="../../custom-theme-1e0c8f96.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cc994d5a.js";
+            window.path_to_searchindex_js = "../../searchindex-cc994d5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b4360556.js"></script>
+        <script src="../../toc-b4360556.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -105,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -140,7 +140,7 @@
                     <h1 class="menu-title">ewQwe Digital Identity</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -174,86 +174,109 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/ewqwe_logo.png" alt="ewQwe logo"><span class="img-wrapper"><img src="images/ewqwe_logo.png" alt="ewQwe logo"></span></label></p>
-<p><strong>ewQwe Digital Identity</strong> is a software suite for digital identity based on the European Digital Identity (EUDI) standards. Its principal product is the <strong>ewQwe Credential Verifier</strong>, a server that a Relying Party uses to verify the credentials that a user presents from a digital wallet.</p>
-<p>A <strong>Relying Party</strong> (RP) is a web application or service that needs a fact about a user, for example that the user is at least 18 years old. A <strong>wallet</strong> is the application that stores the user’s credentials and presents them. A <strong>credential</strong> is a signed document that an issuer, such as a government authority, has issued to the user.</p>
-<p>The verifier performs the cryptographic work of verification, so a web application does not implement it. The Relying Party sends a Verifiable Presentation to the verifier. The verifier validates the presentation and returns a signed attestation that states the result.</p>
-<h2 id="what-the-credential-verifier-does"><a class="header" href="#what-the-credential-verifier-does">What the credential verifier does</a></h2>
-<ul>
-<li>It accepts a Verifiable Presentation in the ISO/IEC 18013-5 mDoc format or the SD-JWT VC format.</li>
-<li>It extracts the disclosed claims and checks the credential expiration.</li>
-<li>It binds the presentation to the nonce that the server issued for the transaction, which prevents replay.</li>
-<li>It verifies the issuer signature and the holder signature, using the trusted issuer certificate authorities that the operator configures.</li>
-<li>It returns a signed attestation, in JWT or COSE/CBOR form, that states the verification result.</li>
-<li>It records every verification in an append-only journal.</li>
-</ul>
-<p>The server implements the <a href="https://www.w3.org/TR/digital-credentials/">W3C Digital Credentials API</a>, <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID for Verifiable Presentations 1.0</a> (OpenID4VP), and the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile</a>. It supports the High Assurance Interoperability Profile (HAIP) additions for the EUDI Wallet.</p>
-<h2 id="the-verifier-app"><a class="header" href="#the-verifier-app">The verifier app</a></h2>
-<p>The credential verifier ships with its own web application, the <strong>verifier app</strong>. An operator signs in, selects a credential type, and shows a QR code. The holder scans the QR code with a wallet, and the app shows the verification result. The verifier app is the standard user interface of the credential verifier and needs no other software.</p>
-<p>The verifier also exposes an HTTP API, so a product can build a user interface of its own. The repository contains an example relying party in <code>typescript/demo-webapp/</code> that shows one way to do this. See <a href="./how-to-guides/credential-verifier/develop-a-relying-party-ui.html">Develop your own relying-party UI</a>.</p>
-<h2 id="who-this-documentation-is-for"><a class="header" href="#who-this-documentation-is-for">Who this documentation is for</a></h2>
-<p>This documentation addresses the users of the credential verifier server:</p>
+                        <h1 id="the-verification-process"><a class="header" href="#the-verification-process">The verification process</a></h1>
+<p>A relying party (RP) asks the credential verifier to decide whether a presentation is trustworthy. A presentation arrives from a wallet over the network, so the verifier treats it as untrusted input and repeats every check that a security decision needs. The result of those checks is a signed attestation.</p>
+<p>This page explains what the verifier checks, in the order in which the checks depend on each other, and why each check exists. For the exact request and response fields, see <a href="../../reference/credential-verifier/http-api.html">the HTTP API reference</a>.</p>
+<h2 id="why-the-verifier-repeats-the-checks"><a class="header" href="#why-the-verifier-repeats-the-checks">Why the verifier repeats the checks</a></h2>
+<p>The relying party cannot see inside a presentation, and the browser that hosts the relying party must not hold verification keys. The verifier therefore owns the checks and reports only the outcome. Each check answers one separate question.</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th style="text-align: left">Reader</th><th style="text-align: left">Starting point</th></tr>
+<tr><th style="text-align: left">Question</th><th style="text-align: left">Check</th></tr>
 </thead>
 <tbody>
-<tr><td style="text-align: left">System operator</td><td style="text-align: left"><a href="./tutorials/verifier-app/run-the-verifier-app.html">Run the verifier app</a> and <a href="./how-to-guides/credential-verifier/install-and-run.html">Install and run the server</a></td></tr>
-<tr><td style="text-align: left">Relying Party developer</td><td style="text-align: left"><a href="./reference/credential-verifier/http-api.html">HTTP API</a> and <a href="./how-to-guides/credential-verifier/verify-a-credential.html">Verify a credential</a></td></tr>
-<tr><td style="text-align: left">Product developer</td><td style="text-align: left"><a href="./how-to-guides/credential-verifier/develop-a-relying-party-ui.html">Develop your own relying-party UI</a></td></tr>
-<tr><td style="text-align: left">Security architect</td><td style="text-align: left"><a href="./explanation/credential-verifier/verification-process.html">Verification process</a> and <a href="./explanation/credential-verifier/security-model.html">Security model</a></td></tr>
-<tr><td style="text-align: left">Standards engineer</td><td style="text-align: left"><a href="./reference/openid4vp/request-parameters.html">OpenID4VP request parameters</a> and <a href="./reference/digital-credential/credential-formats.html">Credential formats</a></td></tr>
+<tr><td style="text-align: left">Is the message well formed?</td><td style="text-align: left">Parse the VP Token.</td></tr>
+<tr><td style="text-align: left">Which claims does the holder disclose?</td><td style="text-align: left">Extract the disclosed claims.</td></tr>
+<tr><td style="text-align: left">Is the credential still valid?</td><td style="text-align: left">Compare the expiry with the current time.</td></tr>
+<tr><td style="text-align: left">Does this presentation answer this request?</td><td style="text-align: left">Bind the nonce and the request context.</td></tr>
+<tr><td style="text-align: left">Was the credential issued by a party we trust?</td><td style="text-align: left">Validate the issuer certificate chain.</td></tr>
+<tr><td style="text-align: left">Did the issuer sign this credential?</td><td style="text-align: left">Verify the issuer signature.</td></tr>
+<tr><td style="text-align: left">Does the holder control the key bound to the credential?</td><td style="text-align: left">Verify the holder binding signature.</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="how-this-documentation-is-organized"><a class="header" href="#how-this-documentation-is-organized">How this documentation is organized</a></h2>
-<p>The book follows the <a href="https://diataxis.fr">Diataxis framework</a>. Each section serves one need of the reader:</p>
+<p>The checks build on each other. A signature check is meaningless without the certificate chain that identifies the issuer, and the chain check is meaningless without a credential that parses. The verifier stops at the first check that fails and reports the reason.</p>
+<h2 id="the-verifier-and-the-surrounding-components"><a class="header" href="#the-verifier-and-the-surrounding-components">The verifier and the surrounding components</a></h2>
+<p>The diagram below shows the order of the exchange during one verification. The relying party owns the wallet interaction and the verifier owns the checks.</p>
+<div style="background-color: #ffffff; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+<pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': { 'background': '#ffffff', 'mainBkg': '#ffffff', 'clusterBkg': '#ffffff', 'clusterBorder': '#cbd5e1', 'lineColor': '#334155', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#0f172a', 'secondaryTextColor': '#0f172a', 'tertiaryTextColor': '#0f172a', 'edgeLabelBackground': '#ffffff' }}}%%
+sequenceDiagram
+    participant RP as Relying party
+    participant CV as Credential verifier
+    participant TS as Transaction store
+    participant CA as Trusted issuer CAs
+    RP-&gt;&gt;CV: Send the VP Token with state and client_id
+    CV-&gt;&gt;TS: Read the transaction for this state
+    TS--&gt;&gt;CV: Stored nonce, client_id, and response_uri
+    CV-&gt;&gt;CV: Parse the VP Token
+    CV-&gt;&gt;CV: Extract the disclosed claims
+    CV-&gt;&gt;CV: Compare the expiry with the current time
+    CV-&gt;&gt;CV: Bind the presentation nonce to the stored request
+    CV-&gt;&gt;CA: Validate the issuer certificate chain
+    CA--&gt;&gt;CV: Trusted or untrusted
+    CV-&gt;&gt;CV: Verify the issuer signature
+    CV-&gt;&gt;CV: Verify the holder binding signature
+    CV-&gt;&gt;TS: Consume the transaction
+    CV-&gt;&gt;CV: Sign the attestation JWT with ES256
+    CV--&gt;&gt;RP: Return the result and the attestation
+</pre>
+
+</div>
+
+<h2 id="parsing-the-presentation-and-extracting-the-claims"><a class="header" href="#parsing-the-presentation-and-extracting-the-claims">Parsing the presentation and extracting the claims</a></h2>
+<p>A presentation reaches the verifier as a VP Token. The verifier accepts the DCQL response shape, in which credential query identifiers are the keys of a JSON object, and it also accepts a direct JSON presentation. Inside a DCQL entry, a value that contains a <code>~</code> separator is an SD-JWT VC, and a base64url value is an mDoc <code>DeviceResponse</code> in CBOR.</p>
+<p>After parsing, the verifier reads the claims that the wallet disclosed. An SD-JWT VC carries clear-text claims in the issuer JWT payload and selectively disclosed claims in the Disclosures. An mDoc carries disclosed elements inside one or more namespaces. The verifier never sees a claim that the wallet did not disclose, which is the mechanism described in <a href="../digital-credential/selective-disclosure.html">selective disclosure</a>.</p>
+<h2 id="checking-the-expiry"><a class="header" href="#checking-the-expiry">Checking the expiry</a></h2>
+<p>A credential can be valid at issuance and invalid at presentation. The verifier reads the <code>exp</code> claim of an SD-JWT VC, or the validity window of the mDoc <code>MobileSecurityObject</code>, and rejects the presentation when the current time falls outside that window.</p>
+<h2 id="binding-the-nonce-to-the-stored-transaction"><a class="header" href="#binding-the-nonce-to-the-stored-transaction">Binding the nonce to the stored transaction</a></h2>
+<p>A recorded presentation could be sent again unless the presentation is bound to a fresh value. The verifier solves this with a nonce, which is a single-use random value.</p>
+<p>The relying party creates a transaction before it invokes the wallet. The transaction holds the nonce, the <code>client_id</code>, and the <code>response_uri</code> that the verifier used for that specific request. When the relying party later sends the VP Token, it sends the <code>state</code> value, and the verifier reads the transaction for that state. The verifier compares the stored context with the proof inside the presentation:</p>
 <ul>
-<li><strong>Tutorials</strong> teach the verifier app in a guided lesson.</li>
-<li><strong>Reference</strong> states the facts of the server: the configuration, the HTTP API, the attestations, the journal, the protocols, and the credential formats.</li>
-<li><strong>Explanation</strong> describes why the server works the way it does.</li>
-<li><strong>How-to guides</strong> give the steps for a specific task, such as deploying the server with TLS.</li>
-<li><strong>FAQ</strong> answers recurring questions and links to the page that holds the full answer.</li>
+<li>For an SD-JWT VC, the wallet binds the nonce into the Key Binding JWT, and the verifier compares that nonce with the stored nonce.</li>
+<li>For an mDoc, the wallet binds the request into the <code>SessionTranscript</code>. The verifier rebuilds the transcript from the stored <code>client_id</code>, <code>nonce</code>, and <code>response_uri</code>, and for encrypted responses also from the JWK thumbprint of the encryption key. The <code>DeviceSignature</code> then verifies against that rebuilt transcript.</li>
 </ul>
-<p>The <a href="./glossary.html">Glossary</a> defines the terms that the documentation uses. The <a href="./references.html">References</a> page lists the external standards.</p>
-<blockquote class="blockquote-tag blockquote-tag-note">
-<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>The example relying party in <code>typescript/demo-webapp/</code> is an advanced reference for building your own interface. It is not part of the credential verifier server, and it is not intended for production use as it stands.</p>
-</blockquote>
-<h2 id="related-components"><a class="header" href="#related-components">Related components</a></h2>
-<p>The credential verifier depends on three crates of this repository:</p>
-<ul>
-<li><code>crates/ewqwe-openid4vp</code> builds and validates OpenID4VP requests and matches DCQL queries.</li>
-<li><code>crates/ewqwe-digital-credential</code> builds and verifies mDoc and SD-JWT VC credentials.</li>
-<li><code>crates/ewqwe-credential-verifier-ui</code> is the verifier app, the built-in web application that an operator uses to run age verifications.</li>
-</ul>
-<p>The server returns a signed attestation, so a Relying Party can trust the result without performing the verification itself. See the <a href="./reference/credential-verifier/http-api.html">HTTP API</a> for the request and response of each endpoint.</p>
-<h2 id="licenses"><a class="header" href="#licenses">Licenses</a></h2>
-<p>The components of this repository use two open-source licenses. The Rust server, its crates, and the verifier app are released under the <a href="https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12">European Union Public Licence v1.2</a> (EUPL-1.2). The TypeScript library <code>typescript/ewqwe-digital-identity</code> and the demo webapp <code>typescript/demo-webapp</code> are released under the <a href="https://opensource.org/license/mit">MIT License</a>.</p>
+<p>The nonce never travels in the verification request body. A request that carried its own nonce could choose a value that matches a recorded presentation, so the verifier takes the nonce from its own store instead.</p>
+<p>Some same-device flows deliver the presentation through the browser interface without a server-side transaction. In that case the verifier has no stored nonce, so it requires the <code>client_id</code> in the request body and uses the nonce that the presentation carries. An mDoc presentation always needs <code>state</code>, because the verifier cannot rebuild the session transcript without the stored request.</p>
+<p>A successful verification consumes the stored transaction. An mDoc presentation then cannot be verified a second time, because the verifier rebuilds the session transcript from the stored request and has nothing left to rebuild it from. For an SD-JWT VC the verifier compares the stored nonce with the presentation nonce whenever a stored transaction exists; <a href="security-model.html">the security model</a> states the limit of that binding.</p>
+<h2 id="verifying-the-issuer-and-the-holder"><a class="header" href="#verifying-the-issuer-and-the-holder">Verifying the issuer and the holder</a></h2>
+<p>Two signatures protect an mDoc and an SD-JWT VC, and they prove different things. The issuer signature proves that the credential came from the named issuer. The holder binding signature proves that the party who presents the credential controls the private key that the credential names. Without the second signature, a copied credential would be as good as the original.</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th style="text-align: left">Component</th><th style="text-align: left">Location</th><th style="text-align: left">License</th></tr>
+<tr><th style="text-align: left">Credential format</th><th style="text-align: left">Issuer check</th><th style="text-align: left">Holder binding check</th></tr>
 </thead>
 <tbody>
-<tr><td style="text-align: left">Credential verifier server and crates</td><td style="text-align: left"><code>crates/</code></td><td style="text-align: left">EUPL-1.2</td></tr>
-<tr><td style="text-align: left">Verifier app (embedded SPA)</td><td style="text-align: left"><code>crates/ewqwe-credential-verifier-ui</code></td><td style="text-align: left">EUPL-1.2</td></tr>
-<tr><td style="text-align: left">Shared TypeScript library</td><td style="text-align: left"><code>typescript/ewqwe-digital-identity</code></td><td style="text-align: left">MIT</td></tr>
-<tr><td style="text-align: left">Demo webapp</td><td style="text-align: left"><code>typescript/demo-webapp</code></td><td style="text-align: left">MIT</td></tr>
+<tr><td style="text-align: left">SD-JWT VC</td><td style="text-align: left">The <code>x5c</code> header of the issuer JWT, missing is a rejection</td><td style="text-align: left">The Key Binding JWT, verified with the key in <code>cnf.jwk</code></td></tr>
+<tr><td style="text-align: left">mDoc</td><td style="text-align: left">The <code>IssuerAuth</code> COSE_Sign1 and its <code>x5chain</code></td><td style="text-align: left">The <code>DeviceSignature</code> COSE_Sign1 over <code>DeviceAuthenticationBytes</code></td></tr>
 </tbody>
 </table>
 </div>
-<p>The full license texts are in the <code>LICENSE</code> file at the repository root and in the <code>LICENSE</code> file of each TypeScript package.</p>
-<p>Some components are not part of this open-source repository. The enterprise add-ons are available under a separate commercial license. See the README and <a href="https://ewqwe.eu">ewqwe.eu</a> for the enterprise offering.</p>
+<p>For both formats the verifier validates the certificate chain against the trusted issuer CA directory. A certificate that stops at an intermediate CA in that directory is sufficient; the chain does not have to reach a root in the directory. An mDoc must also match every disclosed element against the SHA-256 digest in the <code>MobileSecurityObject</code>, which proves that the disclosed value is the value the issuer signed and not a modified copy. Only the <code>deviceSignature</code> proof is supported; a presentation that carries <code>deviceMac</code> instead is rejected.</p>
+<p>For the supported algorithms and the exact fields, see <a href="../../reference/digital-credential/credential-formats.html">credential formats</a>.</p>
+<h2 id="signing-the-attestation"><a class="header" href="#signing-the-attestation">Signing the attestation</a></h2>
+<p>When all checks pass, the verifier signs an attestation, which is a JWT that states the outcome for one relying party. The attestation binds the result to the request:</p>
+<ul>
+<li>The issuer is the common name of the attestation signing certificate.</li>
+<li>The audience is the relying party <code>client_id</code>.</li>
+<li>The subject is the transaction identifier.</li>
+<li>The nonce, the credential document type, and the namespace are included when known.</li>
+<li>The verified credential claims are flattened into the token, and they appear only when verification succeeded.</li>
+</ul>
+<p>The verifier signs with ES256 and sets a key identifier in the token header, so the relying party can select the matching public key from the JWKS endpoint. The default validity is five minutes. For the full claim list, see <a href="../../reference/credential-verifier/attestations.html">attestations</a>.</p>
+<p>When a presentation parses but fails a check, the answer depends on the format. For an SD-JWT VC, the verifier returns an unsuccessful result together with an attestation that records the failure and carries no claims. For an mDoc, the verifier returns a request error instead, because the mDoc checks do not produce a partial result. The exact status codes are listed in <a href="../../reference/credential-verifier/http-api.html">the HTTP API reference</a>.</p>
+<h2 id="what-the-relying-party-does-next"><a class="header" href="#what-the-relying-party-does-next">What the relying party does next</a></h2>
+<p>The relying party verifies the attestation signature with the public key from the JWKS endpoint and then reads the <code>verified</code> claim and the credential claims. Verification is complete at that point; the relying party does not contact the wallet again. The relying party then uses the claims for its own decision, such as granting access or starting a session.</p>
+<p>The verifier records each successful event in the <a href="../../reference/credential-verifier/verification-journal.html">verification journal</a> when journaling is enabled.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../reference/digital-credential/credential-types.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="tutorials/verifier-app/run-the-verifier-app.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../../explanation/credential-verifier/user-journey.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -263,8 +286,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../reference/digital-credential/credential-types.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="tutorials/verifier-app/run-the-verifier-app.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../../explanation/credential-verifier/user-journey.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -284,17 +310,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-609e4cb8.js"></script>
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-eefea253.min.js"></script>
-        <script src="mermaid-init-e19dc18e.js"></script>
+        <script src="../../mermaid-eefea253.min.js"></script>
+        <script src="../../mermaid-init-e19dc18e.js"></script>
 
 
 

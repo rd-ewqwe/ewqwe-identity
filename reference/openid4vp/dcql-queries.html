@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - ewQwe Digital Identity</title>
-        <base href="/">
+        <title>DCQL queries - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -13,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="shortcut icon" href="favicon-f4c7a024.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-e96d0476.css">
-        <link rel="stylesheet" href="css/chrome-d279d366.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="shortcut icon" href="../../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="custom-theme-1e0c8f96.css">
+        <link rel="stylesheet" href="../../custom-theme-1e0c8f96.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cc994d5a.js";
+            window.path_to_searchindex_js = "../../searchindex-cc994d5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b4360556.js"></script>
+        <script src="../../toc-b4360556.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -106,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -141,7 +140,7 @@
                     <h1 class="menu-title">ewQwe Digital Identity</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -175,14 +174,183 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="dcql-queries"><a class="header" href="#dcql-queries">DCQL queries</a></h1>
+<p>The Digital Credentials Query Language (DCQL) is defined in Section 6 of the OpenID4VP 1.0 specification. A relying party uses DCQL to state which credentials and which claims it requires from a wallet. The credential verifier evaluates the query against the presentations that the wallet returns.</p>
+<p>A DCQL query is a JSON object. The query travels in the <code>dcql_query</code> parameter of an authorization request. For the surrounding request parameters, see <a href="./request-parameters.html">OpenID4VP authorization request parameters</a>.</p>
+<h2 id="query-structure"><a class="header" href="#query-structure">Query structure</a></h2>
+<p>A query holds one or more credential queries. The fields below belong to two nested objects. A credential query holds <code>id</code>, <code>format</code>, <code>meta</code>, <code>claims</code>, and the optional <code>claim_sets</code>. A claim query holds <code>path</code>, <code>values</code>, and the optional <code>id</code> and <code>intent_to_retain</code>.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Field</th><th style="text-align: left">Required</th><th style="text-align: left">Description</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>credentials</code></td><td style="text-align: left">Yes</td><td style="text-align: left">The list of credential queries.</td></tr>
+<tr><td style="text-align: left"><code>credential_sets</code></td><td style="text-align: left">No</td><td style="text-align: left">Groups of alternative credential queries. The wallet satisfies the query when it can satisfy one complete option.</td></tr>
+<tr><td style="text-align: left"><code>id</code></td><td style="text-align: left">Yes</td><td style="text-align: left">The identifier of one credential query. The authorization response uses this identifier as a key.</td></tr>
+<tr><td style="text-align: left"><code>format</code></td><td style="text-align: left">Yes</td><td style="text-align: left">The credential format. Age verification uses <code>mso_mdoc</code>, which means an ISO mobile document such as a mobile driving licence or a proof of age.</td></tr>
+<tr><td style="text-align: left"><code>meta</code></td><td style="text-align: left">Yes for <code>mso_mdoc</code></td><td style="text-align: left">Format-specific metadata. An <code>mso_mdoc</code> query names the document type in <code>doctype_value</code>.</td></tr>
+<tr><td style="text-align: left"><code>claims</code></td><td style="text-align: left">Yes</td><td style="text-align: left">The claims to request from the credential.</td></tr>
+<tr><td style="text-align: left"><code>claim_sets</code></td><td style="text-align: left">No</td><td style="text-align: left">Alternative combinations of claims. A claim query needs an <code>id</code> only when a <code>claim_sets</code> entry references it.</td></tr>
+<tr><td style="text-align: left"><code>path</code></td><td style="text-align: left">Yes</td><td style="text-align: left">The location of one claim. The first element is the namespace and the second element is the claim name.</td></tr>
+<tr><td style="text-align: left"><code>values</code></td><td style="text-align: left">No</td><td style="text-align: left">The permitted values for a claim. The wallet returns the claim only when its value appears in this list.</td></tr>
+<tr><td style="text-align: left"><code>intent_to_retain</code></td><td style="text-align: left">No</td><td style="text-align: left">Whether the relying party intends to keep the claim. The field is omitted in this system, which is equivalent to <code>false</code>, the safe default.</td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="namespaces"><a class="header" href="#namespaces">Namespaces</a></h2>
+<p>A claim path starts with the namespace of the credential. Age verification uses two namespaces.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Namespace</th><th style="text-align: left">Description</th><th style="text-align: left">Document type</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>eu.europa.ec.av.1</code></td><td style="text-align: left">The EU Age Verification namespace (proof of age).</td><td style="text-align: left"><code>eu.europa.ec.av.1</code></td></tr>
+<tr><td style="text-align: left"><code>org.iso.18013.5.1</code></td><td style="text-align: left">The ISO mobile driving licence namespace.</td><td style="text-align: left"><code>org.iso.18013.5.1.mDL</code></td></tr>
+</tbody>
+</table>
+</div>
+<h2 id="age-verification-query-examples"><a class="header" href="#age-verification-query-examples">Age verification query examples</a></h2>
+<h3 id="minimal-age-over-18"><a class="header" href="#minimal-age-over-18">Minimal age over 18</a></h3>
+<p>The simplest age verification request asks only for <code>age_over_18</code> from a proof of age.</p>
+<pre><code class="language-json">{
+  "credentials": [
+    {
+      "id": "proof_of_age",
+      "format": "mso_mdoc",
+      "meta": {
+        "doctype_value": "eu.europa.ec.av.1"
+      },
+      "claims": [
+        {
+          "path": ["eu.europa.ec.av.1", "age_over_18"]
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+<h3 id="age-over-21"><a class="header" href="#age-over-21">Age over 21</a></h3>
+<p>For a jurisdiction that requires age 21 or older, request <code>age_over_21</code> instead.</p>
+<pre><code class="language-json">{
+  "credentials": [
+    {
+      "id": "proof_of_age",
+      "format": "mso_mdoc",
+      "meta": {
+        "doctype_value": "eu.europa.ec.av.1"
+      },
+      "claims": [
+        {
+          "path": ["eu.europa.ec.av.1", "age_over_21"]
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+<h3 id="value-matching"><a class="header" href="#value-matching">Value matching</a></h3>
+<p>Add a <code>values</code> list to accept the claim only when its value matches. The example below accepts the presentation only when <code>age_over_18</code> is <code>true</code>.</p>
+<pre><code class="language-json">{
+  "credentials": [
+    {
+      "id": "proof_of_age",
+      "format": "mso_mdoc",
+      "meta": {
+        "doctype_value": "eu.europa.ec.av.1"
+      },
+      "claims": [
+        {
+          "path": ["eu.europa.ec.av.1", "age_over_18"],
+          "values": [true]
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+<h3 id="mdl-fallback"><a class="header" href="#mdl-fallback">mDL fallback</a></h3>
+<p>If the user holds a mobile driving licence instead of a proof of age, request the same claim from the ISO mobile driving licence namespace.</p>
+<pre><code class="language-json">{
+  "credentials": [
+    {
+      "id": "age_from_mdl",
+      "format": "mso_mdoc",
+      "meta": {
+        "doctype_value": "org.iso.18013.5.1.mDL"
+      },
+      "claims": [
+        {
+          "path": ["org.iso.18013.5.1", "age_over_18"]
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+<h3 id="multiple-credential-options"><a class="header" href="#multiple-credential-options">Multiple credential options</a></h3>
+<p>A <code>credential_sets</code> list lets the wallet choose between alternatives. Each option is an array of credential identifiers, and the wallet satisfies the set when it can satisfy one complete option. The example below accepts a proof of age or a mobile driving licence.</p>
+<pre><code class="language-json">{
+  "credentials": [
+    {
+      "id": "eu_age_proof",
+      "format": "mso_mdoc",
+      "meta": {
+        "doctype_value": "eu.europa.ec.av.1"
+      },
+      "claims": [
+        {
+          "path": ["eu.europa.ec.av.1", "age_over_18"]
+        }
+      ]
+    },
+    {
+      "id": "mdl_age_proof",
+      "format": "mso_mdoc",
+      "meta": {
+        "doctype_value": "org.iso.18013.5.1.mDL"
+      },
+      "claims": [
+        {
+          "path": ["org.iso.18013.5.1", "age_over_18"]
+        }
+      ]
+    }
+  ],
+  "credential_sets": [
+    {
+      "options": [["eu_age_proof"], ["mdl_age_proof"]]
+    }
+  ]
+}
+</code></pre>
+<h2 id="the-vp_token-response"><a class="header" href="#the-vp_token-response">The vp_token response</a></h2>
+<p>The wallet returns the presentation in the <code>vp_token</code> parameter. With a DCQL query, the token is a JSON object whose keys are the credential identifiers from the query. Each value is an array of presentations.</p>
+<pre><code class="language-json">{
+  "proof_of_age": ["base64url encoded DeviceResponse"]
+}
+</code></pre>
+<p>An <code>mso_mdoc</code> presentation is a CBOR-encoded device response as defined in ISO/IEC 18013-5. The wallet does not send a <code>presentation_submission</code> field with a DCQL query.</p>
+<h2 id="related-pages"><a class="header" href="#related-pages">Related pages</a></h2>
+<ul>
+<li>For the surrounding request parameters, see <a href="./request-parameters.html">OpenID4VP authorization request parameters</a>.</li>
+<li>For the credential types that the queries address, see <a href="../digital-credential/credential-types.html">Credential types</a>.</li>
+<li>For how a wallet discloses only the requested claims, see <a href="../../explanation/digital-credential/selective-disclosure.html">Selective disclosure</a>.</li>
+<li>For recurring questions, see the <a href="../../faq/openid4vp/faq.html">OpenID4VP FAQ</a>.</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../reference/openid4vp/request-parameters.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
+                            <a rel="next prefetch" href="../../reference/openid4vp/iso-18013-7.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -190,7 +358,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../reference/openid4vp/request-parameters.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
+                    <a rel="next prefetch" href="../../reference/openid4vp/iso-18013-7.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
             </nav>
 
         </div>
@@ -208,17 +382,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-609e4cb8.js"></script>
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-eefea253.min.js"></script>
-        <script src="mermaid-init-e19dc18e.js"></script>
+        <script src="../../mermaid-eefea253.min.js"></script>
+        <script src="../../mermaid-init-e19dc18e.js"></script>
 
 
 

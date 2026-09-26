@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - ewQwe Digital Identity</title>
-        <base href="/">
+        <title>User journey - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -13,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="shortcut icon" href="favicon-f4c7a024.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-e96d0476.css">
-        <link rel="stylesheet" href="css/chrome-d279d366.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="shortcut icon" href="../../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="custom-theme-1e0c8f96.css">
+        <link rel="stylesheet" href="../../custom-theme-1e0c8f96.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cc994d5a.js";
+            window.path_to_searchindex_js = "../../searchindex-cc994d5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b4360556.js"></script>
+        <script src="../../toc-b4360556.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -106,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -141,7 +140,7 @@
                     <h1 class="menu-title">ewQwe Digital Identity</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -175,14 +174,96 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="the-user-journey"><a class="header" href="#the-user-journey">The user journey</a></h1>
+<p>This page follows one person who proves an age to a website, from the first click to the result. The journey spans four parties: the user, the relying party (RP), the wallet, and the credential verifier.</p>
+<p>A wallet is the application that stores the user’s credentials and presents them. The relying party is the website or service that needs the proof. The credential verifier is the backend service that decides whether the proof is trustworthy. A credential is a signed statement about the user, such as “this person is over 18”.</p>
+<h2 id="the-parties-and-what-each-one-owns"><a class="header" href="#the-parties-and-what-each-one-owns">The parties and what each one owns</a></h2>
+<p>Each party owns a different part of the journey, and the split exists for security and for privacy.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Party</th><th style="text-align: left">Owns</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">User</td><td style="text-align: left">Approves or denies each request on the wallet.</td></tr>
+<tr><td style="text-align: left">Wallet</td><td style="text-align: left">Stores credentials and builds the presentation.</td></tr>
+<tr><td style="text-align: left">Relying party</td><td style="text-align: left">Decides why it needs the proof and what to do with the result.</td></tr>
+<tr><td style="text-align: left">Credential verifier</td><td style="text-align: left">Runs the cryptographic checks and signs the result.</td></tr>
+</tbody>
+</table>
+</div>
+<p>The user consents on the wallet, so the relying party never sees a credential that the user did not approve. The relying party never holds a verification key, so it cannot forge a result.</p>
+<h2 id="two-wallets-and-two-profiles"><a class="header" href="#two-wallets-and-two-profiles">Two wallets and two profiles</a></h2>
+<p>The European Digital Identity ecosystem defines two profiles for presentation, and each profile has its own wallet implementation. The relying party chooses a profile from the wallets that it needs to support.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Aspect</th><th style="text-align: left">Age Verification App (Annex A)</th><th style="text-align: left">EUDI Wallet (HAIP)</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left">Profile</td><td style="text-align: left">EU Age Verification Profile</td><td style="text-align: left">High Assurance Interoperability Profile</td></tr>
+<tr><td style="text-align: left">Typical credentials</td><td style="text-align: left">Proof of age</td><td style="text-align: left">Personal identity data and mobile driving licence</td></tr>
+<tr><td style="text-align: left">Client identifier</td><td style="text-align: left">The redirect URI of the verifier</td><td style="text-align: left">A DNS name from the verifier certificate</td></tr>
+<tr><td style="text-align: left">Request signing</td><td style="text-align: left">Not required</td><td style="text-align: left">Required, as a signed JWT</td></tr>
+<tr><td style="text-align: left">Response mode</td><td style="text-align: left">Plain <code>direct_post</code></td><td style="text-align: left">Encrypted <code>direct_post.jwt</code></td></tr>
+<tr><td style="text-align: left">Trust model</td><td style="text-align: left">The verifier is known by its callback</td><td style="text-align: left">The verifier is known by its certificate</td></tr>
+</tbody>
+</table>
+</div>
+<p>The Annex A profile is simple to integrate because the request is plain query parameters. The HAIP profile provides higher assurance because the wallet authenticates the verifier through a certificate chain. Both profiles use OpenID4VP as the exchange protocol, and the difference between them is described in <a href="../openid4vp/protocol-modes.html">protocol modes</a>.</p>
+<h2 id="same-device-and-cross-device"><a class="header" href="#same-device-and-cross-device">Same device and cross device</a></h2>
+<p>The protocol steps do not change with the physical arrangement of the devices. Only the way in which the wallet receives the request changes.</p>
+<ul>
+<li>On the same device, the relying party opens a deep link that the wallet app registers, such as a link with an <code>av://</code> or <code>eudi-openid4vp://</code> scheme.</li>
+<li>Across devices, the relying party displays a QR code, and the user scans it with the wallet on a second device.</li>
+</ul>
+<p>Both arrangements return the presentation to the verifier, because the verifier owns the callback address. The Annex A profile and the HAIP profile each use their own response mode for that return.</p>
+<h2 id="the-journey-in-order"><a class="header" href="#the-journey-in-order">The journey in order</a></h2>
+<p>The diagram shows the shared journey. The wallet interaction in the middle is the same for both profiles; the verifier decides the exact request parameters from the profile.</p>
+<div style="background-color: #ffffff; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+<pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': { 'background': '#ffffff', 'mainBkg': '#ffffff', 'clusterBkg': '#ffffff', 'clusterBorder': '#cbd5e1', 'lineColor': '#334155', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#0f172a', 'secondaryTextColor': '#0f172a', 'tertiaryTextColor': '#0f172a', 'edgeLabelBackground': '#ffffff' }}}%%
+sequenceDiagram
+    participant User
+    participant RP as Relying party
+    participant Wallet
+    participant CV as Credential verifier
+    User-&gt;&gt;RP: Ask to prove an age
+    RP-&gt;&gt;CV: Create a verification transaction
+    CV--&gt;&gt;RP: Transaction identifier and authorization request
+    RP-&gt;&gt;User: Show a QR code or open a wallet link
+    User-&gt;&gt;Wallet: Read the request and approve it
+    Wallet-&gt;&gt;Wallet: Select a matching credential and disclose only the requested claims
+    Wallet-&gt;&gt;CV: Send the VP Token to the response address
+    CV--&gt;&gt;Wallet: Acknowledge the receipt
+    RP-&gt;&gt;CV: Poll the transaction status
+    CV--&gt;&gt;RP: The received VP Token and the transaction nonce
+    RP-&gt;&gt;CV: Send the VP Token for verification
+    CV--&gt;&gt;RP: Signed attestation
+    RP-&gt;&gt;User: Show the result
+</pre>
+
+</div>
+
+<h2 id="what-happens-at-each-boundary"><a class="header" href="#what-happens-at-each-boundary">What happens at each boundary</a></h2>
+<p>The relying party creates the transaction before the user acts. A transaction holds the purpose of the request, the requested claims, a fresh nonce, and the addresses that the wallet must use. The nonce makes each presentation unique, so a recorded presentation cannot be replayed.</p>
+<p>The wallet receives the authorization request and matches it against the credentials that it stores. The wallet then shows a consent screen, and the user decides. On approval, the wallet builds a presentation that contains only the claims named in the request, signs it with the holder key, and sends it to the verifier.</p>
+<p>The verifier receives the presentation at the callback address and stores it in the transaction. The relying party learns that the presentation arrived by polling the transaction status. The relying party then sends the presentation to the verification endpoint, and the verifier performs the checks described in <a href="verification-process.html">the verification process</a>.</p>
+<p>The verifier returns a signed attestation. The relying party verifies the attestation signature, reads the outcome, and uses the claims for its own decision. The wallet is no longer involved after it sends the presentation, and the verifier consumes the transaction so the presentation is single use.</p>
+<h2 id="how-the-user-experiences-the-journey"><a class="header" href="#how-the-user-experiences-the-journey">How the user experiences the journey</a></h2>
+<p>The user sees three things. The user sees the request, which names the relying party and the claims that the relying party wants. The user sees a consent screen from the wallet, where the user can approve or refuse. The user then sees the result from the relying party, such as a confirmation that access is granted.</p>
+<p>The user never sees a birth date leave the wallet unless the user approves that claim. A well-formed age request asks for a derived claim such as <code>age_over_18</code>, so the wallet answers “true” or “false” without revealing the date of birth. This behaviour follows from <a href="../digital-credential/selective-disclosure.html">selective disclosure</a> and is a property of the credential format, not of this server.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../explanation/credential-verifier/verification-process.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
+                            <a rel="next prefetch" href="../../explanation/credential-verifier/security-model.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -190,7 +271,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../explanation/credential-verifier/verification-process.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
+                    <a rel="next prefetch" href="../../explanation/credential-verifier/security-model.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
             </nav>
 
         </div>
@@ -208,17 +295,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-609e4cb8.js"></script>
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-eefea253.min.js"></script>
-        <script src="mermaid-init-e19dc18e.js"></script>
+        <script src="../../mermaid-eefea253.min.js"></script>
+        <script src="../../mermaid-init-e19dc18e.js"></script>
 
 
 

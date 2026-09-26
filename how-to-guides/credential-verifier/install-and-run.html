@@ -3,8 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Page not found - ewQwe Digital Identity</title>
-        <base href="/">
+        <title>Install and run the server - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -13,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="shortcut icon" href="favicon-f4c7a024.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-e96d0476.css">
-        <link rel="stylesheet" href="css/chrome-d279d366.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="shortcut icon" href="../../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="custom-theme-1e0c8f96.css">
+        <link rel="stylesheet" href="../../custom-theme-1e0c8f96.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cc994d5a.js";
+            window.path_to_searchindex_js = "../../searchindex-cc994d5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b4360556.js"></script>
+        <script src="../../toc-b4360556.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -106,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -141,7 +140,7 @@
                     <h1 class="menu-title">ewQwe Digital Identity</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -175,14 +174,131 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="document-not-found-404"><a class="header" href="#document-not-found-404">Document not found (404)</a></h1>
-<p>This URL is invalid, sorry. Please use the navigation bar or search to continue.</p>
+                        <h1 id="install-and-run-the-server"><a class="header" href="#install-and-run-the-server">Install and run the server</a></h1>
+<p>This guide builds the credential verifier from source, gives it a minimal configuration, and starts it. When you finish, the server answers requests at <code>https://127.0.0.1:9443</code>.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<ul>
+<li>Rust 1.92.0 or later. Check with <code>rustc --version</code>.</li>
+<li>A C toolchain, because the OpenSSL dependency is built from source.</li>
+<li>A trusted issuer CA directory. The repository provides one at <code>certificates/issuers_cas</code>.</li>
+</ul>
+<h2 id="steps"><a class="header" href="#steps">Steps</a></h2>
+<ol>
+<li>
+<p>Build the server. Run the command from the <code>crates/ewqwe-credential-verifier-server</code> directory.</p>
+<pre><code class="language-bash">cd crates/ewqwe-credential-verifier-server
+cargo build --release
+</code></pre>
+<p>The workspace writes the binary to <code>target/release/ewqwe_credential_verifier_server</code> at the repository root.</p>
+</li>
+<li>
+<p>Create the configuration file. Write a file named <code>credential-server.toml</code> in the <code>crates/ewqwe-credential-verifier-server</code> directory with the content below. The paths point at the test certificates in this repository, so do not use them in production.</p>
+<pre><code class="language-toml">host_name = "127.0.0.1"
+host_port = 9443
+default_username = "demo-user"
+rust_log = "info"
+
+issuers_cas_dir = "../certificates/issuers_cas"
+attestation_issuer_certificate = "../certificates/signer/ewqwe.signer.leaf.cert.pem"
+attestation_issuer_key = "../certificates/signer/ewqwe.signer.leaf.key.pem"
+
+[tls_params]
+server_private_key = "../certificates/tls/ewqwe.server.key.pem"
+server_certificate = "../certificates/tls/ewqwe.server.cert.pem"
+server_ca_chain = "../certificates/tls/ewqwe.ca.pem"
+client_ca_cert_chain = "../certificates/tls/ewqwe.ca.pem"
+
+[openid4vp_config]
+transaction_ttl_secs = 300
+
+[openid4vp_config.haip_config]
+x509_cert_path = "../certificates/signer/ewqwe.signer.leaf.fullchain.pem"
+x509_key_path = "../certificates/signer/ewqwe.signer.leaf.key.pem"
+</code></pre>
+<p>The table below explains the settings that matter at startup.</p>
+</li>
+</ol>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Setting</th><th style="text-align: left">Purpose</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>host_name</code>, <code>host_port</code></td><td style="text-align: left">The address and port on which the server listens.</td></tr>
+<tr><td style="text-align: left"><code>issuers_cas_dir</code></td><td style="text-align: left">The directory of trusted issuer CA certificates. It must exist.</td></tr>
+<tr><td style="text-align: left"><code>attestation_issuer_certificate</code></td><td style="text-align: left">The certificate whose common name becomes the <code>iss</code> claim.</td></tr>
+<tr><td style="text-align: left"><code>attestation_issuer_key</code></td><td style="text-align: left">The private key that signs the attestations.</td></tr>
+<tr><td style="text-align: left"><code>[tls_params]</code></td><td style="text-align: left">The server key, certificate, CA chain, and optional client CA chain.</td></tr>
+<tr><td style="text-align: left"><code>[openid4vp_config.haip_config]</code></td><td style="text-align: left">The certificate chain and key that sign authorization requests.</td></tr>
+</tbody>
+</table>
+</div>
+<p>Every relative path in the file is resolved against the directory that contains the configuration file.</p>
+<ol start="3">
+<li>
+<p>Start the server. Run the built binary, or use Cargo.</p>
+<pre><code class="language-bash">cargo run --release
+</code></pre>
+<p>To use a configuration file at another location, pass its path as the first argument.</p>
+<pre><code class="language-bash">cargo run --release -- /etc/ewqwe/credential-server.toml
+</code></pre>
+<p>When you pass no path, the server searches these locations in order and uses the first file that exists.</p>
+<ol>
+<li><code>./credential-server.toml</code> in the current directory.</li>
+<li>The platform configuration directory: <code>$HOME/Library/Application Support/ewQwe/Credential Server/config.toml</code> on macOS, <code>$XDG_CONFIG_HOME/ewQwe/Credential Server/config.toml</code> or <code>$HOME/.config/ewQwe/Credential Server/config.toml</code> on Linux, and <code>%APPDATA%\ewQwe\Credential Server\config.toml</code> on Windows.</li>
+</ol>
+</li>
+<li>
+<p>Read the startup output. The server logs its progress when <code>rust_log</code> is set to <code>info</code> or higher.</p>
+<pre><code class="language-text">INFO ewqwe_credential_verifier_server: Starting ewQwe Credential Verifier
+INFO ewqwe_credential_verifier_server: Loaded configuration from /path/to/credential-server.toml
+INFO ewqwe_credential_verifier_server: Server will listen on https://127.0.0.1:9443
+INFO ewqwe_openid4vp::service: OpenID4VP service initialized san=&lt;dns-name&gt; ttl_secs=300
+INFO ewqwe_credential_verifier_server::server::start: Verification journal disabled
+INFO ewqwe_credential_verifier_server::server::start: Loaded credential issuer CAs at startup; restart required to reload count=&lt;number&gt;
+INFO ewqwe_credential_verifier_server::server::start: Attestation Provider server listening on 127.0.0.1:9443
+</code></pre>
+<p>The server also logs the whole loaded configuration as one structured line at info level. If the log shows a <code>Credentials issuers CA directory not found</code> error, the server stops before it binds the port.</p>
+</li>
+<li>
+<p>Check that the server answers. The <code>/version</code> endpoint does not require a client certificate.</p>
+<pre><code class="language-bash">curl -sk https://localhost:9443/version
+</code></pre>
+<p>Expected output:</p>
+<pre><code class="language-json">{ "version": "0.1.0" }
+</code></pre>
+</li>
+<li>
+<p>Stop the server with <code>Ctrl+C</code>. The server logs <code>Server shut down gracefully</code>.</p>
+</li>
+</ol>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<ul>
+<li><strong>The server stops with <code>No configuration file found. Searched: ...</code>.</strong> Create <code>credential-server.toml</code> in the current directory, or pass an explicit path as the first argument.</li>
+<li><strong>The server stops with <code>Credentials issuers CA directory not found</code>.</strong> Create the directory named by <code>issuers_cas_dir</code>, or point the setting at an existing directory. An empty directory is valid, but then no issuer is trusted.</li>
+<li><strong>The server stops with <code>Failed to read server private key file</code> or a PEM parse error.</strong> Check that each path in <code>[tls_params]</code> exists relative to the configuration file, and that the key is in PKCS#8 PEM format.</li>
+<li><strong>The server stops with <code>Address already in use</code>.</strong> Another process holds the port. Change <code>host_port</code>, or stop the other process.</li>
+<li><strong>The server stops while it initialises the transaction store or the journal.</strong> Check the database URL and that the database is reachable. See <a href="configure-storage.html">configure storage</a>.</li>
+<li><strong>The server starts but ignores a setting.</strong> A misspelled key is silently ignored. Compare the key against the <a href="../../reference/credential-verifier/configuration.html">configuration reference</a>.</li>
+</ul>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next steps</a></h2>
+<ul>
+<li>Secure the listener with <a href="configure-tls.html">configure TLS</a>.</li>
+<li>Choose the stores with <a href="configure-storage.html">configure storage</a>.</li>
+<li>Send a request with <a href="verify-a-credential.html">verify a credential</a>.</li>
+</ul>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../explanation/digital-credential/selective-disclosure.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
+                            <a rel="next prefetch" href="../../how-to-guides/credential-verifier/configure-tls.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
 
                         <div style="clear: both"></div>
                     </nav>
@@ -190,7 +306,13 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../explanation/digital-credential/selective-disclosure.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
+                    <a rel="next prefetch" href="../../how-to-guides/credential-verifier/configure-tls.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
             </nav>
 
         </div>
@@ -208,17 +330,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-609e4cb8.js"></script>
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-eefea253.min.js"></script>
-        <script src="mermaid-init-e19dc18e.js"></script>
+        <script src="../../mermaid-eefea253.min.js"></script>
+        <script src="../../mermaid-init-e19dc18e.js"></script>
 
 
 

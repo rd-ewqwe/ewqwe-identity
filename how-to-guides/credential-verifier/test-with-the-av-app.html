@@ -3,7 +3,7 @@
     <head>
         <!-- Book generated using mdBook -->
         <meta charset="UTF-8">
-        <title>Introduction - ewQwe Digital Identity</title>
+        <title>Test with the AV app - ewQwe Digital Identity</title>
 
 
         <!-- Custom HTML head -->
@@ -12,33 +12,33 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="theme-color" content="#ffffff">
 
-        <link rel="shortcut icon" href="favicon-f4c7a024.png">
-        <link rel="stylesheet" href="css/variables-8adf115d.css">
-        <link rel="stylesheet" href="css/general-e96d0476.css">
-        <link rel="stylesheet" href="css/chrome-d279d366.css">
-        <link rel="stylesheet" href="css/print-9e4910d8.css" media="print">
+        <link rel="shortcut icon" href="../../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
 
         <!-- Fonts -->
-        <link rel="stylesheet" href="fonts/fonts-9644e21d.css">
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
 
         <!-- Highlight.js Stylesheets -->
-        <link rel="stylesheet" id="mdbook-highlight-css" href="highlight-493f70e1.css">
-        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="tomorrow-night-4c0ae647.css">
-        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="ayu-highlight-3fdfc3ac.css">
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
 
         <!-- Custom theme stylesheets -->
-        <link rel="stylesheet" href="custom-theme-1e0c8f96.css">
+        <link rel="stylesheet" href="../../custom-theme-1e0c8f96.css">
 
 
         <!-- Provide site root and default themes to javascript -->
         <script>
-            const path_to_root = "";
+            const path_to_root = "../../";
             const default_light_theme = "light";
             const default_dark_theme = "navy";
-            window.path_to_searchindex_js = "searchindex-cc994d5a.js";
+            window.path_to_searchindex_js = "../../searchindex-cc994d5a.js";
         </script>
         <!-- Start loading toc.js asap -->
-        <script src="toc-b4360556.js"></script>
+        <script src="../../toc-b4360556.js"></script>
     </head>
     <body>
     <div id="mdbook-help-container">
@@ -105,7 +105,7 @@
             <!-- populated by js -->
             <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
             <noscript>
-                <iframe class="sidebar-iframe-outer" src="toc.html"></iframe>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
             </noscript>
             <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
                 <div class="sidebar-resize-indicator"></div>
@@ -140,7 +140,7 @@
                     <h1 class="menu-title">ewQwe Digital Identity</h1>
 
                     <div class="right-buttons">
-                        <a href="print.html" title="Print this book" aria-label="Print this book">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
                             <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
                         </a>
 
@@ -174,86 +174,154 @@
 
                 <div id="mdbook-content" class="content">
                     <main>
-                        <h1 id="introduction"><a class="header" href="#introduction">Introduction</a></h1>
-<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="images/ewqwe_logo.png" alt="ewQwe logo"><span class="img-wrapper"><img src="images/ewqwe_logo.png" alt="ewQwe logo"></span></label></p>
-<p><strong>ewQwe Digital Identity</strong> is a software suite for digital identity based on the European Digital Identity (EUDI) standards. Its principal product is the <strong>ewQwe Credential Verifier</strong>, a server that a Relying Party uses to verify the credentials that a user presents from a digital wallet.</p>
-<p>A <strong>Relying Party</strong> (RP) is a web application or service that needs a fact about a user, for example that the user is at least 18 years old. A <strong>wallet</strong> is the application that stores the user’s credentials and presents them. A <strong>credential</strong> is a signed document that an issuer, such as a government authority, has issued to the user.</p>
-<p>The verifier performs the cryptographic work of verification, so a web application does not implement it. The Relying Party sends a Verifiable Presentation to the verifier. The verifier validates the presentation and returns a signed attestation that states the result.</p>
-<h2 id="what-the-credential-verifier-does"><a class="header" href="#what-the-credential-verifier-does">What the credential verifier does</a></h2>
+                        <h1 id="test-the-credential-verifier-with-the-av-app"><a class="header" href="#test-the-credential-verifier-with-the-av-app">Test the credential verifier with the AV app</a></h1>
+<p>This guide shows how to present a Proof of Age to the ewQwe Credential Verifier from the EU Age Verification (AV) app. The AV app is the official wallet of the EU Age Verification Solution. Use this guide when the verifier runs the Annex A profile and you want to test age verification with a real wallet.</p>
+<p>A <strong>Proof of Age</strong> is an attestation that states only whether the holder is over an age threshold. It does not reveal the exact birth date. <strong>Annex A</strong> is the EU Age Verification profile. The <strong>AV app</strong> stores a Proof of Age credential in the mDoc format and presents it over OpenID4VP, which is the OpenID for Verifiable Presentations protocol. The <strong>credential verifier</strong> is the server that validates the presentation and returns a signed attestation.</p>
+<p>At the end of this guide, the AV app presents the Proof of Age, and the verifier reports the verification result.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
 <ul>
-<li>It accepts a Verifiable Presentation in the ISO/IEC 18013-5 mDoc format or the SD-JWT VC format.</li>
-<li>It extracts the disclosed claims and checks the credential expiration.</li>
-<li>It binds the presentation to the nonce that the server issued for the transaction, which prevents replay.</li>
-<li>It verifies the issuer signature and the holder signature, using the trusted issuer certificate authorities that the operator configures.</li>
-<li>It returns a signed attestation, in JWT or COSE/CBOR form, that states the verification result.</li>
-<li>It records every verification in an append-only journal.</li>
+<li>The credential verifier is installed and running over HTTPS. See <a href="./install-and-run.html">Install and run the credential verifier</a> and <a href="./configure-tls.html">Configure TLS</a>.</li>
+<li>The verifier app is enabled on the verifier. See <a href="../../tutorials/verifier-app/run-the-verifier-app.html">Run the verifier app</a>.</li>
+<li>The verifier trusts the certificate authority (CA) that issued the test credential, so that the verifier reports the issuer as trusted. See <a href="../../reference/credential-verifier/configuration.html">Configuration</a>.</li>
+<li>Android Studio is installed, or you have a physical Android device with Android 10 (API level 29) or higher.</li>
+<li>You know the public hostname and port of the verifier. This is the <code>public_root_url</code> value in the verifier configuration.</li>
 </ul>
-<p>The server implements the <a href="https://www.w3.org/TR/digital-credentials/">W3C Digital Credentials API</a>, <a href="https://openid.net/specs/openid-4-verifiable-presentations-1_0.html">OpenID for Verifiable Presentations 1.0</a> (OpenID4VP), and the <a href="https://ageverification.dev/Technical%20Specification/annexes/annex-A/annex-A-av-profile">EU Age Verification Profile</a>. It supports the High Assurance Interoperability Profile (HAIP) additions for the EUDI Wallet.</p>
-<h2 id="the-verifier-app"><a class="header" href="#the-verifier-app">The verifier app</a></h2>
-<p>The credential verifier ships with its own web application, the <strong>verifier app</strong>. An operator signs in, selects a credential type, and shows a QR code. The holder scans the QR code with a wallet, and the app shows the verification result. The verifier app is the standard user interface of the credential verifier and needs no other software.</p>
-<p>The verifier also exposes an HTTP API, so a product can build a user interface of its own. The repository contains an example relying party in <code>typescript/demo-webapp/</code> that shows one way to do this. See <a href="./how-to-guides/credential-verifier/develop-a-relying-party-ui.html">Develop your own relying-party UI</a>.</p>
-<h2 id="who-this-documentation-is-for"><a class="header" href="#who-this-documentation-is-for">Who this documentation is for</a></h2>
-<p>This documentation addresses the users of the credential verifier server:</p>
+<h2 id="how-the-test-setup-fits-together"><a class="header" href="#how-the-test-setup-fits-together">How the test setup fits together</a></h2>
+<div style="background-color: #ffffff; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+<pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': { 'background': '#ffffff', 'mainBkg': '#ffffff', 'clusterBkg': '#ffffff', 'clusterBorder': '#cbd5e1', 'lineColor': '#334155', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#0f172a', 'secondaryTextColor': '#0f172a', 'tertiaryTextColor': '#0f172a', 'edgeLabelBackground': '#ffffff' }}}%%
+flowchart TB
+    subgraph HOST["Verifier host"]
+        direction TB
+        SP1[" "]
+        VERIFIER["Credential verifier on port 9443"]
+        APPUI["Verifier app QR page"]
+        SP1 ~~~ VERIFIER
+        VERIFIER --- APPUI
+    end
+
+    subgraph DEVICE["Android emulator or device"]
+        direction TB
+        SP2[" "]
+        AVA["Age Verification app with a Proof of Age credential"]
+        SP2 ~~~ AVA
+    end
+
+    APPUI --&gt;|"1- Generate a Proof of Age QR code"| AVA
+    AVA --&gt;|"2- Present the Proof of Age"| VERIFIER
+
+    classDef cMgmt fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af;
+    classDef cCtrl fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e;
+    classDef cExt fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#0f172a;
+
+    class VERIFIER cMgmt;
+    class APPUI cCtrl;
+    class AVA cExt;
+    style SP1 fill:none,stroke:none;
+    style SP2 fill:none,stroke:none;
+</pre>
+
+</div>
+
+<p>The verifier app generates a QR code that carries an OpenID4VP authorization request. The AV app reads the QR code and returns the Proof of Age. The verifier validates the credential and shows the result.</p>
+<h2 id="step-1-confirm-the-verifier-profile"><a class="header" href="#step-1-confirm-the-verifier-profile">Step 1: Confirm the verifier profile</a></h2>
+<p>The AV app uses the Annex A profile. In this profile, the wallet identifies the relying party by its <code>redirect_uri</code> and does not require a signed authorization request or a reader trust store. Because of this, you do not add any certificate to the AV app trust store.</p>
+<p>The <strong>Proof of Age</strong> credential type in the verifier app selects the Annex A profile and the namespace <code>eu.europa.ec.av.1</code>. The table below contrasts the two profiles.</p>
 <div class="table-wrapper">
 <table>
 <thead>
-<tr><th style="text-align: left">Reader</th><th style="text-align: left">Starting point</th></tr>
+<tr><th style="text-align: left">Aspect</th><th style="text-align: left">AV app (Annex A)</th><th style="text-align: left">EUDI wallet (HAIP)</th></tr>
 </thead>
 <tbody>
-<tr><td style="text-align: left">System operator</td><td style="text-align: left"><a href="./tutorials/verifier-app/run-the-verifier-app.html">Run the verifier app</a> and <a href="./how-to-guides/credential-verifier/install-and-run.html">Install and run the server</a></td></tr>
-<tr><td style="text-align: left">Relying Party developer</td><td style="text-align: left"><a href="./reference/credential-verifier/http-api.html">HTTP API</a> and <a href="./how-to-guides/credential-verifier/verify-a-credential.html">Verify a credential</a></td></tr>
-<tr><td style="text-align: left">Product developer</td><td style="text-align: left"><a href="./how-to-guides/credential-verifier/develop-a-relying-party-ui.html">Develop your own relying-party UI</a></td></tr>
-<tr><td style="text-align: left">Security architect</td><td style="text-align: left"><a href="./explanation/credential-verifier/verification-process.html">Verification process</a> and <a href="./explanation/credential-verifier/security-model.html">Security model</a></td></tr>
-<tr><td style="text-align: left">Standards engineer</td><td style="text-align: left"><a href="./reference/openid4vp/request-parameters.html">OpenID4VP request parameters</a> and <a href="./reference/digital-credential/credential-formats.html">Credential formats</a></td></tr>
+<tr><td style="text-align: left">Client identifier</td><td style="text-align: left"><code>redirect_uri</code></td><td style="text-align: left"><code>x509_san_dns</code> or <code>x509_san_hash</code></td></tr>
+<tr><td style="text-align: left">Signed request</td><td style="text-align: left">Not required</td><td style="text-align: left">Required</td></tr>
+<tr><td style="text-align: left">Response mode</td><td style="text-align: left"><code>direct_post</code></td><td style="text-align: left"><code>direct_post.jwt</code></td></tr>
+<tr><td style="text-align: left">Reader trust</td><td style="text-align: left">Not required</td><td style="text-align: left">Required</td></tr>
+<tr><td style="text-align: left">Credential</td><td style="text-align: left">Proof of Age (<code>eu.europa.ec.av.1</code>)</td><td style="text-align: left">mDL or PID</td></tr>
 </tbody>
 </table>
 </div>
-<h2 id="how-this-documentation-is-organized"><a class="header" href="#how-this-documentation-is-organized">How this documentation is organized</a></h2>
-<p>The book follows the <a href="https://diataxis.fr">Diataxis framework</a>. Each section serves one need of the reader:</p>
-<ul>
-<li><strong>Tutorials</strong> teach the verifier app in a guided lesson.</li>
-<li><strong>Reference</strong> states the facts of the server: the configuration, the HTTP API, the attestations, the journal, the protocols, and the credential formats.</li>
-<li><strong>Explanation</strong> describes why the server works the way it does.</li>
-<li><strong>How-to guides</strong> give the steps for a specific task, such as deploying the server with TLS.</li>
-<li><strong>FAQ</strong> answers recurring questions and links to the page that holds the full answer.</li>
-</ul>
-<p>The <a href="./glossary.html">Glossary</a> defines the terms that the documentation uses. The <a href="./references.html">References</a> page lists the external standards.</p>
+<p>For the parameters of the request, see <a href="../../reference/openid4vp/request-parameters.html">Request parameters</a>.</p>
+<h2 id="step-2-make-the-verifier-reachable-from-the-device"><a class="header" href="#step-2-make-the-verifier-reachable-from-the-device">Step 2: Make the verifier reachable from the device</a></h2>
+<p>The wallet must reach the public URL of the verifier over HTTPS. If the verifier uses the demo hostname <code>demo.ewqwe.local</code>, set up the hostname mapping as described in <a href="./test-with-the-eudi-wallet.html#step-2-make-the-verifier-reachable-from-the-device">Test the credential verifier with the EUDI wallet</a>. You can use the same emulator and the same mapping for both wallet apps.</p>
+<p>If the verifier uses an address that the device can reach directly, no mapping is necessary.</p>
+<h2 id="step-3-install-the-av-app"><a class="header" href="#step-3-install-the-av-app">Step 3: Install the AV app</a></h2>
+<h3 id="option-a-build-the-ewqwe-fork"><a class="header" href="#option-a-build-the-ewqwe-fork">Option A: Build the ewQwe fork</a></h3>
+<p>The ewQwe fork of the AV app trusts all TLS certificates in debug builds. This lets the app reach the self-signed test certificate of the verifier.</p>
+<ol>
+<li>
+<p>Clone the repository:</p>
+<pre><code class="language-bash">git clone https://github.com/bgrieder/av-app-android-wallet-ui.git
+cd av-app-android-wallet-ui
+</code></pre>
+</li>
+<li>
+<p>In Android Studio, open the project, select the <code>app</code> module and the <code>EUDI_Dev_Device</code> emulator, select the <code>devDebug</code> build variant under <strong>Build</strong>, <strong>Select Build Variant</strong>, and click <strong>Run</strong>.</p>
+<p>Expected result: the AV app installs and starts.</p>
+</li>
+</ol>
+<p>You can also build and install from the command line:</p>
+<pre><code class="language-bash">./gradlew :app:installDevDebug
+</code></pre>
+<blockquote class="blockquote-tag blockquote-tag-warning">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Warning</p>
+<p>The trust-all behaviour disables TLS verification. It exists only for local development. Never use it in a production build.</p>
+</blockquote>
+<h3 id="option-b-install-a-pre-built-apk"><a class="header" href="#option-b-install-a-pre-built-apk">Option B: Install a pre-built APK</a></h3>
+<ol>
+<li>Enable Developer Mode on the emulator. In <strong>Settings</strong>, open <strong>About phone</strong>, tap <strong>Build number</strong> seven times, and enter the device PIN if the device asks for it.</li>
+<li>Open Chrome on the emulator and go to the <a href="https://github.com/eu-digital-identity-wallet/av-app-android-wallet-ui/releases">AV App releases page</a>.</li>
+<li>Download an APK such as <code>app-dev-debug.apk</code>, open the file, and tap <strong>Install</strong>.</li>
+</ol>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>The pre-built APK from the upstream project does not contain the trust-all behaviour. Use this option only when the verifier certificate chains to a CA that the stock app already trusts. Otherwise use Option A.</p>
+</blockquote>
+<h2 id="step-4-obtain-a-proof-of-age-credential"><a class="header" href="#step-4-obtain-a-proof-of-age-credential">Step 4: Obtain a Proof of Age credential</a></h2>
+<ol>
+<li>Open the AV app and create a PIN code when the app asks for one.</li>
+<li>Obtain a Proof of Age credential from the development issuer at <code>https://test.issuer.dev.ageverification.dev</code>.</li>
+</ol>
+<p>Expected result: the Proof of Age credential appears in the app.</p>
+<h2 id="step-5-present-the-proof-of-age-to-the-verifier"><a class="header" href="#step-5-present-the-proof-of-age-to-the-verifier">Step 5: Present the Proof of Age to the verifier</a></h2>
+<ol>
+<li>Open the verifier app at the public URL of the verifier and sign in.</li>
+<li>On the home page, select <strong>Proof of Age</strong> as the credential type.</li>
+<li>Click <strong>Generate QR Code</strong>.</li>
+<li>On the Android device, open the AV app and scan the QR code.</li>
+<li>Approve the credential sharing in the app.</li>
+</ol>
+<p>Expected result: the status badge in the verifier app changes from <code>pending</code> to <code>verified</code>.</p>
+<p>For the full set of status values and their meanings, see <a href="../../reference/verifier-app/verifier-app.html">The verifier app</a>.</p>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<h3 id="the-tls-handshake-fails"><a class="header" href="#the-tls-handshake-fails">The TLS handshake fails</a></h3>
+<p>The verifier presents a self-signed certificate that the app does not trust. Use the ewQwe fork, which trusts all certificates in debug builds, or use a certificate from a publicly trusted CA.</p>
+<h3 id="the-app-does-not-open-from-the-qr-code"><a class="header" href="#the-app-does-not-open-from-the-qr-code">The app does not open from the QR code</a></h3>
+<p>The QR code must contain a URI that the AV app registers. The AV app registers the schemes <code>av://</code>, <code>avsp://</code>, and <code>openid4vp://</code>, among others. Confirm that the verifier generates an Annex A request, and open the deep link directly if the camera scan does not start the app.</p>
+<h3 id="the-wallet-cannot-reach-the-verifier"><a class="header" href="#the-wallet-cannot-reach-the-verifier">The wallet cannot reach the verifier</a></h3>
+<p>Check the hostname mapping from Step 2, confirm that the verifier port is open in the firewall, and confirm that both devices use the same Wi-Fi network.</p>
+<h3 id="the-verifier-rejects-the-presentation"><a class="header" href="#the-verifier-rejects-the-presentation">The verifier rejects the presentation</a></h3>
+<p>The verifier does not trust the CA that issued the Proof of Age credential. Add the issuer CA to the verifier configuration and restart the verifier. See <a href="../../reference/credential-verifier/configuration.html">Configuration</a>.</p>
 <blockquote class="blockquote-tag blockquote-tag-note">
 <p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
-<p>The example relying party in <code>typescript/demo-webapp/</code> is an advanced reference for building your own interface. It is not part of the credential verifier server, and it is not intended for production use as it stands.</p>
+<p>The AV app does not require the verifier CA in a trust store. Annex A identifies the relying party by its redirect URI, not by a certificate.</p>
 </blockquote>
-<h2 id="related-components"><a class="header" href="#related-components">Related components</a></h2>
-<p>The credential verifier depends on three crates of this repository:</p>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next steps</a></h2>
 <ul>
-<li><code>crates/ewqwe-openid4vp</code> builds and validates OpenID4VP requests and matches DCQL queries.</li>
-<li><code>crates/ewqwe-digital-credential</code> builds and verifies mDoc and SD-JWT VC credentials.</li>
-<li><code>crates/ewqwe-credential-verifier-ui</code> is the verifier app, the built-in web application that an operator uses to run age verifications.</li>
+<li><a href="./verify-a-credential.html">Verify a credential</a></li>
+<li><a href="./test-with-the-eudi-wallet.html">Test the credential verifier with the EUDI wallet</a></li>
+<li><a href="../../explanation/digital-credential/selective-disclosure.html">Selective disclosure</a></li>
+<li><a href="../../glossary.html">Glossary</a></li>
 </ul>
-<p>The server returns a signed attestation, so a Relying Party can trust the result without performing the verification itself. See the <a href="./reference/credential-verifier/http-api.html">HTTP API</a> for the request and response of each endpoint.</p>
-<h2 id="licenses"><a class="header" href="#licenses">Licenses</a></h2>
-<p>The components of this repository use two open-source licenses. The Rust server, its crates, and the verifier app are released under the <a href="https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12">European Union Public Licence v1.2</a> (EUPL-1.2). The TypeScript library <code>typescript/ewqwe-digital-identity</code> and the demo webapp <code>typescript/demo-webapp</code> are released under the <a href="https://opensource.org/license/mit">MIT License</a>.</p>
-<div class="table-wrapper">
-<table>
-<thead>
-<tr><th style="text-align: left">Component</th><th style="text-align: left">Location</th><th style="text-align: left">License</th></tr>
-</thead>
-<tbody>
-<tr><td style="text-align: left">Credential verifier server and crates</td><td style="text-align: left"><code>crates/</code></td><td style="text-align: left">EUPL-1.2</td></tr>
-<tr><td style="text-align: left">Verifier app (embedded SPA)</td><td style="text-align: left"><code>crates/ewqwe-credential-verifier-ui</code></td><td style="text-align: left">EUPL-1.2</td></tr>
-<tr><td style="text-align: left">Shared TypeScript library</td><td style="text-align: left"><code>typescript/ewqwe-digital-identity</code></td><td style="text-align: left">MIT</td></tr>
-<tr><td style="text-align: left">Demo webapp</td><td style="text-align: left"><code>typescript/demo-webapp</code></td><td style="text-align: left">MIT</td></tr>
-</tbody>
-</table>
-</div>
-<p>The full license texts are in the <code>LICENSE</code> file at the repository root and in the <code>LICENSE</code> file of each TypeScript package.</p>
-<p>Some components are not part of this open-source repository. The enterprise add-ons are available under a separate commercial license. See the README and <a href="https://ewqwe.eu">ewqwe.eu</a> for the enterprise offering.</p>
 
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
                         <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../how-to-guides/credential-verifier/test-with-the-eudi-wallet.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
 
-                            <a rel="next prefetch" href="tutorials/verifier-app/run-the-verifier-app.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                            <a rel="next prefetch" href="../../how-to-guides/credential-verifier/adb-troubleshooting.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                                 <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                             </a>
 
@@ -263,8 +331,11 @@
             </div>
 
             <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../how-to-guides/credential-verifier/test-with-the-eudi-wallet.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
 
-                    <a rel="next prefetch" href="tutorials/verifier-app/run-the-verifier-app.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                    <a rel="next prefetch" href="../../how-to-guides/credential-verifier/adb-troubleshooting.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
                         <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
                     </a>
             </nav>
@@ -284,17 +355,17 @@
         </script>
 
 
-        <script src="elasticlunr-ef4e11c1.min.js"></script>
-        <script src="mark-09e88c2c.min.js"></script>
-        <script src="searcher-09f2665d.js"></script>
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
 
-        <script src="clipboard-1626706a.min.js"></script>
-        <script src="highlight-abc7f01d.js"></script>
-        <script src="book-609e4cb8.js"></script>
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
 
         <!-- Custom JS scripts -->
-        <script src="mermaid-eefea253.min.js"></script>
-        <script src="mermaid-init-e19dc18e.js"></script>
+        <script src="../../mermaid-eefea253.min.js"></script>
+        <script src="../../mermaid-init-e19dc18e.js"></script>
 
 
 

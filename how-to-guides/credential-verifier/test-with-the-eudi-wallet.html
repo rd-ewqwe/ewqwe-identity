@@ -1,0 +1,462 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light sidebar-visible" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Test with the EUDI wallet - ewQwe Digital Identity</title>
+
+
+        <!-- Custom HTML head -->
+
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="shortcut icon" href="../../favicon-f4c7a024.png">
+        <link rel="stylesheet" href="../../css/variables-8adf115d.css">
+        <link rel="stylesheet" href="../../css/general-e96d0476.css">
+        <link rel="stylesheet" href="../../css/chrome-d279d366.css">
+        <link rel="stylesheet" href="../../css/print-9e4910d8.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../fonts/fonts-9644e21d.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" id="mdbook-highlight-css" href="../../highlight-493f70e1.css">
+        <link rel="stylesheet" id="mdbook-tomorrow-night-css" href="../../tomorrow-night-4c0ae647.css">
+        <link rel="stylesheet" id="mdbook-ayu-highlight-css" href="../../ayu-highlight-3fdfc3ac.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../custom-theme-1e0c8f96.css">
+
+
+        <!-- Provide site root and default themes to javascript -->
+        <script>
+            const path_to_root = "../../";
+            const default_light_theme = "light";
+            const default_dark_theme = "navy";
+            window.path_to_searchindex_js = "../../searchindex-cc994d5a.js";
+        </script>
+        <!-- Start loading toc.js asap -->
+        <script src="../../toc-b4360556.js"></script>
+    </head>
+    <body>
+    <div id="mdbook-help-container">
+        <div id="mdbook-help-popup">
+            <h2 class="mdbook-help-title">Keyboard shortcuts</h2>
+            <div>
+                <p>Press <kbd>←</kbd> or <kbd>→</kbd> to navigate between chapters</p>
+                <p>Press <kbd>S</kbd> or <kbd>/</kbd> to search in the book</p>
+                <p>Press <kbd>?</kbd> to show this help</p>
+                <p>Press <kbd>Esc</kbd> to hide this help</p>
+            </div>
+        </div>
+    </div>
+    <div id="mdbook-body-container">
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                let theme = localStorage.getItem('mdbook-theme');
+                let sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            const default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? default_dark_theme : default_light_theme;
+            let theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            const html = document.documentElement;
+            html.classList.remove('light')
+            html.classList.add(theme);
+            html.classList.add("js");
+        </script>
+
+        <input type="checkbox" id="mdbook-sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            let sidebar = null;
+            const sidebar_toggle = document.getElementById("mdbook-sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+                sidebar_toggle.checked = false;
+            }
+            if (sidebar === 'visible') {
+                sidebar_toggle.checked = true;
+            } else {
+                html.classList.remove('sidebar-visible');
+            }
+        </script>
+
+        <nav id="mdbook-sidebar" class="sidebar" aria-label="Table of contents">
+            <!-- populated by js -->
+            <mdbook-sidebar-scrollbox class="sidebar-scrollbox"></mdbook-sidebar-scrollbox>
+            <noscript>
+                <iframe class="sidebar-iframe-outer" src="../../toc.html"></iframe>
+            </noscript>
+            <div id="mdbook-sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <div id="mdbook-page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                <div id="mdbook-menu-bar-hover-placeholder"></div>
+                <div id="mdbook-menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="mdbook-sidebar-toggle" class="icon-button" for="mdbook-sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="mdbook-sidebar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M0 96C0 78.3 14.3 64 32 64H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32C14.3 128 0 113.7 0 96zM0 256c0-17.7 14.3-32 32-32H416c17.7 0 32 14.3 32 32s-14.3 32-32 32H32c-17.7 0-32-14.3-32-32zM448 416c0 17.7-14.3 32-32 32H32c-17.7 0-32-14.3-32-32s14.3-32 32-32H416c17.7 0 32 14.3 32 32z"/></svg></span>
+                        </label>
+                        <button id="mdbook-theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="mdbook-theme-list">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M371.3 367.1c27.3-3.9 51.9-19.4 67.2-42.9L600.2 74.1c12.6-19.5 9.4-45.3-7.6-61.2S549.7-4.4 531.1 9.6L294.4 187.2c-24 18-38.2 46.1-38.4 76.1L371.3 367.1zm-19.6 25.4l-116-104.4C175.9 290.3 128 339.6 128 400c0 3.9 .2 7.8 .6 11.6c1.8 17.5-10.2 36.4-27.8 36.4H96c-17.7 0-32 14.3-32 32s14.3 32 32 32H240c61.9 0 112-50.1 112-112c0-2.5-.1-5-.2-7.5z"/></svg></span>
+                        </button>
+                        <ul id="mdbook-theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-default_theme">Auto</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="mdbook-theme-ayu">Ayu</button></li>
+                        </ul>
+                        <button id="mdbook-search-toggle" class="icon-button" type="button" title="Search (`/`)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="/ s" aria-controls="mdbook-searchbar">
+                            <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M416 208c0 45.9-14.9 88.3-40 122.7L502.6 457.4c12.5 12.5 12.5 32.8 0 45.3s-32.8 12.5-45.3 0L330.7 376c-34.4 25.2-76.8 40-122.7 40C93.1 416 0 322.9 0 208S93.1 0 208 0S416 93.1 416 208zM208 352c79.5 0 144-64.5 144-144s-64.5-144-144-144S64 128.5 64 208s64.5 144 144 144z"/></svg></span>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">ewQwe Digital Identity</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <span class=fa-svg id="print-button"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M128 0C92.7 0 64 28.7 64 64v96h64V64H354.7L384 93.3V160h64V93.3c0-17-6.7-33.3-18.7-45.3L400 18.7C388 6.7 371.7 0 354.7 0H128zM384 352v32 64H128V384 368 352H384zm64 32h32c17.7 0 32-14.3 32-32V256c0-35.3-28.7-64-64-64H64c-35.3 0-64 28.7-64 64v96c0 17.7 14.3 32 32 32H64v64c0 35.3 28.7 64 64 64H384c35.3 0 64-28.7 64-64V384zm-16-88c-13.3 0-24-10.7-24-24s10.7-24 24-24s24 10.7 24 24s-10.7 24-24 24z"/></svg></span>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="mdbook-search-wrapper" class="hidden">
+                    <form id="mdbook-searchbar-outer" class="searchbar-outer">
+                        <div class="search-wrapper">
+                            <input type="search" id="mdbook-searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="mdbook-searchresults-outer" aria-describedby="searchresults-header">
+                            <div class="spinner-wrapper">
+                                <span class=fa-svg id="fa-spin"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M304 48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zm0 416c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM48 304c26.5 0 48-21.5 48-48s-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48zm464-48c0-26.5-21.5-48-48-48s-48 21.5-48 48s21.5 48 48 48s48-21.5 48-48zM142.9 437c18.7-18.7 18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zm0-294.2c18.7-18.7 18.7-49.1 0-67.9S93.7 56.2 75 75s-18.7 49.1 0 67.9s49.1 18.7 67.9 0zM369.1 437c18.7 18.7 49.1 18.7 67.9 0s18.7-49.1 0-67.9s-49.1-18.7-67.9 0s-18.7 49.1 0 67.9z"/></svg></span>
+                            </div>
+                        </div>
+                    </form>
+                    <div id="mdbook-searchresults-outer" class="searchresults-outer hidden">
+                        <div id="mdbook-searchresults-header" class="searchresults-header"></div>
+                        <ul id="mdbook-searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('mdbook-sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('mdbook-sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#mdbook-sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="mdbook-content" class="content">
+                    <main>
+                        <h1 id="test-the-credential-verifier-with-the-eudi-wallet"><a class="header" href="#test-the-credential-verifier-with-the-eudi-wallet">Test the credential verifier with the EUDI wallet</a></h1>
+<p>This guide shows how to present a mobile driving licence (mDL) or a Personal Identification Data (PID) credential to the ewQwe Credential Verifier from the EUDI Wallet. The EUDI Wallet is the reference wallet of the European Commission. Use this guide when the verifier runs the High Assurance Interoperability Profile (HAIP) and you want to test the verification path with a real wallet.</p>
+<p>A <strong>mobile driving licence (mDL)</strong> is a digital driving licence in the ISO/IEC 18013-5 <strong>mDoc</strong> format. A <strong>Personal Identification Data (PID)</strong> credential is the EU digital identity document. A <strong>Verifiable Presentation</strong> is the data that a wallet sends to the verifier to prove claims from a stored credential. OpenID4VP is the OpenID for Verifiable Presentations protocol that the wallet and the verifier use to exchange the presentation. The <strong>credential verifier</strong> is the server that validates the presentation and returns a signed attestation.</p>
+<p>At the end of this guide, the wallet presents the credential to the verifier, and the verifier reports the verification result.</p>
+<h2 id="prerequisites"><a class="header" href="#prerequisites">Prerequisites</a></h2>
+<ul>
+<li>The credential verifier is installed and running over HTTPS. See <a href="./install-and-run.html">Install and run the credential verifier</a> and <a href="./configure-tls.html">Configure TLS</a>.</li>
+<li>The verifier app is enabled on the verifier. See <a href="../../tutorials/verifier-app/run-the-verifier-app.html">Run the verifier app</a>.</li>
+<li>The verifier trusts the certificate authority (CA) that issued the test credential, so that the verifier reports the issuer as trusted. See <a href="../../reference/credential-verifier/configuration.html">Configuration</a>.</li>
+<li>Android Studio is installed, or you have a physical Android device with Android 10 (API level 29) or higher.</li>
+<li>You know the public hostname and port of the verifier. This is the <code>public_root_url</code> value in the verifier configuration.</li>
+</ul>
+<h2 id="how-the-test-setup-fits-together"><a class="header" href="#how-the-test-setup-fits-together">How the test setup fits together</a></h2>
+<div style="background-color: #ffffff; padding: 18px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 24px;">
+<pre class="mermaid">%%{init: {'theme': 'base', 'themeVariables': { 'background': '#ffffff', 'mainBkg': '#ffffff', 'clusterBkg': '#ffffff', 'clusterBorder': '#cbd5e1', 'lineColor': '#334155', 'primaryColor': '#ffffff', 'secondaryColor': '#ffffff', 'tertiaryColor': '#ffffff', 'primaryTextColor': '#0f172a', 'secondaryTextColor': '#0f172a', 'tertiaryTextColor': '#0f172a', 'edgeLabelBackground': '#ffffff' }}}%%
+flowchart TB
+    subgraph HOST["Verifier host"]
+        direction TB
+        SP1[" "]
+        VERIFIER["Credential verifier on port 9443"]
+        APPUI["Verifier app QR page"]
+        SP1 ~~~ VERIFIER
+        VERIFIER --- APPUI
+    end
+
+    subgraph DEVICE["Android emulator or device"]
+        direction TB
+        SP2[" "]
+        WALLET["EUDI wallet with an mDL or a PID"]
+        SP2 ~~~ WALLET
+    end
+
+    APPUI --&gt;|"1- Generate a QR code"| WALLET
+    WALLET --&gt;|"2- Present the credential"| VERIFIER
+
+    classDef cMgmt fill:#eff6ff,stroke:#3b82f6,stroke-width:2px,color:#1e40af;
+    classDef cCtrl fill:#fffbeb,stroke:#f59e0b,stroke-width:2px,color:#92400e;
+    classDef cExt fill:#f8fafc,stroke:#64748b,stroke-width:2px,color:#0f172a;
+
+    class VERIFIER cMgmt;
+    class APPUI cCtrl;
+    class WALLET cExt;
+    style SP1 fill:none,stroke:none;
+    style SP2 fill:none,stroke:none;
+</pre>
+
+</div>
+
+<p>The verifier app generates a QR code that carries an OpenID4VP authorization request. The wallet reads the QR code, fetches the request from the verifier, and returns the credential. The verifier validates the credential and shows the result.</p>
+<h2 id="step-1-choose-the-client-identifier-scheme"><a class="header" href="#step-1-choose-the-client-identifier-scheme">Step 1: Choose the client identifier scheme</a></h2>
+<p>The EUDI Wallet accepts only two client identifier schemes: <code>x509_san_dns</code> and <code>x509_san_hash</code>. A <strong>client identifier scheme</strong> is the rule that the wallet uses to identify the verifier. The wallet rejects the <code>redirect_uri</code> scheme that the EU Age Verification profile uses. To test that profile, use <a href="./test-with-the-av-app.html">Test the credential verifier with the AV app</a> instead.</p>
+<div class="table-wrapper">
+<table>
+<thead>
+<tr><th style="text-align: left">Scheme</th><th style="text-align: left">Hostname check</th><th style="text-align: left">Trust method</th></tr>
+</thead>
+<tbody>
+<tr><td style="text-align: left"><code>x509_san_dns</code></td><td style="text-align: left">Yes</td><td style="text-align: left">Certificate chain and leaf DNS name</td></tr>
+<tr><td style="text-align: left"><code>x509_san_hash</code></td><td style="text-align: left">No</td><td style="text-align: left">SHA-256 hash of the leaf certificate</td></tr>
+</tbody>
+</table>
+</div>
+<p>The verifier selects the scheme from its configuration. For the parameters, see <a href="../../reference/openid4vp/request-parameters.html">Request parameters</a>.</p>
+<ul>
+<li>If the verifier uses the bundled ewQwe test certificates, it uses <code>x509_san_dns</code> with the hostname <code>demo.ewqwe.local</code>. The ewQwe wallet fork already trusts the ewQwe test CA. Continue with Step 2.</li>
+<li>If the verifier uses your own certificate, choose <code>x509_san_hash</code>. With <code>x509_san_hash</code>, the wallet does not check the hostname, so you can skip Step 2. The wallet must still reach the verifier.</li>
+</ul>
+<h2 id="step-2-make-the-verifier-reachable-from-the-device"><a class="header" href="#step-2-make-the-verifier-reachable-from-the-device">Step 2: Make the verifier reachable from the device</a></h2>
+<p>The wallet must reach the verifier over HTTPS. With <code>x509_san_dns</code>, the wallet also requires the verifier hostname to resolve on the device. The examples below use the hostname <code>demo.ewqwe.local</code>. Replace it with the hostname in your verifier configuration.</p>
+<h3 id="option-a-android-emulator"><a class="header" href="#option-a-android-emulator">Option A: Android emulator</a></h3>
+<p>The Android emulator reaches the host machine through the special address <code>10.0.2.2</code>. The ewQwe setup script in Step 3 adds this mapping automatically. To add the mapping to a running emulator manually, run:</p>
+<pre><code class="language-bash">adb root
+adb shell "echo '10.0.2.2  demo.ewqwe.local' &gt;&gt; /etc/hosts"
+</code></pre>
+<p>Expected result: the emulator resolves <code>demo.ewqwe.local</code> to the host machine.</p>
+<p>Verify the mapping with:</p>
+<pre><code class="language-bash">adb shell cat /etc/hosts
+</code></pre>
+<p>Expected result: the output lists <code>10.0.2.2  demo.ewqwe.local</code>.</p>
+<h3 id="option-b-physical-android-device-on-a-local-network"><a class="header" href="#option-b-physical-android-device-on-a-local-network">Option B: Physical Android device on a local network</a></h3>
+<p>Use <code>dnsmasq</code> on the machine that runs the verifier. <code>dnsmasq</code> is a small DNS server that answers name queries for a local network.</p>
+<ol>
+<li>
+<p>Find the local network address of the machine that runs the verifier:</p>
+<pre><code class="language-bash">ipconfig getifaddr en0
+# Example output: 192.168.1.42
+</code></pre>
+</li>
+<li>
+<p>Install and configure <code>dnsmasq</code>. Replace <code>192.168.1.42</code> with the address from the previous command:</p>
+<pre><code class="language-bash">brew install dnsmasq
+echo "address=/demo.ewqwe.local/192.168.1.42" &gt;&gt; /opt/homebrew/etc/dnsmasq.conf
+sudo brew services restart dnsmasq
+</code></pre>
+</li>
+<li>
+<p>Verify the resolver on the same machine:</p>
+<pre><code class="language-bash">dig @127.0.0.1 demo.ewqwe.local
+</code></pre>
+<p>Expected result: the answer is the local network address.</p>
+</li>
+<li>
+<p>Point the Android device at this resolver. On the device, open <strong>Settings</strong>, open <strong>Wi-Fi</strong>, long-press your network, choose <strong>Modify network</strong>, open <strong>Advanced</strong>, set <strong>IP settings</strong> to <strong>Static</strong>, and set <strong>DNS 1</strong> to the local network address.</p>
+</li>
+</ol>
+<p>The device needs no root access. Every device on the same Wi-Fi network that uses this resolver resolves <code>demo.ewqwe.local</code> correctly.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>If you regenerate the test certificates with a different DNS name, update the <code>public_root_url</code> value in the verifier configuration and use the same hostname in the DNS setup.</p>
+</blockquote>
+<h2 id="step-3-install-the-eudi-wallet-on-the-emulator"><a class="header" href="#step-3-install-the-eudi-wallet-on-the-emulator">Step 3: Install the EUDI wallet on the emulator</a></h2>
+<h3 id="option-a-build-the-ewqwe-fork"><a class="header" href="#option-a-build-the-ewqwe-fork">Option A: Build the ewQwe fork</a></h3>
+<p>The ewQwe fork of the EUDI Wallet trusts the ewQwe test CA in debug builds, so it accepts requests and TLS connections from the bundled test certificates.</p>
+<ol>
+<li>
+<p>Clone the repository:</p>
+<pre><code class="language-bash">git clone https://github.com/bgrieder/android-eudi-haip-wallet.git
+cd android-eudi-haip-wallet
+</code></pre>
+</li>
+<li>
+<p>Create and start the emulator. The script requires a rootable system image, which is a Google APIs image and not a Play Store image:</p>
+<pre><code class="language-bash">./start_ewqwe_eudi_emulator.sh
+</code></pre>
+<p>The script installs the system image, creates an Android Virtual Device (AVD) named <code>EUDI_Dev_Device</code> with the Pixel 6 Pro profile, enables hardware keyboard input, starts the emulator with <code>-writable-system</code>, and maps <code>demo.ewqwe.local</code> to the host machine.</p>
+<p>Expected result: the emulator starts, and the Step 2 Option A mapping is already in place.</p>
+</li>
+<li>
+<p>In Android Studio, open the project, select the <code>app</code> module and the <code>EUDI_Dev_Device</code> emulator, and click <strong>Run</strong>.</p>
+<p>Expected result: the wallet installs and starts.</p>
+</li>
+</ol>
+<h3 id="option-b-install-a-pre-built-apk"><a class="header" href="#option-b-install-a-pre-built-apk">Option B: Install a pre-built APK</a></h3>
+<ol>
+<li>Enable Developer Mode on the emulator. In <strong>Settings</strong>, open <strong>About phone</strong>, tap <strong>Build number</strong> seven times, and enter the device PIN if the device asks for it.</li>
+<li>Open Chrome on the emulator and go to the <a href="https://github.com/eu-digital-identity-wallet/eudi-app-android-wallet-ui/releases">EUDI Wallet releases page</a>.</li>
+<li>Download an APK such as <code>app-demo-debug.apk</code>, open the file, and tap <strong>Install</strong>.</li>
+<li>If the device asks about <strong>Install unknown apps</strong>, allow Chrome to install apps and try again.</li>
+</ol>
+<p>You can also install the APK over ADB:</p>
+<pre><code class="language-bash">adb install app-demo-debug.apk
+</code></pre>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>The pre-built APK from the upstream project does not contain the ewQwe test CA. Use this option only when the verifier certificate chains to a CA that the stock wallet already trusts. Otherwise use Option A and add your CA in Step 4.</p>
+</blockquote>
+<h2 id="step-4-trust-the-verifier-certificate-in-the-wallet"><a class="header" href="#step-4-trust-the-verifier-certificate-in-the-wallet">Step 4: Trust the verifier certificate in the wallet</a></h2>
+<p>Skip this step if the verifier uses the bundled ewQwe test certificates, because the ewQwe fork already trusts the ewQwe test CA.</p>
+<p>The wallet validates the request certificate chain against a <strong>reader trust store</strong>, which is a list of trusted certificate authorities inside the wallet. Add your root CA certificate and rebuild the wallet:</p>
+<ol>
+<li>
+<p>Copy the root CA file into the wallet resources:</p>
+<pre><code class="language-bash">cp your-root-ca.pem resources-logic/src/main/assets/ewqwe_dev_cas/your-root-ca.pem
+</code></pre>
+</li>
+<li>
+<p>Build and install the wallet:</p>
+<pre><code class="language-bash">./gradlew :app:installDemoDebug
+</code></pre>
+</li>
+</ol>
+<p>Expected result: the wallet accepts requests that your verifier CA signs, and the error <code>InvalidJarJwt(cause=Untrusted x5c)</code> no longer appears.</p>
+<blockquote class="blockquote-tag blockquote-tag-important">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 1.75C0 .784.784 0 1.75 0h12.5C15.216 0 16 .784 16 1.75v9.5A1.75 1.75 0 0 1 14.25 13H8.06l-2.573 2.573A1.458 1.458 0 0 1 3 14.543V13H1.75A1.75 1.75 0 0 1 0 11.25Zm1.75-.25a.25.25 0 0 0-.25.25v9.5c0 .138.112.25.25.25h2a.75.75 0 0 1 .75.75v2.19l2.72-2.72a.749.749 0 0 1 .53-.22h6.5a.25.25 0 0 0 .25-.25v-9.5a.25.25 0 0 0-.25-.25Zm7 2.25v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 9a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z"></path></svg>Important</p>
+<p>The leaf certificate of the verifier must contain the <code>mdlReaderAuth</code> extended key usage object identifier (OID) <code>1.0.18013.5.1.6</code>, a Subject Key Identifier, and an Authority Key Identifier. The certificate must use ECDSA signing and a validity period of at most 1 187 days. A missing <code>mdlReaderAuth</code> OID is the most common cause of <code>InvalidJarJwt(cause=Untrusted x5c)</code>. See <a href="../../reference/openid4vp/request-parameters.html">Request parameters</a> for the signing requirements.</p>
+</blockquote>
+<h2 id="step-5-load-an-mdl-or-a-pid-into-the-wallet"><a class="header" href="#step-5-load-an-mdl-or-a-pid-into-the-wallet">Step 5: Load an mDL or a PID into the wallet</a></h2>
+<ol>
+<li>
+<p>Open the wallet and create a PIN code when the wallet asks for one.</p>
+</li>
+<li>
+<p>Tap the add icon (<code>+</code>) and choose <strong>Add a Document from List</strong>.</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="../../images/1-add_mdoc.png" alt="Add a document from the list"><span class="img-wrapper"><img src="../../images/1-add_mdoc.png" alt="Add a document from the list"></span></label></p>
+</li>
+<li>
+<p>Select the issuer <code>https://euidw.dev</code> and choose <strong>mDL (MSO MDOC)</strong> or <strong>PID (MSO MDOC)</strong>.</p>
+</li>
+<li>
+<p>When the wallet asks for the country, choose <strong>Form EU</strong>.</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="../../images/2-select_form_eu.png" alt="Select Form EU"><span class="img-wrapper"><img src="../../images/2-select_form_eu.png" alt="Select Form EU"></span></label></p>
+</li>
+<li>
+<p>Fill in the test form, submit it, and authorize the issuance.</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="../../images/3-fill_form.png" alt="Fill in the test form"><span class="img-wrapper"><img src="../../images/3-fill_form.png" alt="Fill in the test form"></span></label></p>
+</li>
+</ol>
+<p>Expected result: the credential appears in the wallet.</p>
+<p><label class="checkbox-label"><input class="checkbox-img" type="checkbox"><img src="../../images/4-doc_in_wallet.png" alt="The credential in the wallet"><span class="img-wrapper"><img src="../../images/4-doc_in_wallet.png" alt="The credential in the wallet"></span></label></p>
+<h2 id="step-6-present-the-credential-to-the-verifier"><a class="header" href="#step-6-present-the-credential-to-the-verifier">Step 6: Present the credential to the verifier</a></h2>
+<ol>
+<li>Open the verifier app at the public URL of the verifier and sign in.</li>
+<li>On the home page, select the credential type from the dropdown:
+<ul>
+<li><strong>mDL</strong> requests the mobile driving licence.</li>
+<li><strong>National ID</strong> requests the PID.</li>
+</ul>
+</li>
+<li>Click <strong>Generate QR Code</strong>.</li>
+<li>On the Android device, open the EUDI Wallet and scan the QR code.</li>
+<li>Review the authorization request in the wallet. The wallet shows the verifier name from the common name (CN) of the certificate, and a trusted badge when the certificate chain validates. Approve the request with your biometric confirmation.</li>
+</ol>
+<p>Expected result: the status badge in the verifier app changes from <code>pending</code> to <code>verified</code>.</p>
+<p>For the full set of status values and their meanings, see <a href="../../reference/verifier-app/verifier-app.html">The verifier app</a>.</p>
+<h2 id="troubleshooting"><a class="header" href="#troubleshooting">Troubleshooting</a></h2>
+<h3 id="the-wallet-reports-invalidjarjwt-with-an-untrusted-x5c-error"><a class="header" href="#the-wallet-reports-invalidjarjwt-with-an-untrusted-x5c-error">The wallet reports InvalidJarJwt with an untrusted x5c error</a></h3>
+<p>The wallet does not trust the request certificate chain, or the leaf certificate does not meet the profile. Add the root CA to the reader trust store and rebuild the wallet. Confirm that the leaf certificate contains the <code>mdlReaderAuth</code> OID <code>1.0.18013.5.1.6</code> and that the Subject Key Identifier and Authority Key Identifier are present.</p>
+<h3 id="the-wallet-reports-that-the-trust-anchor-is-not-found"><a class="header" href="#the-wallet-reports-that-the-trust-anchor-is-not-found">The wallet reports that the trust anchor is not found</a></h3>
+<p>The root CA is absent from both the reader trust store and the request certificate chain. Include the root CA in the certificate chain, and add it to the reader trust store.</p>
+<h3 id="the-wallet-cannot-reach-the-verifier"><a class="header" href="#the-wallet-cannot-reach-the-verifier">The wallet cannot reach the verifier</a></h3>
+<p>Check the hostname mapping from Step 2, confirm that the verifier port is open in the firewall, and confirm that both devices use the same Wi-Fi network. Some access points block communication between clients, which is also known as client isolation.</p>
+<h3 id="the-wallet-rejects-the-request-with-a-client-identifier-mismatch"><a class="header" href="#the-wallet-rejects-the-request-with-a-client-identifier-mismatch">The wallet rejects the request with a client identifier mismatch</a></h3>
+<p>With <code>x509_san_dns</code>, the hostname in the <code>client_id</code> value must equal the DNS name in the leaf certificate of the request chain and the hostname of the <code>response_uri</code>. Make all three hostnames equal.</p>
+<h3 id="the-tls-handshake-fails"><a class="header" href="#the-tls-handshake-fails">The TLS handshake fails</a></h3>
+<p>The verifier presents a self-signed or privately rooted certificate that the wallet does not trust. Use a certificate from a publicly trusted CA, or a wallet build that trusts your CA.</p>
+<blockquote class="blockquote-tag blockquote-tag-note">
+<p class="blockquote-tag-title"><svg viewbox="0 0 16 16" width="18" height="18"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p>
+<p>To inspect wallet errors, use Logcat in Android Studio and filter by the wallet package name, or run <code>adb logcat -s OpenId4VpManager PresentationManager WalletCore</code>.</p>
+</blockquote>
+<h2 id="next-steps"><a class="header" href="#next-steps">Next steps</a></h2>
+<ul>
+<li><a href="./verify-a-credential.html">Verify a credential</a></li>
+<li><a href="./test-with-the-av-app.html">Test the credential verifier with the AV app</a></li>
+<li><a href="../../explanation/openid4vp/protocol-modes.html">OpenID4VP protocol modes</a></li>
+<li><a href="../../glossary.html">Glossary</a></li>
+</ul>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../how-to-guides/credential-verifier/develop-a-relying-party-ui.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                            </a>
+
+                            <a rel="next prefetch" href="../../how-to-guides/credential-verifier/test-with-the-av-app.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../how-to-guides/credential-verifier/develop-a-relying-party-ui.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M41.4 233.4c-12.5 12.5-12.5 32.8 0 45.3l160 160c12.5 12.5 32.8 12.5 45.3 0s12.5-32.8 0-45.3L109.3 256 246.6 118.6c12.5-12.5 12.5-32.8 0-45.3s-32.8-12.5-45.3 0l-160 160z"/></svg></span>
+                    </a>
+
+                    <a rel="next prefetch" href="../../how-to-guides/credential-verifier/test-with-the-av-app.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M278.6 233.4c12.5 12.5 12.5 32.8 0 45.3l-160 160c-12.5 12.5-32.8 12.5-45.3 0s-12.5-32.8 0-45.3L210.7 256 73.4 118.6c-12.5-12.5-12.5-32.8 0-45.3s32.8-12.5 45.3 0l160 160z"/></svg></span>
+                    </a>
+            </nav>
+
+        </div>
+
+        <template id=fa-eye><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M288 32c-80.8 0-145.5 36.8-192.6 80.6C48.6 156 17.3 208 2.5 243.7c-3.3 7.9-3.3 16.7 0 24.6C17.3 304 48.6 356 95.4 399.4C142.5 443.2 207.2 480 288 480s145.5-36.8 192.6-80.6c46.8-43.5 78.1-95.4 93-131.1c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C433.5 68.8 368.8 32 288 32zM432 256c0 79.5-64.5 144-144 144s-144-64.5-144-144s64.5-144 144-144s144 64.5 144 144zM288 192c0 35.3-28.7 64-64 64c-11.5 0-22.3-3-31.6-8.4c-.2 2.8-.4 5.5-.4 8.4c0 53 43 96 96 96s96-43 96-96s-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6z"/></svg></span></template>
+        <template id=fa-eye-slash><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M38.8 5.1C28.4-3.1 13.3-1.2 5.1 9.2S-1.2 34.7 9.2 42.9l592 464c10.4 8.2 25.5 6.3 33.7-4.1s6.3-25.5-4.1-33.7L525.6 386.7c39.6-40.6 66.4-86.1 79.9-118.4c3.3-7.9 3.3-16.7 0-24.6c-14.9-35.7-46.2-87.7-93-131.1C465.5 68.8 400.8 32 320 32c-68.2 0-125 26.3-169.3 60.8L38.8 5.1zM223.1 149.5C248.6 126.2 282.7 112 320 112c79.5 0 144 64.5 144 144c0 24.9-6.3 48.3-17.4 68.7L408 294.5c5.2-11.8 8-24.8 8-38.5c0-53-43-96-96-96c-2.8 0-5.6 .1-8.4 .4c5.3 9.3 8.4 20.1 8.4 31.6c0 10.2-2.4 19.8-6.6 28.3l-90.3-70.8zm223.1 298L373 389.9c-16.4 6.5-34.3 10.1-53 10.1c-79.5 0-144-64.5-144-144c0-6.9 .5-13.6 1.4-20.2L83.1 161.5C60.3 191.2 44 220.8 34.5 243.7c-3.3 7.9-3.3 16.7 0 24.6c14.9 35.7 46.2 87.7 93 131.1C174.5 443.2 239.2 480 320 480c47.8 0 89.9-12.9 126.2-32.5z"/></svg></span></template>
+        <template id=fa-copy><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M502.6 70.63l-61.25-61.25C435.4 3.371 427.2 0 418.7 0H255.1c-35.35 0-64 28.66-64 64l.0195 256C192 355.4 220.7 384 256 384h192c35.2 0 64-28.8 64-64V93.25C512 84.77 508.6 76.63 502.6 70.63zM464 320c0 8.836-7.164 16-16 16H255.1c-8.838 0-16-7.164-16-16L239.1 64.13c0-8.836 7.164-16 16-16h128L384 96c0 17.67 14.33 32 32 32h47.1V320zM272 448c0 8.836-7.164 16-16 16H63.1c-8.838 0-16-7.164-16-16L47.98 192.1c0-8.836 7.164-16 16-16H160V128H63.99c-35.35 0-64 28.65-64 64l.0098 256C.002 483.3 28.66 512 64 512h192c35.2 0 64-28.8 64-64v-32h-47.1L272 448z"/></svg></span></template>
+        <template id=fa-play><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M73 39c-14.8-9.1-33.4-9.4-48.5-.9S0 62.6 0 80V432c0 17.4 9.4 33.4 24.5 41.9s33.7 8.1 48.5-.9L361 297c14.3-8.7 23-24.2 23-41s-8.7-32.2-23-41L73 39z"/></svg></span></template>
+        <template id=fa-clock-rotate-left><span class=fa-svg><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Free 6.2.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2022 Fonticons, Inc. --><path d="M75 75L41 41C25.9 25.9 0 36.6 0 57.9V168c0 13.3 10.7 24 24 24H134.1c21.4 0 32.1-25.9 17-41l-30.8-30.8C155 85.5 203 64 256 64c106 0 192 86 192 192s-86 192-192 192c-40.8 0-78.6-12.7-109.7-34.4c-14.5-10.1-34.4-6.6-44.6 7.9s-6.6 34.4 7.9 44.6C151.2 495 201.7 512 256 512c141.4 0 256-114.6 256-256S397.4 0 256 0C185.3 0 121.3 28.7 75 75zm181 53c-13.3 0-24 10.7-24 24V256c0 6.4 2.5 12.5 7 17l72 72c9.4 9.4 24.6 9.4 33.9 0s9.4-24.6 0-33.9l-65-65V152c0-13.3-10.7-24-24-24z"/></svg></span></template>
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr-ef4e11c1.min.js"></script>
+        <script src="../../mark-09e88c2c.min.js"></script>
+        <script src="../../searcher-09f2665d.js"></script>
+
+        <script src="../../clipboard-1626706a.min.js"></script>
+        <script src="../../highlight-abc7f01d.js"></script>
+        <script src="../../book-609e4cb8.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../mermaid-eefea253.min.js"></script>
+        <script src="../../mermaid-init-e19dc18e.js"></script>
+
+
+
+    </div>
+    </body>
+</html>
