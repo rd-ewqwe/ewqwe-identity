@@ -9,7 +9,7 @@ At the end of this guide, the wallet presents the credential to the verifier, an
 ## Prerequisites
 
 - The credential verifier is installed and running over HTTPS. See [Install and run the credential verifier](./install-and-run.md) and [Configure TLS](./configure-tls.md).
-- The verifier app is enabled on the verifier. See [Run the verifier app](../verifier-app/run-the-verifier-app.md).
+- The verifier app is enabled on the verifier. See [Run the verifier app](../../tutorials/verifier-app/run-the-verifier-app.md).
 - The verifier trusts the certificate authority (CA) that issued the test credential, so that the verifier reports the issuer as trusted. See [Configuration](../../reference/credential-verifier/configuration.md).
 - Android Studio is installed, or you have a physical Android device with Android 10 (API level 29) or higher.
 - You know the public hostname and port of the verifier. This is the `public_root_url` value in the verifier configuration.

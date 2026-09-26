@@ -6,7 +6,7 @@ OpenID for Verifiable Presentations (OpenID4VP) is an OpenID specification that 
 
 ## Why does the system use OpenID4VP at all?
 
-The EU Age Verification Profile names the W3C Digital Credentials API as the primary method and OpenID4VP as the fallback for browsers that do not provide that API. The fallback also serves wallets that exist only as a browser extension, because an extension cannot register as a native credential provider. See [Protocol modes](../../explanation/openid4vp/protocol-modes.md).
+The EU Age Verification Profile names the W3C Digital Credentials API as the primary method and OpenID4VP as the fallback for browsers that do not provide that API. See [Protocol modes](../../explanation/openid4vp/protocol-modes.md).
 
 ## Does the verifier need a signed authorization request?
 
@@ -55,10 +55,6 @@ The `av://` link scheme lets the operating system open the age verification appl
 ## Why must I send the request parameters by value instead of using a request_uri?
 
 The profile forbids a JWT-secured authorization request by reference, because that mechanism protects the request only when a trust list of relying parties exists. For age verification no such trust list exists, so the profile requires all parameters inline in the URL. See [Protocol modes](../../explanation/openid4vp/protocol-modes.md).
-
-## Can a browser extension act as a digital credential provider?
-
-No. Current browser APIs do not let an extension register as a credential provider, so the native call fails and the system uses the OpenID4VP fallback. See [Protocol modes](../../explanation/openid4vp/protocol-modes.md).
 
 ## What is the difference between the same-device and cross-device flows?
 

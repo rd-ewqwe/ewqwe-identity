@@ -194,7 +194,7 @@ See [Protocol modes](../../explanation/openid4vp/protocol-modes.md) and [Credent
 
 ## Related pages
 
-- [Run the verifier app](../../how-to-guides/verifier-app/run-the-verifier-app.md)
+- [Run the verifier app](../../tutorials/verifier-app/run-the-verifier-app.md)
 - [Credential verifier configuration](../credential-verifier/configuration.md)
 - [HTTP API](../credential-verifier/http-api.md)
 - [Verification journal](../credential-verifier/verification-journal.md)

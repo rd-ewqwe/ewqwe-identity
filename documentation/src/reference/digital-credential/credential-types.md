@@ -199,7 +199,7 @@ A DCQL query that requests this attestation has the following form.
 
 ## Other credential types
 
-The verifier accepts other credential types when the operator configures them. Any credential whose issuer chains to a trusted CA is verified, provided the DCQL query requests its `docType` or `vct`. For example, the demo relying party also offers a Health ID credential, which uses the SD-JWT VC format. To request a type that is not one of the three above, supply a full `dcql_query` in the transaction request.
+The verifier accepts other credential types when the operator configures them. Any credential whose issuer chains to a trusted CA is verified, provided the DCQL query requests its `docType` or `vct`. For example, the relying-party example in `webapp/` also configures a Health ID credential, which uses the SD-JWT VC format. To request a type that is not one of the three above, supply a full `dcql_query` in the transaction request.
 
 ## Related topics
 
