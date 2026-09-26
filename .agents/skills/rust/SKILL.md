@@ -12,7 +12,7 @@ applyTo: "**/*.rs"
 - API Usage: Before suggesting or generating Rust API usage, check the workspace manifest versions first.
 - Comments: Use `///` doc comments for public items and `//` comments for private implementation details. Follow the rules in the [code-comments skill](../code-comments/SKILL.md).
 - Logging: Use the `ewqwe_logging` crate. Call `tracing_init` in a binary, and `log_init` in tests.
-- Testing: Write unit tests in a `#[cfg(test)] mod tests` module. Write integration tests for endpoints and critical workflows in the crate's `tests` module, for example `credential_verifier/src/tests/`. Run them with `cargo test`.
+- Testing: Write unit tests in a `#[cfg(test)] mod tests` module. Write integration tests for endpoints and critical workflows in the crate's `tests` module, for example `crates/ewqwe-credential-verifier-server/src/tests/`. Run them with `cargo test`.
 - Testing: Spawn the server inside the tests, and clean up after each test. Use `#[tokio::test]` or `#[actix_web::test]` as appropriate.
 - Error Handling: Return `Result` and `Option`. Do not panic in code, or in tests. Use the project error system: the `AttError` and `AttResult` types, the `AttResultHelper::context` method, and the `auth_error!`, `auth_bail!`, and `auth_ensure!` macros. Define error enums with `thiserror`. Do not use `anyhow` or `eyre`.
 - Function naming: Name a function after the action it performs, using the vocabulary of the standards. For example, `verify_mdoc_presentation` and `decode_sd_jwt_presentation`.

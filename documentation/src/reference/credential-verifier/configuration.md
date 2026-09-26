@@ -33,7 +33,7 @@ These keys accept a relative path:
 - `tls_params.client_ca_cert_chain`
 - `openid4vp_config.haip_config.x509_cert_path`
 - `openid4vp_config.haip_config.x509_key_path`
-- `credentials_cas_dir`
+- `issuers_cas_dir`
 - `attestation_issuer_certificate`
 - `attestation_issuer_key`
 - `journal_config.path` for the `sqlite_file` backend
@@ -50,17 +50,15 @@ The table below lists the top-level keys of the configuration file.
 | `openid4vp_config`               | table   | Yes      | —                               | OpenID4VP service settings.                                                               |
 | `default_username`               | string  | No       | —                               | Accepted for compatibility. The server does not read this value.                          |
 | `public_root_url`                | string  | No       | —                               | Public base URL of the server.                                                            |
-| `credentials_cas_dir`            | string  | No       | `credentials_cas`               | Directory of trusted credential issuer CA files.                                          |
+| `issuers_cas_dir`                | string  | No       | `issuers_cas`                   | Directory of trusted credential issuer CA files.                                          |
 | `attestation_issuer_certificate` | string  | No       | `tls_params.server_certificate` | PEM certificate for attestation signing.                                                  |
 | `attestation_issuer_key`         | string  | No       | `tls_params.server_private_key` | PEM private key for attestation signing.                                                  |
 | `disable_authentication`         | boolean | No       | `false`                         | Bypass client certificate authentication.                                                 |
 | `disabled_authentication_user`   | string  | No       | `test`                          | Username inserted when authentication is disabled.                                        |
 | `rust_log`                       | string  | No       | —                               | Log filter string.                                                                        |
-| `tracing_config`                 | table   | No       | See below                       | Logging and telemetry settings.                                                           |
+| `tracing_config`                 | table   | No       | See below                       | Logging settings.                                                                         |
 | `journal_config`                 | table   | No       | Journal disabled                | Verification journal settings. See [Verification journal](./verification-journal.md).     |
-| `verifier_ui`                   | table   | No       | App disabled                    | Embedded verifier app. See the [Verifier app](../verifier-app/verifier-app.md) reference. |
-
-The key `verifier_ui` accepts the alias `qrcode_app`.
+| `verifier_ui`                    | table   | No       | App disabled                    | Embedded verifier app. See the [Verifier app](../verifier-app/verifier-app.md) reference. |
 
 ### Public root URL
 
@@ -68,22 +66,19 @@ The `public_root_url` value is the public base URL of the server. The server use
 
 The server chooses the base URL in this order:
 
-| Priority | Source                            |
-| :------- | :-------------------------------- |
-| 1        | `verifier_ui.public_url`         |
-| 2        | `public_root_url`                 |
-| 3        | The URL inferred from the request |
+| Priority | Source                             |
+| :------- | :--------------------------------- |
+| 1        | `verifier_ui.qr_code_callback_url` |
+| 2        | `public_root_url`                  |
+| 3        | The URL inferred from the request  |
 
 Set `public_root_url` when the server runs behind a reverse proxy or a NAT, or when the bind address is not reachable by wallets.
 
 ### Credential issuer CA directory
 
-The `credentials_cas_dir` value is the directory that holds the trusted credential issuer CA files. The server loads every `*.pem` file in the directory at startup and caches the result. The directory is not reloaded while the server runs, so a restart applies changes.
+The `issuers_cas_dir` value is the directory that holds the trusted credential issuer CA files. The server loads every `*.pem` file in the directory at startup and caches the result. The directory is not reloaded while the server runs, so a restart applies changes.
 
-The default directory is `credentials_cas` next to the configuration file. When the directory holds no PEM file, no issuer CA is trusted and every presentation reports `issuer_trusted = false`.
-
-> [!IMPORTANT]
-> The server reads the configuration key `credentials_cas_dir`. The development file `credential_verifier/credential-server.toml` in this repository writes `credential_cas_dir`, which is a different key. The server ignores an unknown key, so the shipped file uses the default directory instead of the configured one.
+The default directory is `issuers_cas` next to the configuration file. When the directory holds no PEM file, no issuer CA is trusted and every presentation reports `issuer_trusted = false`.
 
 ### Attestation issuer
 
@@ -143,19 +138,16 @@ The leaf certificate of the chain must carry the DNS subject alternative name (S
 
 The `[openid4vp_config.transaction_store]` table selects the backend that stores OpenID4VP transactions.
 
-| `backend` value | Required keys | Persistence | Multi-instance | Notes                                               |
-| :-------------- | :------------ | :---------- | :------------- | :-------------------------------------------------- |
-| `sqlite_memory` | None          | No          | No             | Default. No file is created.                        |
-| `sqlite_file`   | `path`        | Yes         | No             | Persists across restarts.                           |
-| `postgres`      | `url`         | Yes         | Yes            | Recommended for high-availability deployments.      |
-| `redis`         | `url`         | Yes         | Yes            | Native TTL expiry. Recommended for distributed use. |
+| `backend` value | Required keys | Persistence | Notes                        |
+| :-------------- | :------------ | :---------- | :--------------------------- |
+| `sqlite_memory` | None          | No          | Default. No file is created. |
+| `sqlite_file`   | `path`        | Yes         | Persists across restarts.    |
 
-| Key    | Type   | Required                   | Description                                  |
-| :----- | :----- | :------------------------- | :------------------------------------------- |
-| `path` | string | For `sqlite_file`          | Filesystem path to the SQLite database file. |
-| `url`  | string | For `postgres` and `redis` | Backend connection URL.                      |
+| Key    | Type   | Required          | Description                                  |
+| :----- | :----- | :---------------- | :------------------------------------------- |
+| `path` | string | For `sqlite_file` | Filesystem path to the SQLite database file. |
 
-The example below shows all four backends. Uncomment the block that matches the deployment.
+The example below shows both backends. Uncomment the block that matches the deployment.
 
 ```toml
 # SQLite in-memory — default, no keys required
@@ -166,16 +158,6 @@ backend = "sqlite_memory"
 # [openid4vp_config.transaction_store]
 # backend = "sqlite_file"
 # path    = "/var/lib/ewqwe/transactions.db"
-
-# PostgreSQL — multi-instance / high availability
-# [openid4vp_config.transaction_store]
-# backend = "postgres"
-# url     = "postgres://ewqwe:ewqwe@localhost/ewqwe"
-
-# Redis — distributed, TTL-native expiry
-# [openid4vp_config.transaction_store]
-# backend = "redis"
-# url     = "redis://127.0.0.1:6379"
 ```
 
 ## Verification journal configuration
@@ -197,50 +179,33 @@ The `[journal_config]` table configures the verification journal. The journal is
 
 See the [Verification journal](./verification-journal.md) page for the entry schema and the journal HTTP API.
 
-## Logging and telemetry
+## Logging
 
 The server configures logging from two sources. The top-level `rust_log` key is a shortcut for the `tracing_config.rust_log` key. When both keys are present, `tracing_config.rust_log` wins. When neither key is set, the server uses the `RUST_LOG` environment variable.
 
-The `[tracing_config]` table controls the logging sinks.
+The `[tracing_config]` table holds two keys.
 
-| Key                | Type    | Default               | Description                                                           |
-| :----------------- | :------ | :-------------------- | :-------------------------------------------------------------------- |
-| `service_name`     | string  | `credential_verifier` | Service name reported to OpenTelemetry and syslog.                    |
-| `rust_log`         | string  | —                     | Log filter string. Overrides the top-level `rust_log` and `RUST_LOG`. |
-| `no_log_to_stdout` | boolean | `false`               | Suppress logging to stdout and stderr.                                |
-| `log_to_syslog`    | boolean | `false`               | Send logs to the system syslog daemon. Unix and macOS only.           |
-| `log_to_file`      | array   | —                     | Daily rolling file logging as `[directory, base_name]`.               |
-| `with_ansi_colors` | boolean | `false`               | Enable ANSI color codes in stdout logs.                               |
-| `otlp`             | table   | —                     | OpenTelemetry export settings. See below.                             |
+| Key                | Type    | Default | Description                                                           |
+| :----------------- | :------ | :------ | :-------------------------------------------------------------------- |
+| `rust_log`         | string  | —       | Log filter string. Overrides the top-level `rust_log` and `RUST_LOG`. |
+| `with_ansi_colors` | boolean | `false` | Enable ANSI color codes in stdout logs.                               |
 
-The `log_to_file` value is an array of two strings. The first string is the directory, and the second string is the base file name. The server appends the date to the base name and creates a new file each day.
-
-The `[tracing_config.otlp]` table enables export to an OpenTelemetry Protocol (OTLP) collector over gRPC.
-
-| Key               | Type    | Required | Description                                                        |
-| :---------------- | :------ | :------- | :----------------------------------------------------------------- |
-| `otlp_url`        | string  | Yes      | OTLP collector gRPC endpoint, for example `http://localhost:4317`. |
-| `version`         | string  | No       | Service version attribute.                                         |
-| `environment`     | string  | No       | Deployment environment attribute.                                  |
-| `enable_metering` | boolean | No       | Enable metrics export in addition to traces.                       |
-
-> [!NOTE]
-> The `log_to_syslog` key is not compiled on Windows.
+The server writes its logs to standard output.
 
 ## Full example
 
-The example below enables mutual TLS, a Redis transaction store, the HAIP profile, journaling to PostgreSQL, and OTLP export.
+The example below enables mutual TLS, a persistent transaction store, the HAIP profile, and journaling to PostgreSQL.
 
 ```toml
 host_name = "0.0.0.0"
 host_port = 9443
 public_root_url = "https://verifier.example.com"
 
-credentials_cas_dir = "issuer_cas"
+issuers_cas_dir = "issuer_cas"
 attestation_issuer_certificate = "certs/attestation.cert.pem"
 attestation_issuer_key = "certs/attestation.key.pem"
 
-rust_log = "info,credential_verifier=debug"
+rust_log = "info,ewqwe_credential_verifier_server=debug"
 
 [tls_params]
 server_private_key   = "certs/server.key.pem"
@@ -252,8 +217,8 @@ client_ca_cert_chain = "certs/client-ca.pem"
 transaction_ttl_secs = 300
 
 [openid4vp_config.transaction_store]
-backend = "redis"
-url     = "redis://127.0.0.1:6379"
+backend = "sqlite_file"
+path    = "/var/lib/ewqwe/transactions.db"
 
 [openid4vp_config.haip_config]
 x509_cert_path = "certs/server.fullchain.pem"
@@ -265,13 +230,7 @@ backend = "postgres"
 url     = "postgres://ewqwe:ewqwe@localhost/ewqwe"
 
 [tracing_config]
-service_name     = "credential_verifier"
 with_ansi_colors = false
-
-[tracing_config.otlp]
-otlp_url        = "http://localhost:4317"
-environment     = "production"
-enable_metering = true
 ```
 
 ## Startup validation

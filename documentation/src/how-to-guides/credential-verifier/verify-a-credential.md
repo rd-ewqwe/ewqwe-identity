@@ -33,13 +33,12 @@ BASE=https://localhost:9443
 
 ## Steps
 
-1. Create the transaction. The `public_url` is the address that the wallet uses for the callback, so it must be reachable by the wallet and must match a DNS subject alternative name of the server certificate. The `state` value is yours to choose; the verifier binds it to the transaction and expects it again at verification.
+1. Create the transaction. The server builds the wallet callback URL from `public_root_url`, so that value must be reachable by the wallet and must match a DNS subject alternative name of the server certificate. The `state` value is yours to choose; the verifier binds it to the transaction and expects it again at verification.
 
    ```bash
    curl -sk --cert "$CERT" --key "$KEY" \
      -H "Content-Type: application/json" \
      -d '{
-       "public_url": "https://localhost:9443",
        "profile": "annex-a",
        "credential_type": "proof-of-age",
        "state": "demo-state-0001"
@@ -205,10 +204,10 @@ BASE=https://localhost:9443
 - **The response is `410 Gone`.** The transaction exceeded `transaction_ttl_secs` and expired. Create a new transaction.
 - **The response is `400` with `client_id does not match the transaction-bound request`.** Send the `client_id` value from the init response.
 - **The response is `400` with `state is required for mDoc verification`.** An mDoc presentation needs the transaction, so include `state`.
-- **The response is `400` with an untrusted-issuer message.** The issuer CA of the credential is not in `credentials_cas_dir`. Add the CA file and restart the server, because the directory is read only at startup.
+- **The response is `400` with an untrusted-issuer message.** The issuer CA of the credential is not in `issuers_cas_dir`. Add the CA file and restart the server, because the directory is read only at startup.
 - **The response is `400` with a decode message.** The `vp_token` is not a valid SD-JWT VC, mDoc `DeviceResponse`, or direct JSON presentation. Check that you copied the value without truncation.
 - **`success` is `false` with a nonce mismatch error.** The presentation does not belong to the transaction that `state` names. Use the `vp_token` and the `state` from the same status response.
-- **The status stays `pending`.** The wallet did not reach the `response_uri`. Check that the wallet can reach `public_url` and that the wallet trusts the server certificate.
+- **The status stays `pending`.** The wallet did not reach the `response_uri`. Check that the wallet can reach `public_root_url` and that the wallet trusts the server certificate.
 - **The response is `500` and the log shows a journal error.** The checks passed but the journal write failed. See [configure storage](configure-storage.md).
 
 ## Next steps

@@ -23,7 +23,7 @@ The server implements the [W3C Digital Credentials API](https://www.w3.org/TR/di
 
 The credential verifier ships with its own web application, the **verifier app**. An operator signs in, selects a credential type, and shows a QR code. The holder scans the QR code with a wallet, and the app shows the verification result. The verifier app is the standard user interface of the credential verifier and needs no other software.
 
-The verifier also exposes an HTTP API, so a product can build a user interface of its own. The repository contains an example relying party in `webapp/` that shows one way to do this. See [Develop your own relying-party UI](./how-to-guides/credential-verifier/develop-a-relying-party-ui.md).
+The verifier also exposes an HTTP API, so a product can build a user interface of its own. The repository contains an example relying party in `typescript/demo-webapp/` that shows one way to do this. See [Develop your own relying-party UI](./how-to-guides/credential-verifier/develop-a-relying-party-ui.md).
 
 ## Who this documentation is for
 
@@ -50,14 +50,29 @@ The book follows the [Diataxis framework](https://diataxis.fr). Each section ser
 The [Glossary](./glossary.md) defines the terms that the documentation uses. The [References](./references.md) page lists the external standards.
 
 > [!NOTE]
-> The example relying party in `webapp/` is an advanced reference for building your own interface. It is not part of the credential verifier server, and it is not intended for production use as it stands.
+> The example relying party in `typescript/demo-webapp/` is an advanced reference for building your own interface. It is not part of the credential verifier server, and it is not intended for production use as it stands.
 
 ## Related components
 
 The credential verifier depends on three crates of this repository:
 
-- `crates/openid4vp` builds and validates OpenID4VP requests and matches DCQL queries.
+- `crates/ewqwe-openid4vp` builds and validates OpenID4VP requests and matches DCQL queries.
 - `crates/ewqwe-digital-credential` builds and verifies mDoc and SD-JWT VC credentials.
 - `crates/ewqwe-credential-verifier-ui` is the verifier app, the built-in web application that an operator uses to run age verifications.
 
 The server returns a signed attestation, so a Relying Party can trust the result without performing the verification itself. See the [HTTP API](./reference/credential-verifier/http-api.md) for the request and response of each endpoint.
+
+## Licenses
+
+The components of this repository use two open-source licenses. The Rust server, its crates, and the verifier app are released under the [European Union Public Licence v1.2](https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12) (EUPL-1.2). The TypeScript library `typescript/ewqwe-digital-identity` and the demo webapp `typescript/demo-webapp` are released under the [MIT License](https://opensource.org/license/mit).
+
+| Component                             | Location                              | License  |
+| :------------------------------------ | :------------------------------------ | :------- |
+| Credential verifier server and crates | `crates/`                             | EUPL-1.2 |
+| Verifier app (embedded SPA)           | `crates/ewqwe-credential-verifier-ui` | EUPL-1.2 |
+| Shared TypeScript library             | `typescript/ewqwe-digital-identity`   | MIT      |
+| Demo webapp                           | `typescript/demo-webapp`              | MIT      |
+
+The full license texts are in the `LICENSE` file at the repository root and in the `LICENSE` file of each TypeScript package.
+
+Some components are not part of this open-source repository. The enterprise add-ons are available under a separate commercial license. See the README and [ewqwe.eu](https://ewqwe.eu) for the enterprise offering.

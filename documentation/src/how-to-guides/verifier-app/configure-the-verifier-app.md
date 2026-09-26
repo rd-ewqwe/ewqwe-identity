@@ -25,7 +25,7 @@ ui_dist_path = "../crates/ewqwe-credential-verifier-ui/ui/dist"
 
 - `app_name` sets the text in the header.
 - `logo_url` accepts an HTTPS URL or a `data:` URL.
-- `public_url` sets the base URL for the wallet callback. When the value is absent, the app derives the base URL from the incoming request.
+- `qr_code_callback_url` sets the base URL for the wallet callback. When the value is absent, the app uses the `public_root_url` of the server, or derives the base URL from the incoming request.
 
 An administrator can also change the display name and the logo on the Settings page. A value in the configuration file sets the start value; a value on the Settings page overrides it and is stored in the user database.
 
@@ -38,7 +38,7 @@ The `allowed_credential_types` key limits the types that any user can request:
 allowed_credential_types = ["proof-of-age", "mdl"]
 ```
 
-The accepted values are `proof-of-age`, `mdl`, and `national-id`. An empty list allows every type. A per-user list narrows the server setting for one user; it never widens it.
+The accepted values are `proof-of-age`, `mdl`, `national-id`, and `france-identite-numerique`. An empty list allows every type. A per-user list narrows the server setting for one user; it never widens it.
 
 To restrict one user, open the Users page as an administrator, edit the user, and select the allowed types.
 
@@ -55,7 +55,7 @@ openssl rand -hex 64
 session_secret = "<the generated value>"
 ```
 
-The value must contain at least 8 characters.
+The value must contain at least 8 characters. The server derives the cookie signing key from the value, so the same value keeps the sessions valid across restarts.
 
 ## Choose the user database
 
@@ -67,12 +67,10 @@ backend = "sqlite_file"
 path = "/var/lib/ewqwe/verifier_ui.db"
 ```
 
-| Backend         | Persistence | Extra keys | Use                                       |
-| :-------------- | :---------- | :--------- | :---------------------------------------- |
-| `sqlite_memory` | none        | none       | Development and testing.                  |
-| `sqlite_file`   | file        | `path`     | A single instance with persistence.       |
-| `postgres`      | server      | `url`      | Multiple instances and high availability. |
-| `mysql`         | server      | `url`      | MySQL and MariaDB installations.          |
+| Backend         | Persistence | Extra keys | Use                                 |
+| :-------------- | :---------- | :--------- | :---------------------------------- |
+| `sqlite_memory` | none        | none       | Development and testing.            |
+| `sqlite_file`   | file        | `path`     | A single instance with persistence. |
 
 The `path` value resolves relative to the directory that holds the configuration file. The default backend is `sqlite_memory`.
 
@@ -89,13 +87,13 @@ The first account that the bootstrap route creates is an administrator with `is_
 
 ## Troubleshooting
 
-| Symptom                              | Cause                                   | Action                                                          |
-| :----------------------------------- | :-------------------------------------- | :-------------------------------------------------------------- |
-| The config key has no effect         | The app reads the value at startup.     | Restart the server after a change to the configuration file.   |
-| Every `/verifier_ui/api` route returns 404    | The app is disabled.                    | Keep the `[verifier_ui]` section with `enabled = true`.        |
-| Accounts disappear after a restart   | The database is `sqlite_memory`.        | Configure `sqlite_file`, `postgres`, or `mysql`.                |
-| Sessions end after a restart         | `session_secret` is not set.            | Set a stable `session_secret` value.                            |
-| A user cannot request a type         | The type is not allowed for that user.  | Widen the per-user list or the `allowed_credential_types` list. |
+| Symptom                            | Cause                                  | Action                                                          |
+| :--------------------------------- | :------------------------------------- | :-------------------------------------------------------------- |
+| The config key has no effect       | The app reads the value at startup.    | Restart the server after a change to the configuration file.    |
+| Every `/api/v1` route returns 404  | The app is disabled.                   | Keep the `[verifier_ui]` section with `enabled = true`.         |
+| Accounts disappear after a restart | The database is `sqlite_memory`.       | Configure `sqlite_file`.                                        |
+| Sessions end after a restart       | `session_secret` is not set.           | Set a stable `session_secret` value.                            |
+| A user cannot request a type       | The type is not allowed for that user. | Widen the per-user list or the `allowed_credential_types` list. |
 
 ## Related pages
 

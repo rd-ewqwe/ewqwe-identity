@@ -2,7 +2,7 @@
 
 This guide shows how to add credential verification to a user interface of your own. The credential verifier already ships with a standard user interface, the [verifier app](../../reference/verifier-app/verifier-app.md). Build your own interface only when you need to embed verification in your own product, with your own layout and your own session.
 
-The repository contains an **example relying party** in `webapp/`. The example is an advanced, working reference that shows one way to build such an interface. It is not part of the credential verifier and is not a supported deployment.
+The repository contains an **example relying party** in `typescript/demo-webapp/`. The example is an advanced, working reference that shows one way to build such an interface. It is not part of the credential verifier and is not a supported deployment.
 
 ## Goal
 
@@ -11,7 +11,7 @@ Build a user interface that requests a credential from a wallet, sends the prese
 ## Prerequisites
 
 - A running credential verifier. See [Install and run the server](./install-and-run.md).
-- Deno 1.40 or later, to run the example.
+- Node.js 18 or later and pnpm, to run the example.
 - A wallet that holds a credential. See [Test with the age verification app](./test-with-the-av-app.md) or [Test with the EUDI wallet](./test-with-the-eudi-wallet.md).
 
 ## Choose an interface
@@ -38,41 +38,38 @@ The request parameters and the DCQL query are described in [OpenID4VP request pa
 
 ## The example relying party
 
-The example lives in `webapp/` and uses Deno and TypeScript. It has no front-end framework.
+The example lives in `typescript/demo-webapp/`. It uses TypeScript, Vite, and Tailwind CSS, without a front-end framework.
 
-| Path                        | Contents                                                 |
-| :-------------------------- | :------------------------------------------------------- |
-| `webapp/deno.json`          | Deno tasks and the module imports.                       |
-| `webapp/server.ts`          | The proxy server that forwards requests to the verifier. |
-| `webapp/src/rp.ts`          | The relying-party application logic.                     |
-| `webapp/src/credentials.ts` | The credential request and verification logic.           |
-| `webapp/src/config.ts`      | The credential type configurations.                      |
-| `webapp/src/types.ts`       | The TypeScript type definitions.                         |
+| Path                                              | Contents                                         |
+| :------------------------------------------------ | :----------------------------------------------- |
+| `typescript/demo-webapp/vite.config.ts`           | The Vite configuration and the reverse proxy.    |
+| `typescript/demo-webapp/index.html`               | The HTML entry page.                             |
+| `typescript/demo-webapp/src/main.ts`              | The entry point that starts the application.     |
+| `typescript/demo-webapp/src/relying_party_app.ts` | The relying-party application logic.             |
+| `typescript/demo-webapp/src/credentials.ts`       | The credential request and verification logic.   |
+| `typescript/demo-webapp/src/dc_api_service.ts`    | The W3C Digital Credentials API integration.     |
+| `typescript/demo-webapp/src/hpke.ts`              | The HPKE decryption helper for the Annex C flow. |
+| `typescript/demo-webapp/src/debug.ts`             | The debug helpers.                               |
+| `typescript/demo-webapp/package.json`             | The scripts and the dependencies.                |
 
-Run the example with two processes, in this order.
-
-```bash
-# Terminal 1: the proxy server on port 5175
-cd webapp
-CA_CERT_PATH=../certificates/tls/ewqwe.ca.pem deno task api
-```
+Run the example from the TypeScript workspace root.
 
 ```bash
-# Terminal 2: the Vite dev server on port 5174
-cd webapp
-deno task vite
+cd typescript
+pnpm install
+pnpm --filter @ewqwe/digital-identity build
+pnpm --filter @ewqwe/demo-webapp dev
 ```
 
-Open `https://localhost:5174/`. The Vite dev server serves the interface and forwards each `/ewqwe_api/` request to the proxy on port 5175.
+Open `https://localhost:5174/`. The Vite dev server serves the interface and forwards each `/ewqwe_api/` request to the credential verifier. Vite generates a development certificate on the first run, so the browser shows a warning; accept the certificate and continue.
 
-The proxy reads two environment variables:
+The Vite server reads one environment variable:
 
-| Variable                  | Default                  | Purpose                                           |
-| :------------------------ | :----------------------- | :------------------------------------------------ |
-| `CREDENTIAL_VERIFIER_URL` | `https://127.0.0.1:9443` | The base URL of the credential verifier.          |
-| `CA_CERT_PATH`            | none                     | The CA certificate that the proxy trusts for TLS. |
+| Variable                  | Default                  | Purpose                                  |
+| :------------------------ | :----------------------- | :--------------------------------------- |
+| `CREDENTIAL_VERIFIER_URL` | `https://127.0.0.1:9443` | The base URL of the credential verifier. |
 
-The proxy forwards every `/ewqwe_api/` request to the credential verifier, so the browser talks to one origin and no client certificate is needed in the browser. In a production deployment, terminate the client certificate at your own proxy or web server.
+The dev server forwards every `/ewqwe_api/` request to the credential verifier, so the browser talks to one origin and no client certificate is needed in the browser. In a production deployment, terminate the client certificate at your own proxy or web server.
 
 ## Incorporate verification in your own interface
 
@@ -86,12 +83,12 @@ Use the example as a template and keep the following points.
 
 ## Troubleshooting
 
-| Symptom                                 | Cause                                       | Action                                                      |
-| :-------------------------------------- | :------------------------------------------ | :---------------------------------------------------------- |
-| The proxy cannot reach the verifier     | The CA certificate is not trusted.          | Set `CA_CERT_PATH` to your verifier CA certificate.         |
-| Every request returns 404               | The wallet path is not served.              | Check that the proxy forwards to `CREDENTIAL_VERIFIER_URL`. |
-| The verifier rejects the presentation   | The nonce or the `state` does not match.    | Read the nonce and the `state` from the stored transaction. |
-| The browser shows a certificate warning | The development certificate is self-signed. | Accept the certificate for `https://localhost:5174/`.       |
+| Symptom                                  | Cause                                             | Action                                                      |
+| :--------------------------------------- | :------------------------------------------------ | :---------------------------------------------------------- |
+| The dev server cannot reach the verifier | The verifier is not running, or the URL is wrong. | Start the verifier and check `CREDENTIAL_VERIFIER_URL`.     |
+| Every request returns 404                | The verifier does not serve the path.             | Check the base URL of the verifier.                         |
+| The verifier rejects the presentation    | The nonce or the `state` does not match.          | Read the nonce and the `state` from the stored transaction. |
+| The browser shows a certificate warning  | The development certificate is self-signed.       | Accept the certificate for `https://localhost:5174/`.       |
 
 ## Related pages
 

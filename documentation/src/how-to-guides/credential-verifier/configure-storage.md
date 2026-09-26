@@ -7,19 +7,16 @@ The choice of backend depends on the deployment shape. A single server instance 
 ## Prerequisites
 
 - A running server. See [install and run the server](install-and-run.md).
-- For a PostgreSQL backend, a reachable PostgreSQL database and a connection URL.
-- For a Redis backend, a reachable Redis server and a connection URL.
+- For a PostgreSQL journal backend, a reachable PostgreSQL database and a connection URL.
 
 ## Configure the transaction store
 
 The transaction store keeps the nonce and the request context between the moment the relying party creates a transaction and the moment the wallet responds. Configure it under `[openid4vp_config.transaction_store]`.
 
-| Backend          | `backend` value | Persistence          | Multi-instance | Use it for                   |
-| :--------------- | :-------------- | :------------------- | :------------- | :--------------------------- |
-| SQLite in memory | `sqlite_memory` | No, lost on restart  | No             | Development and tests        |
-| SQLite file      | `sqlite_file`   | Yes                  | No             | A single production instance |
-| PostgreSQL       | `postgres`      | Yes                  | Yes            | Multi-instance deployments   |
-| Redis            | `redis`         | Yes, with native TTL | Yes            | Distributed deployments      |
+| Backend          | `backend` value | Persistence         | Multi-instance | Use it for                   |
+| :--------------- | :-------------- | :------------------ | :------------- | :--------------------------- |
+| SQLite in memory | `sqlite_memory` | No, lost on restart | No             | Development and tests        |
+| SQLite file      | `sqlite_file`   | Yes                 | No             | A single production instance |
 
 1. Add the backend section. The in-memory backend is the default and needs no section.
 
@@ -32,19 +29,9 @@ The transaction store keeps the nonce and the request context between the moment
    [openid4vp_config.transaction_store]
    backend = "sqlite_file"
    path = "transactions.db"
-
-   # PostgreSQL: shared state across several instances.
-   # [openid4vp_config.transaction_store]
-   # backend = "postgres"
-   # url     = "postgres://ewqwe:ewqwe@localhost/ewqwe"
-
-   # Redis: shared state with automatic expiry.
-   # [openid4vp_config.transaction_store]
-   # backend = "redis"
-   # url     = "redis://127.0.0.1:6379"
    ```
 
-   The journal resolves a relative SQLite `path` against the directory of the configuration file, but the transaction store does not. Give the transaction store an absolute path, or start the server from the directory that holds the database file.
+   A relative SQLite `path` is resolved against the directory that contains the configuration file.
 
 2. Set the transaction lifetime. A transaction expires after this many seconds, and an expired transaction can no longer be verified. The default is 300 seconds.
 
@@ -94,7 +81,7 @@ The journal records each successful verification in a per-user chain. Every entr
 2. Restart the server and check the startup output.
 
    ```text
-   INFO credential_verifier::server::start: Verification journal enabled (backend: SqliteFile { path: "/path/to/journal.db" })
+   INFO ewqwe_credential_verifier_server::server::start: Verification journal enabled (backend: SqliteFile { path: "/path/to/journal.db" })
    ```
 
    The server prints `Verification journal disabled` in place of that line when the journal is not enabled.
@@ -153,4 +140,4 @@ For the entry fields and the chain formula, see [the verification journal](../..
 - **A verification succeeds but the journal write fails.** The response reports an error even though the checks passed. A concurrent append changed the chain head and the retries were exhausted. Retry the request, or move the journal to a backend suited to the load.
 - **The journal endpoints return `401 Unauthorized`.** The request carried no client certificate, or the Common Name of the certificate does not match the `{username}` in the path.
 - **The journal is empty after a restart.** The `sqlite_memory` backend does not persist. Use `sqlite_file` or `postgres` to keep entries across restarts.
-- **Several instances do not see each other's transactions.** SQLite does not share state. Use `postgres` or `redis` for the transaction store on a multi-instance deployment.
+- **Several instances do not see each other's transactions.** The SQLite backends do not share state. Run one instance, or use a shared store when it is available.

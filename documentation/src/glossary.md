@@ -213,7 +213,7 @@ A credential or derived presentation that proves an age threshold (e.g. "over 18
 ## R
 
 **RP** — _Relying Party_
-The service or application that requests and verifies credentials. Also called **Verifier**. In this project, corresponds to the `webapp/` component.
+The service or application that requests and verifies credentials. Also called **Verifier**. In this project, corresponds to the `typescript/demo-webapp/` component.
 
 **response_mode**
 OpenID4VP parameter controlling how the wallet returns the VP Token:

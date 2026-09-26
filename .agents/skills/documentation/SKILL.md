@@ -18,18 +18,18 @@ The documentation follows the [Diataxis framework](https://diataxis.fr) and is c
 
 ## The documentation describes the credential verifier
 
-This project implements EU Age Verification with W3C Digital Credentials. The principal subject of the documentation is the **ewQwe Credential Verifier** server (`credential_verifier/`), a Rust Actix-web service that verifies Verifiable Presentations and returns signed attestations.
+This project implements EU Age Verification with W3C Digital Credentials. The principal subject of the documentation is the **ewQwe Credential Verifier** server (`crates/ewqwe-credential-verifier-server/`), a Rust Actix-web service that verifies Verifiable Presentations and returns signed attestations.
 
 The table below lists the components of the repository, their source path, and their role in the documentation.
 
-| Component             | Source path                                 | Role in the documentation                              |
-| :-------------------- | :------------------------------------------ | :----------------------------------------------------- |
-| Credential verifier   | `credential_verifier/`                      | Principal subject. The verification server.            |
-| Verifier app          | `crates/ewqwe-verifier-app/`                | The built-in user interface of the verifier.           |
-| OpenID4VP protocol    | `crates/openid4vp/`                         | Verifier dependency. Request, DCQL, and HAIP handling. |
-| Digital credential    | `crates/ewqwe-digital-credential/`          | Verifier dependency. Credential building and checking. |
-| Example relying party | `webapp/`                                   | An advanced example of a relying-party UI.             |
-| Client libraries      | `crates/ewqwe-digital-identity/`, `js-lib/` | Clients that the example uses.                         |
+| Component             | Source path                                                                      | Role in the documentation                              |
+| :-------------------- | :------------------------------------------------------------------------------- | :----------------------------------------------------- |
+| Credential verifier   | `crates/ewqwe-credential-verifier-server/`                                       | Principal subject. The verification server.            |
+| Verifier app          | `crates/ewqwe-credential-verifier-ui/`                                           | The built-in user interface of the verifier.           |
+| OpenID4VP protocol    | `crates/ewqwe-openid4vp/`                                                        | Verifier dependency. Request, DCQL, and HAIP handling. |
+| Digital credential    | `crates/ewqwe-digital-credential/`                                               | Verifier dependency. Credential building and checking. |
+| Example relying party | `typescript/demo-webapp/`                                                        | An advanced example of a relying-party UI.             |
+| Client libraries      | `typescript/ewqwe-digital-identity/`, `crates/ewqwe-credential-verifier-client/` | Clients that the example uses.                         |
 
 The credential verifier is documented across all four Diataxis quadrants. The verifier app is the standard user interface of the verifier, so it is documented beside the server and it leads the tutorials. The OpenID4VP protocol and the digital credential library are documented beside the server, because the credential verifier depends on them. The example relying party and the client libraries are not part of the verifier, so they are documented as an advanced how-to guide.
 
