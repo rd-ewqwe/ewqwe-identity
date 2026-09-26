@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0] — 2026-09-26
+
+### Security
+
+- Rust: updated `rustls` 0.23.41 → 0.23.45 ([RUSTSEC-2026-0285](https://rustsec.org/advisories/RUSTSEC-2026-0285) — TLS 1.3 handshake messages accepted across encryption level boundaries). Also refreshed `event-listener` 5.4.2 (unsound) and the yanked `chacha20` 0.10.2 and `spin` 0.9.9.
+- TypeScript: updated `vitest` ^3.2.6 → ^4.1.11 ([GHSA-82fw-gwwq-j7x9](https://github.com/advisories/GHSA-82fw-gwwq-j7x9) — path traversal via the `@vitest/mocker` redirect mock).
+- Verifier app UI: updated the lockfile to `browserslist` 4.29.1 and `baseline-browser-mapping` 2.11.26 ([GHSA-c83g-rgw3-j3cx](https://github.com/advisories/GHSA-c83g-rgw3-j3cx), [GHSA-73wf-gq98-2v4g](https://github.com/advisories/GHSA-73wf-gq98-2v4g), [GHSA-w5vr-8v7q-w6rv](https://github.com/advisories/GHSA-w5vr-8v7q-w6rv)).
+- `cargo audit` and `pnpm audit` report zero vulnerabilities.
+
+### Changed
+
+- Documentation reorganized into the [Diataxis](https://diataxis.fr) framework. The verifier app is now presented as the primary user interface, and the standalone webapp as an advanced example of a relying-party UI.
+- Added tutorials and how-to guides for the verifier app, and a guide for building a relying-party UI.
+- Repaired the mdBook theme and sidebar logo (per-theme accent colours, correct logo path, and mdBook 0.5 theme-button identifiers).
+- The Security Audit workflow now also audits the verifier app UI lockfile.
+- Added `.github/dependabot.yml` for weekly dependency updates.
+
+### Removed
+
+- Wallet-extension documentation.
+
 ## [1.2.0] — 2026-09-08
 
 ### Security
@@ -74,6 +95,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 Initial open-core release.
 
+[1.3.0]: https://github.com/rd-ewqwe/ewqwe-identity/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/rd-ewqwe/ewqwe-identity/compare/v1.1.3...v1.2.0
 [1.1.1]: https://github.com/rd-ewqwe/ewqwe-identity/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/rd-ewqwe/ewqwe-identity/releases/tag/v1.1.0
