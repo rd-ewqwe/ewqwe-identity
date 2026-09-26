@@ -1,0 +1,82 @@
+/* ewQwe branding layered on the stock mdBook themes.
+ *
+ * mdBook defines every colour as a CSS variable on the theme class of the
+ * <html> element (.light, .rust, .coal, .navy, .ayu). This file overrides only
+ * the accent variables of each theme. It never sets a background or a text
+ * colour directly, so each theme keeps the contrast that mdBook chose and the
+ * light and dark modes both stay legible.
+ */
+
+/* Light themes: a deep indigo, dark enough for a white background. */
+.light,
+html:not(.js) {
+    --ewqwe-accent: #5b45b0;
+    --links: #5b45b0;
+    --sidebar-active: #5b45b0;
+    --sidebar-header-border-color: #5b45b0;
+}
+
+.rust {
+    --ewqwe-accent: #6d55c0;
+    --links: #6d55c0;
+    --sidebar-active: #6d55c0;
+    --sidebar-header-border-color: #6d55c0;
+}
+
+/* Dark themes: a lighter indigo, bright enough for a dark background. */
+.coal,
+.navy,
+.ayu {
+    --ewqwe-accent: #a690ef;
+    --links: #a690ef;
+    --sidebar-active: #a690ef;
+    --sidebar-header-border-color: #8a72d9;
+}
+
+/* The same override for the default theme when the operating system asks for a
+   dark colour scheme and JavaScript is disabled. */
+@media (prefers-color-scheme: dark) {
+    html:not(.js) {
+        --ewqwe-accent: #a690ef;
+        --links: #a690ef;
+        --sidebar-active: #a690ef;
+        --sidebar-header-border-color: #8a72d9;
+    }
+}
+
+/* The ewQwe logo at the top of the sidebar. mdBook renders the sidebar with
+   JavaScript and provides no logo slot, so the image is drawn on the scrollbox.
+   The path is relative to this stylesheet, which mdBook copies to the root of
+   the output directory next to images/. */
+.sidebar .sidebar-scrollbox::before {
+    content: "";
+    display: block;
+    height: 72px;
+    margin: 14px 8px 20px;
+    background: url("./images/ewqwe_logo.png") center center / contain no-repeat;
+}
+
+/* Part headings in the sidebar use the accent colour. */
+.chapter li.part-title {
+    color: var(--ewqwe-accent);
+}
+
+/* A thin accent line under the table header, without changing the table
+   colours that mdBook sets per theme. */
+.content table thead {
+    border-bottom: 2px solid var(--ewqwe-accent);
+}
+
+@media (max-width: 1080px) {
+    .sidebar .sidebar-scrollbox::before {
+        height: 60px;
+        margin: 12px 8px 16px;
+    }
+}
+
+@media (max-width: 620px) {
+    .sidebar .sidebar-scrollbox::before {
+        height: 48px;
+        margin: 10px 8px 12px;
+    }
+}
