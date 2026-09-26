@@ -27,7 +27,7 @@ argon2 = { workspace = true }
 actix-service = { workspace = true }
 actix-tls = { workspace = true }
 actix-web = { workspace = true, features = ["macros", "openssl"] }
-base64 = "0.22"
+base64 = "0.23"
 chrono = { workspace = true }
 ciborium = { workspace = true }
 coset = { workspace = true }
