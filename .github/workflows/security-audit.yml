@@ -22,7 +22,7 @@ jobs:
       # Cache the cargo-audit binary and advisory database.
       # The binary is tiny (~5 MB); the DB is ~30 MB and is
       # incrementally updated by `cargo audit` on each run.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/bin/cargo-audit
