@@ -40,8 +40,8 @@ body
 
 - `type`: `chore`, `fix`, `feat`, `doc`, `agent`.
 - `scope`: a path. Need not be a valid path, but must be precise enough to match the target in a fuzzy finder.
-  - single file: full path — `fix(credential_verifier/src/server/verify_endpoint/mod.rs):`
-  - several files: common parent — `fix(credential_verifier/src/server):`
+  - single file: full path — `fix(crates/ewqwe-credential-verifier-server/src/server/verify_endpoint/mod.rs):`
+  - several files: common parent — `fix(crates/ewqwe-credential-verifier-server/src/server):`
 - `subject`: imperative, lowercase, no trailing period.
 
 ## Body
@@ -54,7 +54,7 @@ body
 Example:
 
 ```
-fix(credential_verifier/src/tests): initialize logging with log_init
+fix(crates/ewqwe-credential-verifier-server/src/tests): initialize logging with log_init
 
 `tracing_init` builds the OTLP gRPC exporter, which cannot start on the
 current-thread runtime that `#[tokio::test]` creates, so every integration
