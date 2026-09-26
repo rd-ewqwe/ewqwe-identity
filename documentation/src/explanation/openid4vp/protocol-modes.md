@@ -10,7 +10,7 @@ The W3C Digital Credentials API extends `navigator.credentials.get()` with suppo
 
 The request and the response use base64url-encoded CBOR, as defined by ISO/IEC 18013-7 Annex C. The wallet encrypts the response to the relying party with HPKE (RFC 9180).
 
-The native API gives the smoothest user experience, but it has practical limits. Not all browsers implement the API. A user preference or an enterprise policy can disable it. A browser extension cannot register as a credential provider, so the API fails with the error `NetworkError: No provider for digital credential requests` when only an extension can serve the request.
+The native API gives the smoothest user experience, but it has practical limits. Not all browsers implement the API. A user preference or an enterprise policy can disable it.
 
 ## OpenID4VP
 
@@ -36,18 +36,18 @@ In a same-device flow, the relying party and the wallet run on one device. The u
 
 In a cross-device flow, the relying party and the wallet run on different devices. The relying party shows a QR code that encodes the `av://` URL. The user scans the code with a phone, the mobile wallet asks for consent, and the wallet posts the response to the `response_uri`. The device that showed the QR code learns about the completion through polling or a WebSocket connection, and then shows the result.
 
-| Property                | Same-device flow                                | Cross-device flow                                  |
-| :---------------------- | :---------------------------------------------- | :------------------------------------------------- |
-| Devices                 | One device for the relying party and the wallet | Two devices, typically a desktop and a phone       |
-| Invocation              | The user opens the `av://` link directly        | The user scans a QR code                           |
-| Response delivery       | An HTTP POST to the `response_uri`              | An HTTP POST to the `response_uri`                 |
-| Result notification     | A redirect of the browser                       | Polling or WebSocket on the first device           |
+| Property            | Same-device flow                                | Cross-device flow                            |
+| :------------------ | :---------------------------------------------- | :------------------------------------------- |
+| Devices             | One device for the relying party and the wallet | Two devices, typically a desktop and a phone |
+| Invocation          | The user opens the `av://` link directly        | The user scans a QR code                     |
+| Response delivery   | An HTTP POST to the `response_uri`              | An HTTP POST to the `response_uri`           |
+| Result notification | A redirect of the browser                       | Polling or WebSocket on the first device     |
 
 The cross-device flow is the reason for the `direct_post` response mode. A URL fragment cannot carry a response from a different device, but an HTTP POST to a public endpoint can.
 
 ## The fallback strategy
 
-The system attempts the native API first, because the EU Age Verification Profile names it as the primary method. When the browser does not provide the API, or when no provider is registered, the attempt fails and the system falls back to OpenID4VP. The fallback also covers a wallet that only exists as a browser extension, because an extension cannot register as a native provider.
+The system attempts the native API first, because the EU Age Verification Profile names it as the primary method. When the browser does not provide the API, or when no provider is registered, the attempt fails and the system falls back to OpenID4VP.
 
 The decision diagram below shows how the system selects a protocol and a flow.
 
