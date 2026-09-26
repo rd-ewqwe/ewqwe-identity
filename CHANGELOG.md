@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.1] — 2026-09-26
+
+### Fixed
+
+- Restored the Diataxis book navigation that the `v1.3.0` tag shipped without, so every documentation page is reachable from the sidebar again.
+- Aligned the documentation with the code:
+  - The verifier app API is documented under `/api/v1` with the `verifier_ui_session` cookie, the real `[verifier_ui]` keys (`qr_code_callback_url` instead of the removed `public_url`), the SQLite-only stores, the request bodies, the transaction statuses, and the `france-identite-numerique` credential type.
+  - The configuration reference uses `issuers_cas_dir`, the current `verifier_ui.qr_code_callback_url` callback key, and the two `[tracing_config]` keys. Removed the documented `service_name`, `otlp`, `log_to_syslog`, `log_to_file`, and `no_log_to_stdout` keys, which do not exist.
+  - The `/ewqwe_api/openid4vp/init` request body no longer lists `public_url`; the wallet callback base URL comes from `public_root_url`.
+  - Corrected the log targets to `ewqwe_credential_verifier_server`.
+- Repointed the relying-party example to `typescript/demo-webapp/` and rewrote the relying-party UI guide for the current Vite and TypeScript demo.
+- Converted the ADB troubleshooting guide to sentence case.
+- Corrected the stale project paths in the bundled agent skills.
+
+### Added
+
+- The introduction documents the open-source licences: EUPL-1.2 for the Rust server and crates, and MIT for the TypeScript library and the demo webapp.
+
 ## [1.3.0] — 2026-09-26
 
 ### Security
