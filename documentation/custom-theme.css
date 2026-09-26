@@ -1,160 +1,82 @@
-/* Custom theme with ewQwe branding */
+/* ewQwe branding layered on the stock mdBook themes.
+ *
+ * mdBook defines every colour as a CSS variable on the theme class of the
+ * <html> element (.light, .rust, .coal, .navy, .ayu). This file overrides only
+ * the accent variables of each theme. It never sets a background or a text
+ * colour directly, so each theme keeps the contrast that mdBook chose and the
+ * light and dark modes both stay legible.
+ */
 
-:root {
-  /* --bg : #191f39; */
-  --bg : #151c35;
-  --ewqwe-bg: #181f38;
-  --ewqwe-indigo: #7358cf;
-  --ewqwe-indigo-soft: rgba(115, 88, 207, 0.2);
-  --links: #7358cf;
-  --links-hover: #8a72d9;
-  --sidebar-active: #16a34a; /* #ffb454 */
-  --table-alternate-bg:#181f38;
+/* Light themes: a deep indigo, dark enough for a white background. */
+.light,
+html:not(.js) {
+    --ewqwe-accent: #5b45b0;
+    --links: #5b45b0;
+    --sidebar-active: #5b45b0;
+    --sidebar-header-border-color: #5b45b0;
 }
 
-html,
-body,
-.content,
-.menu-bar,
-.sidebar,
-.sidebar .sidebar-scrollbox {
-  background-color: var(--ewqwe-bg);
+.rust {
+    --ewqwe-accent: #6d55c0;
+    --links: #6d55c0;
+    --sidebar-active: #6d55c0;
+    --sidebar-header-border-color: #6d55c0;
 }
 
-body {
-  color: #e5e9ff;
+/* Dark themes: a lighter indigo, bright enough for a dark background. */
+.coal,
+.navy,
+.ayu {
+    --ewqwe-accent: #a690ef;
+    --links: #a690ef;
+    --sidebar-active: #a690ef;
+    --sidebar-header-border-color: #8a72d9;
 }
 
+/* The same override for the default theme when the operating system asks for a
+   dark colour scheme and JavaScript is disabled. */
+@media (prefers-color-scheme: dark) {
+    html:not(.js) {
+        --ewqwe-accent: #a690ef;
+        --links: #a690ef;
+        --sidebar-active: #a690ef;
+        --sidebar-header-border-color: #8a72d9;
+    }
+}
+
+/* The ewQwe logo at the top of the sidebar. mdBook renders the sidebar with
+   JavaScript and provides no logo slot, so the image is drawn on the scrollbox.
+   The path is relative to this stylesheet, which mdBook copies to the root of
+   the output directory next to images/. */
 .sidebar .sidebar-scrollbox::before {
-  content: "";
-  display: block;
-  height: 84px;
-  margin: 14px 16px 20px;
-  background: url("./ewqwe_logo.png") center center / contain no-repeat;
+    content: "";
+    display: block;
+    height: 72px;
+    margin: 14px 8px 20px;
+    background: url("./images/ewqwe_logo.png") center center / contain no-repeat;
 }
 
-/* Add subtle purple gradient to sidebar header */
-.sidebar .sidebar-scrollbox {
-  border-right: 1px solid var(--ewqwe-indigo-soft);
-}
-
-/* Style chapter links with indigo/purple */
+/* Part headings in the sidebar use the accent colour. */
 .chapter li.part-title {
-  color: var(--ewqwe-indigo);
-  opacity: 0.9;
+    color: var(--ewqwe-accent);
 }
 
-.chapter li a:hover {
-  color: var(--ewqwe-indigo);
-}
-
-.chapter li a.active {
-  color: #9f87eb;
-  background: linear-gradient(90deg, rgba(115, 88, 207, 0.18), transparent);
-  border-left: 3px solid var(--ewqwe-indigo);
-}
-
-/* Style headers with subtle purple */
-h1, h2 {
-  color: inherit;
-  border-bottom-color: rgba(115, 88, 207, 0.28);
-}
-
-h1 {
-  background: linear-gradient(135deg, #9f87eb, var(--ewqwe-indigo));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-/* Code blocks - subtle purple accent */
-.hljs {
-  border-left: 3px solid rgba(115, 88, 207, 0.4);
-}
-
-/* Navigation buttons */
-.nav-chapters a {
-  color: var(--ewqwe-indigo);
-  transition: all 0.2s ease;
-}
-
-.nav-chapters a:hover {
-  color: #9f87eb;
-  text-decoration: none;
-}
-
-/* Search bar highlight */
-#searchbar:focus {
-  border-color: var(--ewqwe-indigo);
-  outline: 2px solid rgba(115, 88, 207, 0.25);
-}
-
-/* Menu bar with subtle gradient */
-.menu-bar {
-  border-bottom: 1px solid var(--ewqwe-indigo-soft);
-}
-
-/* Dark theme adjustments */
-.ayu, .coal, .navy {
-  --links: #9f87eb;
-  --links-hover: #b39ff0;
-}
-
-.ayu h1, .coal h1, .navy h1 {
-  background: linear-gradient(135deg, #b39ff0, var(--ewqwe-indigo));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.ayu .chapter li a.active,
-.coal .chapter li a.active,
-.navy .chapter li a.active {
-  background: linear-gradient(90deg, rgba(115, 88, 207, 0.22), transparent);
-  border-left: 3px solid #9f87eb;
-}
-
-/* Subtle purple accent on tables */
-table thead {
-  background: linear-gradient(180deg, rgba(115, 88, 207, 0.08), transparent);
-  border-bottom: 2px solid rgba(115, 88, 207, 0.38);
-}
-
-/* Blockquote accent */
-blockquote {
-  border-left-color: var(--ewqwe-indigo);
-  background: rgba(115, 88, 207, 0.08);
-}
-
-.ayu blockquote, .coal blockquote, .navy blockquote {
-  background: rgba(115, 88, 207, 0.1);
-}
-
-/* Inline code subtle highlight */
-:not(pre) > .hljs {
-  background: rgba(115, 88, 207, 0.12);
-  color: #c7b8f6;
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.ayu :not(pre) > .hljs,
-.coal :not(pre) > .hljs,
-.navy :not(pre) > .hljs {
-  background: rgba(115, 88, 207, 0.18);
-  color: #d4c7f8;
+/* A thin accent line under the table header, without changing the table
+   colours that mdBook sets per theme. */
+.content table thead {
+    border-bottom: 2px solid var(--ewqwe-accent);
 }
 
 @media (max-width: 1080px) {
-  .sidebar .sidebar-scrollbox::before {
-    height: 64px;
-    margin: 10px 12px 14px;
-  }
+    .sidebar .sidebar-scrollbox::before {
+        height: 60px;
+        margin: 12px 8px 16px;
+    }
 }
 
 @media (max-width: 620px) {
-  .sidebar .sidebar-scrollbox::before {
-    height: 52px;
-    margin: 8px 10px 10px;
-  }
+    .sidebar .sidebar-scrollbox::before {
+        height: 48px;
+        margin: 10px 8px 12px;
+    }
 }
